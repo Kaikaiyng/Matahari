@@ -1,14 +1,14 @@
 # Executive Summary
 
-Project: IEM / Matahari School Fee & Administration Management System
-Version: 0.1
-Date: 2026-06-25
+Project: IEM Education Platform
+Version: 0.2
+Date: 2026-06-26
 
 ## 1. Summary
 
 Matahari International School currently manages many administration and finance workflows through Microsoft Excel. The most painful workflow is monthly school fee administration: copying worksheets, updating months and dates, changing receipt numbers, recording payments, checking outstanding balances, and preparing collection reports.
 
-The proposed first version is a focused School Fee & Receipt Management System. It is not a full ERP. Its purpose is to replace the repetitive Excel-based finance workflow with a reliable web-based system.
+The proposed platform is the IEM Education Platform. The first version is a focused finance and billing MVP. It is not a full ERP. Its purpose is to replace the repetitive Excel-based finance workflow with a reliable web-based system while keeping the platform name broad enough for future modules.
 
 ## 2. Main Problem
 
@@ -29,8 +29,8 @@ The MVP focuses on:
 
 - Student records
 - Parent records
-- Fee structures
-- Student fee assignments
+- Fee templates
+- Student fee template assignments and overrides
 - Student discounts
 - Monthly invoice generation
 - Payment recording
@@ -45,7 +45,7 @@ The key workflow is:
 
 ```text
 Student
-  -> Assign Fees and Discounts
+  -> Assign Fee Template and Discounts
   -> Generate Monthly Invoice
   -> Record Payment
   -> Generate Receipt
@@ -87,6 +87,7 @@ For CEO or group management:
 For the organization:
 
 - A reusable foundation for Matahari and future IEM schools
+- A platform name that can later include attendance, teacher, parent portal, academic, and HR modules
 
 ## 6. Recommended MVP Dashboard
 
@@ -148,6 +149,7 @@ The MVP is successful when:
 - Daily and monthly collection reports are accurate.
 - Principal or CEO can trust dashboard totals.
 - A second school can be added without code changes.
+- Standard fee templates can be reused instead of editing every student one by one.
 
 ## 10. Key Decisions to Confirm
 

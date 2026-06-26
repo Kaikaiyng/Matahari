@@ -1,7 +1,7 @@
 # Product and Technical Decision Log
 
-Version: 0.1
-Date: 2026-06-25
+Version: 0.2
+Date: 2026-06-26
 
 This document records default decisions for the MVP. Items marked "Needs confirmation" should be reviewed with the school before implementation hardens.
 
@@ -9,13 +9,17 @@ This document records default decisions for the MVP. Items marked "Needs confirm
 
 | Area | Decision | Status |
 | --- | --- | --- |
-| Product positioning | Build School Fee & Receipt Management first, not full ERP | Adopted |
+| Product positioning | Name platform IEM Education Platform; build finance MVP first | Adopted |
 | Backend | Laravel + MySQL | Adopted |
 | Frontend | React + TypeScript + TailwindCSS | Adopted |
 | Multi-school | Every school-owned business record uses `school_id` | Adopted |
+| Fee templates | Standard fees should be assigned through templates before student overrides | Adopted |
 | Fee history | Invoice line items are snapshots | Adopted |
 | Discount engine | Explicit student-assigned discounts, no complex rule engine in MVP | Adopted |
+| Permission model | Role -> Permission -> Module, avoid hardcoded role behavior | Adopted |
 | Receipt sequence | Backend transaction with locked sequence row | Adopted |
+| Invoice/receipt separation | Invoice is bill; receipt is proof of payment after payment exists | Adopted |
+| Audit values | Log old_values and new_values for changed records | Adopted |
 | Payment deletion | Void payments, do not hard-delete | Adopted |
 | Receipt deletion | Void receipts, do not reuse receipt numbers | Adopted |
 | Class model | Use a `classes` table from day one | Adopted |
@@ -30,17 +34,18 @@ This document records default decisions for the MVP. Items marked "Needs confirm
 
 Decision:
 
-Start with School Fee & Receipt Management.
+Use `IEM Education Platform` as the product/platform name, while starting with the finance and billing MVP.
 
 Reason:
 
-The most painful current workflow is monthly Excel-based fee administration. Solving invoices, payments, receipts, outstanding tracking, and reports gives the fastest practical value.
+The name must support future modules such as Attendance, Teacher, Parent Portal, Academic, and HR. The most painful current workflow is still monthly Excel-based fee administration, so solving invoices, payments, receipts, outstanding tracking, and reports gives the fastest practical value.
 
 Impact:
 
 - Attendance, teacher management, parent portal, timetable, and mobile app stay outside MVP.
 - Dashboard and reports focus on finance first.
 - Sales/demo language should emphasize replacing Excel finance workflows.
+- User-facing platform copy should not lock the product into "fee only" forever.
 
 ## 2. Backend Stack
 
@@ -126,6 +131,24 @@ Needs confirmation:
 
 Whether discounts ever apply only to specific fee items, e.g. tuition only but not transport.
 
+## 6A. Fee Templates
+
+Decision:
+
+Use fee templates as the standard way to assign recurring fees.
+
+Reason:
+
+The school should not need to edit hundreds of student fee rows when tuition changes for a class or programme.
+
+Impact:
+
+- `fee_templates` defines reusable structures such as Nursery Fee or Primary Year 1 Fee.
+- `fee_template_items` contains fee items and template amounts.
+- `student_fee_template_assignments` assigns the template to a student.
+- `student_fee_assignments` remains useful for exceptions and overrides.
+- Invoice generation snapshots template items into `invoice_items`.
+
 ## 7. Payment Allocation
 
 Decision:
@@ -165,6 +188,34 @@ Impact:
 Needs confirmation:
 
 Some schools may want a separate "Generate Receipt" click after checking payment proof. If so, receipt generation should be manual for bank transfer and automatic for cash.
+
+## 8A. Invoice and Receipt Separation
+
+Decision:
+
+Invoices and receipts are separate objects.
+
+Workflow:
+
+```text
+Invoice Created
+        ->
+Waiting Payment
+        ->
+Payment Received
+        ->
+Receipt Generated
+```
+
+Reason:
+
+An invoice is a request for payment. A receipt is proof that payment was received. Treating them as the same object creates accounting confusion and weak auditability.
+
+Impact:
+
+- One invoice can be pending, partial, paid, overdue, or void.
+- A receipt is generated only from a confirmed payment.
+- Receipt PDF actions should live under receipt/payment workflows, not invoice creation.
 
 ## 9. Receipt Numbering
 
@@ -223,6 +274,40 @@ Impact:
 - Adjustment lines can be added later if required.
 - Audit logs should capture all correction actions.
 
+## 11A. Audit Old and New Values
+
+Decision:
+
+Audit logs should store machine-readable `old_values` and `new_values` for changed records.
+
+Reason:
+
+For accountability and debugging, "fee updated" is not enough. The system should show what changed, for example RM800 to RM850.
+
+Impact:
+
+- Create actions use `old_values = null` and `new_values = created snapshot`.
+- Update actions store changed old and new fields.
+- Void/correction actions store status and reason changes.
+- Audit UI can later render before/after differences.
+
+## 11B. Permission Model
+
+Decision:
+
+Avoid hardcoded role behavior. Use modules, permissions, and role-permission mapping.
+
+Reason:
+
+The same role name may need different access per school or customer. Permission slugs make the system flexible without code changes.
+
+Impact:
+
+- Seed default roles: Super Admin, CEO, School Admin, Finance.
+- Seed modules and permission slugs such as `payment.create`, `receipt.void`, `student.delete`, `report.export`.
+- Backend policies check permission slugs and school scope.
+- Frontend navigation is derived from allowed permissions.
+
 ## 12. Email and WhatsApp
 
 Decision:
@@ -264,3 +349,5 @@ Before implementation begins, confirm:
 6. Does the school need payment proof uploads in MVP?
 7. What exact receipt format and fields are required?
 8. What is the official school code for receipt prefix: `MIS` or something else?
+9. What fee templates should be created for Matahari's real programmes?
+10. Which reports are required by admin, principal, and CEO on month-end?

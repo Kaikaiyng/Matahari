@@ -206,10 +206,10 @@ const parents = [
 ]
 
 const feeStructures = [
-  { item: 'Tuition Fee', type: 'Monthly', amount: 800, taxable: 'No', status: 'Active' },
-  { item: 'Transport', type: 'Monthly', amount: 120, taxable: 'No', status: 'Optional' },
+  { item: 'Primary Year 1 Fee', type: 'Template', amount: 890, taxable: 'No', status: 'Active' },
+  { item: 'Tuition Fee', type: 'Template Item', amount: 800, taxable: 'No', status: 'Active' },
+  { item: 'Transport', type: 'Optional Add-on', amount: 120, taxable: 'No', status: 'Optional' },
   { item: 'Registration', type: 'One Time', amount: 50, taxable: 'No', status: 'Active' },
-  { item: 'Sibling Discount', type: 'Discount', amount: -80, taxable: 'No', status: 'Rule' },
 ]
 
 const invoices = [
@@ -381,13 +381,13 @@ function ParentsPage() {
 function FeesPage() {
   return (
     <section className="page-stack">
-      <PageHeader eyebrow="Fee structure" title="Fee Items and Discount Rules" action="Create Rule" />
+      <PageHeader eyebrow="Fee structure" title="Fee Templates and Discount Rules" action="Create Template" />
       <section className="content-grid">
         <article className="panel payments-panel">
           <div className="panel-header">
             <div>
               <p className="eyebrow">Pricing</p>
-              <h2>Default MIS Fee Structure</h2>
+              <h2>Default MIS Fee Template</h2>
             </div>
             <strong className="panel-total">RM890</strong>
           </div>
@@ -889,7 +889,7 @@ function App() {
         <div className="brand">
           <img src={misLogo} alt="MIS logo" />
           <div>
-            <strong>{dashboard.school.code}</strong>
+            <strong>IEM</strong>
             <span>Finance Admin</span>
           </div>
         </div>
@@ -914,7 +914,7 @@ function App() {
       <main className="main">
         <header className="topbar">
           <div>
-            <p className="eyebrow">{dashboard.school.name}</p>
+            <p className="eyebrow">IEM Education Platform / {dashboard.school.name}</p>
             <h1>{pageTitle}</h1>
           </div>
 

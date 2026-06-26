@@ -1,13 +1,13 @@
 # MVP Working Assumptions
 
-Version: 0.1
-Date: 2026-06-25
+Version: 0.2
+Date: 2026-06-26
 
 These assumptions let implementation proceed before every school workflow detail is confirmed. They are intentionally conservative and can be revised after user acceptance testing.
 
 ## 1. Product Scope Assumptions
 
-The MVP is a School Fee & Receipt Management System.
+The product is the IEM Education Platform. The MVP is the first finance and billing module focused on school fees, invoices, receipts, outstanding fees, and reports.
 
 Included:
 
@@ -15,8 +15,8 @@ Included:
 - User roles
 - Student records
 - Parent records
-- Fee items
-- Student fee assignments
+- Fee templates and fee items
+- Student fee template assignments and overrides
 - Student discount assignments
 - Monthly invoice generation
 - Payment recording
@@ -45,6 +45,7 @@ Excluded from MVP:
 - CEO and Super Admin can access group-level data.
 - Finance can create invoices, record payments, generate receipts, and view reports.
 - Finance cannot manage users or schools.
+- Permissions should be checked through permission slugs, not only hardcoded role names.
 
 ## 3. Student and Parent Assumptions
 
@@ -59,8 +60,10 @@ Excluded from MVP:
 ## 4. Fee Assumptions
 
 - Fee items are configured per school.
-- A student can have multiple assigned fee items.
-- Assigned fee amount can override the fee item's default amount.
+- Standard fees are grouped into fee templates.
+- A student normally receives one active standard fee template.
+- Student-specific fee assignments are used for overrides, optional add-ons, and exceptions.
+- Assigned fee amount can override the template or fee item's default amount.
 - Fee assignment supports recurring and one-time fees.
 - One-time fees use a target billing month and should be billed once.
 - Old invoices do not change when fee assignments change later.
@@ -81,6 +84,7 @@ Excluded from MVP:
 - Class filter is useful and should be supported if implementation cost is low.
 - The system prevents duplicate non-void invoices for the same student and month.
 - Invoice items are snapshots.
+- Invoice items snapshot fee template items, student overrides, and discounts.
 - Invoice number has its own sequence separate from receipt number.
 - Invoice can be edited before payment.
 - After payment exists, invoice amount changes require void/reissue or controlled adjustment.
@@ -110,6 +114,7 @@ MIS-2026-000001
 - Receipt sequence is separate per school, year, and prefix.
 - Voided receipt numbers are never reused.
 - Receipt PDF is required in MVP.
+- Invoice and receipt are separate records; receipt is created only after payment exists.
 
 ## 9. Reporting Assumptions
 
@@ -146,3 +151,4 @@ Recheck these with school staff:
 6. Is payment proof upload required for daily work?
 7. What exact fields must appear on receipt PDF?
 8. What reports are currently sent to the principal or CEO every month?
+9. What real fee templates does Matahari use today?

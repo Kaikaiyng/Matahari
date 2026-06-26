@@ -1,6 +1,6 @@
-# IEM / Matahari School Fee & Administration Management System
+# IEM Education Platform
 
-This repository contains the product planning and implementation preparation for a web-based School Fee & Administration Management System for Matahari International School and future schools under IEM Education Group.
+This repository contains the product planning and implementation preparation for the IEM Education Platform, a web-based school administration platform for Matahari International School and future schools under IEM Education Group.
 
 The MVP is intentionally focused:
 
@@ -12,10 +12,16 @@ It is not trying to become a full school ERP in the first release.
 
 ## Current Product Direction
 
-Initial product name:
+Platform name:
 
 ```text
-School Fee & Receipt Management System
+IEM Education Platform
+```
+
+Initial MVP module:
+
+```text
+Finance, Billing, Receipts, Outstanding Fees, and Reports
 ```
 
 Primary MVP workflow:
@@ -23,7 +29,7 @@ Primary MVP workflow:
 ```text
 Student Registration
   -> Parent Information
-  -> Fee Assignment
+  -> Assign Fee Template
   -> Monthly Invoice Generation
   -> Payment Recording
   -> Receipt Generation
@@ -55,6 +61,8 @@ Target first users:
 | [docs/PRD.md](docs/PRD.md) | Product requirements, MVP modules, user roles, workflow, success metrics |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | Delivery phases, product decisions, recommended development order |
 | [docs/DECISIONS.md](docs/DECISIONS.md) | Product and technical decision log |
+| [docs/ARCHITECTURE_REVIEW_PLAN.md](docs/ARCHITECTURE_REVIEW_PLAN.md) | Architecture review notes and improvement plan |
+| [docs/BUSINESS_WORKFLOWS.md](docs/BUSINESS_WORKFLOWS.md) | Business workflow discovery notes and target operating flows |
 | [docs/MVP_ASSUMPTIONS.md](docs/MVP_ASSUMPTIONS.md) | Working assumptions to allow implementation to proceed |
 | [docs/DATABASE_DESIGN.md](docs/DATABASE_DESIGN.md) | MySQL schema draft, ERD, constraints, invoice/payment/receipt flows |
 | [docs/SYSTEM_ARCHITECTURE.md](docs/SYSTEM_ARCHITECTURE.md) | Architecture, module boundaries, authorization, API endpoint draft, deployment notes |
@@ -80,8 +88,9 @@ Current working assumptions:
 
 - Every business record is scoped by `school_id`.
 - Class is a real table from the first version.
+- Students should receive fees through fee templates where possible.
 - Invoice items are snapshots.
-- Discounts are assigned directly to students.
+- Discounts are assigned through explicit rules or overrides, then snapshotted into invoices.
 - Discounts apply to the whole invoice in MVP.
 - Payment UI starts with one payment to one invoice.
 - Database supports future multi-invoice payment allocation.

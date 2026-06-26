@@ -1,7 +1,7 @@
 # MVP Implementation Backlog
 
-Version: 0.1
-Date: 2026-06-25
+Version: 0.2
+Date: 2026-06-26
 
 ## 1. Foundation
 
@@ -36,9 +36,12 @@ Frontend:
 Backend:
 
 - Role seed data
+- Module and permission seed data
+- Role-permission assignment
 - User role assignment
 - School scope middleware or policy layer
-- Permission checks for school-level users vs group-level users
+- Permission checks using permission slugs, not hardcoded role behavior
+- School-level users vs group-level users scope checks
 
 Frontend:
 
@@ -107,7 +110,24 @@ Frontend:
 
 ## 3. Fee Setup
 
-### 3.1 Fee Items
+### 3.1 Fee Templates
+
+Backend:
+
+- Fee template CRUD API
+- Fee template item attach/update/remove API
+- Template active/inactive handling
+- Template amount validation
+- Tests proving template edits do not alter existing invoice snapshots
+
+Frontend:
+
+- Fee template list
+- Fee template create/edit form
+- Template item editor
+- Assign template to student
+
+### 3.2 Fee Items
 
 Backend:
 
@@ -120,23 +140,26 @@ Frontend:
 - Fee item list
 - Fee item create/edit form
 
-### 3.2 Student Fee Assignments
+### 3.3 Student Fee Assignments and Overrides
 
 Backend:
 
+- Assign fee template to student API
 - Assign fee to student API
 - Override amount API
 - Effective date handling
 - One-time fee billing month handling
+- Distinguish standard template assignment from student-specific exception
 
 Frontend:
 
+- Student fee template panel
 - Student fees panel
 - Add fee assignment
 - Edit assigned amount
 - Disable assigned fee
 
-### 3.3 Discounts
+### 3.4 Discounts
 
 Backend:
 
@@ -160,8 +183,8 @@ Backend:
 - Generate monthly invoices API
 - Duplicate prevention
 - Invoice number sequence
-- Invoice item snapshot creation
-- Audit log entries
+- Invoice item snapshot creation from fee templates, overrides, and discounts
+- Audit log entries with old_values and new_values
 
 Frontend:
 
@@ -216,6 +239,7 @@ Backend:
 
 - Receipt sequence service using database transaction
 - Generate receipt API
+- Ensure receipt is generated from payment, not directly from invoice
 - Receipt PDF API
 - Receipt list API
 - Void receipt API
@@ -278,11 +302,14 @@ Backend:
 - Audit log writer
 - Audit log list API
 - Entity-based audit lookup
+- Old/new value diff support
+- Capture create, update, void, and correction snapshots
 
 Frontend:
 
 - Audit log page
 - Filters by user, action, entity, and date
+- Before/after value display
 
 ### 7.2 Reliability
 
@@ -290,6 +317,8 @@ Frontend:
 - Use decimal values, never floating point.
 - Add database unique indexes for invoice and receipt integrity.
 - Add automated tests for invoice generation and receipt sequence.
+- Add automated tests for permission checks.
+- Add automated tests for audit old/new values.
 - Add backup procedure for MySQL.
 - Add seed data for demo school, users, fee items, and sample students.
 
@@ -303,10 +332,10 @@ Tasks:
 
 1. Laravel + React + Docker setup
 2. Auth login/logout
-3. Schools, users, roles seed
+3. Schools, users, roles, modules, and permissions seed
 4. Student CRUD
 5. Parent CRUD
-6. Fee item CRUD
+6. Fee template and fee item CRUD
 7. Basic dashboard shell
 
 ## 9. Suggested Second Sprint
@@ -317,13 +346,14 @@ Prove monthly billing without Excel.
 
 Tasks:
 
-1. Student fee assignment
-2. Discount assignment
-3. Invoice preview
-4. Invoice generation
-5. Invoice detail
-6. Duplicate invoice prevention
-7. Invoice snapshot tests
+1. Student fee template assignment
+2. Student fee override assignment
+3. Discount assignment
+4. Invoice preview
+5. Invoice generation
+6. Invoice detail
+7. Duplicate invoice prevention
+8. Invoice snapshot tests
 
 ## 10. Suggested Third Sprint
 

@@ -1,7 +1,7 @@
 # System Architecture and API Draft
 
-Version: 0.1
-Date: 2026-06-25
+Version: 0.2
+Date: 2026-06-26
 
 ## 1. Architecture Summary
 
@@ -23,7 +23,7 @@ Docker
   |-- MySQL
 ```
 
-This architecture is intentionally simple. It supports the first Matahari deployment and can later grow into a multi-school SaaS setup.
+This architecture is intentionally simple. It supports the first Matahari deployment and can later grow into the multi-school IEM Education Platform and future SaaS setup.
 
 ## 2. Application Layers
 
@@ -88,7 +88,7 @@ Suggested Laravel modules/services:
 | Schools | School profile, prefixes, status |
 | Users | Users, roles, permissions |
 | Students | Students, classes, parent links |
-| Fees | Fee items, student fee assignments |
+| Fees | Fee templates, fee items, student fee assignments |
 | Discounts | Discount items, student discount assignments |
 | Invoices | Invoice generation, invoice detail, invoice PDF |
 | Payments | Payment recording, allocations, void flow |
@@ -110,9 +110,21 @@ Important services:
 
 Recommended approach:
 
-- Use role checks for feature access.
+- Use role-permission checks for feature access.
 - Use school scope checks for data access.
 - Apply school scope in backend, not only frontend.
+
+Target model:
+
+```text
+Role
+        ->
+Role Permission
+        ->
+Permission
+        ->
+Module
+```
 
 Rules:
 
@@ -122,6 +134,8 @@ Rules:
 - Finance can manage invoices, payments, receipts, and reports within assigned school.
 
 Every API that reads or writes school-owned data should verify the user's allowed `school_id`.
+
+Avoid hardcoding role names in business services. Role names can remain seeded defaults, but controller and policy checks should use permission slugs such as `payment.create`, `receipt.void`, or `student.delete`.
 
 ## 5. API Style
 
@@ -191,6 +205,13 @@ Example error response:
 
 | Method | Endpoint | Purpose |
 | --- | --- | --- |
+| GET | `/api/fee-templates` | List fee templates |
+| POST | `/api/fee-templates` | Create fee template |
+| GET | `/api/fee-templates/{feeTemplate}` | Fee template detail |
+| PUT | `/api/fee-templates/{feeTemplate}` | Update fee template |
+| POST | `/api/fee-templates/{feeTemplate}/items` | Add fee item to template |
+| PUT | `/api/fee-templates/{feeTemplate}/items/{templateItem}` | Update template item |
+| POST | `/api/students/{student}/fee-template` | Assign fee template |
 | GET | `/api/fee-items` | List fee items |
 | POST | `/api/fee-items` | Create fee item |
 | PUT | `/api/fee-items/{feeItem}` | Update fee item |
@@ -357,6 +378,9 @@ Highest-risk tests:
 5. Voiding payment recalculates invoice balance.
 6. School-level users cannot access another school's records.
 7. Reports exclude void payments and void invoices correctly.
+8. Fee template edits do not change existing invoice snapshots.
+9. Permission checks are based on permission slugs, not hardcoded role names.
+10. Audit logs capture old_values and new_values for financial corrections.
 
 ## 10. Deployment Notes
 
