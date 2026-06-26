@@ -258,6 +258,12 @@ h2 {
   box-shadow: 0 10px 24px rgba(238, 47, 55, 0.24);
 }
 
+.primary-action.compact {
+  min-width: 148px;
+  height: 40px;
+  box-shadow: none;
+}
+
 .secondary-action {
   height: 34px;
   padding: 0 12px;
@@ -311,6 +317,147 @@ h2 {
   display: grid;
   grid-template-columns: minmax(0, 1.6fr) minmax(320px, 0.9fr);
   gap: 20px;
+}
+
+.page-stack {
+  display: grid;
+  gap: 18px;
+}
+
+.page-title-row {
+  min-height: 64px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+}
+
+.page-title-row h2 {
+  font-size: 24px;
+}
+
+.summary-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.summary-grid.three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.contact-card,
+.report-card {
+  border: 1px solid #e1e4ea;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.contact-card {
+  min-height: 224px;
+  padding: 18px;
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+.contact-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #2b2c31;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.contact-card h3,
+.report-card h3 {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.25;
+}
+
+.contact-card p,
+.report-card p {
+  color: #747985;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.contact-card span {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #3a3d44;
+  font-size: 13px;
+}
+
+.panel-total {
+  color: #167a4a;
+  font-size: 24px;
+}
+
+.success-icon {
+  color: #167a4a;
+}
+
+.rule-list {
+  display: grid;
+  gap: 10px;
+}
+
+.rule-list div {
+  min-height: 48px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid #edf0f4;
+  border-radius: 8px;
+  background: #fbfbfc;
+  color: #3a3d44;
+  font-size: 14px;
+}
+
+.rule-list b {
+  color: #25272d;
+  white-space: nowrap;
+}
+
+.hero-strip.slim {
+  min-height: 92px;
+}
+
+.report-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.report-card {
+  min-height: 156px;
+  padding: 18px;
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.report-card svg {
+  color: #ee2f37;
+}
+
+.report-card strong {
+  align-self: end;
+  color: #25272d;
+  font-size: 13px;
 }
 
 .panel {
@@ -372,6 +519,16 @@ th {
 .badge.partial {
   background: #fff1d8;
   color: #9b5c00;
+}
+
+.badge.danger {
+  background: #ffe7e9;
+  color: #b31923;
+}
+
+.badge.neutral {
+  background: #edf0f4;
+  color: #4c515c;
 }
 
 .outstanding-list {
@@ -442,6 +599,11 @@ th {
   .metrics-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+
+  .cards-grid,
+  .report-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 840px) {
@@ -489,7 +651,15 @@ th {
   }
 
   .metrics-grid,
-  .content-grid {
+  .content-grid,
+  .summary-grid.three,
+  .cards-grid,
+  .report-grid {
     grid-template-columns: 1fr;
+  }
+
+  .page-title-row {
+    align-items: stretch;
+    flex-direction: column;
   }
 }
