@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\Invoice;
 use App\Models\School;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -35,7 +34,7 @@ class ApiWorkflowTest extends TestCase
             ->assertJsonPath('metrics.outstanding_fees', 2713);
     }
 
-    public function test_payment_api_records_payment_and_generates_receipt(): void
+    public function test_legacy_invoice_first_payment_endpoint_is_not_available(): void
     {
         $this->seed();
 
@@ -48,24 +47,11 @@ class ApiWorkflowTest extends TestCase
             'due_date' => '2026-07-10',
         ])->assertCreated();
 
-        $invoice = Invoice::query()
-            ->whereHas('student', fn ($query) => $query->where('student_no', 'MIS-2026-002'))
-            ->firstOrFail();
-
         $this->postJson('/api/payments', [
-            'invoice_id' => $invoice->id,
+            'invoice_id' => 1,
             'payment_date' => '2026-07-05',
             'amount' => 400,
             'method' => 'cash',
-        ])
-            ->assertCreated()
-            ->assertJsonPath('payment.amount', 400)
-            ->assertJsonPath('payment.receipt_no', 'MIS-2026-000001');
-
-        $invoice->refresh();
-
-        $this->assertSame('partial', $invoice->status);
-        $this->assertEquals(400.00, (float) $invoice->paid_amount);
-        $this->assertEquals(520.00, (float) $invoice->outstanding_amount);
+        ])->assertNotFound();
     }
 }

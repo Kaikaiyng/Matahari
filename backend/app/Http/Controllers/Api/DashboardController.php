@@ -18,15 +18,15 @@ class DashboardController extends Controller
         $today = now()->toDateString();
         $currentMonth = (string) $request->query('invoice_month', now()->format('Y-m'));
 
-        $confirmedPayments = Payment::query()
+        $verifiedPayments = Payment::query()
             ->where('school_id', $school->id)
-            ->where('status', 'confirmed');
+            ->where('status', 'verified');
 
         $metrics = [
-            'today_collection' => (float) (clone $confirmedPayments)
+            'today_collection' => (float) (clone $verifiedPayments)
                 ->whereDate('payment_date', $today)
                 ->sum('amount'),
-            'monthly_collection' => (float) (clone $confirmedPayments)
+            'monthly_collection' => (float) (clone $verifiedPayments)
                 ->where('payment_date', 'like', $currentMonth.'%')
                 ->sum('amount'),
             'outstanding_fees' => (float) Invoice::query()
@@ -52,7 +52,7 @@ class DashboardController extends Controller
         $recentPayments = Payment::query()
             ->with('student')
             ->where('school_id', $school->id)
-            ->where('status', 'confirmed')
+            ->where('status', 'verified')
             ->latest('payment_date')
             ->limit(5)
             ->get()
@@ -60,7 +60,7 @@ class DashboardController extends Controller
                 'id' => $payment->id,
                 'student' => $payment->student->full_name,
                 'amount' => (float) $payment->amount,
-                'method' => $payment->method,
+                'method' => $payment->payment_method,
                 'status' => $payment->status,
                 'payment_date' => $payment->payment_date->toDateString(),
             ]);

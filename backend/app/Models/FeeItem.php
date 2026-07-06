@@ -13,6 +13,7 @@ class FeeItem extends Model
         'name',
         'code',
         'fee_type',
+        'category',
         'default_amount',
         'status',
     ];
@@ -25,5 +26,10 @@ class FeeItem extends Model
     public function assignments(): HasMany
     {
         return $this->hasMany(StudentFeeAssignment::class);
+    }
+
+    public function feeAgreementItems(): HasMany
+    {
+        return $this->hasMany(FeeAgreementItem::class);
     }
 }

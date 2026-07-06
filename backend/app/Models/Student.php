@@ -12,6 +12,7 @@ class Student extends Model
     protected $fillable = [
         'school_id',
         'class_id',
+        'level_group',
         'student_no',
         'full_name',
         'gender',
@@ -49,6 +50,16 @@ class Student extends Model
     public function feeAssignments(): HasMany
     {
         return $this->hasMany(StudentFeeAssignment::class);
+    }
+
+    public function feeAgreements(): HasMany
+    {
+        return $this->hasMany(FeeAgreement::class);
+    }
+
+    public function currentFeeAgreements(): HasMany
+    {
+        return $this->hasMany(FeeAgreement::class)->where('is_current', true);
     }
 
     public function discountAssignments(): HasMany

@@ -14,8 +14,8 @@ class ReceiptNumberService
         return DB::transaction(function () use ($payment, $generatedBy): Receipt {
             $payment->loadMissing('school');
 
-            if ($payment->status !== 'confirmed') {
-                throw new \RuntimeException('Only confirmed payments can receive receipts.');
+            if ($payment->status !== 'verified') {
+                throw new \RuntimeException('Only verified payments can receive receipts.');
             }
 
             $existing = Receipt::query()

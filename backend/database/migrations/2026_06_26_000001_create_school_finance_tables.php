@@ -197,33 +197,44 @@ return new class extends Migration
             $table->id();
             $table->foreignId('school_id')->constrained()->cascadeOnDelete();
             $table->foreignId('student_id')->constrained()->restrictOnDelete();
-            $table->string('payment_no', 50)->nullable();
+            $table->string('payment_method', 30);
             $table->date('payment_date');
+            $table->date('received_date')->nullable();
             $table->decimal('amount', 10, 2)->default(0);
-            $table->string('method', 30);
+            $table->string('bank_account')->nullable();
             $table->string('reference_no', 100)->nullable();
-            $table->string('status', 30)->default('confirmed');
-            $table->foreignId('received_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->text('payment_proof')->nullable();
+            $table->text('remark')->nullable();
+            $table->string('status', 30)->default('pending_verification');
+            $table->foreignId('recorded_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('verified_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->timestamp('verified_at')->nullable();
             $table->timestamp('voided_at')->nullable();
             $table->foreignId('voided_by')->nullable()->constrained('users')->nullOnDelete();
             $table->text('void_reason')->nullable();
-            $table->text('notes')->nullable();
             $table->timestamps();
 
             $table->index(['school_id', 'payment_date']);
             $table->index(['school_id', 'student_id']);
             $table->index(['school_id', 'status']);
+            $table->index(['school_id', 'reference_no']);
         });
 
         Schema::create('payment_allocations', function (Blueprint $table) {
             $table->id();
             $table->foreignId('school_id')->constrained()->cascadeOnDelete();
             $table->foreignId('payment_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('invoice_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('fee_item_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('fee_agreement_item_id')->nullable()->constrained()->nullOnDelete();
+            $table->string('fee_code', 50)->nullable();
+            $table->string('description');
             $table->decimal('amount', 10, 2)->default(0);
+            $table->unsignedInteger('sort_order')->default(0);
             $table->timestamps();
 
-            $table->unique(['payment_id', 'invoice_id']);
+            $table->index(['school_id', 'payment_id']);
+            $table->index(['school_id', 'fee_item_id']);
+            $table->index(['school_id', 'fee_agreement_item_id']);
         });
 
         Schema::create('receipt_sequences', function (Blueprint $table) {

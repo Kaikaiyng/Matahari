@@ -6,33 +6,30 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Invoice extends Model
+class FeeAgreement extends Model
 {
     protected $fillable = [
         'school_id',
         'student_id',
-        'invoice_no',
-        'invoice_month',
-        'issue_date',
-        'due_date',
-        'subtotal',
-        'discount_total',
-        'grand_total',
-        'paid_amount',
-        'outstanding_amount',
+        'agreement_no',
+        'academic_year',
+        'version_no',
+        'payment_plan',
+        'effective_from',
+        'effective_to',
+        'is_current',
         'status',
-        'voided_at',
-        'voided_by',
-        'void_reason',
+        'remarks',
         'created_by',
+        'updated_by',
     ];
 
     protected function casts(): array
     {
         return [
-            'issue_date' => 'date',
-            'due_date' => 'date',
-            'voided_at' => 'datetime',
+            'effective_from' => 'date',
+            'effective_to' => 'date',
+            'is_current' => 'boolean',
         ];
     }
 
@@ -48,7 +45,11 @@ class Invoice extends Model
 
     public function items(): HasMany
     {
-        return $this->hasMany(InvoiceItem::class);
+        return $this->hasMany(FeeAgreementItem::class);
     }
 
+    public function discounts(): HasMany
+    {
+        return $this->hasMany(FeeAgreementDiscount::class);
+    }
 }

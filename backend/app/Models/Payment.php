@@ -12,23 +12,29 @@ class Payment extends Model
     protected $fillable = [
         'school_id',
         'student_id',
-        'payment_no',
+        'payment_method',
         'payment_date',
+        'received_date',
         'amount',
-        'method',
+        'bank_account',
         'reference_no',
+        'payment_proof',
+        'remark',
         'status',
-        'received_by',
+        'recorded_by',
+        'verified_by',
+        'verified_at',
         'voided_at',
         'voided_by',
         'void_reason',
-        'notes',
     ];
 
     protected function casts(): array
     {
         return [
             'payment_date' => 'date',
+            'received_date' => 'date',
+            'verified_at' => 'datetime',
             'voided_at' => 'datetime',
         ];
     }
@@ -41,6 +47,21 @@ class Payment extends Model
     public function student(): BelongsTo
     {
         return $this->belongsTo(Student::class);
+    }
+
+    public function recordedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'recorded_by');
+    }
+
+    public function verifiedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'verified_by');
+    }
+
+    public function voidedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'voided_by');
     }
 
     public function allocations(): HasMany

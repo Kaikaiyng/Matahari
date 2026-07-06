@@ -2,10 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Models\FeeItem;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\School;
 use App\Models\Student;
+use App\Models\User;
 use App\Services\Billing\InvoiceGenerationService;
 use App\Services\Billing\PaymentRecordingService;
 use App\Services\Billing\ReceiptNumberService;
@@ -72,20 +74,27 @@ class BillingWorkflowTest extends TestCase
         app(InvoiceGenerationService::class)->generateMonthly($school->id, '2026-07', '2026-07-01', '2026-07-10');
 
         $student = Student::query()->where('student_no', 'MIS-2026-002')->firstOrFail();
-        $invoice = $student->invoices()->firstOrFail();
+        $feeItem = FeeItem::query()->where('school_id', $school->id)->where('code', 'TUITION')->firstOrFail();
+        $admin = User::query()->where('email', 'admin@mis.test')->firstOrFail();
 
         $firstPayment = Payment::query()->create([
             'school_id' => $school->id,
             'student_id' => $student->id,
             'payment_date' => '2026-07-05',
+            'received_date' => '2026-07-05',
             'amount' => 400,
-            'method' => 'cash',
-            'status' => 'confirmed',
+            'payment_method' => 'cash',
+            'status' => 'verified',
+            'recorded_by' => $admin->id,
+            'verified_by' => $admin->id,
+            'verified_at' => now(),
         ]);
 
         $firstPayment->allocations()->create([
             'school_id' => $school->id,
-            'invoice_id' => $invoice->id,
+            'fee_item_id' => $feeItem->id,
+            'fee_code' => $feeItem->code,
+            'description' => $feeItem->name,
             'amount' => 400,
         ]);
 
@@ -100,15 +109,21 @@ class BillingWorkflowTest extends TestCase
             'school_id' => $school->id,
             'student_id' => $student->id,
             'payment_date' => '2026-07-06',
+            'received_date' => '2026-07-06',
             'amount' => 520,
-            'method' => 'bank_transfer',
+            'payment_method' => 'bank_transfer',
             'reference_no' => 'MBB123456',
-            'status' => 'confirmed',
+            'status' => 'verified',
+            'recorded_by' => $admin->id,
+            'verified_by' => $admin->id,
+            'verified_at' => now(),
         ]);
 
         $secondPayment->allocations()->create([
             'school_id' => $school->id,
-            'invoice_id' => $invoice->id,
+            'fee_item_id' => $feeItem->id,
+            'fee_code' => $feeItem->code,
+            'description' => $feeItem->name,
             'amount' => 520,
         ]);
 
@@ -117,7 +132,7 @@ class BillingWorkflowTest extends TestCase
         $this->assertSame('MIS-2026-000002', $secondReceipt->receipt_no);
     }
 
-    public function test_payment_recording_updates_invoice_balance_and_generates_receipt(): void
+    public function test_payment_recording_is_student_first_and_does_not_touch_invoice_or_receipt(): void
     {
         $this->seed();
 
@@ -126,35 +141,27 @@ class BillingWorkflowTest extends TestCase
 
         $student = Student::query()->where('student_no', 'MIS-2026-002')->firstOrFail();
         $invoice = $student->invoices()->firstOrFail();
+        $feeItem = FeeItem::query()->where('school_id', $school->id)->where('code', 'TUITION')->firstOrFail();
+        $admin = User::query()->where('email', 'admin@mis.test')->firstOrFail();
 
         $service = app(PaymentRecordingService::class);
-        $partialPayment = $service->recordForInvoice(
-            invoiceId: $invoice->id,
-            paymentDate: '2026-07-05',
-            amount: 400,
-            method: 'cash',
-        );
+        $payment = $service->createForStudent($student, [
+            'payment_method' => 'cash',
+            'payment_date' => '2026-07-05',
+            'received_date' => '2026-07-05',
+            'amount' => 400,
+            'remark' => 'Cash received at office.',
+            'allocations' => [
+                ['fee_item_id' => $feeItem->id, 'amount' => 400],
+            ],
+        ], $admin);
 
         $invoice->refresh();
 
-        $this->assertEquals(400.00, (float) $invoice->paid_amount);
-        $this->assertEquals(520.00, (float) $invoice->outstanding_amount);
-        $this->assertSame('partial', $invoice->status);
-        $this->assertSame('MIS-2026-000001', $partialPayment->receipt->receipt_no);
-
-        $fullPayment = $service->recordForInvoice(
-            invoiceId: $invoice->id,
-            paymentDate: '2026-07-06',
-            amount: 520,
-            method: 'bank_transfer',
-            referenceNo: 'MBB123456',
-        );
-
-        $invoice->refresh();
-
-        $this->assertEquals(920.00, (float) $invoice->paid_amount);
-        $this->assertEquals(0.00, (float) $invoice->outstanding_amount);
-        $this->assertSame('paid', $invoice->status);
-        $this->assertSame('MIS-2026-000002', $fullPayment->receipt->receipt_no);
+        $this->assertSame('verified', $payment->status);
+        $this->assertEquals(0.00, (float) $invoice->paid_amount);
+        $this->assertEquals(920.00, (float) $invoice->outstanding_amount);
+        $this->assertSame('pending', $invoice->status);
+        $this->assertDatabaseCount('receipts', 0);
     }
 }

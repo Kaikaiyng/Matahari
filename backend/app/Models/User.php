@@ -34,6 +34,13 @@ class User extends Authenticatable
         return $this->belongsToMany(Role::class, 'user_roles')->withTimestamps();
     }
 
+    public function hasPermissionTo(string $permissionSlug): bool
+    {
+        return $this->roles()
+            ->whereHas('permissions', fn ($query) => $query->where('slug', $permissionSlug))
+            ->exists();
+    }
+
     /**
      * Get the attributes that should be cast.
      *
