@@ -60,11 +60,7 @@ class PaymentRecordingService
     {
         $this->assertSchoolScope($payment->student, $verifiedBy);
 
-        if ($payment->status !== 'pending_verification') {
-            throw ValidationException::withMessages(['payment' => 'Only pending payments can be verified.']);
-        }
-
-        $payment->update([
+        $updates = [
             'status' => 'verified',
             'received_date' => $data['received_date'],
             'bank_account' => $data['bank_account'] ?? $payment->bank_account,
@@ -72,7 +68,29 @@ class PaymentRecordingService
             'remark' => $data['remark'] ?? $payment->remark,
             'verified_by' => $verifiedBy->id,
             'verified_at' => now(),
-        ]);
+        ];
+
+        $query = Payment::query()
+            ->whereKey($payment->id)
+            ->where('status', 'pending_verification');
+
+        if ($verifiedBy->school_id) {
+            $query->where('school_id', $verifiedBy->school_id);
+        }
+
+        if ($query->update($updates) === 0) {
+            $payment->refresh();
+
+            if ($payment->status === 'voided') {
+                throw ValidationException::withMessages(['payment' => 'Voided payments cannot be verified.']);
+            }
+
+            if ($payment->status === 'verified') {
+                throw ValidationException::withMessages(['payment' => 'Payment is already verified.']);
+            }
+
+            throw ValidationException::withMessages(['payment' => 'Only pending payments can be verified.']);
+        }
 
         return $payment->refresh()->load(['allocations', 'recordedBy', 'verifiedBy', 'voidedBy']);
     }
@@ -81,16 +99,22 @@ class PaymentRecordingService
     {
         $this->assertSchoolScope($payment->student, $voidedBy);
 
-        if ($payment->status === 'voided') {
-            throw ValidationException::withMessages(['payment' => 'Payment is already voided.']);
+        $query = Payment::query()
+            ->whereKey($payment->id)
+            ->where('status', '!=', 'voided');
+
+        if ($voidedBy->school_id) {
+            $query->where('school_id', $voidedBy->school_id);
         }
 
-        $payment->update([
+        if ($query->update([
             'status' => 'voided',
             'voided_by' => $voidedBy->id,
             'voided_at' => now(),
             'void_reason' => $voidReason,
-        ]);
+        ]) === 0) {
+            throw ValidationException::withMessages(['payment' => 'Payment is already voided.']);
+        }
 
         return $payment->refresh()->load(['allocations', 'recordedBy', 'verifiedBy', 'voidedBy']);
     }
@@ -125,6 +149,7 @@ class PaymentRecordingService
         if (! empty($allocation['fee_agreement_item_id'])) {
             $agreementItem = FeeAgreementItem::query()
                 ->where('school_id', $student->school_id)
+                ->whereHas('feeAgreement', fn ($query) => $query->where('student_id', $student->id))
                 ->find($allocation['fee_agreement_item_id']);
 
             if (! $agreementItem) {

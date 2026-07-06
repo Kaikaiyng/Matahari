@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\FeeItem;
+use App\Models\FeeAgreement;
+use App\Models\FeeAgreementItem;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Permission;
@@ -193,6 +195,29 @@ class PaymentModuleApiTest extends TestCase
         $this->assertSame('Duplicate bank reference.', $payment->void_reason);
     }
 
+    public function test_cannot_void_same_payment_twice(): void
+    {
+        [$school, $student, $admin] = $this->schoolStudentAndUser(['payments.view', 'payments.create']);
+        $finance = $this->userWithPermissions($school, ['payments.view', 'payments.void']);
+        $payment = $this->pendingPayment($school, $student, $admin);
+
+        $this->actingAs($finance)
+            ->postJson("/api/payments/{$payment->id}/void", [
+                'void_reason' => 'Duplicate bank reference.',
+            ])
+            ->assertOk();
+
+        $this->actingAs($finance)
+            ->postJson("/api/payments/{$payment->id}/void", [
+                'void_reason' => 'Second void attempt.',
+            ])
+            ->assertUnprocessable();
+
+        $payment->refresh();
+
+        $this->assertSame('Duplicate bank reference.', $payment->void_reason);
+    }
+
     public function test_no_delete_endpoint_exists_for_payments(): void
     {
         [$school, $student, $admin] = $this->schoolStudentAndUser(['payments.view', 'payments.create']);
@@ -218,6 +243,53 @@ class PaymentModuleApiTest extends TestCase
                 'reference_no' => 'BAD-SUM',
                 'allocations' => [
                     ['fee_item_id' => $tuition->id, 'amount' => 900],
+                ],
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['allocations']);
+    }
+
+    public function test_can_create_payment_allocation_using_students_own_fee_agreement_item(): void
+    {
+        [$school, $student, $admin] = $this->schoolStudentAndUser(['payments.view', 'payments.create']);
+        [$agreementItem] = $this->feeAgreementItemForStudent($school, $student, 'TUITION', 'Tuition Fee');
+
+        $this->actingAs($admin)
+            ->postJson("/api/students/{$student->id}/payments", [
+                'payment_method' => 'cash',
+                'payment_date' => '2026-07-05',
+                'received_date' => '2026-07-05',
+                'amount' => 800,
+                'allocations' => [
+                    ['fee_agreement_item_id' => $agreementItem->id, 'amount' => 800],
+                ],
+            ])
+            ->assertCreated()
+            ->assertJsonPath('payment.allocations.0.fee_agreement_item_id', $agreementItem->id)
+            ->assertJsonPath('payment.allocations.0.fee_code', 'TUITION')
+            ->assertJsonPath('payment.allocations.0.description', 'Tuition Fee');
+    }
+
+    public function test_cannot_create_payment_allocation_using_another_students_fee_agreement_item(): void
+    {
+        [$school, $student, $admin] = $this->schoolStudentAndUser(['payments.view', 'payments.create']);
+        $otherStudent = Student::query()->create([
+            'school_id' => $school->id,
+            'student_no' => 'MIS-STD-0002',
+            'full_name' => 'Daniel Lim',
+            'level_group' => 'primary',
+            'status' => 'active',
+        ]);
+        [$otherAgreementItem] = $this->feeAgreementItemForStudent($school, $otherStudent, 'TUITION', 'Tuition Fee');
+
+        $this->actingAs($admin)
+            ->postJson("/api/students/{$student->id}/payments", [
+                'payment_method' => 'cash',
+                'payment_date' => '2026-07-05',
+                'received_date' => '2026-07-05',
+                'amount' => 800,
+                'allocations' => [
+                    ['fee_agreement_item_id' => $otherAgreementItem->id, 'amount' => 800],
                 ],
             ])
             ->assertUnprocessable()
@@ -401,6 +473,43 @@ class PaymentModuleApiTest extends TestCase
             'default_amount' => 0,
             'status' => 'active',
         ]);
+    }
+
+    /**
+     * @return array{0: FeeAgreementItem, 1: FeeItem}
+     */
+    private function feeAgreementItemForStudent(
+        School $school,
+        Student $student,
+        string $code,
+        string $description,
+    ): array {
+        $feeItem = $this->feeItem($school, $code.'-'.$student->student_no, $description.' '.$student->student_no);
+        $agreement = FeeAgreement::query()->create([
+            'school_id' => $school->id,
+            'student_id' => $student->id,
+            'academic_year' => '2026',
+            'version_no' => 1,
+            'payment_plan' => 'monthly',
+            'effective_from' => '2026-01-01',
+            'is_current' => true,
+            'status' => 'active',
+            'created_by' => null,
+        ]);
+
+        $agreementItem = FeeAgreementItem::query()->create([
+            'school_id' => $school->id,
+            'fee_agreement_id' => $agreement->id,
+            'fee_item_id' => $feeItem->id,
+            'fee_code' => $code,
+            'fee_category' => 'mandatory',
+            'description' => $description,
+            'amount' => 800,
+            'is_mandatory' => true,
+            'sort_order' => 0,
+        ]);
+
+        return [$agreementItem, $feeItem];
     }
 
     private function pendingPayment(School $school, Student $student, User $admin, string $referenceNo = 'BANK-REF-001'): Payment
