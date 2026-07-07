@@ -30,6 +30,7 @@ class PaymentRecordingService
                 'payment_date' => $data['payment_date'],
                 'received_date' => $data['received_date'] ?? null,
                 'amount' => $data['amount'],
+                'paid_by' => $data['paid_by'] ?? null,
                 'bank_account' => $data['bank_account'] ?? null,
                 'reference_no' => $data['reference_no'] ?? null,
                 'payment_proof' => $data['payment_proof'] ?? null,
@@ -49,7 +50,7 @@ class PaymentRecordingService
                 ]);
             }
 
-            return $payment->refresh()->load(['allocations', 'recordedBy', 'verifiedBy', 'voidedBy']);
+            return $payment->refresh()->load(['allocations', 'recordedBy', 'verifiedBy', 'voidedBy', 'issuedReceipt']);
         });
     }
 
@@ -92,7 +93,7 @@ class PaymentRecordingService
             throw ValidationException::withMessages(['payment' => 'Only pending payments can be verified.']);
         }
 
-        return $payment->refresh()->load(['allocations', 'recordedBy', 'verifiedBy', 'voidedBy']);
+        return $payment->refresh()->load(['allocations', 'recordedBy', 'verifiedBy', 'voidedBy', 'issuedReceipt']);
     }
 
     public function void(Payment $payment, string $voidReason, User $voidedBy): Payment
@@ -116,7 +117,7 @@ class PaymentRecordingService
             throw ValidationException::withMessages(['payment' => 'Payment is already voided.']);
         }
 
-        return $payment->refresh()->load(['allocations', 'recordedBy', 'verifiedBy', 'voidedBy']);
+        return $payment->refresh()->load(['allocations', 'recordedBy', 'verifiedBy', 'voidedBy', 'issuedReceipt']);
     }
 
     private function assertSchoolScope(Student $student, User $user): void

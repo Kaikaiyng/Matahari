@@ -9,8 +9,8 @@ class ReceiptSequence extends Model
 {
     protected $fillable = [
         'school_id',
-        'year',
         'prefix',
+        'series',
         'current_number',
     ];
 

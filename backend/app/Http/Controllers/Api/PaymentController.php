@@ -19,7 +19,7 @@ class PaymentController extends Controller
         $this->assertSchoolScope($request, $student);
 
         $payments = $student->payments()
-            ->with(['allocations', 'recordedBy', 'verifiedBy', 'voidedBy'])
+            ->with(['allocations', 'recordedBy', 'verifiedBy', 'voidedBy', 'issuedReceipt'])
             ->latest('payment_date')
             ->latest('id')
             ->get()
@@ -72,7 +72,7 @@ class PaymentController extends Controller
      */
     private function paymentResponse(Payment $payment): array
     {
-        $payment->loadMissing(['allocations', 'recordedBy', 'verifiedBy', 'voidedBy']);
+        $payment->loadMissing(['allocations', 'recordedBy', 'verifiedBy', 'voidedBy', 'issuedReceipt']);
 
         return [
             'id' => $payment->id,
@@ -82,6 +82,7 @@ class PaymentController extends Controller
             'payment_date' => $payment->payment_date->toDateString(),
             'received_date' => $payment->received_date?->toDateString(),
             'amount' => (float) $payment->amount,
+            'paid_by' => $payment->paid_by,
             'bank_account' => $payment->bank_account,
             'reference_no' => $payment->reference_no,
             'payment_proof' => $payment->payment_proof,
@@ -93,6 +94,12 @@ class PaymentController extends Controller
             'voided_by' => $this->userResponse($payment->voidedBy),
             'voided_at' => $payment->voided_at?->toISOString(),
             'void_reason' => $payment->void_reason,
+            'issued_receipt' => $payment->issuedReceipt ? [
+                'id' => $payment->issuedReceipt->id,
+                'receipt_no' => $payment->issuedReceipt->receipt_no,
+                'receipt_date' => $payment->issuedReceipt->receipt_date->toDateString(),
+                'status' => $payment->issuedReceipt->status,
+            ] : null,
             'allocations' => $payment->allocations->map(fn ($allocation) => [
                 'id' => $allocation->id,
                 'fee_item_id' => $allocation->fee_item_id,

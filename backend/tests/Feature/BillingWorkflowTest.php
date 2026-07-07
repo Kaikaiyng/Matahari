@@ -10,8 +10,9 @@ use App\Models\Student;
 use App\Models\User;
 use App\Services\Billing\InvoiceGenerationService;
 use App\Services\Billing\PaymentRecordingService;
-use App\Services\Billing\ReceiptNumberService;
+use App\Services\Billing\ReceiptGenerationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 class BillingWorkflowTest extends TestCase
@@ -66,7 +67,7 @@ class BillingWorkflowTest extends TestCase
         $this->assertSame(3, Invoice::query()->count());
     }
 
-    public function test_receipt_numbers_are_sequential_and_idempotent_per_payment(): void
+    public function test_receipt_numbers_are_sequential_and_require_void_before_regeneration(): void
     {
         $this->seed();
 
@@ -83,6 +84,7 @@ class BillingWorkflowTest extends TestCase
             'payment_date' => '2026-07-05',
             'received_date' => '2026-07-05',
             'amount' => 400,
+            'paid_by' => 'Daniel Lim Parent',
             'payment_method' => 'cash',
             'status' => 'verified',
             'recorded_by' => $admin->id,
@@ -98,28 +100,40 @@ class BillingWorkflowTest extends TestCase
             'amount' => 400,
         ]);
 
-        $receiptService = app(ReceiptNumberService::class);
-        $firstReceipt = $receiptService->generateForPayment($firstPayment);
-        $sameReceipt = $receiptService->generateForPayment($firstPayment);
+        $receiptService = app(ReceiptGenerationService::class);
+        $firstReceipt = $receiptService->generate($firstPayment, ['receipt_date' => '2026-07-05'], $admin);
 
-        $this->assertSame($firstReceipt->id, $sameReceipt->id);
-        $this->assertSame('MIS-2026-000001', $firstReceipt->receipt_no);
+        $this->assertSame('MIS.A0001 (07/2026)', $firstReceipt->receipt_no);
 
-        $secondPayment = Payment::query()->create([
+        $this->expectException(ValidationException::class);
+        $receiptService->generate($firstPayment, ['receipt_date' => '2026-07-05'], $admin);
+    }
+
+    public function test_receipt_number_continues_after_voided_receipt(): void
+    {
+        $this->seed();
+
+        $school = School::query()->where('code', 'MIS')->firstOrFail();
+        $student = Student::query()->where('student_no', 'MIS-2026-002')->firstOrFail();
+        $feeItem = FeeItem::query()->where('school_id', $school->id)->where('code', 'TUITION')->firstOrFail();
+        $admin = User::query()->where('email', 'admin@mis.test')->firstOrFail();
+
+        $firstPayment = Payment::query()->create([
             'school_id' => $school->id,
             'student_id' => $student->id,
-            'payment_date' => '2026-07-06',
-            'received_date' => '2026-07-06',
+            'payment_date' => '2026-07-05',
+            'received_date' => '2026-07-05',
             'amount' => 520,
+            'paid_by' => 'Daniel Lim Parent',
             'payment_method' => 'bank_transfer',
-            'reference_no' => 'MBB123456',
+            'reference_no' => 'MBB123455',
             'status' => 'verified',
             'recorded_by' => $admin->id,
             'verified_by' => $admin->id,
             'verified_at' => now(),
         ]);
 
-        $secondPayment->allocations()->create([
+        $firstPayment->allocations()->create([
             'school_id' => $school->id,
             'fee_item_id' => $feeItem->id,
             'fee_code' => $feeItem->code,
@@ -127,9 +141,13 @@ class BillingWorkflowTest extends TestCase
             'amount' => 520,
         ]);
 
-        $secondReceipt = $receiptService->generateForPayment($secondPayment);
+        $receiptService = app(ReceiptGenerationService::class);
+        $firstReceipt = $receiptService->generate($firstPayment, ['receipt_date' => '2026-07-05'], $admin);
+        $receiptService->void($firstReceipt, 'Wrong receipt.', $admin);
+        $secondReceipt = $receiptService->generate($firstPayment, ['receipt_date' => '2026-08-06'], $admin);
 
-        $this->assertSame('MIS-2026-000002', $secondReceipt->receipt_no);
+        $this->assertSame('MIS.A0001 (07/2026)', $firstReceipt->receipt_no);
+        $this->assertSame('MIS.A0002 (08/2026)', $secondReceipt->receipt_no);
     }
 
     public function test_payment_recording_is_student_first_and_does_not_touch_invoice_or_receipt(): void

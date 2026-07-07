@@ -34,6 +34,7 @@ class StorePaymentRequest extends FormRequest
             'payment_date' => ['required', 'date'],
             'received_date' => ['required_if:payment_method,cash', 'nullable', 'date'],
             'amount' => ['required', 'numeric', 'min:0.01'],
+            'paid_by' => ['nullable', 'string', 'max:255'],
             'bank_account' => ['nullable', 'string', 'max:255'],
             'reference_no' => ['nullable', 'string', 'max:100'],
             'payment_proof' => ['nullable', 'string'],

@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\FeeAgreementController;
 use App\Http\Controllers\Api\FeeItemController;
 use App\Http\Controllers\Api\InvoiceGenerationController;
 use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\ReceiptController;
 use App\Http\Controllers\Api\StudentController;
 use App\Http\Controllers\Api\StudentFeeAgreementController;
 use App\Http\Controllers\Api\StudentStatusController;
@@ -65,4 +66,15 @@ Route::middleware([...$sessionMiddleware, 'auth'])->group(function (): void {
         ->middleware('permission:payments.verify');
     Route::post('/payments/{payment}/void', [PaymentController::class, 'void'])
         ->middleware('permission:payments.void');
+
+    Route::get('/students/{student}/receipts', [ReceiptController::class, 'index'])
+        ->middleware('permission:receipts.view');
+    Route::post('/payments/{payment}/receipts', [ReceiptController::class, 'store'])
+        ->middleware('permission:receipts.create');
+    Route::get('/receipts/{receipt}', [ReceiptController::class, 'show'])
+        ->middleware('permission:receipts.view');
+    Route::get('/receipts/{receipt}/print', [ReceiptController::class, 'print'])
+        ->middleware('permission:receipts.print');
+    Route::post('/receipts/{receipt}/void', [ReceiptController::class, 'void'])
+        ->middleware('permission:receipts.void');
 });

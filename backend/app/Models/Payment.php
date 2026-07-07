@@ -16,6 +16,7 @@ class Payment extends Model
         'payment_date',
         'received_date',
         'amount',
+        'paid_by',
         'bank_account',
         'reference_no',
         'payment_proof',
@@ -71,6 +72,16 @@ class Payment extends Model
 
     public function receipt(): HasOne
     {
-        return $this->hasOne(Receipt::class);
+        return $this->hasOne(Receipt::class)->where('status', 'issued');
+    }
+
+    public function issuedReceipt(): HasOne
+    {
+        return $this->hasOne(Receipt::class)->where('status', 'issued');
+    }
+
+    public function receipts(): HasMany
+    {
+        return $this->hasMany(Receipt::class);
     }
 }

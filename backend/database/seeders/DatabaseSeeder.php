@@ -89,7 +89,10 @@ class DatabaseSeeder extends Seeder
             'payments.create' => 'Create payments',
             'payments.verify' => 'Verify payments',
             'payments.void' => 'Void payments',
+            'receipts.view' => 'View receipts',
+            'receipts.create' => 'Create receipts',
             'receipts.void' => 'Void receipts',
+            'receipts.print' => 'Print receipts',
         ])->mapWithKeys(fn (string $name, string $slug) => [
             $slug => Permission::query()->updateOrCreate(['slug' => $slug], ['name' => $name]),
         ]);
@@ -109,6 +112,9 @@ class DatabaseSeeder extends Seeder
             'fee_agreements.update',
             'payments.view',
             'payments.create',
+            'receipts.view',
+            'receipts.create',
+            'receipts.print',
         ])->pluck('id')->all());
         $roles['finance']->permissions()->sync($permissions->only([
             'students.view',
@@ -118,6 +124,10 @@ class DatabaseSeeder extends Seeder
             'payments.view',
             'payments.verify',
             'payments.void',
+            'receipts.view',
+            'receipts.create',
+            'receipts.void',
+            'receipts.print',
         ])->pluck('id')->all());
 
         $superAdmin->roles()->syncWithoutDetaching([$roles['super-admin']->id]);
