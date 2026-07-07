@@ -152,6 +152,10 @@ class FeeAgreementVersioningService
                 'amount' => $itemData['amount'],
                 'is_mandatory' => in_array($feeItem->code, ['TUITION', 'MISC'], true) || $feeItem->category === 'mandatory',
                 'sort_order' => $index + 1,
+                'classification' => $itemData['classification'] ?? null,
+                'billing_frequency' => $itemData['billing_frequency'] ?? null,
+                'billing_months' => $itemData['billing_months'] ?? null,
+                'requires_preview_confirmation' => $itemData['requires_preview_confirmation'] ?? false,
             ]);
 
             $agreementItemsByCode->put($feeItem->code, $agreementItem);

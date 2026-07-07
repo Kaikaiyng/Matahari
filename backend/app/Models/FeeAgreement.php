@@ -48,6 +48,11 @@ class FeeAgreement extends Model
         return $this->hasMany(FeeAgreementItem::class);
     }
 
+    public function feeRecordCharges(): HasMany
+    {
+        return $this->hasMany(FeeRecordCharge::class);
+    }
+
     public function discounts(): HasMany
     {
         return $this->hasMany(FeeAgreementDiscount::class);

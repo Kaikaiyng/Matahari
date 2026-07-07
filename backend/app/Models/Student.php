@@ -57,6 +57,11 @@ class Student extends Model
         return $this->hasMany(FeeAgreement::class);
     }
 
+    public function feeRecordCharges(): HasMany
+    {
+        return $this->hasMany(FeeRecordCharge::class);
+    }
+
     public function currentFeeAgreements(): HasMany
     {
         return $this->hasMany(FeeAgreement::class)->where('is_current', true);

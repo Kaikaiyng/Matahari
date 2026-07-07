@@ -69,6 +69,10 @@ class FeeAgreementController extends Controller
                 'description' => $item->description,
                 'amount' => (float) $item->amount,
                 'is_mandatory' => $item->is_mandatory,
+                'classification' => $item->classification,
+                'billing_frequency' => $item->billing_frequency,
+                'billing_months' => $item->billing_months,
+                'requires_preview_confirmation' => $item->requires_preview_confirmation,
             ])->values(),
             'discounts' => $agreement->discounts->map(fn ($discount) => [
                 'id' => $discount->id,

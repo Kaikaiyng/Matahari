@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FeeAgreementController;
 use App\Http\Controllers\Api\FeeItemController;
+use App\Http\Controllers\Api\FeeRecordController;
 use App\Http\Controllers\Api\InvoiceGenerationController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\ReceiptController;
@@ -57,6 +58,13 @@ Route::middleware([...$sessionMiddleware, 'auth'])->group(function (): void {
 
     Route::get('/fee-items', [FeeItemController::class, 'index'])
         ->middleware('permission:fee_items.view');
+
+    Route::get('/students/{student}/fee-record/preview', [FeeRecordController::class, 'preview'])
+        ->middleware('permission:fee_record.view');
+    Route::post('/students/{student}/fee-record/activate', [FeeRecordController::class, 'activate'])
+        ->middleware('permission:fee_record.generate');
+    Route::get('/students/{student}/fee-record/outstanding', [FeeRecordController::class, 'outstanding'])
+        ->middleware('permission:fee_record.view');
 
     Route::get('/students/{student}/payments', [PaymentController::class, 'index'])
         ->middleware('permission:payments.view');
