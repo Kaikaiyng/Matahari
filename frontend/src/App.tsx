@@ -6,6 +6,7 @@ import {
   BarChart3,
   Bell,
   Building2,
+  ClipboardList,
   CreditCard,
   Eye,
   FileText,
@@ -33,6 +34,7 @@ type PageKey =
   | 'students'
   | 'parents'
   | 'fees'
+  | 'fee-record'
   | 'invoices'
   | 'payments'
   | 'receipts'
@@ -257,6 +259,56 @@ type OutstandingChargeCell = {
   source_type: string | null
 }
 
+type FeeRecordSummaryRow = {
+  student_id: number
+  student_no: string
+  student_name: string
+  level_group: string
+  class_name: string | null
+  student_status: StudentStatus
+  academic_year: string
+  total_expected: number
+  total_paid: number
+  total_outstanding: number
+  outstanding_months: string[]
+  outstanding_categories: string[]
+  latest_receipt_no: string | null
+  latest_receipt_date: string | null
+  collection_status_summary: 'paid' | 'partial' | 'unpaid' | 'no_charges'
+}
+
+type FeeRecordCategory = 'SF+MF' | 'TR' | 'MP' | 'HS' | 'HT' | 'PAYMENT' | 'OTHERS'
+
+type FeeRecordModuleView = 'summary' | 'category-monthly'
+
+type FeeRecordMonthCell = {
+  month: string
+  month_number: number
+  expected_amount: number
+  paid_amount: number
+  outstanding_amount: number
+  collection_status: 'paid' | 'partial' | 'unpaid' | 'no_charge'
+  receipt_refs: string[]
+  charge_count: number
+  raw_categories: string[]
+  fee_codes: string[]
+}
+
+type FeeRecordCategoryMonthlyRow = {
+  student_id: number
+  student_no: string
+  student_name: string
+  level_group: string
+  class_name: string | null
+  student_status: StudentStatus
+  academic_year: string
+  category: FeeRecordCategory
+  months: FeeRecordMonthCell[]
+  total_expected: number
+  total_paid: number
+  total_outstanding: number
+}
+
 type ReceiptStatus = 'issued' | 'voided'
 
 type ReceiptSummary = {
@@ -350,6 +402,7 @@ const navItems = [
   { key: 'students', label: 'Students', icon: GraduationCap },
   { key: 'parents', label: 'Parents', icon: Users },
   { key: 'fees', label: 'Fees', icon: CreditCard },
+  { key: 'fee-record', label: 'Fee Record', icon: ClipboardList },
   { key: 'invoices', label: 'Invoices', icon: FileText },
   { key: 'payments', label: 'Payments', icon: Banknote },
   { key: 'receipts', label: 'Receipts', icon: Receipt },
@@ -409,6 +462,18 @@ const levelGroupOptions: Array<{ value: LevelGroup; label: string }> = [
   { value: 'secondary', label: 'Secondary' },
   { value: 'stp', label: 'STP' },
 ]
+
+const feeRecordCategories: Array<{ value: FeeRecordCategory; label: string }> = [
+  { value: 'SF+MF', label: 'SF+MF' },
+  { value: 'TR', label: 'TR' },
+  { value: 'MP', label: 'MP' },
+  { value: 'HS', label: 'HS' },
+  { value: 'HT', label: 'HT' },
+  { value: 'PAYMENT', label: 'Payment' },
+  { value: 'OTHERS', label: 'Others' },
+]
+
+const monthShortLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 const paymentPlanOptions: Array<{ value: PaymentPlan; label: string }> = [
   { value: 'monthly', label: 'Monthly' },
@@ -816,12 +881,15 @@ function LoginScreen({
 function StudentsPage({
   user,
   onUnauthorized,
+  initialStudentId,
 }: {
   user: CurrentUser
   onUnauthorized: () => void
+  initialStudentId?: number | null
 }) {
   const [students, setStudents] = useState<StudentSummary[]>([])
   const [selectedStudent, setSelectedStudent] = useState<StudentDetail | null>(null)
+  const [pendingInitialStudentId, setPendingInitialStudentId] = useState<number | null>(initialStudentId ?? null)
   const [statusFilter, setStatusFilter] = useState<StudentFilter>('active')
   const [isLoading, setIsLoading] = useState(true)
   const [isCreating, setIsCreating] = useState(false)
@@ -932,6 +1000,12 @@ function StudentsPage({
     try {
       const response = await apiRequest<{ data: StudentSummary[] }>(`/students?status=${filter}`)
       setStudents(response.data)
+
+      if (pendingInitialStudentId) {
+        const studentId = pendingInitialStudentId
+        setPendingInitialStudentId(null)
+        await loadStudentDetail(studentId)
+      }
     } catch (loadError) {
       handleApiError(loadError)
     } finally {
@@ -3042,6 +3116,351 @@ function PrototypePage({ title, label }: { title: string; label: string }) {
   )
 }
 
+function FeeRecordSummaryPage({
+  user,
+  onUnauthorized,
+  onOpenStudent,
+}: {
+  user: CurrentUser
+  onUnauthorized: () => void
+  onOpenStudent: (studentId: number) => void
+}) {
+  const [activeView, setActiveView] = useState<FeeRecordModuleView>('summary')
+  const [academicYear, setAcademicYear] = useState(String(new Date().getFullYear()))
+  const [levelGroup, setLevelGroup] = useState('')
+  const [studentStatus, setStudentStatus] = useState<StudentStatus>('active')
+  const [outstandingOnly, setOutstandingOnly] = useState(false)
+  const [search, setSearch] = useState('')
+  const [category, setCategory] = useState<FeeRecordCategory>('SF+MF')
+  const [summaryRows, setSummaryRows] = useState<FeeRecordSummaryRow[]>([])
+  const [monthlyRows, setMonthlyRows] = useState<FeeRecordCategoryMonthlyRow[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
+  const canViewFeeRecord = hasPermission(user, 'fee_record.view')
+
+  useEffect(() => {
+    if (!canViewFeeRecord) {
+      setSummaryRows([])
+      setMonthlyRows([])
+      return
+    }
+
+    const loadFeeRecord = async () => {
+      setIsLoading(true)
+      setError('')
+
+      const params = new URLSearchParams({
+        academic_year: academicYear,
+        student_status: studentStatus,
+      })
+
+      if (levelGroup) {
+        params.set('level_group', levelGroup)
+      }
+
+      if (outstandingOnly) {
+        params.set('outstanding_only', 'true')
+      }
+
+      if (search.trim()) {
+        params.set('search', search.trim())
+      }
+
+      try {
+        if (activeView === 'summary') {
+          const response = await apiRequest<{ data: FeeRecordSummaryRow[] }>(`/fee-record/summary?${params.toString()}`)
+          setSummaryRows(response.data)
+        } else {
+          params.set('category', category)
+          const response = await apiRequest<{ data: FeeRecordCategoryMonthlyRow[] }>(
+            `/fee-record/category-monthly?${params.toString()}`,
+          )
+          setMonthlyRows(response.data)
+        }
+      } catch (feeRecordError) {
+        if (feeRecordError instanceof ApiError && feeRecordError.status === 401) {
+          onUnauthorized()
+          return
+        }
+
+        setError(mapError(feeRecordError))
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    void loadFeeRecord()
+  }, [academicYear, activeView, canViewFeeRecord, category, levelGroup, onUnauthorized, outstandingOnly, search, studentStatus])
+
+  const totals = useMemo(
+    () => {
+      const rows = activeView === 'summary' ? summaryRows : monthlyRows
+
+      return rows.reduce(
+        (summary, row) => ({
+          expected: summary.expected + row.total_expected,
+          paid: summary.paid + row.total_paid,
+          outstanding: summary.outstanding + row.total_outstanding,
+        }),
+        { expected: 0, paid: 0, outstanding: 0 },
+      )
+    },
+    [activeView, monthlyRows, summaryRows],
+  )
+
+  return (
+    <section className="page-stack fee-record-page">
+      <PageHeader eyebrow="Fee Record" title="Admin Fee Record" />
+
+      {!canViewFeeRecord && <Message tone="info">You do not have permission to view Fee Record.</Message>}
+      {error && <Message tone="error">{error}</Message>}
+
+      {canViewFeeRecord && (
+        <>
+          <div className="fee-record-view-switch" role="group" aria-label="Fee Record views">
+            <button className={activeView === 'summary' ? 'active' : ''} onClick={() => setActiveView('summary')}>
+              Summary
+            </button>
+            <button className={activeView === 'category-monthly' ? 'active' : ''} onClick={() => setActiveView('category-monthly')}>
+              Category Monthly
+            </button>
+          </div>
+
+          <section className="summary-grid three">
+            <article>
+              <span>Total Expected</span>
+              <strong>{formatCurrency(totals.expected)}</strong>
+            </article>
+            <article>
+              <span>Total Paid</span>
+              <strong>{formatCurrency(totals.paid)}</strong>
+            </article>
+            <article className={totals.outstanding > 0 ? 'warning' : ''}>
+              <span>Total Outstanding</span>
+              <strong>{formatCurrency(totals.outstanding)}</strong>
+            </article>
+          </section>
+
+          <section className={`panel fee-record-filters ${activeView === 'category-monthly' ? 'has-category' : ''}`}>
+            <label className="form-field">
+              Academic Year
+              <input value={academicYear} onChange={(event) => setAcademicYear(event.target.value)} />
+            </label>
+            {activeView === 'category-monthly' && (
+              <label className="form-field">
+                Category
+                <select value={category} onChange={(event) => setCategory(event.target.value as FeeRecordCategory)}>
+                  {feeRecordCategories.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            <label className="form-field">
+              Level Group
+              <select value={levelGroup} onChange={(event) => setLevelGroup(event.target.value)}>
+                <option value="">All level groups</option>
+                {levelGroupOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="form-field">
+              Student Status
+              <select value={studentStatus} onChange={(event) => setStudentStatus(event.target.value as StudentStatus)}>
+                {statusOptions
+                  .filter((option) => option.value !== 'all')
+                  .map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+              </select>
+            </label>
+            <label className="form-field wide">
+              Search
+              <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Student name or ID" />
+            </label>
+            <label className="toggle-field">
+              <input type="checkbox" checked={outstandingOnly} onChange={(event) => setOutstandingOnly(event.target.checked)} />
+              Outstanding only
+            </label>
+          </section>
+
+          {activeView === 'summary' ? (
+            <section className="panel fee-record-ledger">
+              <div className="panel-header">
+                <div>
+                  <p className="eyebrow">Working ledger</p>
+                  <h2>Read-only charge-cell summary</h2>
+                </div>
+                {isLoading && <span className="permission-note">Loading...</span>}
+              </div>
+              <p className="ledger-note">
+                Balances come from Fee Record charge cells. Corrections happen through Fee Agreement, Payment, or Receipt flows.
+              </p>
+
+              <div className="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Student Name</th>
+                      <th>Student ID</th>
+                      <th>Class</th>
+                      <th>Level Group</th>
+                      <th>Total Expected</th>
+                      <th>Total Paid</th>
+                      <th>Total Outstanding</th>
+                      <th>Outstanding Months</th>
+                      <th>Outstanding Categories</th>
+                      <th>Latest Receipt</th>
+                      <th>Collection Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {summaryRows.map((row) => (
+                      <tr
+                        className={`fee-record-row ${row.total_outstanding > 0 ? 'has-outstanding' : ''}`}
+                        key={row.student_id}
+                        onClick={() => onOpenStudent(row.student_id)}
+                      >
+                        <td>
+                          <button
+                            className="link-button"
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              onOpenStudent(row.student_id)
+                            }}
+                          >
+                            {row.student_name}
+                          </button>
+                        </td>
+                        <td>{row.student_no}</td>
+                        <td>{row.class_name ?? 'TBD'}</td>
+                        <td>{formatLevelGroup(row.level_group)}</td>
+                        <td>{formatCurrency(row.total_expected)}</td>
+                        <td>{formatCurrency(row.total_paid)}</td>
+                        <td>{formatCurrency(row.total_outstanding)}</td>
+                        <td>{row.outstanding_months.length > 0 ? row.outstanding_months.map(formatBillingMonth).join(', ') : 'None'}</td>
+                        <td>{row.outstanding_categories.length > 0 ? row.outstanding_categories.join(', ') : 'None'}</td>
+                        <td>{row.latest_receipt_no ? `${row.latest_receipt_no} / ${row.latest_receipt_date}` : 'No receipt'}</td>
+                        <td>
+                          <span className={`badge ${statusClass(row.collection_status_summary)}`}>
+                            {formatStatus(row.collection_status_summary)}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                    {!isLoading && summaryRows.length === 0 && (
+                      <tr>
+                        <td colSpan={11}>No Fee Record charge-cell summaries found for these filters.</td>
+                      </tr>
+                    )}
+                    {isLoading && (
+                      <tr>
+                        <td colSpan={11}>Loading Fee Record summary...</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          ) : (
+            <section className="panel fee-record-ledger monthly-ledger">
+              <div className="panel-header">
+                <div>
+                  <p className="eyebrow">Category monthly</p>
+                  <h2>Read-only {category} month cells</h2>
+                </div>
+                {isLoading && <span className="permission-note">Loading...</span>}
+              </div>
+              <p className="ledger-note">
+                Month cells aggregate charge cells by student, mapped category and billing month. The category mapper is temporary until real fee
+                item codes are confirmed.
+              </p>
+
+              <div className="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Student Name</th>
+                      <th>Student ID</th>
+                      <th>Class</th>
+                      {monthShortLabels.map((monthLabel) => (
+                        <th key={monthLabel}>{monthLabel}</th>
+                      ))}
+                      <th>Total Outstanding</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {monthlyRows.map((row) => (
+                      <tr
+                        className={`fee-record-row ${row.total_outstanding > 0 ? 'has-outstanding' : ''}`}
+                        key={row.student_id}
+                        onClick={() => onOpenStudent(row.student_id)}
+                      >
+                        <td>
+                          <button
+                            className="link-button"
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              onOpenStudent(row.student_id)
+                            }}
+                          >
+                            {row.student_name}
+                          </button>
+                        </td>
+                        <td>{row.student_no}</td>
+                        <td>{row.class_name ?? 'TBD'}</td>
+                        {row.months.map((cell) => (
+                          <td key={cell.month}>
+                            <FeeRecordMonthCellView cell={cell} />
+                          </td>
+                        ))}
+                        <td>{formatCurrency(row.total_outstanding)}</td>
+                      </tr>
+                    ))}
+                    {!isLoading && monthlyRows.length === 0 && (
+                      <tr>
+                        <td colSpan={16}>No {category} monthly Fee Record charge cells found for these filters.</td>
+                      </tr>
+                    )}
+                    {isLoading && (
+                      <tr>
+                        <td colSpan={16}>Loading Category Monthly view...</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          )}
+        </>
+      )}
+    </section>
+  )
+}
+
+function FeeRecordMonthCellView({ cell }: { cell: FeeRecordMonthCell }) {
+  return (
+    <div className={`month-cell ${cell.collection_status}`}>
+      <span className="month-cell-status">{cell.collection_status === 'no_charge' ? 'No charge' : formatStatus(cell.collection_status)}</span>
+      {cell.charge_count > 0 && (
+        <>
+          <span>E {formatCurrency(cell.expected_amount)}</span>
+          <span>P {formatCurrency(cell.paid_amount)}</span>
+          <strong>O {formatCurrency(cell.outstanding_amount)}</strong>
+          {cell.receipt_refs.length > 0 && <small>{cell.receipt_refs.join(', ')}</small>}
+        </>
+      )}
+    </div>
+  )
+}
+
 function ReportsPage() {
   return (
     <section className="page-stack">
@@ -3174,6 +3593,7 @@ function App() {
   const [authState, setAuthState] = useState<'checking' | 'guest' | 'authenticated'>('checking')
   const [user, setUser] = useState<CurrentUser | null>(null)
   const [activePage, setActivePage] = useState<PageKey>('dashboard')
+  const [focusedStudentId, setFocusedStudentId] = useState<number | null>(null)
 
   const loadDashboard = async () => {
     try {
@@ -3228,6 +3648,11 @@ function App() {
     setAuthState('guest')
   }
 
+  const openStudentDetail = (studentId: number) => {
+    setFocusedStudentId(studentId)
+    setActivePage('students')
+  }
+
   const pageTitle = navItems.find((item) => item.key === activePage)?.label ?? 'Dashboard'
 
   if (authState === 'checking') {
@@ -3248,7 +3673,7 @@ function App() {
 
   const renderPage = () => {
     if (activePage === 'students') {
-      return <StudentsPage user={user} onUnauthorized={handleUnauthorized} />
+      return <StudentsPage key={focusedStudentId ?? 'students'} user={user} onUnauthorized={handleUnauthorized} initialStudentId={focusedStudentId} />
     }
 
     if (activePage === 'parents') {
@@ -3257,6 +3682,10 @@ function App() {
 
     if (activePage === 'fees') {
       return <FeesPage />
+    }
+
+    if (activePage === 'fee-record') {
+      return <FeeRecordSummaryPage user={user} onUnauthorized={handleUnauthorized} onOpenStudent={openStudentDetail} />
     }
 
     if (activePage === 'invoices') {

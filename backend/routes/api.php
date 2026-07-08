@@ -59,6 +59,11 @@ Route::middleware([...$sessionMiddleware, 'auth'])->group(function (): void {
     Route::get('/fee-items', [FeeItemController::class, 'index'])
         ->middleware('permission:fee_items.view');
 
+    Route::get('/fee-record/summary', [FeeRecordController::class, 'summary'])
+        ->middleware('permission:fee_record.view');
+    Route::get('/fee-record/category-monthly', [FeeRecordController::class, 'categoryMonthly'])
+        ->middleware('permission:fee_record.view');
+
     Route::get('/students/{student}/fee-record/preview', [FeeRecordController::class, 'preview'])
         ->middleware('permission:fee_record.view');
     Route::post('/students/{student}/fee-record/activate', [FeeRecordController::class, 'activate'])

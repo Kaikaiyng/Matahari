@@ -12,6 +12,8 @@ use Illuminate\Validation\ValidationException;
 
 class FeeRecordChargeGenerationService
 {
+    public function __construct(private readonly FeeRecordCategoryMapper $categoryMapper) {}
+
     /**
      * @return array<string, mixed>
      */
@@ -238,7 +240,7 @@ class FeeRecordChargeGenerationService
             'fee_item_id' => $item->fee_item_id,
             'academic_year' => $academicYear,
             'billing_month' => sprintf('%s-%02d', $academicYear, $month),
-            'fee_record_category' => $item->fee_category,
+            'fee_record_category' => $this->categoryMapper->category($item->fee_code, $item->fee_category),
             'fee_code' => $item->fee_code,
             'description' => $item->description,
             'expected_amount' => (float) $item->amount,
