@@ -39,7 +39,10 @@ class StorePaymentRequest extends FormRequest
             'reference_no' => ['nullable', 'string', 'max:100'],
             'payment_proof' => ['nullable', 'string'],
             'remark' => ['nullable', 'string'],
+            'academic_year' => ['nullable', 'string', 'regex:/^\d{4}$/'],
             'allocations' => ['required', 'array', 'min:1'],
+            'allocations.*.allocation_type' => ['nullable', 'string', Rule::in(['charge', 'manual', 'legacy'])],
+            'allocations.*.fee_record_charge_id' => ['nullable', 'integer', 'exists:fee_record_charges,id'],
             'allocations.*.fee_item_id' => ['nullable', 'integer', 'exists:fee_items,id'],
             'allocations.*.fee_agreement_item_id' => ['nullable', 'integer', 'exists:fee_agreement_items,id'],
             'allocations.*.description' => ['nullable', 'string', 'max:255'],
@@ -66,11 +69,27 @@ class StorePaymentRequest extends FormRequest
             }
 
             foreach ($this->input('allocations', []) as $index => $allocation) {
+                $allocationType = $allocation['allocation_type'] ?? null;
+                $hasCharge = filled($allocation['fee_record_charge_id'] ?? null);
                 $hasFeeItem = filled($allocation['fee_item_id'] ?? null);
                 $hasFeeAgreementItem = filled($allocation['fee_agreement_item_id'] ?? null);
                 $hasDescription = filled($allocation['description'] ?? null);
 
-                if (! $hasFeeItem && ! $hasFeeAgreementItem && ! $hasDescription) {
+                if ($allocationType === 'charge' && ! $hasCharge) {
+                    $validator->errors()->add(
+                        "allocations.{$index}.fee_record_charge_id",
+                        'Charge allocations require a Fee Record charge cell.',
+                    );
+                }
+
+                if ($hasCharge && $allocationType && $allocationType !== 'charge') {
+                    $validator->errors()->add(
+                        "allocations.{$index}.allocation_type",
+                        'Only charge allocations may reference a Fee Record charge cell.',
+                    );
+                }
+
+                if (($allocationType === 'manual' || (! $hasCharge && ! $hasFeeItem && ! $hasFeeAgreementItem)) && ! $hasDescription) {
                     $validator->errors()->add(
                         "allocations.{$index}.description",
                         'Manual allocation rows require a description.',

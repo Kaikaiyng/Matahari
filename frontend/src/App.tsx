@@ -211,6 +211,7 @@ type StudentPayment = {
   payment_date: string
   received_date: string | null
   amount: number
+  paid_by: string | null
   bank_account: string | null
   reference_no: string | null
   payment_proof: string | null
@@ -222,10 +223,70 @@ type StudentPayment = {
   voided_by: PaymentUser | null
   voided_at: string | null
   void_reason: string | null
+  issued_receipt: ReceiptSummary | null
   allocations: Array<{
     id: number
     fee_item_id: number | null
     fee_agreement_item_id: number | null
+    fee_record_charge_id: number | null
+    allocation_type: 'charge' | 'manual' | 'legacy' | null
+    fee_code: string | null
+    description: string
+    amount: number
+    sort_order: number
+  }>
+}
+
+type OutstandingChargeCell = {
+  id: number
+  student_id: number
+  fee_agreement_id: number
+  fee_agreement_item_id: number | null
+  fee_item_id: number | null
+  academic_year: string
+  billing_month: string
+  fee_record_category: string
+  fee_code: string | null
+  description: string
+  expected_amount: number
+  paid_amount: number
+  outstanding_amount: number
+  billing_status: string
+  collection_status: string
+  charge_origin: string
+  source_type: string | null
+}
+
+type ReceiptStatus = 'issued' | 'voided'
+
+type ReceiptSummary = {
+  id: number
+  receipt_no: string
+  receipt_date: string
+  status: ReceiptStatus
+}
+
+type StudentReceipt = ReceiptSummary & {
+  school_id: number
+  payment_id: number
+  active_payment_id: number | null
+  student_id: number
+  student_no: string
+  student_name: string
+  paid_by: string
+  payment_method: PaymentMethod
+  payment_date: string
+  received_date: string | null
+  amount: number
+  amount_in_words: string
+  issued_by: PaymentUser | null
+  issued_at: string | null
+  voided_by: PaymentUser | null
+  voided_at: string | null
+  void_reason: string | null
+  items: Array<{
+    id: number
+    payment_allocation_id: number | null
     fee_code: string | null
     description: string
     amount: number
@@ -235,17 +296,25 @@ type StudentPayment = {
 
 type PaymentAllocationDraft = {
   key: string
+  allocation_type: 'charge' | 'manual'
+  fee_record_charge_id: number | null
   fee_item_id: number | null
   fee_agreement_item_id: number | null
+  fee_code: string | null
+  billing_month: string | null
+  fee_record_category: string | null
+  outstanding_amount: number | null
   description: string
   amount: string
 }
 
 type PaymentForm = {
+  academic_year: string
   payment_method: PaymentMethod
   payment_date: string
   received_date: string
   amount: string
+  paid_by: string
   bank_account: string
   reference_no: string
   payment_proof: string
@@ -381,6 +450,19 @@ function formatCurrency(amount: number | null) {
     .replace('MYR', 'RM')
 }
 
+function formatBillingMonth(month: string) {
+  const date = new Date(`${month}-01T00:00:00`)
+
+  if (Number.isNaN(date.getTime())) {
+    return month
+  }
+
+  return new Intl.DateTimeFormat('en-MY', {
+    month: 'long',
+    year: 'numeric',
+  }).format(date)
+}
+
 function formatStatus(status: string) {
   if (status === 'inactive') {
     return 'Suspended / Inactive'
@@ -426,6 +508,10 @@ function paymentStatusClass(status: PaymentStatus) {
   return 'partial'
 }
 
+function receiptStatusClass(status: ReceiptStatus) {
+  return status === 'issued' ? 'paid' : 'danger'
+}
+
 function hasPermission(user: CurrentUser, permission: string) {
   return user.permissions.includes(permission)
 }
@@ -468,35 +554,32 @@ function allocationTotal(allocations: PaymentAllocationDraft[]) {
 function defaultManualAllocation(): PaymentAllocationDraft {
   return {
     key: draftKey(),
+    allocation_type: 'manual',
+    fee_record_charge_id: null,
     fee_item_id: null,
     fee_agreement_item_id: null,
+    fee_code: null,
+    billing_month: null,
+    fee_record_category: null,
+    outstanding_amount: null,
     description: '',
     amount: '',
   }
 }
 
 function defaultPaymentForm(currentFeeAgreement: FeeAgreement | null): PaymentForm {
-  const agreementAllocations =
-    currentFeeAgreement?.items.map((item) => ({
-      key: draftKey(),
-      fee_item_id: item.fee_item_id,
-      fee_agreement_item_id: item.id,
-      description: item.description,
-      amount: String(item.amount),
-    })) ?? []
-  const allocations = agreementAllocations.length > 0 ? agreementAllocations : [defaultManualAllocation()]
-  const total = allocationTotal(allocations)
-
   return {
+    academic_year: currentFeeAgreement?.academic_year ?? '2026',
     payment_method: 'bank_transfer',
     payment_date: todayDate(),
     received_date: '',
-    amount: total > 0 ? String(total) : '',
+    amount: '',
+    paid_by: '',
     bank_account: '',
     reference_no: '',
     payment_proof: '',
     remark: '',
-    allocations,
+    allocations: [],
   }
 }
 
@@ -759,6 +842,9 @@ function StudentsPage({
   const [paymentForm, setPaymentForm] = useState<PaymentForm>(defaultPaymentForm(null))
   const [paymentErrors, setPaymentErrors] = useState<ValidationErrors>()
   const [isSavingPayment, setIsSavingPayment] = useState(false)
+  const [outstandingCharges, setOutstandingCharges] = useState<OutstandingChargeCell[]>([])
+  const [isLoadingOutstandingCharges, setIsLoadingOutstandingCharges] = useState(false)
+  const [outstandingChargeError, setOutstandingChargeError] = useState('')
   const [verifyingPaymentId, setVerifyingPaymentId] = useState<number | null>(null)
   const [verifyForm, setVerifyForm] = useState<VerifyPaymentForm>(defaultVerifyForm())
   const [verifyErrors, setVerifyErrors] = useState<ValidationErrors>()
@@ -767,6 +853,18 @@ function StudentsPage({
   const [voidReason, setVoidReason] = useState('')
   const [voidErrors, setVoidErrors] = useState<ValidationErrors>()
   const [isVoidingPayment, setIsVoidingPayment] = useState(false)
+  const [receipts, setReceipts] = useState<StudentReceipt[]>([])
+  const [isLoadingReceipts, setIsLoadingReceipts] = useState(false)
+  const [selectedReceipt, setSelectedReceipt] = useState<StudentReceipt | null>(null)
+  const [printedAt, setPrintedAt] = useState('')
+  const [generatingPaymentId, setGeneratingPaymentId] = useState<number | null>(null)
+  const [generatePaidBy, setGeneratePaidBy] = useState('')
+  const [generateErrors, setGenerateErrors] = useState<ValidationErrors>()
+  const [isGeneratingReceipt, setIsGeneratingReceipt] = useState(false)
+  const [voidingReceiptId, setVoidingReceiptId] = useState<number | null>(null)
+  const [receiptVoidReason, setReceiptVoidReason] = useState('')
+  const [receiptVoidErrors, setReceiptVoidErrors] = useState<ValidationErrors>()
+  const [isVoidingReceipt, setIsVoidingReceipt] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
 
@@ -779,10 +877,44 @@ function StudentsPage({
   const canCreatePayments = hasPermission(user, 'payments.create')
   const canVerifyPayments = hasPermission(user, 'payments.verify')
   const canVoidPayments = hasPermission(user, 'payments.void')
+  const canViewReceipts = hasPermission(user, 'receipts.view')
+  const canCreateReceipts = hasPermission(user, 'receipts.create')
+  const canVoidReceipts = hasPermission(user, 'receipts.void')
+  const canPrintReceipts = hasPermission(user, 'receipts.print')
   const currentFeeAgreement = feeAgreements.find((agreement) => agreement.is_current) ?? null
   const paymentAllocationTotal = allocationTotal(paymentForm.allocations)
   const paymentAmountCents = moneyToCents(paymentForm.amount)
   const allocationTotalCents = moneyToCents(paymentAllocationTotal)
+  const selectedChargeIds = new Set(
+    paymentForm.allocations
+      .map((allocation) => allocation.fee_record_charge_id)
+      .filter((id): id is number => id !== null),
+  )
+  const groupedOutstandingCharges = useMemo(() => {
+    const groups = new Map<string, Map<string, OutstandingChargeCell[]>>()
+
+    outstandingCharges.forEach((charge) => {
+      if (!groups.has(charge.billing_month)) {
+        groups.set(charge.billing_month, new Map())
+      }
+
+      const monthGroup = groups.get(charge.billing_month)!
+
+      if (!monthGroup.has(charge.fee_record_category)) {
+        monthGroup.set(charge.fee_record_category, [])
+      }
+
+      monthGroup.get(charge.fee_record_category)!.push(charge)
+    })
+
+    return Array.from(groups.entries()).map(([billingMonth, categories]) => ({
+      billingMonth,
+      categories: Array.from(categories.entries()).map(([category, charges]) => ({
+        category,
+        charges,
+      })),
+    }))
+  }, [outstandingCharges])
 
   const handleApiError = (apiError: unknown) => {
     if (apiError instanceof ApiError && apiError.status === 401) {
@@ -816,6 +948,7 @@ function StudentsPage({
       setStatusDraft(response.student.status)
       await loadFeeAgreementData(response.student.id)
       await loadPaymentData(response.student.id)
+      await loadReceiptData(response.student.id)
     } catch (detailError) {
       handleApiError(detailError)
     }
@@ -856,6 +989,46 @@ function StudentsPage({
       handleApiError(paymentLoadError)
     } finally {
       setIsLoadingPayments(false)
+    }
+  }
+
+  const loadOutstandingCharges = async (studentId: number, academicYear: string) => {
+    setIsLoadingOutstandingCharges(true)
+    setOutstandingChargeError('')
+
+    try {
+      const response = await apiRequest<{ data: OutstandingChargeCell[] }>(
+        `/students/${studentId}/fee-record/outstanding?academic_year=${academicYear}`,
+      )
+      setOutstandingCharges(response.data)
+    } catch (chargeLoadError) {
+      if (chargeLoadError instanceof ApiError && chargeLoadError.status === 403) {
+        setOutstandingChargeError('You do not have permission to view Fee Record outstanding charges.')
+      } else {
+        setOutstandingChargeError(mapError(chargeLoadError))
+      }
+      handleApiError(chargeLoadError)
+    } finally {
+      setIsLoadingOutstandingCharges(false)
+    }
+  }
+
+  const loadReceiptData = async (studentId: number) => {
+    if (!canViewReceipts) {
+      setReceipts([])
+      setSelectedReceipt(null)
+      return
+    }
+
+    setIsLoadingReceipts(true)
+
+    try {
+      const response = await apiRequest<{ data: StudentReceipt[] }>(`/students/${studentId}/receipts`)
+      setReceipts(response.data)
+    } catch (receiptLoadError) {
+      handleApiError(receiptLoadError)
+    } finally {
+      setIsLoadingReceipts(false)
     }
   }
 
@@ -1072,16 +1245,28 @@ function StudentsPage({
   }
 
   const beginCreatePayment = () => {
-    setPaymentForm(defaultPaymentForm(currentFeeAgreement))
+    const nextForm = defaultPaymentForm(currentFeeAgreement)
+    setPaymentForm(nextForm)
     setPaymentErrors(undefined)
+    setOutstandingCharges([])
+    setOutstandingChargeError('')
     setShowPaymentForm(true)
+
+    if (selectedStudent) {
+      void loadOutstandingCharges(selectedStudent.id, nextForm.academic_year)
+    }
   }
 
   const updatePaymentForm = (field: keyof Omit<PaymentForm, 'allocations'>, value: string) => {
     setPaymentForm((current) => ({
       ...current,
       [field]: value,
+      ...(field === 'academic_year' ? { allocations: current.allocations.filter((allocation) => allocation.allocation_type === 'manual') } : {}),
     }))
+
+    if (field === 'academic_year' && selectedStudent) {
+      void loadOutstandingCharges(selectedStudent.id, value)
+    }
   }
 
   const updatePaymentAllocation = (
@@ -1099,41 +1284,45 @@ function StudentsPage({
             }
           : allocation,
       ),
+      ...(field === 'amount'
+        ? {
+            amount: String(
+              allocationTotal(
+                current.allocations.map((allocation) =>
+                  allocation.key === key
+                    ? {
+                        ...allocation,
+                        amount: value,
+                      }
+                    : allocation,
+                ),
+              ),
+            ),
+          }
+        : {}),
     }))
   }
 
-  const selectPaymentAllocationSource = (key: string, value: string) => {
+  const selectChargeAllocation = (charge: OutstandingChargeCell) => {
     setPaymentForm((current) => ({
       ...current,
-      allocations: current.allocations.map((allocation) => {
-        if (allocation.key !== key) {
-          return allocation
-        }
-
-        if (value === 'manual') {
-          return {
-            ...allocation,
-            fee_item_id: null,
-            fee_agreement_item_id: null,
-            description: '',
-          }
-        }
-
-        const feeAgreementItemId = Number(value)
-        const feeAgreementItem = currentFeeAgreement?.items.find((item) => item.id === feeAgreementItemId)
-
-        if (!feeAgreementItem) {
-          return allocation
-        }
-
-        return {
-          ...allocation,
-          fee_item_id: feeAgreementItem.fee_item_id,
-          fee_agreement_item_id: feeAgreementItem.id,
-          description: feeAgreementItem.description,
-          amount: allocation.amount || String(feeAgreementItem.amount),
-        }
-      }),
+      allocations: [
+        ...current.allocations,
+        {
+          key: draftKey(),
+          allocation_type: 'charge' as const,
+          fee_record_charge_id: charge.id,
+          fee_item_id: charge.fee_item_id,
+          fee_agreement_item_id: charge.fee_agreement_item_id,
+          fee_code: charge.fee_code,
+          billing_month: charge.billing_month,
+          fee_record_category: charge.fee_record_category,
+          outstanding_amount: charge.outstanding_amount,
+          description: charge.description,
+          amount: String(charge.outstanding_amount),
+        },
+      ],
+      amount: String(allocationTotal(current.allocations) + charge.outstanding_amount),
     }))
   }
 
@@ -1147,10 +1336,8 @@ function StudentsPage({
   const removePaymentAllocation = (key: string) => {
     setPaymentForm((current) => ({
       ...current,
-      allocations:
-        current.allocations.length === 1
-          ? [defaultManualAllocation()]
-          : current.allocations.filter((allocation) => allocation.key !== key),
+      allocations: current.allocations.filter((allocation) => allocation.key !== key),
+      amount: String(allocationTotal(current.allocations.filter((allocation) => allocation.key !== key)) || ''),
     }))
   }
 
@@ -1174,7 +1361,21 @@ function StudentsPage({
     }
 
     paymentForm.allocations.forEach((allocation, index) => {
-      if (!allocation.fee_item_id && !allocation.fee_agreement_item_id && !allocation.description.trim()) {
+      const allocationAmountCents = moneyToCents(allocation.amount)
+
+      if (allocationAmountCents <= 0) {
+        nextErrors[`allocations.${index}.amount`] = ['Allocation amount must be more than zero.']
+      }
+
+      if (
+        allocation.allocation_type === 'charge' &&
+        allocation.outstanding_amount !== null &&
+        allocationAmountCents > moneyToCents(allocation.outstanding_amount)
+      ) {
+        nextErrors[`allocations.${index}.amount`] = ['Allocation amount cannot exceed outstanding amount.']
+      }
+
+      if (allocation.allocation_type === 'manual' && !allocation.description.trim()) {
         nextErrors[`allocations.${index}.description`] = ['Manual allocation rows require a description.']
       }
     })
@@ -1203,13 +1404,16 @@ function StudentsPage({
           payment_date: paymentForm.payment_date,
           received_date: paymentForm.received_date || null,
           amount: Number(paymentForm.amount),
+          paid_by: paymentForm.paid_by || null,
           bank_account: paymentForm.bank_account || null,
           reference_no: paymentForm.reference_no || null,
           payment_proof: paymentForm.payment_proof || null,
           remark: paymentForm.remark || null,
           allocations: paymentForm.allocations.map((allocation) => ({
-            fee_item_id: allocation.fee_item_id,
-            fee_agreement_item_id: allocation.fee_agreement_item_id,
+            allocation_type: allocation.allocation_type,
+            fee_record_charge_id: allocation.fee_record_charge_id,
+            fee_item_id: allocation.allocation_type === 'manual' ? null : allocation.fee_item_id,
+            fee_agreement_item_id: allocation.allocation_type === 'manual' ? null : allocation.fee_agreement_item_id,
             description: allocation.description || null,
             amount: Number(allocation.amount || 0),
           })),
@@ -1219,6 +1423,7 @@ function StudentsPage({
       setPaymentForm(defaultPaymentForm(currentFeeAgreement))
       setPaymentErrors(undefined)
       await loadPaymentData(selectedStudent.id)
+      await loadOutstandingCharges(selectedStudent.id, paymentForm.academic_year)
       setMessage(
         paymentForm.payment_method === 'cash'
           ? 'Cash payment recorded as verified.'
@@ -1265,6 +1470,7 @@ function StudentsPage({
       })
       setVerifyingPaymentId(null)
       await loadPaymentData(selectedStudent.id)
+      await loadOutstandingCharges(selectedStudent.id, paymentForm.academic_year)
       setMessage('Payment verified.')
     } catch (verifyError) {
       if (verifyError instanceof ApiError && verifyError.status === 422) {
@@ -1305,6 +1511,7 @@ function StudentsPage({
       setVoidingPaymentId(null)
       setVoidReason('')
       await loadPaymentData(selectedStudent.id)
+      await loadOutstandingCharges(selectedStudent.id, paymentForm.academic_year)
       setMessage('Payment voided.')
     } catch (voidError) {
       if (voidError instanceof ApiError && voidError.status === 422) {
@@ -1313,6 +1520,136 @@ function StudentsPage({
       handleApiError(voidError)
     } finally {
       setIsVoidingPayment(false)
+    }
+  }
+
+  const refreshReceiptRelatedData = async () => {
+    if (!selectedStudent) {
+      return
+    }
+
+    await loadPaymentData(selectedStudent.id)
+    await loadReceiptData(selectedStudent.id)
+  }
+
+  const beginGenerateReceipt = (payment: StudentPayment) => {
+    setGenerateErrors(undefined)
+    setError('')
+    setMessage('')
+    setVerifyingPaymentId(null)
+    setVoidingPaymentId(null)
+    setVoidingReceiptId(null)
+
+    if (payment.paid_by?.trim()) {
+      void submitGenerateReceipt(payment.id)
+      return
+    }
+
+    setGeneratingPaymentId(payment.id)
+    setGeneratePaidBy('')
+  }
+
+  const submitGenerateReceipt = async (paymentId: number, paidBy = '') => {
+    if (!selectedStudent) {
+      return
+    }
+
+    setIsGeneratingReceipt(true)
+    setGenerateErrors(undefined)
+    setError('')
+    setMessage('')
+
+    try {
+      const body = paidBy.trim() ? { paid_by: paidBy.trim() } : undefined
+      const response = await apiRequest<{ receipt: StudentReceipt }>(`/payments/${paymentId}/receipts`, {
+        method: 'POST',
+        body,
+      })
+
+      setSelectedReceipt(response.receipt)
+      setPrintedAt(new Date().toLocaleString())
+      setGeneratingPaymentId(null)
+      setGeneratePaidBy('')
+      await refreshReceiptRelatedData()
+      setMessage(`Receipt ${response.receipt.receipt_no} generated.`)
+    } catch (generateError) {
+      if (generateError instanceof ApiError && generateError.status === 422) {
+        setGenerateErrors(generateError.errors)
+      }
+      handleApiError(generateError)
+    } finally {
+      setIsGeneratingReceipt(false)
+    }
+  }
+
+  const submitGenerateReceiptWithPaidBy = async (event: FormEvent<HTMLFormElement>, paymentId: number) => {
+    event.preventDefault()
+    await submitGenerateReceipt(paymentId, generatePaidBy)
+  }
+
+  const viewReceipt = async (receiptId: number) => {
+    setError('')
+    setMessage('')
+
+    try {
+      const response = await apiRequest<{ receipt: StudentReceipt }>(`/receipts/${receiptId}`)
+      setSelectedReceipt(response.receipt)
+      setPrintedAt(new Date().toLocaleString())
+    } catch (viewError) {
+      handleApiError(viewError)
+    }
+  }
+
+  const printReceipt = async (receiptId: number) => {
+    setError('')
+    setMessage('')
+
+    try {
+      const response = await apiRequest<{ receipt: StudentReceipt }>(`/receipts/${receiptId}/print`)
+      setSelectedReceipt(response.receipt)
+      setPrintedAt(new Date().toLocaleString())
+      window.setTimeout(() => window.print(), 100)
+    } catch (printError) {
+      handleApiError(printError)
+    }
+  }
+
+  const beginVoidReceipt = (receiptId: number) => {
+    setVoidingReceiptId(receiptId)
+    setReceiptVoidReason('')
+    setReceiptVoidErrors(undefined)
+    setGeneratingPaymentId(null)
+  }
+
+  const submitVoidReceipt = async (event: FormEvent<HTMLFormElement>, receiptId: number) => {
+    event.preventDefault()
+
+    setIsVoidingReceipt(true)
+    setReceiptVoidErrors(undefined)
+    setError('')
+    setMessage('')
+
+    try {
+      const response = await apiRequest<{ receipt: StudentReceipt }>(`/receipts/${receiptId}/void`, {
+        method: 'POST',
+        body: {
+          void_reason: receiptVoidReason,
+        },
+      })
+
+      setSelectedReceipt(response.receipt)
+      setPrintedAt(new Date().toLocaleString())
+      setVoidingReceiptId(null)
+      setReceiptVoidReason('')
+      await refreshReceiptRelatedData()
+      setMessage(`Receipt ${response.receipt.receipt_no} voided.`)
+    } catch (voidReceiptError) {
+      if (voidReceiptError instanceof ApiError && voidReceiptError.status === 422) {
+        setReceiptVoidErrors(voidReceiptError.errors)
+      }
+      handleApiError(voidReceiptError)
+    } finally {
+      setIsVoidingReceipt(false)
     }
   }
 
@@ -1923,7 +2260,7 @@ function StudentsPage({
             {!canViewPayments && <Message tone="info">You do not have permission to view payments.</Message>}
 
             {showPaymentForm && canCreatePayments && (
-              <form className="payment-form" onSubmit={submitPayment}>
+              <form className="payment-form" onSubmit={submitPayment} noValidate>
                 <div className="panel-header">
                   <div>
                     <p className="eyebrow">Admin recording</p>
@@ -1935,6 +2272,14 @@ function StudentsPage({
                 </div>
 
                 <div className="form-grid">
+                  <label className="form-field">
+                    Academic Year
+                    <input
+                      value={paymentForm.academic_year}
+                      onChange={(event) => updatePaymentForm('academic_year', event.target.value)}
+                    />
+                  </label>
+
                   <label className="form-field">
                     Payment Method
                     <select
@@ -1988,6 +2333,14 @@ function StudentsPage({
                   </label>
 
                   <label className="form-field">
+                    Paid By
+                    <input
+                      value={paymentForm.paid_by}
+                      onChange={(event) => updatePaymentForm('paid_by', event.target.value)}
+                    />
+                  </label>
+
+                  <label className="form-field">
                     Bank Account
                     <input
                       value={paymentForm.bank_account}
@@ -2023,58 +2376,129 @@ function StudentsPage({
                 <div className="payment-allocation-block">
                   <div className="payment-subheader">
                     <div>
-                      <h3>Allocation Rows</h3>
+                      <h3>Outstanding Charge Cells</h3>
                       <p>
-                        Allocated {formatCurrency(paymentAllocationTotal)} of {formatCurrency(Number(paymentForm.amount || 0))}
+                        Select the exact month/category cells this payment clears.
                       </p>
                     </div>
-                    <button type="button" className="table-action" onClick={addPaymentAllocation}>
-                      Add Row
+                    <button
+                      type="button"
+                      className="table-action"
+                      onClick={() => selectedStudent && void loadOutstandingCharges(selectedStudent.id, paymentForm.academic_year)}
+                    >
+                      Refresh
                     </button>
                   </div>
 
                   {formatValidationError(paymentErrors, 'allocations') && (
                     <Message tone="error">{formatValidationError(paymentErrors, 'allocations')}</Message>
                   )}
+                  {outstandingChargeError && <Message tone="error">{outstandingChargeError}</Message>}
+                  {isLoadingOutstandingCharges && <div className="empty-state">Loading outstanding charge cells...</div>}
+
+                  {!isLoadingOutstandingCharges && groupedOutstandingCharges.length === 0 && (
+                    <div className="empty-state">No outstanding charge cells found for {paymentForm.academic_year}.</div>
+                  )}
+
+                  <div className="charge-picker">
+                    {groupedOutstandingCharges.map((monthGroup) => (
+                      <section className="charge-month-group" key={monthGroup.billingMonth}>
+                        <h4>{formatBillingMonth(monthGroup.billingMonth)}</h4>
+                        {monthGroup.categories.map((categoryGroup) => (
+                          <div className="charge-category-group" key={`${monthGroup.billingMonth}-${categoryGroup.category}`}>
+                            <span>{categoryGroup.category}</span>
+                            {categoryGroup.charges.map((charge) => {
+                              const selected = selectedChargeIds.has(charge.id)
+
+                              return (
+                                <label className="charge-cell-row" key={charge.id}>
+                                  <input
+                                    type="checkbox"
+                                    checked={selected}
+                                    onChange={(event) =>
+                                      event.target.checked
+                                        ? selectChargeAllocation(charge)
+                                        : removePaymentAllocation(
+                                            paymentForm.allocations.find((allocation) => allocation.fee_record_charge_id === charge.id)?.key ?? '',
+                                          )
+                                    }
+                                  />
+                                  <span>
+                                    <strong>{charge.description}</strong>
+                                    <small>
+                                      {charge.fee_code ?? 'Manual'} / Outstanding {formatCurrency(charge.outstanding_amount)}
+                                    </small>
+                                  </span>
+                                </label>
+                              )
+                            })}
+                          </div>
+                        ))}
+                      </section>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="payment-allocation-block">
+                  <div className="payment-subheader">
+                    <div>
+                      <h3>Selected Allocations</h3>
+                      <p>
+                        Allocated {formatCurrency(paymentAllocationTotal)} of {formatCurrency(Number(paymentForm.amount || 0))}
+                      </p>
+                    </div>
+                    <button type="button" className="table-action" onClick={addPaymentAllocation}>
+                      Add Manual
+                    </button>
+                  </div>
 
                   <div className="allocation-rows">
-                    {paymentForm.allocations.map((allocation, index) => (
-                      <div className="allocation-row" key={allocation.key}>
-                        <label className="form-field">
-                          Source
-                          <select
-                            value={allocation.fee_agreement_item_id ?? 'manual'}
-                            onChange={(event) => selectPaymentAllocationSource(allocation.key, event.target.value)}
-                          >
-                            <option value="manual">Manual allocation</option>
-                            {currentFeeAgreement?.items.map((item) => (
-                              <option key={item.id} value={item.id}>
-                                {item.fee_code} / {item.description}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
+                    {paymentForm.allocations.length === 0 && (
+                      <div className="empty-state">Select charge cells or add a manual allocation.</div>
+                    )}
 
-                        <label className="form-field">
-                          Description
-                          <input
-                            value={allocation.description}
-                            onChange={(event) => updatePaymentAllocation(allocation.key, 'description', event.target.value)}
-                          />
-                          {formatValidationError(paymentErrors, `allocations.${index}.description`) && (
-                            <small>{formatValidationError(paymentErrors, `allocations.${index}.description`)}</small>
-                          )}
-                        </label>
+                    {paymentForm.allocations.map((allocation, index) => (
+                      <div className={`allocation-row ${allocation.allocation_type}`} key={allocation.key}>
+                        <div className="allocation-source-summary">
+                          <span className={`badge ${allocation.allocation_type === 'charge' ? 'paid' : 'neutral'}`}>
+                            {allocation.allocation_type === 'charge' ? 'Charge cell' : 'Manual'}
+                          </span>
+                          <strong>{allocation.description || 'Manual allocation'}</strong>
+                          <small>
+                            {allocation.allocation_type === 'charge'
+                              ? `${allocation.billing_month} / ${allocation.fee_record_category} / Outstanding ${formatCurrency(
+                                  allocation.outstanding_amount,
+                                )}`
+                              : 'Does not clear Fee Record charge cells unless reconciled later.'}
+                          </small>
+                        </div>
+
+                        {allocation.allocation_type === 'manual' && (
+                          <label className="form-field">
+                            Description
+                            <input
+                              value={allocation.description}
+                              onChange={(event) => updatePaymentAllocation(allocation.key, 'description', event.target.value)}
+                            />
+                            {formatValidationError(paymentErrors, `allocations.${index}.description`) && (
+                              <small>{formatValidationError(paymentErrors, `allocations.${index}.description`)}</small>
+                            )}
+                          </label>
+                        )}
 
                         <label className="form-field">
                           Amount
                           <input
                             type="number"
                             min="0"
+                            max={allocation.outstanding_amount ?? undefined}
                             step="0.01"
                             value={allocation.amount}
                             onChange={(event) => updatePaymentAllocation(allocation.key, 'amount', event.target.value)}
                           />
+                          {formatValidationError(paymentErrors, `allocations.${index}.amount`) && (
+                            <small>{formatValidationError(paymentErrors, `allocations.${index}.amount`)}</small>
+                          )}
                         </label>
 
                         <button type="button" className="table-action danger-action" onClick={() => removePaymentAllocation(allocation.key)}>
@@ -2108,13 +2532,17 @@ function StudentsPage({
                       <th>Amount</th>
                       <th>Status</th>
                       <th>Reference No</th>
+                      <th>Receipt</th>
                       <th>Recorded By</th>
                       <th>Verified By</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {payments.map((payment) => (
+                    {payments.map((payment) => {
+                      const issuedReceipt = payment.issued_receipt
+
+                      return (
                       <Fragment key={payment.id}>
                         <tr>
                           <td>{payment.payment_date}</td>
@@ -2125,6 +2553,7 @@ function StudentsPage({
                             <span className={`badge ${paymentStatusClass(payment.status)}`}>{formatStatus(payment.status)}</span>
                           </td>
                           <td>{payment.reference_no ?? 'TBD'}</td>
+                          <td>{issuedReceipt ? issuedReceipt.receipt_no : 'No issued receipt'}</td>
                           <td>{payment.recorded_by?.name ?? 'TBD'}</td>
                           <td>{payment.verified_by?.name ?? 'TBD'}</td>
                           <td>
@@ -2139,24 +2568,79 @@ function StudentsPage({
                                   Void
                                 </button>
                               )}
+                              {canCreateReceipts && payment.status === 'verified' && !payment.issued_receipt && (
+                                <button className="table-action" onClick={() => beginGenerateReceipt(payment)}>
+                                  Generate Receipt
+                                </button>
+                              )}
+                              {issuedReceipt && canViewReceipts && (
+                                <button className="table-action" onClick={() => void viewReceipt(issuedReceipt.id)}>
+                                  View Receipt
+                                </button>
+                              )}
+                              {issuedReceipt && canPrintReceipts && (
+                                <button className="table-action" onClick={() => void printReceipt(issuedReceipt.id)}>
+                                  Print Receipt
+                                </button>
+                              )}
+                              {issuedReceipt && canVoidReceipts && issuedReceipt.status === 'issued' && (
+                                <button className="table-action danger-action" onClick={() => beginVoidReceipt(issuedReceipt.id)}>
+                                  Void Receipt
+                                </button>
+                              )}
                               {(!canVerifyPayments || payment.status !== 'pending_verification') &&
-                                (!canVoidPayments || payment.status === 'voided') && <span className="permission-note">No action</span>}
+                                (!canVoidPayments || payment.status === 'voided') &&
+                                (!canCreateReceipts || payment.status !== 'verified' || Boolean(issuedReceipt)) &&
+                                (!issuedReceipt || (!canViewReceipts && !canPrintReceipts && !canVoidReceipts)) && (
+                                  <span className="permission-note">No action</span>
+                                )}
                             </div>
                           </td>
                         </tr>
                         {payment.allocations.length > 0 && (
                           <tr className="payment-allocation-summary">
-                            <td colSpan={9}>
+                            <td colSpan={10}>
                               Allocations:{' '}
                               {payment.allocations
-                                .map((allocation) => `${allocation.fee_code ?? 'Manual'} ${allocation.description} ${formatCurrency(allocation.amount)}`)
+                                .map(
+                                  (allocation) =>
+                                    `${allocation.allocation_type === 'charge' ? 'Charge' : 'Manual'} ${allocation.fee_code ?? 'Manual'} ${
+                                      allocation.description
+                                    } ${formatCurrency(allocation.amount)}`,
+                                )
                                 .join(' / ')}
+                            </td>
+                          </tr>
+                        )}
+                        {generatingPaymentId === payment.id && (
+                          <tr className="payment-action-row">
+                            <td colSpan={10}>
+                              <form className="inline-payment-form" onSubmit={(event) => submitGenerateReceiptWithPaidBy(event, payment.id)}>
+                                <label className="form-field wide">
+                                  Paid By
+                                  <input value={generatePaidBy} onChange={(event) => setGeneratePaidBy(event.target.value)} />
+                                  {formatValidationError(generateErrors, 'paid_by') && (
+                                    <small>{formatValidationError(generateErrors, 'paid_by')}</small>
+                                  )}
+                                  {formatValidationError(generateErrors, 'payment') && (
+                                    <small>{formatValidationError(generateErrors, 'payment')}</small>
+                                  )}
+                                </label>
+                                <div className="toolbar-actions">
+                                  <button className="primary-action compact" disabled={isGeneratingReceipt}>
+                                    {isGeneratingReceipt ? 'Generating...' : 'Confirm Generate'}
+                                  </button>
+                                  <button type="button" className="secondary-action" onClick={() => setGeneratingPaymentId(null)}>
+                                    Cancel
+                                  </button>
+                                </div>
+                              </form>
                             </td>
                           </tr>
                         )}
                         {verifyingPaymentId === payment.id && (
                           <tr className="payment-action-row">
-                            <td colSpan={9}>
+                            <td colSpan={10}>
                               <form className="inline-payment-form" onSubmit={(event) => submitVerifyPayment(event, payment.id)}>
                                 <label className="form-field">
                                   Received Date
@@ -2207,7 +2691,7 @@ function StudentsPage({
                         )}
                         {voidingPaymentId === payment.id && (
                           <tr className="payment-action-row">
-                            <td colSpan={9}>
+                            <td colSpan={10}>
                               <form className="inline-payment-form" onSubmit={(event) => submitVoidPayment(event, payment.id)}>
                                 <label className="form-field wide">
                                   Void Reason
@@ -2232,20 +2716,250 @@ function StudentsPage({
                           </tr>
                         )}
                       </Fragment>
-                    ))}
+                      )
+                    })}
                     {!isLoadingPayments && payments.length === 0 && (
                       <tr>
-                        <td colSpan={9}>No payments recorded for this student yet.</td>
+                        <td colSpan={10}>No payments recorded for this student yet.</td>
                       </tr>
                     )}
                     {isLoadingPayments && (
                       <tr>
-                        <td colSpan={9}>Loading payments...</td>
+                        <td colSpan={10}>Loading payments...</td>
                       </tr>
                     )}
                   </tbody>
                 </table>
               </div>
+            )}
+          </section>
+
+          <section className="panel receipt-workspace">
+            <div className="panel-header no-print">
+              <div>
+                <p className="eyebrow">Receipts</p>
+                <h2>Receipt History</h2>
+              </div>
+              {!canViewReceipts && <span className="permission-note">No receipt access</span>}
+            </div>
+
+            {!canViewReceipts && <Message tone="info">You do not have permission to view receipts.</Message>}
+
+            {canViewReceipts && (
+              <div className="table-wrap receipt-history no-print">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Receipt No</th>
+                      <th>Date</th>
+                      <th>Amount</th>
+                      <th>Status</th>
+                      <th>Paid By</th>
+                      <th>Issued By</th>
+                      <th>Void Details</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {receipts.map((receipt) => (
+                      <Fragment key={receipt.id}>
+                        <tr>
+                          <td>{receipt.receipt_no}</td>
+                          <td>{receipt.receipt_date}</td>
+                          <td>{formatCurrency(receipt.amount)}</td>
+                          <td>
+                            <span className={`badge ${receiptStatusClass(receipt.status)}`}>{formatStatus(receipt.status)}</span>
+                          </td>
+                          <td>{receipt.paid_by}</td>
+                          <td>{receipt.issued_by?.name ?? 'TBD'}</td>
+                          <td>
+                            {receipt.status === 'voided'
+                              ? `${receipt.voided_by?.name ?? 'TBD'} / ${receipt.void_reason ?? 'No reason'}`
+                              : 'Not voided'}
+                          </td>
+                          <td>
+                            <div className="payment-actions">
+                              {canViewReceipts && (
+                                <button className="table-action" onClick={() => void viewReceipt(receipt.id)}>
+                                  View
+                                </button>
+                              )}
+                              {canPrintReceipts && (
+                                <button className="table-action" onClick={() => void printReceipt(receipt.id)}>
+                                  Print
+                                </button>
+                              )}
+                              {canVoidReceipts && receipt.status === 'issued' && (
+                                <button className="table-action danger-action" onClick={() => beginVoidReceipt(receipt.id)}>
+                                  Void
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                        {voidingReceiptId === receipt.id && (
+                          <tr className="payment-action-row">
+                            <td colSpan={8}>
+                              <form className="inline-payment-form" onSubmit={(event) => submitVoidReceipt(event, receipt.id)}>
+                                <label className="form-field wide">
+                                  Void Reason
+                                  <textarea value={receiptVoidReason} onChange={(event) => setReceiptVoidReason(event.target.value)} />
+                                  {formatValidationError(receiptVoidErrors, 'void_reason') && (
+                                    <small>{formatValidationError(receiptVoidErrors, 'void_reason')}</small>
+                                  )}
+                                  {formatValidationError(receiptVoidErrors, 'receipt') && (
+                                    <small>{formatValidationError(receiptVoidErrors, 'receipt')}</small>
+                                  )}
+                                </label>
+                                <div className="toolbar-actions">
+                                  <button className="primary-action compact" disabled={isVoidingReceipt}>
+                                    {isVoidingReceipt ? 'Voiding...' : 'Confirm Void Receipt'}
+                                  </button>
+                                  <button type="button" className="secondary-action" onClick={() => setVoidingReceiptId(null)}>
+                                    Cancel
+                                  </button>
+                                </div>
+                              </form>
+                            </td>
+                          </tr>
+                        )}
+                      </Fragment>
+                    ))}
+                    {!isLoadingReceipts && receipts.length === 0 && (
+                      <tr>
+                        <td colSpan={8}>No receipts generated for this student yet.</td>
+                      </tr>
+                    )}
+                    {isLoadingReceipts && (
+                      <tr>
+                        <td colSpan={8}>Loading receipts...</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {selectedReceipt && (
+              <article className="receipt-print-scope">
+                <div className="receipt-sheet">
+                  <div className="receipt-brand">
+                    <img src={misLogo} alt="MIS logo" />
+                    <div>
+                      <p className="eyebrow">Official Receipt</p>
+                      <h2>Matahari International School</h2>
+                      <span>Payment made is not refundable.</span>
+                    </div>
+                  </div>
+
+                  <div className="receipt-meta">
+                    <div>
+                      <span>Receipt No</span>
+                      <strong>{selectedReceipt.receipt_no}</strong>
+                    </div>
+                    <div>
+                      <span>Receipt Date</span>
+                      <strong>{selectedReceipt.receipt_date}</strong>
+                    </div>
+                    <div>
+                      <span>Printed Time</span>
+                      <strong>{printedAt || new Date().toLocaleString()}</strong>
+                    </div>
+                    <div>
+                      <span>Issued By</span>
+                      <strong>{selectedReceipt.issued_by?.name ?? 'TBD'}</strong>
+                    </div>
+                  </div>
+
+                  <div className="receipt-two-column">
+                    <dl>
+                      <div>
+                        <dt>Paid By</dt>
+                        <dd>{selectedReceipt.paid_by}</dd>
+                      </div>
+                      <div>
+                        <dt>Student Name</dt>
+                        <dd>{selectedReceipt.student_name}</dd>
+                      </div>
+                      <div>
+                        <dt>Student ID</dt>
+                        <dd>{selectedReceipt.student_no}</dd>
+                      </div>
+                    </dl>
+                    <dl>
+                      <div>
+                        <dt>Amount</dt>
+                        <dd>{formatCurrency(selectedReceipt.amount)}</dd>
+                      </div>
+                      <div>
+                        <dt>Payment Method</dt>
+                        <dd>{formatStatus(selectedReceipt.payment_method)}</dd>
+                      </div>
+                      <div>
+                        <dt>Payment Date</dt>
+                        <dd>{selectedReceipt.payment_date}</dd>
+                      </div>
+                      <div>
+                        <dt>Received Date</dt>
+                        <dd>{selectedReceipt.received_date ?? 'TBD'}</dd>
+                      </div>
+                    </dl>
+                  </div>
+
+                  <div className="amount-words">
+                    <span>Amount in Words</span>
+                    <strong>{selectedReceipt.amount_in_words}</strong>
+                  </div>
+
+                  <div className="receipt-items">
+                    <h3>Being Payment For</h3>
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>No</th>
+                          <th>Fee Code</th>
+                          <th>Description</th>
+                          <th>Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {selectedReceipt.items.map((item, index) => (
+                          <tr key={item.id}>
+                            <td>{index + 1}</td>
+                            <td>{item.fee_code ?? 'Manual'}</td>
+                            <td>{item.description}</td>
+                            <td>{formatCurrency(item.amount)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {selectedReceipt.status === 'voided' && (
+                    <Message tone="error">
+                      Voided by {selectedReceipt.voided_by?.name ?? 'TBD'}: {selectedReceipt.void_reason ?? 'No reason provided.'}
+                    </Message>
+                  )}
+
+                  <footer className="receipt-footer">
+                    <p>Payment made is not refundable.</p>
+                    <p>This is a computer generated form. No signature is required.</p>
+                  </footer>
+
+                  <div className="toolbar-actions no-print">
+                    {canPrintReceipts && (
+                      <button className="primary-action compact" onClick={() => void printReceipt(selectedReceipt.id)}>
+                        Print Receipt
+                      </button>
+                    )}
+                    {canVoidReceipts && selectedReceipt.status === 'issued' && (
+                      <button className="secondary-action danger-action" onClick={() => beginVoidReceipt(selectedReceipt.id)}>
+                        Void Receipt
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </article>
             )}
           </section>
         </article>

@@ -3,6 +3,7 @@
 namespace App\Services\Billing;
 
 use App\Models\FeeAgreementItem;
+use App\Models\FeeRecordCharge;
 use App\Models\FeeItem;
 use App\Models\Payment;
 use App\Models\Student;
@@ -43,11 +44,15 @@ class PaymentRecordingService
 
             foreach (array_values($data['allocations']) as $index => $allocation) {
                 $payment->allocations()->create([
-                    ...$this->allocationSnapshot($student, $allocation),
+                    ...$this->allocationSnapshot($student, $allocation, $data['academic_year'] ?? null),
                     'school_id' => $student->school_id,
                     'amount' => $allocation['amount'],
                     'sort_order' => $index,
                 ]);
+            }
+
+            if ($isCash) {
+                $this->applyChargeAllocations($payment->refresh()->load('allocations'));
             }
 
             return $payment->refresh()->load(['allocations', 'recordedBy', 'verifiedBy', 'voidedBy', 'issuedReceipt']);
@@ -59,65 +64,71 @@ class PaymentRecordingService
      */
     public function verify(Payment $payment, array $data, User $verifiedBy): Payment
     {
-        $this->assertSchoolScope($payment->student, $verifiedBy);
+        return DB::transaction(function () use ($payment, $data, $verifiedBy): Payment {
+            $lockedPayment = Payment::query()
+                ->with(['student', 'allocations'])
+                ->whereKey($payment->id)
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        $updates = [
-            'status' => 'verified',
-            'received_date' => $data['received_date'],
-            'bank_account' => $data['bank_account'] ?? $payment->bank_account,
-            'reference_no' => $data['reference_no'] ?? $payment->reference_no,
-            'remark' => $data['remark'] ?? $payment->remark,
-            'verified_by' => $verifiedBy->id,
-            'verified_at' => now(),
-        ];
+            $this->assertSchoolScope($lockedPayment->student, $verifiedBy);
 
-        $query = Payment::query()
-            ->whereKey($payment->id)
-            ->where('status', 'pending_verification');
-
-        if ($verifiedBy->school_id) {
-            $query->where('school_id', $verifiedBy->school_id);
-        }
-
-        if ($query->update($updates) === 0) {
-            $payment->refresh();
-
-            if ($payment->status === 'voided') {
+            if ($lockedPayment->status === 'voided') {
                 throw ValidationException::withMessages(['payment' => 'Voided payments cannot be verified.']);
             }
 
-            if ($payment->status === 'verified') {
+            if ($lockedPayment->status === 'verified') {
                 throw ValidationException::withMessages(['payment' => 'Payment is already verified.']);
             }
 
-            throw ValidationException::withMessages(['payment' => 'Only pending payments can be verified.']);
-        }
+            if ($lockedPayment->status !== 'pending_verification') {
+                throw ValidationException::withMessages(['payment' => 'Only pending payments can be verified.']);
+            }
 
-        return $payment->refresh()->load(['allocations', 'recordedBy', 'verifiedBy', 'voidedBy', 'issuedReceipt']);
+            $this->applyChargeAllocations($lockedPayment);
+
+            $lockedPayment->update([
+                'status' => 'verified',
+                'received_date' => $data['received_date'],
+                'bank_account' => $data['bank_account'] ?? $lockedPayment->bank_account,
+                'reference_no' => $data['reference_no'] ?? $lockedPayment->reference_no,
+                'remark' => $data['remark'] ?? $lockedPayment->remark,
+                'verified_by' => $verifiedBy->id,
+                'verified_at' => now(),
+            ]);
+
+            return $lockedPayment->refresh()->load(['allocations', 'recordedBy', 'verifiedBy', 'voidedBy', 'issuedReceipt']);
+        });
     }
 
     public function void(Payment $payment, string $voidReason, User $voidedBy): Payment
     {
-        $this->assertSchoolScope($payment->student, $voidedBy);
+        return DB::transaction(function () use ($payment, $voidReason, $voidedBy): Payment {
+            $lockedPayment = Payment::query()
+                ->with(['student', 'allocations'])
+                ->whereKey($payment->id)
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        $query = Payment::query()
-            ->whereKey($payment->id)
-            ->where('status', '!=', 'voided');
+            $this->assertSchoolScope($lockedPayment->student, $voidedBy);
 
-        if ($voidedBy->school_id) {
-            $query->where('school_id', $voidedBy->school_id);
-        }
+            if ($lockedPayment->status === 'voided') {
+                throw ValidationException::withMessages(['payment' => 'Payment is already voided.']);
+            }
 
-        if ($query->update([
-            'status' => 'voided',
-            'voided_by' => $voidedBy->id,
-            'voided_at' => now(),
-            'void_reason' => $voidReason,
-        ]) === 0) {
-            throw ValidationException::withMessages(['payment' => 'Payment is already voided.']);
-        }
+            if ($lockedPayment->status === 'verified') {
+                $this->reverseChargeAllocations($lockedPayment);
+            }
 
-        return $payment->refresh()->load(['allocations', 'recordedBy', 'verifiedBy', 'voidedBy', 'issuedReceipt']);
+            $lockedPayment->update([
+                'status' => 'voided',
+                'voided_by' => $voidedBy->id,
+                'voided_at' => now(),
+                'void_reason' => $voidReason,
+            ]);
+
+            return $lockedPayment->refresh()->load(['allocations', 'recordedBy', 'verifiedBy', 'voidedBy', 'issuedReceipt']);
+        });
     }
 
     private function assertSchoolScope(Student $student, User $user): void
@@ -145,8 +156,23 @@ class PaymentRecordingService
      * @param array<string, mixed> $allocation
      * @return array<string, mixed>
      */
-    private function allocationSnapshot(Student $student, array $allocation): array
+    private function allocationSnapshot(Student $student, array $allocation, ?string $academicYear): array
     {
+        $allocationType = $this->allocationType($allocation);
+
+        if ($allocationType === 'charge') {
+            $charge = $this->lockUsableCharge($student, $allocation, $academicYear);
+
+            return [
+                'fee_item_id' => $charge->fee_item_id,
+                'fee_agreement_item_id' => $charge->fee_agreement_item_id,
+                'fee_record_charge_id' => $charge->id,
+                'allocation_type' => 'charge',
+                'fee_code' => $charge->fee_code,
+                'description' => $allocation['description'] ?? $charge->description,
+            ];
+        }
+
         if (! empty($allocation['fee_agreement_item_id'])) {
             $agreementItem = FeeAgreementItem::query()
                 ->where('school_id', $student->school_id)
@@ -162,6 +188,8 @@ class PaymentRecordingService
             return [
                 'fee_item_id' => $agreementItem->fee_item_id,
                 'fee_agreement_item_id' => $agreementItem->id,
+                'fee_record_charge_id' => null,
+                'allocation_type' => $allocationType,
                 'fee_code' => $agreementItem->fee_code,
                 'description' => $allocation['description'] ?? $agreementItem->description,
             ];
@@ -181,6 +209,8 @@ class PaymentRecordingService
             return [
                 'fee_item_id' => $feeItem->id,
                 'fee_agreement_item_id' => null,
+                'fee_record_charge_id' => null,
+                'allocation_type' => $allocationType,
                 'fee_code' => $feeItem->code,
                 'description' => $allocation['description'] ?? $feeItem->name,
             ];
@@ -189,13 +219,162 @@ class PaymentRecordingService
         return [
             'fee_item_id' => null,
             'fee_agreement_item_id' => null,
+            'fee_record_charge_id' => null,
+            'allocation_type' => $allocationType,
             'fee_code' => null,
             'description' => $allocation['description'],
         ];
     }
 
+    /**
+     * @param array<string, mixed> $allocation
+     */
+    private function allocationType(array $allocation): string
+    {
+        if (! empty($allocation['allocation_type'])) {
+            return $allocation['allocation_type'];
+        }
+
+        if (! empty($allocation['fee_record_charge_id'])) {
+            return 'charge';
+        }
+
+        if (! empty($allocation['fee_item_id']) || ! empty($allocation['fee_agreement_item_id'])) {
+            return 'legacy';
+        }
+
+        return 'manual';
+    }
+
+    /**
+     * @param array<string, mixed> $allocation
+     */
+    private function lockUsableCharge(Student $student, array $allocation, ?string $academicYear): FeeRecordCharge
+    {
+        $charge = FeeRecordCharge::query()
+            ->whereKey($allocation['fee_record_charge_id'] ?? null)
+            ->where('school_id', $student->school_id)
+            ->where('student_id', $student->id)
+            ->lockForUpdate()
+            ->first();
+
+        if (! $charge) {
+            throw ValidationException::withMessages([
+                'allocations' => 'Fee Record charge cell does not belong to this student.',
+            ]);
+        }
+
+        if ($academicYear && $charge->academic_year !== $academicYear) {
+            throw ValidationException::withMessages([
+                'allocations' => 'Fee Record charge cell does not match the selected academic year.',
+            ]);
+        }
+
+        $this->assertChargeCanAcceptAllocation($charge, (float) $allocation['amount']);
+
+        return $charge;
+    }
+
+    private function assertChargeCanAcceptAllocation(FeeRecordCharge $charge, float $amount): void
+    {
+        if ($charge->billing_status !== 'billable') {
+            throw ValidationException::withMessages([
+                'allocations' => 'Only billable Fee Record charge cells can receive payments.',
+            ]);
+        }
+
+        if ($this->moneyToCents($charge->outstanding_amount_cached) <= 0) {
+            throw ValidationException::withMessages([
+                'allocations' => 'Fee Record charge cell has no outstanding amount.',
+            ]);
+        }
+
+        if ($this->moneyToCents($amount) > $this->moneyToCents($charge->outstanding_amount_cached)) {
+            throw ValidationException::withMessages([
+                'allocations' => 'Allocation amount cannot exceed Fee Record charge outstanding amount.',
+            ]);
+        }
+    }
+
+    private function applyChargeAllocations(Payment $payment): void
+    {
+        foreach ($payment->allocations as $allocation) {
+            if ($allocation->allocation_type !== 'charge') {
+                continue;
+            }
+
+            $charge = FeeRecordCharge::query()
+                ->whereKey($allocation->fee_record_charge_id)
+                ->where('school_id', $payment->school_id)
+                ->where('student_id', $payment->student_id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $this->assertChargeCanAcceptAllocation($charge, (float) $allocation->amount);
+
+            $paidCents = $this->moneyToCents($charge->paid_amount_cached) + $this->moneyToCents($allocation->amount);
+            $outstandingCents = $this->moneyToCents($charge->outstanding_amount_cached) - $this->moneyToCents($allocation->amount);
+
+            $charge->update([
+                'paid_amount_cached' => $this->centsToMoney($paidCents),
+                'outstanding_amount_cached' => $this->centsToMoney($outstandingCents),
+                'collection_status' => $this->collectionStatus($paidCents, $outstandingCents),
+            ]);
+        }
+    }
+
+    private function reverseChargeAllocations(Payment $payment): void
+    {
+        foreach ($payment->allocations as $allocation) {
+            if ($allocation->allocation_type !== 'charge') {
+                continue;
+            }
+
+            $charge = FeeRecordCharge::query()
+                ->whereKey($allocation->fee_record_charge_id)
+                ->where('school_id', $payment->school_id)
+                ->where('student_id', $payment->student_id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $paidCents = $this->moneyToCents($charge->paid_amount_cached) - $this->moneyToCents($allocation->amount);
+            $outstandingCents = $this->moneyToCents($charge->outstanding_amount_cached) + $this->moneyToCents($allocation->amount);
+            $expectedCents = $this->moneyToCents($charge->expected_amount);
+
+            if ($paidCents < 0 || $outstandingCents > $expectedCents) {
+                throw ValidationException::withMessages([
+                    'allocations' => 'Voiding this payment would make Fee Record charge balances invalid.',
+                ]);
+            }
+
+            $charge->update([
+                'paid_amount_cached' => $this->centsToMoney($paidCents),
+                'outstanding_amount_cached' => $this->centsToMoney($outstandingCents),
+                'collection_status' => $this->collectionStatus($paidCents, $outstandingCents),
+            ]);
+        }
+    }
+
+    private function collectionStatus(int $paidCents, int $outstandingCents): string
+    {
+        if ($outstandingCents <= 0) {
+            return 'paid';
+        }
+
+        if ($paidCents > 0) {
+            return 'partial';
+        }
+
+        return 'unpaid';
+    }
+
     private function moneyToCents(mixed $value): int
     {
         return (int) round(((float) $value) * 100);
+    }
+
+    private function centsToMoney(int $cents): float
+    {
+        return round($cents / 100, 2);
     }
 }

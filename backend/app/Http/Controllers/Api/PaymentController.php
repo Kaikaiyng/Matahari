@@ -104,6 +104,8 @@ class PaymentController extends Controller
                 'id' => $allocation->id,
                 'fee_item_id' => $allocation->fee_item_id,
                 'fee_agreement_item_id' => $allocation->fee_agreement_item_id,
+                'fee_record_charge_id' => $allocation->fee_record_charge_id,
+                'allocation_type' => $allocation->allocation_type,
                 'fee_code' => $allocation->fee_code,
                 'description' => $allocation->description,
                 'amount' => (float) $allocation->amount,

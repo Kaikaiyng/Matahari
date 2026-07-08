@@ -12,6 +12,8 @@ class PaymentAllocation extends Model
         'payment_id',
         'fee_item_id',
         'fee_agreement_item_id',
+        'fee_record_charge_id',
+        'allocation_type',
         'fee_code',
         'description',
         'amount',
@@ -36,5 +38,10 @@ class PaymentAllocation extends Model
     public function feeAgreementItem(): BelongsTo
     {
         return $this->belongsTo(FeeAgreementItem::class);
+    }
+
+    public function feeRecordCharge(): BelongsTo
+    {
+        return $this->belongsTo(FeeRecordCharge::class);
     }
 }
