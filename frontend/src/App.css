@@ -1240,16 +1240,21 @@ th {
   background: #ffffff;
   padding: 10px;
   display: grid;
-  grid-template-columns: minmax(180px, 1fr) minmax(110px, 0.45fr);
+  gap: 10px;
+}
+
+.agreement-item-main {
+  display: grid;
+  grid-template-columns: minmax(160px, 0.9fr) minmax(110px, 0.45fr);
   gap: 8px;
   align-items: center;
 }
 
-.agreement-item-row:has(input[placeholder]) {
-  grid-template-columns: minmax(160px, 0.9fr) minmax(160px, 1fr) minmax(110px, 0.45fr);
+.agreement-item-main:has(input[placeholder]) {
+  grid-template-columns: minmax(150px, 0.9fr) minmax(150px, 1fr) minmax(110px, 0.45fr);
 }
 
-.agreement-item-row label,
+.agreement-item-main label,
 .checkbox-line {
   display: inline-flex;
   align-items: center;
@@ -1262,12 +1267,97 @@ th {
 .agreement-item-row input[type='text'],
 .agreement-item-row input[type='number'],
 .agreement-item-row input:not([type]),
-.agreement-item-row input[placeholder] {
+.agreement-item-row input[placeholder],
+.agreement-item-row select {
   min-height: 38px;
   border: 1px solid #d8dce4;
   border-radius: 8px;
   padding: 0 10px;
   font: inherit;
+}
+
+.agreement-billing-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.agreement-billing-chip {
+  min-width: 150px;
+  border: 1px solid #edf0f4;
+  border-radius: 8px;
+  background: #fbfbfc;
+  padding: 9px 10px;
+}
+
+.agreement-billing-chip strong,
+.agreement-billing-chip span,
+.agreement-billing-chip small {
+  display: block;
+}
+
+.agreement-billing-chip span {
+  margin-top: 3px;
+  color: #4c515c;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.agreement-billing-chip small {
+  margin-top: 3px;
+  color: #747985;
+  font-size: 12px;
+}
+
+.agreement-billing-config {
+  border-top: 1px solid #edf0f4;
+  padding-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) minmax(150px, 0.8fr);
+  gap: 10px;
+  align-items: end;
+}
+
+.billing-confirmation-line {
+  min-height: 38px;
+}
+
+.billing-month-selector {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 6px;
+}
+
+.billing-month-selector > span {
+  color: #4c515c;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.billing-month-options {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(44px, 1fr));
+  gap: 6px;
+}
+
+.billing-month-options label {
+  justify-content: center;
+  min-height: 34px;
+  border: 1px solid #d8dce4;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #4c515c;
+}
+
+.billing-month-options label.selected {
+  border-color: #1f7a55;
+  background: #e7f7ef;
+  color: #167a4a;
+}
+
+.billing-month-options input {
+  display: none;
 }
 
 .agreement-preview {
@@ -1496,6 +1586,7 @@ th {
 
   .allocation-row,
   .allocation-row.charge,
+  .agreement-billing-config,
   .fee-record-activation-bar,
   .fee-record-filters,
   .fee-record-filters.has-category,
@@ -1567,9 +1658,15 @@ th {
   }
 
   .agreement-item-row,
-  .agreement-item-row:has(input[placeholder]),
+  .agreement-item-main,
+  .agreement-item-main:has(input[placeholder]),
+  .agreement-billing-config,
   .allocation-row {
     grid-template-columns: 1fr;
+  }
+
+  .billing-month-options {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .page-title-row {

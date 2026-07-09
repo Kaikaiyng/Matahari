@@ -127,6 +127,8 @@ type StudentForm = {
 }
 
 type PaymentPlan = 'monthly' | 'termly' | 'yearly'
+type FeeAgreementItemClassification = 'recurring' | 'optional_service' | 'one_time' | 'manual'
+type BillingFrequency = 'monthly' | 'termly' | 'yearly' | 'custom' | 'one_time'
 type DiscountType = 'percentage' | 'fixed_amount'
 type DiscountScope = 'tuition_only' | 'total_payable' | 'selected_fee_items'
 
@@ -157,6 +159,10 @@ type FeeAgreement = {
     description: string
     amount: number
     is_mandatory: boolean
+    classification: FeeAgreementItemClassification | null
+    billing_frequency: BillingFrequency | null
+    billing_months: number[] | null
+    requires_preview_confirmation: boolean
   }>
   discounts: Array<{
     id: number
@@ -176,6 +182,10 @@ type FeeAgreementItemDraft = {
   enabled: boolean
   amount: string
   description: string
+  classification: FeeAgreementItemClassification
+  billing_frequency: BillingFrequency
+  billing_months: number[]
+  requires_preview_confirmation: boolean
 }
 
 type FeeAgreementDiscountDraft = {
@@ -474,15 +484,15 @@ const parents = [
 ]
 
 const feeStructures = [
-  { item: 'Tuition Fee', type: 'Mandatory Fee Item', amount: 'TBD', status: 'Configured in Fee Agreement' },
-  { item: 'Misc Fee', type: 'Mandatory Fee Item', amount: 'TBD', status: 'Configured in Fee Agreement' },
-  { item: 'Transport', type: 'Optional Fee Item', amount: 'TBD', status: 'Optional' },
+  { item: 'Tuition Fee', type: 'Mandatory Fee Item', amount: 'Configured per agreement', status: 'Configured in Fee Agreement' },
+  { item: 'Misc Fee', type: 'Mandatory Fee Item', amount: 'Configured per agreement', status: 'Configured in Fee Agreement' },
+  { item: 'Transport', type: 'Optional Fee Item', amount: 'Configured per agreement', status: 'Optional' },
 ]
 
 const reports = [
-  { name: 'Daily Collection', owner: 'Finance', period: 'Future phase', output: 'TBD' },
-  { name: 'Outstanding Fees', owner: 'Admin', period: 'Future phase', output: 'TBD' },
-  { name: 'Student Ledger', owner: 'Finance', period: 'Future phase', output: 'TBD' },
+  { name: 'Daily Collection', owner: 'Finance', period: 'Future phase', output: 'Planned' },
+  { name: 'Outstanding Fees', owner: 'Admin', period: 'Future phase', output: 'Use Fee Record' },
+  { name: 'Student Ledger', owner: 'Finance', period: 'Future phase', output: 'Planned' },
 ]
 
 const emptyStudentForm: StudentForm = {
@@ -529,6 +539,21 @@ const paymentPlanOptions: Array<{ value: PaymentPlan; label: string }> = [
   { value: 'yearly', label: 'Yearly' },
 ]
 
+const feeAgreementClassificationOptions: Array<{ value: FeeAgreementItemClassification; label: string }> = [
+  { value: 'recurring', label: 'Recurring' },
+  { value: 'optional_service', label: 'Optional Service' },
+  { value: 'one_time', label: 'One-time' },
+  { value: 'manual', label: 'Manual' },
+]
+
+const billingFrequencyOptions: Array<{ value: BillingFrequency; label: string }> = [
+  { value: 'monthly', label: 'Monthly' },
+  { value: 'termly', label: 'Termly' },
+  { value: 'yearly', label: 'Yearly' },
+  { value: 'custom', label: 'Custom' },
+  { value: 'one_time', label: 'One-time' },
+]
+
 const discountTypeOptions: Array<{ value: DiscountType; label: string }> = [
   { value: 'percentage', label: 'Percentage' },
   { value: 'fixed_amount', label: 'Fixed Amount' },
@@ -551,7 +576,7 @@ const paymentMethodOptions: Array<{ value: PaymentMethod; label: string }> = [
 
 function formatCurrency(amount: number | null) {
   if (amount === null) {
-    return 'TBD'
+    return 'Not set'
   }
 
   return new Intl.NumberFormat('en-MY', {
@@ -724,6 +749,31 @@ function tomorrowAfter(dateText: string) {
   return date.toISOString().slice(0, 10)
 }
 
+function defaultBillingConfiguration(item: FeeItem): Pick<
+  FeeAgreementItemDraft,
+  'classification' | 'billing_frequency' | 'billing_months' | 'requires_preview_confirmation'
+> {
+  const oneTimeCodePattern = /(UNIFORM|BOOK|WORKSHEET|PE|APPLICATION|DEPOSIT|ENROL|OLD_BALANCE|OTHERS)/i
+  const isOneTime = item.fee_type === 'one_time' || oneTimeCodePattern.test(item.code)
+  const isCoreRecurring = ['TUITION', 'MISC', 'TRANSPORT', 'MEAL', 'MEAL_PLAN', 'HOSTEL', 'HIGH_SCOPE', 'HS'].includes(item.code)
+
+  if (isOneTime) {
+    return {
+      classification: 'one_time',
+      billing_frequency: 'one_time',
+      billing_months: [],
+      requires_preview_confirmation: true,
+    }
+  }
+
+  return {
+    classification: isCoreRecurring || item.category === 'mandatory' ? 'recurring' : 'optional_service',
+    billing_frequency: 'monthly',
+    billing_months: [],
+    requires_preview_confirmation: false,
+  }
+}
+
 function defaultAgreementForm(feeItems: FeeItem[]): FeeAgreementForm {
   return {
     academic_year: '2026',
@@ -732,6 +782,7 @@ function defaultAgreementForm(feeItems: FeeItem[]): FeeAgreementForm {
     effective_to: '',
     remarks: '',
     items: feeItems.map((item) => ({
+      ...defaultBillingConfiguration(item),
       fee_item_id: item.id,
       code: item.code,
       name: item.name,
@@ -763,6 +814,7 @@ function agreementToForm(agreement: FeeAgreement, feeItems: FeeItem[]): FeeAgree
     remarks: agreement.remarks ?? '',
     items: feeItems.map((item) => {
       const agreementItem = agreementItemsByCode.get(item.code)
+      const defaultConfig = defaultBillingConfiguration(item)
 
       return {
         fee_item_id: item.id,
@@ -771,6 +823,10 @@ function agreementToForm(agreement: FeeAgreement, feeItems: FeeItem[]): FeeAgree
         enabled: Boolean(agreementItem) || ['TUITION', 'MISC'].includes(item.code),
         amount: String(agreementItem?.amount ?? item.default_amount ?? ''),
         description: item.code === 'OTHERS' ? agreementItem?.description ?? '' : '',
+        classification: agreementItem?.classification ?? defaultConfig.classification,
+        billing_frequency: agreementItem?.billing_frequency ?? defaultConfig.billing_frequency,
+        billing_months: agreementItem?.billing_months ?? defaultConfig.billing_months,
+        requires_preview_confirmation: agreementItem?.requires_preview_confirmation ?? defaultConfig.requires_preview_confirmation,
       }
     }),
     discount: firstDiscount
@@ -975,6 +1031,13 @@ function StudentsPage({
   const [outstandingChargesYear, setOutstandingChargesYear] = useState('')
   const [isLoadingOutstandingCharges, setIsLoadingOutstandingCharges] = useState(false)
   const [outstandingChargeError, setOutstandingChargeError] = useState('')
+  const [studentListFeeRecordSummaries, setStudentListFeeRecordSummaries] = useState<FeeRecordSummaryRow[]>([])
+  const [studentListFeeRecordSummaryYear, setStudentListFeeRecordSummaryYear] = useState('')
+  const [isLoadingStudentListFeeRecordSummary, setIsLoadingStudentListFeeRecordSummary] = useState(false)
+  const [studentFeeRecordSummary, setStudentFeeRecordSummary] = useState<FeeRecordSummaryRow | null>(null)
+  const [studentFeeRecordSummaryYear, setStudentFeeRecordSummaryYear] = useState('')
+  const [isLoadingStudentFeeRecordSummary, setIsLoadingStudentFeeRecordSummary] = useState(false)
+  const [studentFeeRecordSummaryError, setStudentFeeRecordSummaryError] = useState('')
   const [feeRecordAcademicYear, setFeeRecordAcademicYear] = useState('2026')
   const [feeRecordPreview, setFeeRecordPreview] = useState<FeeRecordPreviewResponse | null>(null)
   const [feeRecordPreviewError, setFeeRecordPreviewError] = useState('')
@@ -1068,6 +1131,30 @@ function StudentsPage({
     outstandingChargesYear === feeRecordAcademicYear
       ? `${outstandingCharges.length} outstanding charge cell${outstandingCharges.length === 1 ? '' : 's'}`
       : 'Outstanding charge status not loaded'
+  const currentFeeRecordSummary =
+    studentFeeRecordSummaryYear === feeRecordAcademicYear ? studentFeeRecordSummary : null
+  const studentListFeeRecordSummaryByStudentId = useMemo(() => {
+    if (studentListFeeRecordSummaryYear !== feeRecordAcademicYear) {
+      return new Map<number, FeeRecordSummaryRow>()
+    }
+
+    return new Map(studentListFeeRecordSummaries.map((summary) => [summary.student_id, summary]))
+  }, [feeRecordAcademicYear, studentListFeeRecordSummaries, studentListFeeRecordSummaryYear])
+  const studentListFeeTotals = useMemo(
+    () =>
+      students.reduce(
+        (totals, student) => {
+          const summary = studentListFeeRecordSummaryByStudentId.get(student.id)
+
+          return {
+            totalExpected: totals.totalExpected + (summary?.total_expected ?? 0),
+            totalOutstanding: totals.totalOutstanding + (summary?.total_outstanding ?? 0),
+          }
+        },
+        { totalExpected: 0, totalOutstanding: 0 },
+      ),
+    [studentListFeeRecordSummaryByStudentId, students],
+  )
   const groupedPreviewCharges = useMemo(() => {
     if (!feeRecordPreview) {
       return []
@@ -1107,6 +1194,29 @@ function StudentsPage({
     setError(mapError(apiError))
   }
 
+  const loadStudentListFeeRecordSummary = async (academicYear = feeRecordAcademicYear) => {
+    if (!canViewFeeRecord) {
+      setStudentListFeeRecordSummaries([])
+      setStudentListFeeRecordSummaryYear('')
+      return
+    }
+
+    setIsLoadingStudentListFeeRecordSummary(true)
+
+    try {
+      const params = new URLSearchParams({ academic_year: academicYear })
+      const response = await apiRequest<{ data: FeeRecordSummaryRow[] }>(`/fee-record/summary?${params.toString()}`)
+      setStudentListFeeRecordSummaries(response.data)
+      setStudentListFeeRecordSummaryYear(academicYear)
+    } catch (summaryError) {
+      setStudentListFeeRecordSummaries([])
+      setStudentListFeeRecordSummaryYear('')
+      handleApiError(summaryError)
+    } finally {
+      setIsLoadingStudentListFeeRecordSummary(false)
+    }
+  }
+
   const loadStudents = async (filter = statusFilter) => {
     setIsLoading(true)
     setError('')
@@ -1114,6 +1224,7 @@ function StudentsPage({
     try {
       const response = await apiRequest<{ data: StudentSummary[] }>(`/students?status=${filter}`)
       setStudents(response.data)
+      await loadStudentListFeeRecordSummary(feeRecordAcademicYear)
 
       if (pendingInitialStudentId) {
         const studentId = pendingInitialStudentId
@@ -1132,6 +1243,12 @@ function StudentsPage({
 
     try {
       const response = await apiRequest<{ student: StudentDetail }>(`/students/${studentId}`)
+      setReceipts([])
+      setSelectedReceipt(null)
+      setIsLoadingReceipts(canViewReceipts)
+      setStudentFeeRecordSummary(null)
+      setStudentFeeRecordSummaryYear('')
+      setStudentFeeRecordSummaryError('')
       setSelectedStudent(response.student)
       setStatusDraft(response.student.status)
       await loadFeeAgreementData(response.student.id)
@@ -1161,10 +1278,19 @@ function StudentsPage({
 
         if (canViewFeeRecord) {
           await loadOutstandingCharges(studentId, activeAgreement.academic_year)
+        } else {
+          setOutstandingCharges([])
+          setOutstandingChargesYear('')
+          setStudentFeeRecordSummary(null)
+          setStudentFeeRecordSummaryYear('')
+          setStudentFeeRecordSummaryError('')
         }
       } else {
         setOutstandingCharges([])
         setOutstandingChargesYear('')
+        setStudentFeeRecordSummary(null)
+        setStudentFeeRecordSummaryYear('')
+        setStudentFeeRecordSummaryError('')
         setManualChargeForm(defaultManualFeeRecordChargeForm())
         setShowManualChargeForm(false)
         setManualChargeErrors(undefined)
@@ -1211,6 +1337,7 @@ function StudentsPage({
       )
       setOutstandingCharges(response.data)
       setOutstandingChargesYear(academicYear)
+      await loadStudentFeeRecordSummary(studentId, academicYear)
     } catch (chargeLoadError) {
       if (chargeLoadError instanceof ApiError && chargeLoadError.status === 403) {
         setOutstandingChargeError('You do not have permission to view Fee Record outstanding charges.')
@@ -1222,6 +1349,33 @@ function StudentsPage({
       handleApiError(chargeLoadError)
     } finally {
       setIsLoadingOutstandingCharges(false)
+    }
+  }
+
+  const loadStudentFeeRecordSummary = async (studentId: number, academicYear: string) => {
+    if (!canViewFeeRecord) {
+      setStudentFeeRecordSummary(null)
+      setStudentFeeRecordSummaryYear('')
+      return
+    }
+
+    setIsLoadingStudentFeeRecordSummary(true)
+    setStudentFeeRecordSummaryError('')
+
+    try {
+      const params = new URLSearchParams({ academic_year: academicYear })
+      const response = await apiRequest<{ data: FeeRecordSummaryRow[] }>(`/fee-record/summary?${params.toString()}`)
+      setStudentFeeRecordSummary(response.data.find((row) => row.student_id === studentId) ?? null)
+      setStudentFeeRecordSummaryYear(academicYear)
+      setStudentListFeeRecordSummaries(response.data)
+      setStudentListFeeRecordSummaryYear(academicYear)
+    } catch (summaryError) {
+      setStudentFeeRecordSummary(null)
+      setStudentFeeRecordSummaryYear('')
+      setStudentFeeRecordSummaryError(mapError(summaryError))
+      handleApiError(summaryError)
+    } finally {
+      setIsLoadingStudentFeeRecordSummary(false)
     }
   }
 
@@ -1352,6 +1506,7 @@ function StudentsPage({
     if (!canViewReceipts) {
       setReceipts([])
       setSelectedReceipt(null)
+      setIsLoadingReceipts(false)
       return
     }
 
@@ -1448,7 +1603,10 @@ function StudentsPage({
 
   const updateFeeAgreementItem = (
     feeItemId: number,
-    field: keyof Pick<FeeAgreementItemDraft, 'enabled' | 'amount' | 'description'>,
+    field: keyof Pick<
+      FeeAgreementItemDraft,
+      'enabled' | 'amount' | 'description' | 'classification' | 'billing_frequency' | 'requires_preview_confirmation'
+    >,
     value: string | boolean,
   ) => {
     setFeeAgreementForm((current) => ({
@@ -1458,10 +1616,51 @@ function StudentsPage({
           ? {
               ...item,
               [field]: value,
+              ...(field === 'classification' && value === 'one_time'
+                ? { billing_frequency: 'one_time' as BillingFrequency, requires_preview_confirmation: true }
+                : {}),
+              ...(field === 'billing_frequency' && value === 'monthly' ? { billing_months: [] } : {}),
             }
           : item,
       ),
     }))
+  }
+
+  const toggleFeeAgreementItemBillingMonth = (feeItemId: number, month: number) => {
+    setFeeAgreementForm((current) => ({
+      ...current,
+      items: current.items.map((item) => {
+        if (item.fee_item_id !== feeItemId) {
+          return item
+        }
+
+        const hasMonth = item.billing_months.includes(month)
+        const billing_months = hasMonth
+          ? item.billing_months.filter((selectedMonth) => selectedMonth !== month)
+          : [...item.billing_months, month].sort((left, right) => left - right)
+
+        return {
+          ...item,
+          billing_months,
+        }
+      }),
+    }))
+  }
+
+  const validateFeeAgreementBillingConfig = (items: FeeAgreementItemDraft[]): ValidationErrors => {
+    return items.reduce<ValidationErrors>((errors, item, index) => {
+      const monthCount = item.billing_months.length
+
+      if ((item.billing_frequency === 'termly' || item.billing_frequency === 'custom') && monthCount === 0) {
+        errors[`items.${index}.billing_months`] = ['Billing months are required for termly and custom billing.']
+      }
+
+      if ((item.billing_frequency === 'yearly' || item.billing_frequency === 'one_time') && monthCount !== 1) {
+        errors[`items.${index}.billing_months`] = ['Yearly and one-time billing require exactly one billing month.']
+      }
+
+      return errors
+    }, {})
   }
 
   const updateFeeAgreementDiscount = (field: keyof FeeAgreementDiscountDraft, value: string | boolean | string[]) => {
@@ -1512,12 +1711,24 @@ function StudentsPage({
     setError('')
     setMessage('')
 
-    const items = feeAgreementForm.items
-      .filter((item) => item.enabled)
+    const enabledItems = feeAgreementForm.items.filter((item) => item.enabled)
+    const billingErrors = validateFeeAgreementBillingConfig(enabledItems)
+
+    if (Object.keys(billingErrors).length > 0) {
+      setFeeAgreementErrors(billingErrors)
+      setIsSavingFeeAgreement(false)
+      return
+    }
+
+    const items = enabledItems
       .map((item) => ({
         fee_item_id: item.fee_item_id,
         amount: Number(item.amount || 0),
         description: item.code === 'OTHERS' ? item.description : item.description || undefined,
+        classification: item.classification,
+        billing_frequency: item.billing_frequency,
+        billing_months: item.billing_months.length > 0 ? item.billing_months : null,
+        requires_preview_confirmation: item.requires_preview_confirmation,
       }))
 
     const discounts =
@@ -2020,7 +2231,15 @@ function StudentsPage({
         </article>
         <article className="metric-card">
           <span>Fee / Outstanding</span>
-          <strong>TBD</strong>
+          <strong>
+            {!canViewFeeRecord
+              ? 'No access'
+              : isLoadingStudentListFeeRecordSummary
+                ? 'Loading...'
+                : `${formatCurrency(studentListFeeTotals.totalExpected)} / ${formatCurrency(
+                    studentListFeeTotals.totalOutstanding,
+                  )}`}
+          </strong>
         </article>
       </section>
 
@@ -2151,24 +2370,34 @@ function StudentsPage({
               </tr>
             </thead>
             <tbody>
-              {students.map((student) => (
-                <tr key={student.id}>
-                  <td>{student.full_name}</td>
-                  <td>{student.student_no}</td>
-                  <td>{student.class?.name ?? formatLevelGroup(student.level_group)}</td>
-                  <td>{formatCurrency(student.fee_amount)}</td>
-                  <td>{formatCurrency(student.outstanding_balance)}</td>
-                  <td>
-                    <span className={`badge ${statusClass(student.status)}`}>{formatStatus(student.status)}</span>
-                  </td>
-                  <td>
-                    <button className="table-action" onClick={() => void loadStudentDetail(student.id)}>
-                      <Eye size={16} />
-                      Open
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {students.map((student) => {
+                const summary = studentListFeeRecordSummaryByStudentId.get(student.id)
+                const feeAmount = isLoadingStudentListFeeRecordSummary
+                  ? 'Loading...'
+                  : formatCurrency(summary?.total_expected ?? 0)
+                const outstandingAmount = isLoadingStudentListFeeRecordSummary
+                  ? 'Loading...'
+                  : formatCurrency(summary?.total_outstanding ?? 0)
+
+                return (
+                  <tr key={student.id}>
+                    <td>{student.full_name}</td>
+                    <td>{student.student_no}</td>
+                    <td>{student.class?.name ?? formatLevelGroup(student.level_group)}</td>
+                    <td>{canViewFeeRecord ? feeAmount : 'No access'}</td>
+                    <td>{canViewFeeRecord ? outstandingAmount : 'No access'}</td>
+                    <td>
+                      <span className={`badge ${statusClass(student.status)}`}>{formatStatus(student.status)}</span>
+                    </td>
+                    <td>
+                      <button className="table-action" onClick={() => void loadStudentDetail(student.id)}>
+                        <Eye size={16} />
+                        Open
+                      </button>
+                    </td>
+                  </tr>
+                )
+              })}
               {!isLoading && students.length === 0 && (
                 <tr>
                   <td colSpan={7}>No students found for this filter.</td>
@@ -2212,11 +2441,11 @@ function StudentsPage({
                 </div>
                 <div>
                   <dt>Class</dt>
-                  <dd>{selectedStudent.class?.name ?? 'TBD'}</dd>
+                  <dd>{selectedStudent.class?.name ?? 'Not assigned'}</dd>
                 </div>
                 <div>
                   <dt>DOB</dt>
-                  <dd>{selectedStudent.dob ?? 'TBD'}</dd>
+                  <dd>{selectedStudent.dob ?? 'Not recorded'}</dd>
                 </div>
               </dl>
             </div>
@@ -2231,22 +2460,45 @@ function StudentsPage({
                   </p>
                 ))
               ) : (
-                <p>TBD</p>
+                <p>No parent or guardian recorded.</p>
               )}
             </div>
 
             <div className="detail-block">
-              <h3>Finance Placeholders</h3>
+              <h3>Fee Record Totals</h3>
               <dl>
                 <div>
-                  <dt>Fee Amount</dt>
-                  <dd>{formatCurrency(selectedStudent.fee_amount)}</dd>
+                  <dt>Academic Year</dt>
+                  <dd>{feeRecordAcademicYear}</dd>
                 </div>
                 <div>
-                  <dt>Outstanding</dt>
-                  <dd>{formatCurrency(selectedStudent.outstanding_balance)}</dd>
+                  <dt>Total Expected</dt>
+                  <dd>{isLoadingStudentFeeRecordSummary ? 'Loading...' : formatCurrency(currentFeeRecordSummary?.total_expected ?? 0)}</dd>
+                </div>
+                <div>
+                  <dt>Total Paid</dt>
+                  <dd>{isLoadingStudentFeeRecordSummary ? 'Loading...' : formatCurrency(currentFeeRecordSummary?.total_paid ?? 0)}</dd>
+                </div>
+                <div>
+                  <dt>Total Outstanding</dt>
+                  <dd>{isLoadingStudentFeeRecordSummary ? 'Loading...' : formatCurrency(currentFeeRecordSummary?.total_outstanding ?? 0)}</dd>
+                </div>
+                <div>
+                  <dt>Outstanding Charge Count</dt>
+                  <dd>
+                    {isLoadingOutstandingCharges
+                      ? 'Loading...'
+                      : outstandingChargesYear === feeRecordAcademicYear
+                        ? outstandingCharges.length
+                        : 0}
+                  </dd>
                 </div>
               </dl>
+              {!isLoadingStudentFeeRecordSummary && canViewFeeRecord && !currentFeeRecordSummary && (
+                <p>No activated Fee Record charges for {feeRecordAcademicYear}.</p>
+              )}
+              {!canViewFeeRecord && <p>You do not have permission to view Fee Record totals.</p>}
+              {studentFeeRecordSummaryError && <small>{studentFeeRecordSummaryError}</small>}
             </div>
 
             <div className="detail-block">
@@ -2274,7 +2526,7 @@ function StudentsPage({
 
           <div className="remarks-block">
             <h3>Remarks</h3>
-            <p>{selectedStudent.notes || 'TBD'}</p>
+            <p>{selectedStudent.notes || 'No remarks recorded.'}</p>
           </div>
 
           <section className="fee-agreement-section">
@@ -2312,6 +2564,24 @@ function StudentsPage({
               </div>
             ) : (
               <Message tone="info">No Fee Agreement has been created for this student yet.</Message>
+            )}
+
+            {currentFeeAgreement && (
+              <div className="agreement-billing-summary">
+                {currentFeeAgreement.items.map((item) => (
+                  <div className="agreement-billing-chip" key={item.id}>
+                    <strong>{item.fee_code}</strong>
+                    <span>{formatStatus(item.classification ?? 'recurring')} / {formatStatus(item.billing_frequency ?? currentFeeAgreement.payment_plan)}</span>
+                    <small>
+                      {item.billing_months?.length
+                        ? item.billing_months.map((month) => monthShortLabels[month - 1] ?? month).join(', ')
+                        : item.billing_frequency === 'monthly' || (!item.billing_frequency && currentFeeAgreement.payment_plan === 'monthly')
+                          ? 'Jan-Dec'
+                          : 'Months not configured'}
+                    </small>
+                  </div>
+                ))}
+              </div>
             )}
 
             {showFeeAgreementForm && canEditFeeAgreement && (
@@ -2394,35 +2664,105 @@ function StudentsPage({
                 <div className="agreement-items-grid">
                   {feeAgreementForm.items.map((item) => {
                     const isMandatory = ['TUITION', 'MISC'].includes(item.code)
+                    const enabledItemIndex = feeAgreementForm.items.filter((candidate) => candidate.enabled).findIndex((candidate) => candidate.fee_item_id === item.fee_item_id)
+                    const monthError =
+                      enabledItemIndex >= 0
+                        ? formatValidationError(feeAgreementErrors, `items.${enabledItemIndex}.billing_months`)
+                        : undefined
 
                     return (
                       <div className="agreement-item-row" key={item.fee_item_id}>
-                        <label>
+                        <div className="agreement-item-main">
+                          <label>
+                            <input
+                              type="checkbox"
+                              checked={item.enabled}
+                              disabled={isMandatory}
+                              onChange={(event) => updateFeeAgreementItem(item.fee_item_id, 'enabled', event.target.checked)}
+                            />
+                            <span>
+                              {item.name}
+                              {isMandatory ? ' *' : ''}
+                            </span>
+                          </label>
+                          {item.code === 'OTHERS' && (
+                            <input
+                              placeholder="Custom description"
+                              value={item.description}
+                              onChange={(event) => updateFeeAgreementItem(item.fee_item_id, 'description', event.target.value)}
+                            />
+                          )}
                           <input
-                            type="checkbox"
-                            checked={item.enabled}
-                            disabled={isMandatory}
-                            onChange={(event) => updateFeeAgreementItem(item.fee_item_id, 'enabled', event.target.checked)}
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={item.amount}
+                            onChange={(event) => updateFeeAgreementItem(item.fee_item_id, 'amount', event.target.value)}
                           />
-                          <span>
-                            {item.name}
-                            {isMandatory ? ' *' : ''}
-                          </span>
-                        </label>
-                        {item.code === 'OTHERS' && (
-                          <input
-                            placeholder="Custom description"
-                            value={item.description}
-                            onChange={(event) => updateFeeAgreementItem(item.fee_item_id, 'description', event.target.value)}
-                          />
+                        </div>
+
+                        {item.enabled && (
+                          <div className="agreement-billing-config">
+                            <label className="form-field">
+                              Classification
+                              <select
+                                value={item.classification}
+                                onChange={(event) =>
+                                  updateFeeAgreementItem(item.fee_item_id, 'classification', event.target.value as FeeAgreementItemClassification)
+                                }
+                              >
+                                {feeAgreementClassificationOptions.map((option) => (
+                                  <option key={option.value} value={option.value}>
+                                    {option.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                            <label className="form-field">
+                              Billing Frequency
+                              <select
+                                value={item.billing_frequency}
+                                onChange={(event) =>
+                                  updateFeeAgreementItem(item.fee_item_id, 'billing_frequency', event.target.value as BillingFrequency)
+                                }
+                              >
+                                {billingFrequencyOptions.map((option) => (
+                                  <option key={option.value} value={option.value}>
+                                    {option.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                            <label className="checkbox-line billing-confirmation-line">
+                              <input
+                                type="checkbox"
+                                checked={item.requires_preview_confirmation}
+                                onChange={(event) => updateFeeAgreementItem(item.fee_item_id, 'requires_preview_confirmation', event.target.checked)}
+                              />
+                              Preview confirmation
+                            </label>
+                            <div className="billing-month-selector">
+                              <span>{item.billing_frequency === 'monthly' ? 'Billing months override' : 'Billing months'}</span>
+                              <div className="billing-month-options">
+                                {monthShortLabels.map((label, monthIndex) => {
+                                  const month = monthIndex + 1
+
+                                  return (
+                                    <label className={item.billing_months.includes(month) ? 'selected' : ''} key={label}>
+                                      <input
+                                        type="checkbox"
+                                        checked={item.billing_months.includes(month)}
+                                        onChange={() => toggleFeeAgreementItemBillingMonth(item.fee_item_id, month)}
+                                      />
+                                      {label}
+                                    </label>
+                                  )
+                                })}
+                              </div>
+                              {monthError && <small>{monthError}</small>}
+                            </div>
+                          </div>
                         )}
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={item.amount}
-                          onChange={(event) => updateFeeAgreementItem(item.fee_item_id, 'amount', event.target.value)}
-                        />
                       </div>
                     )
                   })}
@@ -3022,28 +3362,30 @@ function StudentsPage({
                       </p>
                     </div>
                     <button type="button" className="table-action" onClick={addPaymentAllocation}>
-                      Add Manual
+                      Add manual allocation (does not clear Fee Record outstanding)
                     </button>
                   </div>
 
                   <div className="allocation-rows">
                     {paymentForm.allocations.length === 0 && (
-                      <div className="empty-state">Select charge cells or add a manual allocation.</div>
+                      <div className="empty-state">
+                        Select charge cells, or add a manual allocation only for legacy/unclassified payments.
+                      </div>
                     )}
 
                     {paymentForm.allocations.map((allocation, index) => (
                       <div className={`allocation-row ${allocation.allocation_type}`} key={allocation.key}>
                         <div className="allocation-source-summary">
                           <span className={`badge ${allocation.allocation_type === 'charge' ? 'paid' : 'neutral'}`}>
-                            {allocation.allocation_type === 'charge' ? 'Charge cell' : 'Manual'}
+                            {allocation.allocation_type === 'charge' ? 'Charge cell' : 'Manual allocation'}
                           </span>
-                          <strong>{allocation.description || 'Manual allocation'}</strong>
+                          <strong>{allocation.description || 'Manual allocation (does not clear Fee Record outstanding)'}</strong>
                           <small>
                             {allocation.allocation_type === 'charge'
                               ? `${allocation.billing_month} / ${allocation.fee_record_category} / Outstanding ${formatCurrency(
                                   allocation.outstanding_amount,
                                 )}`
-                              : 'Does not clear Fee Record charge cells unless reconciled later.'}
+                              : 'Use only for legacy/unclassified payments. This will not reduce Fee Record charge cells.'}
                           </small>
                         </div>
 
@@ -3117,19 +3459,19 @@ function StudentsPage({
                       const issuedReceipt = payment.issued_receipt
 
                       return (
-                      <Fragment key={payment.id}>
+                          <Fragment key={payment.id}>
                         <tr>
                           <td>{payment.payment_date}</td>
-                          <td>{payment.received_date ?? 'TBD'}</td>
+                          <td>{payment.received_date ?? 'Not recorded'}</td>
                           <td>{formatStatus(payment.payment_method)}</td>
                           <td>{formatCurrency(payment.amount)}</td>
                           <td>
                             <span className={`badge ${paymentStatusClass(payment.status)}`}>{formatStatus(payment.status)}</span>
                           </td>
-                          <td>{payment.reference_no ?? 'TBD'}</td>
+                          <td>{payment.reference_no ?? 'Not recorded'}</td>
                           <td>{issuedReceipt ? issuedReceipt.receipt_no : 'No issued receipt'}</td>
-                          <td>{payment.recorded_by?.name ?? 'TBD'}</td>
-                          <td>{payment.verified_by?.name ?? 'TBD'}</td>
+                          <td>{payment.recorded_by?.name ?? 'Not recorded'}</td>
+                          <td>{payment.verified_by?.name ?? 'Not verified'}</td>
                           <td>
                             <div className="payment-actions">
                               {canVerifyPayments && payment.status === 'pending_verification' && (
@@ -3335,7 +3677,12 @@ function StudentsPage({
                     </tr>
                   </thead>
                   <tbody>
-                    {receipts.map((receipt) => (
+                    {isLoadingReceipts && (
+                      <tr>
+                        <td colSpan={8}>Loading receipts...</td>
+                      </tr>
+                    )}
+                    {!isLoadingReceipts && receipts.map((receipt) => (
                       <Fragment key={receipt.id}>
                         <tr>
                           <td>{receipt.receipt_no}</td>
@@ -3345,10 +3692,10 @@ function StudentsPage({
                             <span className={`badge ${receiptStatusClass(receipt.status)}`}>{formatStatus(receipt.status)}</span>
                           </td>
                           <td>{receipt.paid_by}</td>
-                          <td>{receipt.issued_by?.name ?? 'TBD'}</td>
+                          <td>{receipt.issued_by?.name ?? 'Not recorded'}</td>
                           <td>
                             {receipt.status === 'voided'
-                              ? `${receipt.voided_by?.name ?? 'TBD'} / ${receipt.void_reason ?? 'No reason'}`
+                              ? `${receipt.voided_by?.name ?? 'Not recorded'} / ${receipt.void_reason ?? 'No reason'}`
                               : 'Not voided'}
                           </td>
                           <td>
@@ -3404,11 +3751,6 @@ function StudentsPage({
                         <td colSpan={8}>No receipts generated for this student yet.</td>
                       </tr>
                     )}
-                    {isLoadingReceipts && (
-                      <tr>
-                        <td colSpan={8}>Loading receipts...</td>
-                      </tr>
-                    )}
                   </tbody>
                 </table>
               </div>
@@ -3441,7 +3783,7 @@ function StudentsPage({
                     </div>
                     <div>
                       <span>Issued By</span>
-                      <strong>{selectedReceipt.issued_by?.name ?? 'TBD'}</strong>
+                      <strong>{selectedReceipt.issued_by?.name ?? 'Not recorded'}</strong>
                     </div>
                   </div>
 
@@ -3475,7 +3817,7 @@ function StudentsPage({
                       </div>
                       <div>
                         <dt>Received Date</dt>
-                        <dd>{selectedReceipt.received_date ?? 'TBD'}</dd>
+                        <dd>{selectedReceipt.received_date ?? 'Not recorded'}</dd>
                       </div>
                     </dl>
                   </div>
@@ -3511,7 +3853,7 @@ function StudentsPage({
 
                   {selectedReceipt.status === 'voided' && (
                     <Message tone="error">
-                      Voided by {selectedReceipt.voided_by?.name ?? 'TBD'}: {selectedReceipt.void_reason ?? 'No reason provided.'}
+                      Voided by {selectedReceipt.voided_by?.name ?? 'Not recorded'}: {selectedReceipt.void_reason ?? 'No reason provided.'}
                     </Message>
                   )}
 
@@ -3840,7 +4182,7 @@ function FeeRecordSummaryPage({
                           </button>
                         </td>
                         <td>{row.student_no}</td>
-                        <td>{row.class_name ?? 'TBD'}</td>
+                        <td>{row.class_name ?? 'Not assigned'}</td>
                         <td>{formatLevelGroup(row.level_group)}</td>
                         <td>{formatCurrency(row.total_expected)}</td>
                         <td>{formatCurrency(row.total_paid)}</td>
@@ -3915,7 +4257,7 @@ function FeeRecordSummaryPage({
                           </button>
                         </td>
                         <td>{row.student_no}</td>
-                        <td>{row.class_name ?? 'TBD'}</td>
+                        <td>{row.class_name ?? 'Not assigned'}</td>
                         {row.months.map((cell) => (
                           <td key={cell.month}>
                             <FeeRecordMonthCellView cell={cell} />
@@ -4049,7 +4391,7 @@ function DashboardPage({
       },
       {
         label: 'Outstanding Fees',
-        value: 'TBD',
+        value: 'View Fee Record',
         tone: 'neutral',
       },
       {
@@ -4067,7 +4409,7 @@ function DashboardPage({
         <div>
           <p className="eyebrow">MVP phase</p>
           <h2>Authentication and Student Management are connected to the backend</h2>
-          <p>Finance totals remain placeholders until Payment, Receipt and General Fee Record are approved.</p>
+          <p>Use Fee Record for the working finance ledger; dashboard finance widgets remain future phase.</p>
         </div>
         <button className="primary-action" onClick={() => setActivePage('students')}>
           <GraduationCap size={18} />

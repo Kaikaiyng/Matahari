@@ -116,6 +116,97 @@ class FeeAgreementApiTest extends TestCase
             ->count());
     }
 
+    public function test_superseding_fee_agreement_stores_item_billing_configuration(): void
+    {
+        [$school, $student, $admin] = $this->schoolStudentAndUser(['fee_agreements.create', 'fee_agreements.update']);
+        $tuition = $this->feeItem($school, 'TUITION', 'Tuition Fee', 'mandatory');
+        $misc = $this->feeItem($school, 'MISC', 'Misc Fee', 'mandatory');
+        $uniform = $this->feeItem($school, 'UNIFORM', 'Uniform', 'optional');
+
+        $this->actingAs($admin)
+            ->postJson("/api/students/{$student->id}/fee-agreements", [
+                'academic_year' => '2026',
+                'payment_plan' => 'monthly',
+                'effective_from' => '2026-01-01',
+                'items' => [
+                    ['fee_item_id' => $tuition->id, 'amount' => 800],
+                    ['fee_item_id' => $misc->id, 'amount' => 90],
+                ],
+            ])
+            ->assertCreated();
+
+        $current = FeeAgreement::query()->firstOrFail();
+
+        $this->actingAs($admin)
+            ->postJson("/api/fee-agreements/{$current->id}/supersede", [
+                'effective_from' => '2026-02-01',
+                'items' => [
+                    [
+                        'fee_item_id' => $tuition->id,
+                        'amount' => 800,
+                        'classification' => 'recurring',
+                        'billing_frequency' => 'termly',
+                        'billing_months' => [2, 6, 9],
+                    ],
+                    [
+                        'fee_item_id' => $misc->id,
+                        'amount' => 90,
+                        'classification' => 'recurring',
+                        'billing_frequency' => 'yearly',
+                        'billing_months' => [1],
+                    ],
+                    [
+                        'fee_item_id' => $uniform->id,
+                        'amount' => 120,
+                        'classification' => 'one_time',
+                        'billing_frequency' => 'one_time',
+                        'billing_months' => [7],
+                    ],
+                ],
+            ])
+            ->assertCreated()
+            ->assertJsonPath('fee_agreement.items.0.billing_frequency', 'termly')
+            ->assertJsonPath('fee_agreement.items.0.billing_months', [2, 6, 9])
+            ->assertJsonPath('fee_agreement.items.2.classification', 'one_time')
+            ->assertJsonPath('fee_agreement.items.2.billing_frequency', 'one_time')
+            ->assertJsonPath('fee_agreement.items.2.billing_months', [7]);
+    }
+
+    public function test_fee_agreement_item_billing_month_rules_are_validated(): void
+    {
+        [$school, $student, $admin] = $this->schoolStudentAndUser(['fee_agreements.create']);
+        $tuition = $this->feeItem($school, 'TUITION', 'Tuition Fee', 'mandatory');
+        $misc = $this->feeItem($school, 'MISC', 'Misc Fee', 'mandatory');
+
+        $this->actingAs($admin)
+            ->postJson("/api/students/{$student->id}/fee-agreements", [
+                'academic_year' => '2026',
+                'payment_plan' => 'monthly',
+                'effective_from' => '2026-01-01',
+                'items' => [
+                    [
+                        'fee_item_id' => $tuition->id,
+                        'amount' => 800,
+                        'classification' => 'recurring',
+                        'billing_frequency' => 'termly',
+                        'billing_months' => [],
+                    ],
+                    [
+                        'fee_item_id' => $misc->id,
+                        'amount' => 90,
+                        'classification' => 'recurring',
+                        'billing_frequency' => 'yearly',
+                        'billing_months' => [1, 7],
+                    ],
+                ],
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors([
+                'items.0.billing_months',
+                'items.1.billing_months',
+            ]);
+    }
+
     public function test_finance_user_can_view_but_cannot_create_fee_agreement(): void
     {
         [$school, $student, $finance] = $this->schoolStudentAndUser(['fee_agreements.view']);

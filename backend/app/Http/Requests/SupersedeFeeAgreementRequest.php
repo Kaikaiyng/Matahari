@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\ValidatesFeeAgreementBillingConfiguration;
 use App\Models\FeeItem;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -9,6 +10,8 @@ use Illuminate\Validation\Validator;
 
 class SupersedeFeeAgreementRequest extends FormRequest
 {
+    use ValidatesFeeAgreementBillingConfiguration;
+
     public function authorize(): bool
     {
         return true;
@@ -28,6 +31,7 @@ class SupersedeFeeAgreementRequest extends FormRequest
             'items.*.fee_item_id' => ['required', 'integer', 'exists:fee_items,id'],
             'items.*.description' => ['nullable', 'string', 'max:255'],
             'items.*.amount' => ['required', 'numeric', 'min:0'],
+            ...$this->billingConfigurationRules(),
             'discounts' => ['sometimes', 'array'],
             'discounts.*.discount_label' => ['required_with:discounts', 'string', 'max:255'],
             'discounts.*.discount_type' => ['required_with:discounts', 'string', Rule::in(['percentage', 'fixed_amount'])],
@@ -67,6 +71,8 @@ class SupersedeFeeAgreementRequest extends FormRequest
                     $validator->errors()->add("items.{$index}.description", 'Others fee items require a custom description.');
                 }
             }
+
+            $this->validateBillingConfiguration($validator);
 
             foreach ($this->input('discounts', []) as $index => $discount) {
                 if (($discount['scope'] ?? null) === 'selected_fee_items' && empty($discount['selected_fee_codes'])) {
