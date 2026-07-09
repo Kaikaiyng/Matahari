@@ -6,6 +6,7 @@ use App\Models\FeeAgreementItem;
 use App\Models\FeeRecordCharge;
 use App\Models\FeeItem;
 use App\Models\Payment;
+use App\Models\Receipt;
 use App\Models\Student;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -115,6 +116,8 @@ class PaymentRecordingService
             if ($lockedPayment->status === 'voided') {
                 throw ValidationException::withMessages(['payment' => 'Payment is already voided.']);
             }
+
+            $this->assertNoIssuedReceipt($lockedPayment);
 
             if ($lockedPayment->status === 'verified') {
                 $this->reverseChargeAllocations($lockedPayment);
@@ -292,6 +295,21 @@ class PaymentRecordingService
         if ($this->moneyToCents($amount) > $this->moneyToCents($charge->outstanding_amount_cached)) {
             throw ValidationException::withMessages([
                 'allocations' => 'Allocation amount cannot exceed Fee Record charge outstanding amount.',
+            ]);
+        }
+    }
+
+    private function assertNoIssuedReceipt(Payment $payment): void
+    {
+        $hasIssuedReceipt = Receipt::query()
+            ->where('school_id', $payment->school_id)
+            ->where('payment_id', $payment->id)
+            ->where('status', 'issued')
+            ->exists();
+
+        if ($hasIssuedReceipt) {
+            throw ValidationException::withMessages([
+                'payment' => 'Void the issued receipt before voiding this payment.',
             ]);
         }
     }

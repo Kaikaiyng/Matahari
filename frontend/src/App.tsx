@@ -1851,6 +1851,8 @@ function StudentsPage({
     } catch (voidError) {
       if (voidError instanceof ApiError && voidError.status === 422) {
         setVoidErrors(voidError.errors)
+        setError(formatValidationError(voidError.errors, 'payment') ?? voidError.message)
+        return
       }
       handleApiError(voidError)
     } finally {
