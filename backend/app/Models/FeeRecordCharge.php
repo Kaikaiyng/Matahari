@@ -18,6 +18,7 @@ class FeeRecordCharge extends Model
         'fee_record_category',
         'fee_code',
         'description',
+        'remark',
         'expected_amount',
         'paid_amount_cached',
         'outstanding_amount_cached',

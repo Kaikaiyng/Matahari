@@ -969,7 +969,8 @@ th {
   gap: 8px;
 }
 
-.fee-agreement-section {
+.fee-agreement-section,
+.fee-record-charge-section {
   grid-column: 1 / -1;
   border: 1px solid #edf0f4;
   border-radius: 8px;
@@ -977,6 +978,98 @@ th {
   padding: 16px;
   display: grid;
   gap: 16px;
+}
+
+.fee-record-activation-bar {
+  display: grid;
+  grid-template-columns: minmax(160px, 0.8fr) repeat(4, auto);
+  gap: 12px;
+  align-items: end;
+}
+
+.fee-record-preview-block,
+.fee-record-warning-list,
+.manual-charge-form,
+.preview-charge-group {
+  border: 1px solid #edf0f4;
+  border-radius: 8px;
+  background: #fbfbfc;
+  padding: 14px;
+  display: grid;
+  gap: 14px;
+}
+
+.fee-record-warning-list {
+  border-color: #f0c7ca;
+  background: #fff7f7;
+}
+
+.warning-row {
+  display: grid;
+  gap: 4px;
+  border: 1px solid #f0c7ca;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 10px;
+}
+
+.warning-row span {
+  color: #747985;
+  font-size: 13px;
+}
+
+.preview-charge-groups {
+  display: grid;
+  gap: 12px;
+}
+
+.preview-charge-group {
+  background: #ffffff;
+}
+
+.preview-charge-group table {
+  min-width: 860px;
+}
+
+.preview-charge-group-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.preview-charge-group-header strong,
+.preview-charge-group-header span {
+  display: block;
+}
+
+.preview-charge-group-header span {
+  margin-top: 4px;
+  color: #747985;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.preview-charge-group-header b {
+  color: #167a4a;
+  white-space: nowrap;
+}
+
+.fee-record-outstanding-strip {
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #dcebe4;
+  border-radius: 8px;
+  background: #f4fbf7;
+  color: #4c515c;
+  padding: 10px 12px;
+}
+
+.fee-record-outstanding-strip strong {
+  color: #167a4a;
+  font-size: 20px;
 }
 
 .payment-section {
@@ -1403,6 +1496,7 @@ th {
 
   .allocation-row,
   .allocation-row.charge,
+  .fee-record-activation-bar,
   .fee-record-filters,
   .fee-record-filters.has-category,
   .inline-payment-form,

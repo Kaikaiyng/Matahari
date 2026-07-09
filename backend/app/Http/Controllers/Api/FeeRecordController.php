@@ -3,10 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreManualFeeRecordChargeRequest;
+use App\Models\FeeRecordCharge;
 use App\Models\Student;
 use App\Services\Billing\FeeRecordCategoryMapper;
 use App\Services\Billing\FeeRecordCategoryMonthlyService;
 use App\Services\Billing\FeeRecordChargeGenerationService;
+use App\Services\Billing\FeeRecordManualChargeService;
 use App\Services\Billing\FeeRecordSummaryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -97,6 +100,18 @@ class FeeRecordController extends Controller
         return response()->json($service->activate($student, $data['academic_year']), 201);
     }
 
+    public function storeManualCharge(
+        StoreManualFeeRecordChargeRequest $request,
+        Student $student,
+        FeeRecordManualChargeService $service,
+    ): JsonResponse {
+        $this->assertSchoolScope($request, $student);
+
+        $charge = $service->create($student, $request->validated());
+
+        return response()->json(['data' => $this->chargeResponse($charge)], 201);
+    }
+
     public function outstanding(
         Request $request,
         Student $student,
@@ -106,6 +121,36 @@ class FeeRecordController extends Controller
         $data = $request->validate($this->academicYearRules());
 
         return response()->json(['data' => $service->outstanding($student, $data['academic_year'])]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function chargeResponse(FeeRecordCharge $charge): array
+    {
+        return [
+            'id' => $charge->id,
+            'school_id' => $charge->school_id,
+            'student_id' => $charge->student_id,
+            'fee_agreement_id' => $charge->fee_agreement_id,
+            'fee_agreement_item_id' => $charge->fee_agreement_item_id,
+            'fee_item_id' => $charge->fee_item_id,
+            'academic_year' => $charge->academic_year,
+            'billing_month' => $charge->billing_month,
+            'fee_record_category' => $charge->fee_record_category,
+            'fee_code' => $charge->fee_code,
+            'description' => $charge->description,
+            'remark' => $charge->remark,
+            'expected_amount' => (float) $charge->expected_amount,
+            'paid_amount' => (float) $charge->paid_amount_cached,
+            'outstanding_amount' => (float) $charge->outstanding_amount_cached,
+            'billing_status' => $charge->billing_status,
+            'collection_status' => $charge->collection_status,
+            'charge_origin' => $charge->charge_origin,
+            'source_type' => $charge->source_type,
+            'skipped_reason' => $charge->skipped_reason,
+            'activated_at' => $charge->activated_at?->toISOString(),
+        ];
     }
 
     private function assertSchoolScope(Request $request, Student $student): void

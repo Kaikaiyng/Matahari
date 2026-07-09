@@ -259,6 +259,45 @@ type OutstandingChargeCell = {
   source_type: string | null
 }
 
+type FeeRecordPreviewCharge = {
+  fee_agreement_id: number
+  fee_agreement_item_id: number | null
+  fee_item_id: number | null
+  academic_year: string
+  billing_month: string
+  fee_record_category: string
+  fee_code: string | null
+  description: string
+  expected_amount: number
+  billing_status: string
+  collection_status: string
+  charge_origin: string
+  source_type: string | null
+  requires_preview_confirmation: boolean
+  warning: string | null
+}
+
+type FeeRecordPreviewWarning = {
+  fee_agreement_item_id: number
+  fee_code: string | null
+  description: string
+  reason: string
+  message: string
+}
+
+type FeeRecordPreviewResponse = {
+  fee_agreement: {
+    id: number
+    academic_year: string
+    payment_plan: PaymentPlan
+    effective_from: string
+    effective_to: string | null
+  }
+  needs_confirmation: boolean
+  warnings: FeeRecordPreviewWarning[]
+  charges: FeeRecordPreviewCharge[]
+}
+
 type FeeRecordSummaryRow = {
   student_id: number
   student_no: string
@@ -372,6 +411,15 @@ type PaymentForm = {
   payment_proof: string
   remark: string
   allocations: PaymentAllocationDraft[]
+}
+
+type ManualFeeRecordChargeForm = {
+  academic_year: string
+  billing_month: string
+  fee_record_category: FeeRecordCategory
+  description: string
+  expected_amount: string
+  remark: string
 }
 
 type VerifyPaymentForm = {
@@ -648,6 +696,19 @@ function defaultPaymentForm(currentFeeAgreement: FeeAgreement | null): PaymentFo
   }
 }
 
+function defaultManualFeeRecordChargeForm(academicYear = '2026'): ManualFeeRecordChargeForm {
+  const currentMonth = String(new Date().getMonth() + 1).padStart(2, '0')
+
+  return {
+    academic_year: academicYear,
+    billing_month: `${academicYear}-${currentMonth}`,
+    fee_record_category: 'OTHERS',
+    description: '',
+    expected_amount: '',
+    remark: '',
+  }
+}
+
 function defaultVerifyForm(payment?: StudentPayment): VerifyPaymentForm {
   return {
     received_date: todayDate(),
@@ -911,8 +972,18 @@ function StudentsPage({
   const [paymentErrors, setPaymentErrors] = useState<ValidationErrors>()
   const [isSavingPayment, setIsSavingPayment] = useState(false)
   const [outstandingCharges, setOutstandingCharges] = useState<OutstandingChargeCell[]>([])
+  const [outstandingChargesYear, setOutstandingChargesYear] = useState('')
   const [isLoadingOutstandingCharges, setIsLoadingOutstandingCharges] = useState(false)
   const [outstandingChargeError, setOutstandingChargeError] = useState('')
+  const [feeRecordAcademicYear, setFeeRecordAcademicYear] = useState('2026')
+  const [feeRecordPreview, setFeeRecordPreview] = useState<FeeRecordPreviewResponse | null>(null)
+  const [feeRecordPreviewError, setFeeRecordPreviewError] = useState('')
+  const [isPreviewingFeeRecord, setIsPreviewingFeeRecord] = useState(false)
+  const [isActivatingFeeRecord, setIsActivatingFeeRecord] = useState(false)
+  const [showManualChargeForm, setShowManualChargeForm] = useState(false)
+  const [manualChargeForm, setManualChargeForm] = useState<ManualFeeRecordChargeForm>(defaultManualFeeRecordChargeForm())
+  const [manualChargeErrors, setManualChargeErrors] = useState<ValidationErrors>()
+  const [isSavingManualCharge, setIsSavingManualCharge] = useState(false)
   const [verifyingPaymentId, setVerifyingPaymentId] = useState<number | null>(null)
   const [verifyForm, setVerifyForm] = useState<VerifyPaymentForm>(defaultVerifyForm())
   const [verifyErrors, setVerifyErrors] = useState<ValidationErrors>()
@@ -941,6 +1012,9 @@ function StudentsPage({
   const canCreateFeeAgreement = hasPermission(user, 'fee_agreements.create')
   const canUpdateFeeAgreement = hasPermission(user, 'fee_agreements.update')
   const canEditFeeAgreement = canCreateFeeAgreement || canUpdateFeeAgreement
+  const canViewFeeRecord = hasPermission(user, 'fee_record.view')
+  const canActivateFeeRecord = hasPermission(user, 'fee_record.generate') || hasPermission(user, 'fee_record.manage')
+  const canManageFeeRecord = hasPermission(user, 'fee_record.manage')
   const canViewPayments = hasPermission(user, 'payments.view')
   const canCreatePayments = hasPermission(user, 'payments.create')
   const canVerifyPayments = hasPermission(user, 'payments.verify')
@@ -983,6 +1057,46 @@ function StudentsPage({
       })),
     }))
   }, [outstandingCharges])
+  const previewBlockedByWarnings = Boolean(feeRecordPreview?.needs_confirmation || feeRecordPreview?.warnings.length)
+  const canActivateCurrentPreview = Boolean(
+    canActivateFeeRecord &&
+      feeRecordPreview &&
+      feeRecordPreview.charges.length > 0 &&
+      !previewBlockedByWarnings,
+  )
+  const outstandingStatusLabel =
+    outstandingChargesYear === feeRecordAcademicYear
+      ? `${outstandingCharges.length} outstanding charge cell${outstandingCharges.length === 1 ? '' : 's'}`
+      : 'Outstanding charge status not loaded'
+  const groupedPreviewCharges = useMemo(() => {
+    if (!feeRecordPreview) {
+      return []
+    }
+
+    const groups = new Map<string, FeeRecordPreviewCharge[]>()
+
+    feeRecordPreview.charges.forEach((charge) => {
+      const key = `${charge.fee_code ?? 'Manual'}|${charge.description}|${charge.fee_record_category}`
+
+      if (!groups.has(key)) {
+        groups.set(key, [])
+      }
+
+      groups.get(key)!.push(charge)
+    })
+
+    return Array.from(groups.entries()).map(([key, charges]) => {
+      const [feeCode, description, category] = key.split('|')
+
+      return {
+        key,
+        feeCode,
+        description,
+        category,
+        charges: [...charges].sort((left, right) => left.billing_month.localeCompare(right.billing_month)),
+      }
+    })
+  }, [feeRecordPreview])
 
   const handleApiError = (apiError: unknown) => {
     if (apiError instanceof ApiError && apiError.status === 401) {
@@ -1034,6 +1148,27 @@ function StudentsPage({
       setFeeAgreements(agreementsResponse.data)
       setShowFeeAgreementForm(false)
       setFeeAgreementErrors(undefined)
+      setFeeRecordPreview(null)
+      setFeeRecordPreviewError('')
+
+      const activeAgreement = agreementsResponse.data.find((agreement) => agreement.is_current)
+
+      if (activeAgreement) {
+        setFeeRecordAcademicYear(activeAgreement.academic_year)
+        setManualChargeForm(defaultManualFeeRecordChargeForm(activeAgreement.academic_year))
+        setShowManualChargeForm(false)
+        setManualChargeErrors(undefined)
+
+        if (canViewFeeRecord) {
+          await loadOutstandingCharges(studentId, activeAgreement.academic_year)
+        }
+      } else {
+        setOutstandingCharges([])
+        setOutstandingChargesYear('')
+        setManualChargeForm(defaultManualFeeRecordChargeForm())
+        setShowManualChargeForm(false)
+        setManualChargeErrors(undefined)
+      }
 
       if (canEditFeeAgreement) {
         const itemsResponse = await apiRequest<{ data: FeeItem[] }>('/fee-items')
@@ -1075,15 +1210,141 @@ function StudentsPage({
         `/students/${studentId}/fee-record/outstanding?academic_year=${academicYear}`,
       )
       setOutstandingCharges(response.data)
+      setOutstandingChargesYear(academicYear)
     } catch (chargeLoadError) {
       if (chargeLoadError instanceof ApiError && chargeLoadError.status === 403) {
         setOutstandingChargeError('You do not have permission to view Fee Record outstanding charges.')
       } else {
         setOutstandingChargeError(mapError(chargeLoadError))
       }
+      setOutstandingCharges([])
+      setOutstandingChargesYear('')
       handleApiError(chargeLoadError)
     } finally {
       setIsLoadingOutstandingCharges(false)
+    }
+  }
+
+  const previewFeeRecordCharges = async () => {
+    if (!selectedStudent) {
+      return
+    }
+
+    setIsPreviewingFeeRecord(true)
+    setFeeRecordPreviewError('')
+    setFeeRecordPreview(null)
+    setError('')
+    setMessage('')
+
+    try {
+      const response = await apiRequest<FeeRecordPreviewResponse>(
+        `/students/${selectedStudent.id}/fee-record/preview?academic_year=${feeRecordAcademicYear}`,
+      )
+      setFeeRecordPreview(response)
+      await loadOutstandingCharges(selectedStudent.id, feeRecordAcademicYear)
+    } catch (previewError) {
+      if (previewError instanceof ApiError && previewError.status === 403) {
+        setFeeRecordPreviewError('You do not have permission to preview Fee Record charges.')
+      } else {
+        setFeeRecordPreviewError(mapError(previewError))
+      }
+      handleApiError(previewError)
+    } finally {
+      setIsPreviewingFeeRecord(false)
+    }
+  }
+
+  const activateFeeRecordCharges = async () => {
+    if (!selectedStudent || !feeRecordPreview || previewBlockedByWarnings) {
+      return
+    }
+
+    setIsActivatingFeeRecord(true)
+    setFeeRecordPreviewError('')
+    setError('')
+    setMessage('')
+
+    try {
+      const response = await apiRequest<{ created_count: number; data: OutstandingChargeCell[] }>(
+        `/students/${selectedStudent.id}/fee-record/activate`,
+        {
+          method: 'POST',
+          body: { academic_year: feeRecordAcademicYear },
+        },
+      )
+      await loadOutstandingCharges(selectedStudent.id, feeRecordAcademicYear)
+      await previewFeeRecordCharges()
+      setMessage(`Activated ${response.created_count} Fee Record charge cells.`)
+    } catch (activateError) {
+      if (activateError instanceof ApiError && activateError.status === 422) {
+        setFeeRecordPreviewError(
+          formatValidationError(activateError.errors, 'fee_record') ||
+            formatValidationError(activateError.errors, 'academic_year') ||
+            activateError.message,
+        )
+      } else if (activateError instanceof ApiError && activateError.status === 403) {
+        setFeeRecordPreviewError('You do not have permission to activate Fee Record charges.')
+      } else {
+        setFeeRecordPreviewError(mapError(activateError))
+      }
+      handleApiError(activateError)
+    } finally {
+      setIsActivatingFeeRecord(false)
+    }
+  }
+
+  const updateManualChargeForm = (field: keyof ManualFeeRecordChargeForm, value: string) => {
+    setManualChargeForm((current) => ({
+      ...current,
+      [field]: value,
+      ...(field === 'academic_year' && /^\d{4}$/.test(value)
+        ? { billing_month: `${value}-${current.billing_month.slice(5, 7) || String(new Date().getMonth() + 1).padStart(2, '0')}` }
+        : {}),
+    }))
+  }
+
+  const submitManualCharge = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+
+    if (!selectedStudent) {
+      return
+    }
+
+    setIsSavingManualCharge(true)
+    setManualChargeErrors(undefined)
+    setFeeRecordPreviewError('')
+    setError('')
+    setMessage('')
+
+    try {
+      const response = await apiRequest<{ data: OutstandingChargeCell }>(
+        `/students/${selectedStudent.id}/fee-record/manual-charges`,
+        {
+          method: 'POST',
+          body: {
+            academic_year: manualChargeForm.academic_year,
+            billing_month: manualChargeForm.billing_month,
+            fee_record_category: manualChargeForm.fee_record_category,
+            description: manualChargeForm.description,
+            expected_amount: Number(manualChargeForm.expected_amount || 0),
+            remark: manualChargeForm.remark || null,
+          },
+        },
+      )
+
+      setShowManualChargeForm(false)
+      setManualChargeForm(defaultManualFeeRecordChargeForm(manualChargeForm.academic_year))
+      await loadOutstandingCharges(selectedStudent.id, response.data.academic_year)
+      setMessage(`Added manual charge ${response.data.description} for ${formatCurrency(response.data.expected_amount)}.`)
+    } catch (manualChargeError) {
+      if (manualChargeError instanceof ApiError && manualChargeError.status === 422) {
+        setManualChargeErrors(manualChargeError.errors)
+      } else if (manualChargeError instanceof ApiError && manualChargeError.status === 403) {
+        setFeeRecordPreviewError('You do not have permission to add manual Fee Record charges.')
+      }
+      handleApiError(manualChargeError)
+    } finally {
+      setIsSavingManualCharge(false)
     }
   }
 
@@ -2314,6 +2575,243 @@ function StudentsPage({
                 </div>
               )}
             </div>
+          </section>
+
+          <section className="fee-record-charge-section">
+            <div className="panel-header">
+              <div>
+                <p className="eyebrow">Fee Record</p>
+                <h2>Charge Preview and Activation</h2>
+              </div>
+              <span className={`badge ${outstandingCharges.length > 0 ? 'partial' : 'neutral'}`}>{outstandingStatusLabel}</span>
+            </div>
+
+            {!canViewFeeRecord && <Message tone="info">You do not have permission to view Fee Record charges.</Message>}
+            {feeRecordPreviewError && <Message tone="error">{feeRecordPreviewError}</Message>}
+
+            {canViewFeeRecord && (
+              <>
+                <div className="fee-record-activation-bar">
+                  <label className="form-field">
+                    Academic Year
+                    <input
+                      value={feeRecordAcademicYear}
+                      onChange={(event) => {
+                        setFeeRecordAcademicYear(event.target.value)
+                        setFeeRecordPreview(null)
+                        setFeeRecordPreviewError('')
+                      }}
+                    />
+                  </label>
+                  <button className="secondary-action" onClick={() => void previewFeeRecordCharges()} disabled={isPreviewingFeeRecord}>
+                    {isPreviewingFeeRecord ? 'Previewing...' : 'Preview Charges'}
+                  </button>
+                  {canActivateFeeRecord && (
+                    <button
+                      className="primary-action compact"
+                      onClick={() => void activateFeeRecordCharges()}
+                      disabled={!canActivateCurrentPreview || isActivatingFeeRecord}
+                    >
+                      {isActivatingFeeRecord ? 'Activating...' : 'Activate Charges'}
+                    </button>
+                  )}
+                  <button
+                    className="table-action"
+                    onClick={() => selectedStudent && void loadOutstandingCharges(selectedStudent.id, feeRecordAcademicYear)}
+                  >
+                    View Outstanding
+                  </button>
+                  {canManageFeeRecord && (
+                    <button
+                      className="table-action"
+                      onClick={() => {
+                        setShowManualChargeForm((value) => !value)
+                        setManualChargeErrors(undefined)
+                      }}
+                    >
+                      {showManualChargeForm ? 'Close Manual Charge' : 'Add Manual Charge'}
+                    </button>
+                  )}
+                </div>
+
+                {!canActivateFeeRecord && (
+                  <Message tone="info">Activation is hidden for this role. Users need fee_record.generate or fee_record.manage.</Message>
+                )}
+
+                {showManualChargeForm && canManageFeeRecord && (
+                  <form className="manual-charge-form" onSubmit={submitManualCharge} noValidate>
+                    <div className="payment-subheader">
+                      <div>
+                        <h3>Add Manual Charge</h3>
+                        <p>Use this for one-time or ad-hoc charge cells such as Uniform, Books, Worksheet, PE, deposits, or old balances.</p>
+                      </div>
+                    </div>
+
+                    <div className="form-grid">
+                      <label className="form-field">
+                        Academic Year
+                        <input value={manualChargeForm.academic_year} onChange={(event) => updateManualChargeForm('academic_year', event.target.value)} />
+                        {formatValidationError(manualChargeErrors, 'academic_year') && (
+                          <small>{formatValidationError(manualChargeErrors, 'academic_year')}</small>
+                        )}
+                      </label>
+
+                      <label className="form-field">
+                        Billing Month
+                        <input type="month" value={manualChargeForm.billing_month} onChange={(event) => updateManualChargeForm('billing_month', event.target.value)} />
+                        {formatValidationError(manualChargeErrors, 'billing_month') && (
+                          <small>{formatValidationError(manualChargeErrors, 'billing_month')}</small>
+                        )}
+                      </label>
+
+                      <label className="form-field">
+                        Category
+                        <select
+                          value={manualChargeForm.fee_record_category}
+                          onChange={(event) => updateManualChargeForm('fee_record_category', event.target.value as FeeRecordCategory)}
+                        >
+                          {feeRecordCategories.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                        {formatValidationError(manualChargeErrors, 'fee_record_category') && (
+                          <small>{formatValidationError(manualChargeErrors, 'fee_record_category')}</small>
+                        )}
+                      </label>
+
+                      <label className="form-field">
+                        Amount
+                        <input
+                          type="number"
+                          min="0.01"
+                          step="0.01"
+                          value={manualChargeForm.expected_amount}
+                          onChange={(event) => updateManualChargeForm('expected_amount', event.target.value)}
+                        />
+                        {formatValidationError(manualChargeErrors, 'expected_amount') && (
+                          <small>{formatValidationError(manualChargeErrors, 'expected_amount')}</small>
+                        )}
+                      </label>
+
+                      <label className="form-field wide">
+                        Description
+                        <input
+                          value={manualChargeForm.description}
+                          onChange={(event) => updateManualChargeForm('description', event.target.value)}
+                          placeholder="Uniform, Books, Worksheet, PE, Application, Deposit, Enrolment, Old Balance"
+                        />
+                        {formatValidationError(manualChargeErrors, 'description') && (
+                          <small>{formatValidationError(manualChargeErrors, 'description')}</small>
+                        )}
+                      </label>
+
+                      <label className="form-field wide">
+                        Remark
+                        <textarea value={manualChargeForm.remark} onChange={(event) => updateManualChargeForm('remark', event.target.value)} />
+                      </label>
+                    </div>
+
+                    <button className="primary-action compact" disabled={isSavingManualCharge}>
+                      {isSavingManualCharge ? 'Adding...' : 'Add Manual Charge'}
+                    </button>
+                  </form>
+                )}
+
+                {feeRecordPreview?.warnings.length ? (
+                  <div className="fee-record-warning-list">
+                    <div className="payment-subheader">
+                      <div>
+                        <h3>Activation blocked</h3>
+                        <p>Billing months must be configured before these charges can be generated.</p>
+                      </div>
+                      <AlertTriangle className="warning-icon" size={20} />
+                    </div>
+                    {feeRecordPreview.warnings.map((warning) => (
+                      <div className="warning-row" key={`${warning.fee_agreement_item_id}-${warning.reason}`}>
+                        <strong>{warning.fee_code ?? 'Manual'} / {warning.description}</strong>
+                        <span>{warning.message}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+
+                {feeRecordPreview && (
+                  <div className="fee-record-preview-block">
+                    <div className="payment-subheader">
+                      <div>
+                        <h3>Preview Rows</h3>
+                        <p>
+                          {feeRecordPreview.charges.length} charge cell{feeRecordPreview.charges.length === 1 ? '' : 's'} from agreement v
+                          {currentFeeAgreement?.version_no ?? feeRecordPreview.fee_agreement.id}.
+                        </p>
+                      </div>
+                      <span className={`badge ${previewBlockedByWarnings ? 'danger' : 'paid'}`}>
+                        {previewBlockedByWarnings ? 'Needs confirmation' : 'Ready'}
+                      </span>
+                    </div>
+
+                    {groupedPreviewCharges.length === 0 ? (
+                      <div className="empty-state">No preview charge rows generated for this academic year.</div>
+                    ) : (
+                      <div className="preview-charge-groups">
+                        {groupedPreviewCharges.map((group) => (
+                          <section className="preview-charge-group" key={group.key}>
+                            <div className="preview-charge-group-header">
+                              <div>
+                                <strong>{group.feeCode} / {group.description}</strong>
+                                <span>{group.category}</span>
+                              </div>
+                              <b>{formatCurrency(group.charges.reduce((sum, charge) => sum + charge.expected_amount, 0))}</b>
+                            </div>
+                            <div className="table-wrap">
+                              <table>
+                                <thead>
+                                  <tr>
+                                    <th>Billing Month</th>
+                                    <th>Fee Code / Description</th>
+                                    <th>Category</th>
+                                    <th>Expected Amount</th>
+                                    <th>Status</th>
+                                    <th>Warning</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {group.charges.map((charge) => (
+                                    <tr key={`${charge.fee_agreement_item_id}-${charge.billing_month}-${charge.description}`}>
+                                      <td>{formatBillingMonth(charge.billing_month)}</td>
+                                      <td>
+                                        {charge.fee_code ?? 'Manual'} / {charge.description}
+                                      </td>
+                                      <td>{charge.fee_record_category}</td>
+                                      <td>{formatCurrency(charge.expected_amount)}</td>
+                                      <td>
+                                        <span className={`badge ${statusClass(charge.collection_status)}`}>
+                                          {formatStatus(charge.collection_status)}
+                                        </span>
+                                      </td>
+                                      <td>{charge.warning ?? 'None'}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </section>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {outstandingChargesYear === feeRecordAcademicYear && (
+                  <div className="fee-record-outstanding-strip">
+                    <strong>{outstandingCharges.length}</strong>
+                    <span>outstanding charge cells available for payment allocation in {feeRecordAcademicYear}</span>
+                  </div>
+                )}
+              </>
+            )}
           </section>
 
           <section className="payment-section">
