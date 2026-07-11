@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { FormEvent, ReactNode } from 'react'
 import {
   AlertTriangle,
@@ -15,6 +15,7 @@ import {
   LockKeyhole,
   LogOut,
   Mail,
+  Menu,
   Phone,
   Plus,
   Receipt,
@@ -24,6 +25,7 @@ import {
   ShieldCheck,
   UserPlus,
   Users,
+  X,
 } from 'lucide-react'
 import { ApiError, apiRequest } from './api'
 import misLogo from './assets/mis-logo.jpg'
@@ -2357,7 +2359,7 @@ function StudentsPage({
         </div>
 
         <div className="table-wrap">
-          <table>
+          <table className="student-list-table">
             <thead>
               <tr>
                 <th>Student Name</th>
@@ -2381,17 +2383,17 @@ function StudentsPage({
 
                 return (
                   <tr key={student.id}>
-                    <td>{student.full_name}</td>
-                    <td>{student.student_no}</td>
-                    <td>{student.class?.name ?? formatLevelGroup(student.level_group)}</td>
-                    <td>{canViewFeeRecord ? feeAmount : 'No access'}</td>
-                    <td>{canViewFeeRecord ? outstandingAmount : 'No access'}</td>
-                    <td>
+                    <td className="student-primary-cell" data-label="Student Name">{student.full_name}</td>
+                    <td data-label="Student ID">{student.student_no}</td>
+                    <td data-label="Class">{student.class?.name ?? formatLevelGroup(student.level_group)}</td>
+                    <td className="student-secondary-cell" data-label="Fee Amount">{canViewFeeRecord ? feeAmount : 'No access'}</td>
+                    <td className="student-secondary-cell" data-label="Outstanding">{canViewFeeRecord ? outstandingAmount : 'No access'}</td>
+                    <td data-label="Status">
                       <span className={`badge ${statusClass(student.status)}`}>{formatStatus(student.status)}</span>
                     </td>
-                    <td>
+                    <td className="student-open-cell" data-label="Action">
                       <button className="table-action" onClick={() => void loadStudentDetail(student.id)}>
-                        <Eye size={16} />
+                        <Eye size={15} />
                         Open
                       </button>
                     </td>
@@ -2399,12 +2401,12 @@ function StudentsPage({
                 )
               })}
               {!isLoading && students.length === 0 && (
-                <tr>
+                <tr className="table-state-row">
                   <td colSpan={7}>No students found for this filter.</td>
                 </tr>
               )}
               {isLoading && (
-                <tr>
+                <tr className="table-state-row">
                   <td colSpan={7}>Loading students...</td>
                 </tr>
               )}
@@ -2451,20 +2453,6 @@ function StudentsPage({
             </div>
 
             <div className="detail-block">
-              <h3>Parent / Guardian</h3>
-              {selectedStudent.parents.length > 0 ? (
-                selectedStudent.parents.map((parent) => (
-                  <p key={parent.id}>
-                    {parent.full_name}
-                    {parent.relationship ? ` / ${parent.relationship}` : ''}
-                  </p>
-                ))
-              ) : (
-                <p>No parent or guardian recorded.</p>
-              )}
-            </div>
-
-            <div className="detail-block">
               <h3>Fee Record Totals</h3>
               <dl>
                 <div>
@@ -2499,6 +2487,20 @@ function StudentsPage({
               )}
               {!canViewFeeRecord && <p>You do not have permission to view Fee Record totals.</p>}
               {studentFeeRecordSummaryError && <small>{studentFeeRecordSummaryError}</small>}
+            </div>
+
+            <div className="detail-block">
+              <h3>Parent / Guardian</h3>
+              {selectedStudent.parents.length > 0 ? (
+                selectedStudent.parents.map((parent) => (
+                  <p key={parent.id}>
+                    {parent.full_name}
+                    {parent.relationship ? ` / ${parent.relationship}` : ''}
+                  </p>
+                ))
+              ) : (
+                <p>No parent or guardian recorded.</p>
+              )}
             </div>
 
             <div className="detail-block">
@@ -2704,7 +2706,7 @@ function StudentsPage({
                         {item.enabled && (
                           <div className="agreement-billing-config">
                             <label className="form-field">
-                              Classification
+                              Charge Type
                               <select
                                 value={item.classification}
                                 onChange={(event) =>
@@ -2719,7 +2721,7 @@ function StudentsPage({
                               </select>
                             </label>
                             <label className="form-field">
-                              Billing Frequency
+                              Billing Pattern
                               <select
                                 value={item.billing_frequency}
                                 onChange={(event) =>
@@ -2945,35 +2947,37 @@ function StudentsPage({
                       }}
                     />
                   </label>
-                  <button className="secondary-action" onClick={() => void previewFeeRecordCharges()} disabled={isPreviewingFeeRecord}>
-                    {isPreviewingFeeRecord ? 'Previewing...' : 'Preview Charges'}
-                  </button>
-                  {canActivateFeeRecord && (
-                    <button
-                      className="primary-action compact"
-                      onClick={() => void activateFeeRecordCharges()}
-                      disabled={!canActivateCurrentPreview || isActivatingFeeRecord}
-                    >
-                      {isActivatingFeeRecord ? 'Activating...' : 'Activate Charges'}
+                  <div className="fee-record-action-group">
+                    <button className="secondary-action" onClick={() => void previewFeeRecordCharges()} disabled={isPreviewingFeeRecord}>
+                      {isPreviewingFeeRecord ? 'Previewing...' : 'Preview Charges'}
                     </button>
-                  )}
-                  <button
-                    className="table-action"
-                    onClick={() => selectedStudent && void loadOutstandingCharges(selectedStudent.id, feeRecordAcademicYear)}
-                  >
-                    View Outstanding
-                  </button>
-                  {canManageFeeRecord && (
+                    {canActivateFeeRecord && (
+                      <button
+                        className="primary-action compact"
+                        onClick={() => void activateFeeRecordCharges()}
+                        disabled={!canActivateCurrentPreview || isActivatingFeeRecord}
+                      >
+                        {isActivatingFeeRecord ? 'Activating...' : 'Activate Charges'}
+                      </button>
+                    )}
                     <button
                       className="table-action"
-                      onClick={() => {
-                        setShowManualChargeForm((value) => !value)
-                        setManualChargeErrors(undefined)
-                      }}
+                      onClick={() => selectedStudent && void loadOutstandingCharges(selectedStudent.id, feeRecordAcademicYear)}
                     >
-                      {showManualChargeForm ? 'Close Manual Charge' : 'Add Manual Charge'}
+                      View Outstanding
                     </button>
-                  )}
+                    {canManageFeeRecord && (
+                      <button
+                        className="table-action"
+                        onClick={() => {
+                          setShowManualChargeForm((value) => !value)
+                          setManualChargeErrors(undefined)
+                        }}
+                      >
+                        {showManualChargeForm ? 'Close Manual Charge' : 'Add Manual Charge'}
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {!canActivateFeeRecord && (
@@ -3108,32 +3112,33 @@ function StudentsPage({
                               <b>{formatCurrency(group.charges.reduce((sum, charge) => sum + charge.expected_amount, 0))}</b>
                             </div>
                             <div className="table-wrap">
-                              <table>
+                              <table className="preview-charge-table">
                                 <thead>
                                   <tr>
                                     <th>Billing Month</th>
-                                    <th>Fee Code / Description</th>
+                                    <th>Fee Code</th>
+                                    <th>Description</th>
                                     <th>Category</th>
                                     <th>Expected Amount</th>
                                     <th>Status</th>
-                                    <th>Warning</th>
                                   </tr>
                                 </thead>
                                 <tbody>
                                   {group.charges.map((charge) => (
                                     <tr key={`${charge.fee_agreement_item_id}-${charge.billing_month}-${charge.description}`}>
-                                      <td>{formatBillingMonth(charge.billing_month)}</td>
-                                      <td>
-                                        {charge.fee_code ?? 'Manual'} / {charge.description}
+                                      <td data-label="Month">{formatBillingMonth(charge.billing_month)}</td>
+                                      <td data-label="Fee">{charge.fee_code ?? 'Manual'}</td>
+                                      <td data-label="Description">{charge.description}</td>
+                                      <td data-label="Category">{charge.fee_record_category}</td>
+                                      <td data-label="Amount">{formatCurrency(charge.expected_amount)}</td>
+                                      <td data-label="Status">
+                                        <div className="preview-status-value">
+                                          <span className={`badge ${statusClass(charge.collection_status)}`}>
+                                            {formatStatus(charge.collection_status)}
+                                          </span>
+                                          <small>{charge.warning ?? 'None'}</small>
+                                        </div>
                                       </td>
-                                      <td>{charge.fee_record_category}</td>
-                                      <td>{formatCurrency(charge.expected_amount)}</td>
-                                      <td>
-                                        <span className={`badge ${statusClass(charge.collection_status)}`}>
-                                          {formatStatus(charge.collection_status)}
-                                        </span>
-                                      </td>
-                                      <td>{charge.warning ?? 'None'}</td>
                                     </tr>
                                   ))}
                                 </tbody>
@@ -3425,21 +3430,22 @@ function StudentsPage({
                   </div>
                 </div>
 
-                <div className={`agreement-preview ${paymentAmountCents === allocationTotalCents ? '' : 'warning'}`}>
-                  <span>Payment {formatCurrency(Number(paymentForm.amount || 0))}</span>
-                  <span>Allocation {formatCurrency(paymentAllocationTotal)}</span>
-                  <strong>{paymentAmountCents === allocationTotalCents ? 'Balanced' : 'Mismatch'}</strong>
+                <div className="payment-submit-area">
+                  <div className={`agreement-preview ${paymentAmountCents === allocationTotalCents ? '' : 'warning'}`}>
+                    <span>Payment {formatCurrency(Number(paymentForm.amount || 0))}</span>
+                    <span>Allocation {formatCurrency(paymentAllocationTotal)}</span>
+                    <strong>{paymentAmountCents === allocationTotalCents ? 'Balanced' : 'Mismatch'}</strong>
+                  </div>
+                  <button className="primary-action" disabled={isSavingPayment}>
+                    {isSavingPayment ? 'Saving...' : 'Record Payment'}
+                  </button>
                 </div>
-
-                <button className="primary-action" disabled={isSavingPayment}>
-                  {isSavingPayment ? 'Saving...' : 'Record Payment'}
-                </button>
               </form>
             )}
 
             {canViewPayments && (
               <div className="table-wrap">
-                <table>
+                <table className="payment-history-table">
                   <thead>
                     <tr>
                       <th>Payment Date</th>
@@ -3461,18 +3467,18 @@ function StudentsPage({
                       return (
                           <Fragment key={payment.id}>
                         <tr>
-                          <td>{payment.payment_date}</td>
-                          <td>{payment.received_date ?? 'Not recorded'}</td>
-                          <td>{formatStatus(payment.payment_method)}</td>
-                          <td>{formatCurrency(payment.amount)}</td>
-                          <td>
+                          <td data-label="Payment Date">{payment.payment_date}</td>
+                          <td data-label="Received Date">{payment.received_date ?? 'Not recorded'}</td>
+                          <td data-label="Method">{formatStatus(payment.payment_method)}</td>
+                          <td data-label="Amount">{formatCurrency(payment.amount)}</td>
+                          <td data-label="Status">
                             <span className={`badge ${paymentStatusClass(payment.status)}`}>{formatStatus(payment.status)}</span>
                           </td>
-                          <td>{payment.reference_no ?? 'Not recorded'}</td>
-                          <td>{issuedReceipt ? issuedReceipt.receipt_no : 'No issued receipt'}</td>
-                          <td>{payment.recorded_by?.name ?? 'Not recorded'}</td>
-                          <td>{payment.verified_by?.name ?? 'Not verified'}</td>
-                          <td>
+                          <td data-label="Reference">{payment.reference_no ?? 'Not recorded'}</td>
+                          <td data-label="Receipt">{issuedReceipt ? issuedReceipt.receipt_no : 'No issued receipt'}</td>
+                          <td data-label="Recorded By">{payment.recorded_by?.name ?? 'Not recorded'}</td>
+                          <td data-label="Verified By">{payment.verified_by?.name ?? 'Not verified'}</td>
+                          <td data-label="Actions">
                             <div className="payment-actions">
                               {canVerifyPayments && payment.status === 'pending_verification' && (
                                 <button className="table-action" onClick={() => beginVerifyPayment(payment)}>
@@ -3635,12 +3641,12 @@ function StudentsPage({
                       )
                     })}
                     {!isLoadingPayments && payments.length === 0 && (
-                      <tr>
+                      <tr className="history-state-row">
                         <td colSpan={10}>No payments recorded for this student yet.</td>
                       </tr>
                     )}
                     {isLoadingPayments && (
-                      <tr>
+                      <tr className="history-state-row">
                         <td colSpan={10}>Loading payments...</td>
                       </tr>
                     )}
@@ -3663,7 +3669,7 @@ function StudentsPage({
 
             {canViewReceipts && (
               <div className="table-wrap receipt-history no-print">
-                <table>
+                <table className="receipt-history-table">
                   <thead>
                     <tr>
                       <th>Receipt No</th>
@@ -3678,27 +3684,27 @@ function StudentsPage({
                   </thead>
                   <tbody>
                     {isLoadingReceipts && (
-                      <tr>
+                      <tr className="history-state-row">
                         <td colSpan={8}>Loading receipts...</td>
                       </tr>
                     )}
                     {!isLoadingReceipts && receipts.map((receipt) => (
                       <Fragment key={receipt.id}>
                         <tr>
-                          <td>{receipt.receipt_no}</td>
-                          <td>{receipt.receipt_date}</td>
-                          <td>{formatCurrency(receipt.amount)}</td>
-                          <td>
+                          <td data-label="Receipt No">{receipt.receipt_no}</td>
+                          <td data-label="Date">{receipt.receipt_date}</td>
+                          <td data-label="Amount">{formatCurrency(receipt.amount)}</td>
+                          <td data-label="Status">
                             <span className={`badge ${receiptStatusClass(receipt.status)}`}>{formatStatus(receipt.status)}</span>
                           </td>
-                          <td>{receipt.paid_by}</td>
-                          <td>{receipt.issued_by?.name ?? 'Not recorded'}</td>
-                          <td>
+                          <td data-label="Paid By">{receipt.paid_by}</td>
+                          <td data-label="Issued By">{receipt.issued_by?.name ?? 'Not recorded'}</td>
+                          <td data-label="Void Details">
                             {receipt.status === 'voided'
                               ? `${receipt.voided_by?.name ?? 'Not recorded'} / ${receipt.void_reason ?? 'No reason'}`
                               : 'Not voided'}
                           </td>
-                          <td>
+                          <td data-label="Actions">
                             <div className="payment-actions">
                               {canViewReceipts && (
                                 <button className="table-action" onClick={() => void viewReceipt(receipt.id)}>
@@ -3747,7 +3753,7 @@ function StudentsPage({
                       </Fragment>
                     ))}
                     {!isLoadingReceipts && receipts.length === 0 && (
-                      <tr>
+                      <tr className="history-state-row">
                         <td colSpan={8}>No receipts generated for this student yet.</td>
                       </tr>
                     )}
@@ -3829,26 +3835,28 @@ function StudentsPage({
 
                   <div className="receipt-items">
                     <h3>Being Payment For</h3>
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>No</th>
-                          <th>Fee Code</th>
-                          <th>Description</th>
-                          <th>Amount</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {selectedReceipt.items.map((item, index) => (
-                          <tr key={item.id}>
-                            <td>{index + 1}</td>
-                            <td>{item.fee_code ?? 'Manual'}</td>
-                            <td>{item.description}</td>
-                            <td>{formatCurrency(item.amount)}</td>
+                    <div className="receipt-items-scroll">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>No</th>
+                            <th>Fee Code</th>
+                            <th>Description</th>
+                            <th>Amount</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody>
+                          {selectedReceipt.items.map((item, index) => (
+                            <tr key={item.id}>
+                              <td>{index + 1}</td>
+                              <td>{item.fee_code ?? 'Manual'}</td>
+                              <td>{item.description}</td>
+                              <td>{formatCurrency(item.amount)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
 
                   {selectedReceipt.status === 'voided' && (
@@ -4146,7 +4154,8 @@ function FeeRecordSummaryPage({
                 Balances come from Fee Record charge cells. Corrections happen through Fee Agreement, Payment, or Receipt flows.
               </p>
 
-              <div className="table-wrap">
+              <p className="table-scroll-hint">Swipe horizontally to see all financial columns.</p>
+              <div className="table-wrap fee-record-table-wrap">
                 <table>
                   <thead>
                     <tr>
@@ -4225,7 +4234,8 @@ function FeeRecordSummaryPage({
                 item codes are confirmed.
               </p>
 
-              <div className="table-wrap">
+              <p className="table-scroll-hint">Swipe horizontally to see all financial columns.</p>
+              <div className="table-wrap fee-record-table-wrap">
                 <table>
                   <thead>
                     <tr>
@@ -4436,6 +4446,71 @@ function App() {
   const [user, setUser] = useState<CurrentUser | null>(null)
   const [activePage, setActivePage] = useState<PageKey>('dashboard')
   const [focusedStudentId, setFocusedStudentId] = useState<number | null>(null)
+  const [isNavOpen, setIsNavOpen] = useState(false)
+  const [isNarrowViewport, setIsNarrowViewport] = useState(() => window.matchMedia('(max-width: 1023px)').matches)
+  const menuButtonRef = useRef<HTMLButtonElement>(null)
+  const drawerCloseButtonRef = useRef<HTMLButtonElement>(null)
+  const shouldRestoreNavigationFocusRef = useRef(false)
+
+  const closeNavigation = useCallback(() => {
+    if (isNarrowViewport && isNavOpen) {
+      shouldRestoreNavigationFocusRef.current = true
+    }
+
+    setIsNavOpen(false)
+  }, [isNavOpen, isNarrowViewport])
+
+  const selectPage = (page: PageKey) => {
+    setActivePage(page)
+    closeNavigation()
+  }
+
+  useEffect(() => {
+    document.body.classList.toggle('nav-open', isNavOpen)
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        closeNavigation()
+      }
+    }
+
+    window.addEventListener('keydown', handleEscape)
+
+    return () => {
+      document.body.classList.remove('nav-open')
+      window.removeEventListener('keydown', handleEscape)
+    }
+  }, [closeNavigation, isNavOpen])
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 1023px)')
+
+    const handleBreakpointChange = (event: MediaQueryListEvent) => {
+      setIsNarrowViewport(event.matches)
+
+      if (!event.matches) {
+        setIsNavOpen(false)
+      }
+    }
+
+    setIsNarrowViewport(mediaQuery.matches)
+    mediaQuery.addEventListener('change', handleBreakpointChange)
+
+    return () => mediaQuery.removeEventListener('change', handleBreakpointChange)
+  }, [])
+
+  useEffect(() => {
+    if (isNavOpen && isNarrowViewport) {
+      drawerCloseButtonRef.current?.focus()
+    }
+  }, [isNavOpen, isNarrowViewport])
+
+  useEffect(() => {
+    if (!isNavOpen && isNarrowViewport && shouldRestoreNavigationFocusRef.current) {
+      shouldRestoreNavigationFocusRef.current = false
+      menuButtonRef.current?.focus()
+    }
+  }, [isNavOpen, isNarrowViewport])
 
   const loadDashboard = async () => {
     try {
@@ -4482,6 +4557,7 @@ function App() {
       setUser(null)
       setAuthState('guest')
       setActivePage('dashboard')
+      closeNavigation()
     }
   }
 
@@ -4555,13 +4631,36 @@ function App() {
 
   return (
     <div className="app-shell">
-      <aside className="sidebar">
-        <div className="brand">
-          <img src={misLogo} alt="MIS logo" />
-          <div>
-            <strong>MIS</strong>
-            <span>School ERP</span>
+      <button
+        className="sidebar-backdrop"
+        aria-label="Close navigation"
+        aria-hidden={!isNavOpen}
+        tabIndex={isNavOpen ? 0 : -1}
+        onClick={closeNavigation}
+      />
+
+      <aside
+        aria-hidden={isNarrowViewport && !isNavOpen ? true : undefined}
+        className={isNavOpen ? 'sidebar open' : 'sidebar'}
+        id="main-navigation"
+        inert={isNarrowViewport && !isNavOpen ? true : undefined}
+      >
+        <div className="sidebar-heading">
+          <div className="brand">
+            <img src={misLogo} alt="MIS logo" />
+            <div>
+              <strong>MIS</strong>
+              <span>School ERP</span>
+            </div>
           </div>
+          <button
+            className="icon-button drawer-close"
+            aria-label="Close navigation"
+            onClick={closeNavigation}
+            ref={drawerCloseButtonRef}
+          >
+            <X size={20} />
+          </button>
         </div>
 
         <nav className="nav-list" aria-label="Main navigation">
@@ -4569,9 +4668,11 @@ function App() {
             const Icon = item.icon
             return (
               <button
+                aria-current={activePage === item.key ? 'page' : undefined}
+                aria-label={item.label}
                 className={activePage === item.key ? 'nav-item active' : 'nav-item'}
                 key={item.label}
-                onClick={() => setActivePage(item.key)}
+                onClick={() => selectPage(item.key)}
               >
                 <Icon size={18} />
                 <span>{item.label}</span>
@@ -4581,8 +4682,18 @@ function App() {
         </nav>
       </aside>
 
-      <main className="main">
+      <main className="main" inert={isNarrowViewport && isNavOpen ? true : undefined}>
         <header className="topbar">
+          <button
+            className="icon-button menu-button"
+            aria-controls="main-navigation"
+            aria-expanded={isNavOpen}
+            aria-label="Open navigation"
+            onClick={() => setIsNavOpen(true)}
+            ref={menuButtonRef}
+          >
+            <Menu size={20} />
+          </button>
           <div>
             <p className="eyebrow">Matahari School ERP / {dashboard.school.name}</p>
             <h1>{pageTitle}</h1>

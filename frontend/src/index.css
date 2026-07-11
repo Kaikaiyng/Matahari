@@ -13,12 +13,27 @@
   box-sizing: border-box;
 }
 
-body {
+html,
+body,
+#root {
+  width: 100%;
+  max-width: 100%;
   min-width: 320px;
+}
+
+body {
   margin: 0;
+  overflow-x: hidden;
 }
 
 button,
-input {
+input,
+select,
+textarea {
   font: inherit;
+}
+
+:where(button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid #b31923;
+  outline-offset: 2px;
 }

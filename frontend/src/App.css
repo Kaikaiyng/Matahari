@@ -80,6 +80,7 @@
   flex-direction: column;
   gap: 20px;
   min-width: 0;
+  max-width: 100%;
 }
 
 .topbar {
@@ -176,6 +177,16 @@ h2 {
   color: #3a3d44;
   display: grid;
   place-items: center;
+}
+
+.menu-button,
+.drawer-close,
+.sidebar-backdrop {
+  display: none;
+}
+
+body.nav-open {
+  overflow: hidden;
 }
 
 .user-chip {
@@ -299,6 +310,11 @@ h2 {
   background: #ffffff;
 }
 
+.panel {
+  min-width: 0;
+  max-width: 100%;
+}
+
 .metric-card {
   min-height: 92px;
   padding: 16px;
@@ -336,6 +352,8 @@ h2 {
 .page-stack {
   display: grid;
   gap: 18px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .page-title-row {
@@ -500,8 +518,22 @@ h2 {
   color: #d82730;
 }
 
-.table-wrap {
+.table-wrap,
+.fee-record-table-wrap {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-gutter: stable;
+}
+
+.table-scroll-hint {
+  display: none;
+  margin: 0;
+  color: #626773;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .fee-record-view-switch {
@@ -574,8 +606,23 @@ h2 {
   min-width: 1320px;
 }
 
+.fee-record-ledger th {
+  white-space: nowrap;
+}
+
 .monthly-ledger table {
   min-width: 1780px;
+}
+
+.monthly-ledger th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #ffffff;
+}
+
+.monthly-ledger td {
+  vertical-align: top;
 }
 
 .fee-record-row {
@@ -759,14 +806,17 @@ th {
 
 .login-screen {
   min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
   place-items: center;
-  padding: 24px;
+  padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
   background: #f5f6f8;
 }
 
 .login-card {
   width: min(440px, 100%);
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
   border: 1px solid #e1e4ea;
   border-radius: 8px;
   background: #ffffff;
@@ -902,6 +952,8 @@ th {
 .student-detail {
   display: grid;
   gap: 16px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .student-detail .panel-header {
@@ -978,6 +1030,8 @@ th {
   padding: 16px;
   display: grid;
   gap: 16px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .fee-record-activation-bar {
@@ -985,6 +1039,12 @@ th {
   grid-template-columns: minmax(160px, 0.8fr) repeat(4, auto);
   gap: 12px;
   align-items: end;
+}
+
+.fee-record-action-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .fee-record-preview-block,
@@ -1027,8 +1087,21 @@ th {
   background: #ffffff;
 }
 
-.preview-charge-group table {
+.preview-charge-table {
   min-width: 860px;
+}
+
+.preview-status-value {
+  min-width: 0;
+  display: grid;
+  justify-items: start;
+  gap: 4px;
+}
+
+.preview-status-value small {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .preview-charge-group-header {
@@ -1080,6 +1153,8 @@ th {
   padding: 16px;
   display: grid;
   gap: 16px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .agreement-current {
@@ -1115,6 +1190,17 @@ th {
   padding: 14px;
   display: grid;
   gap: 14px;
+}
+
+.payment-form,
+.payment-allocation-block,
+.allocation-rows,
+.allocation-row,
+.charge-picker,
+.charge-month-group,
+.charge-category-group {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .payment-subheader {
@@ -1357,7 +1443,25 @@ th {
 }
 
 .billing-month-options input {
-  display: none;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.billing-month-options label:not(.selected):hover {
+  border-color: #9ca2ae;
+  background: #f7f8fa;
+}
+
+.billing-month-options label:focus-within {
+  outline: 3px solid #b31923;
+  outline-offset: 2px;
 }
 
 .agreement-preview {
@@ -1381,6 +1485,11 @@ th {
 .agreement-preview.warning {
   background: #fff1d8;
   color: #744500;
+}
+
+.payment-submit-area {
+  display: grid;
+  gap: 10px;
 }
 
 .payment-actions {
@@ -1418,6 +1527,8 @@ th {
 .receipt-workspace {
   display: grid;
   gap: 18px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .receipt-history td {
@@ -1426,6 +1537,20 @@ th {
 
 .receipt-print-scope {
   display: block;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.receipt-sheet,
+.receipt-brand,
+.receipt-meta,
+.receipt-two-column,
+.receipt-two-column dl,
+.receipt-two-column dl div,
+.receipt-items,
+.receipt-items-scroll {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .receipt-sheet {
@@ -1520,6 +1645,17 @@ th {
   font-weight: 700;
 }
 
+.receipt-items-scroll {
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+}
+
+.receipt-two-column dd,
+.receipt-meta strong,
+.amount-words strong {
+  overflow-wrap: anywhere;
+}
+
 .amount-words {
   margin-bottom: 18px;
 }
@@ -1549,22 +1685,38 @@ th {
   margin: 4px 0;
 }
 
-@media (max-width: 1180px) {
+@media screen and (min-width: 1024px) and (max-width: 1180px) {
   .app-shell {
     grid-template-columns: 88px minmax(0, 1fr);
+  }
+
+  .sidebar {
+    padding: 18px 10px;
   }
 
   .brand {
     justify-content: center;
   }
 
-  .brand div,
-  .nav-item span {
+  .brand div {
     display: none;
   }
 
   .nav-item {
+    min-height: 52px;
+    height: auto;
     justify-content: center;
+    flex-direction: column;
+    gap: 4px;
+    padding: 6px 4px;
+  }
+
+  .nav-item span {
+    display: block;
+    max-width: 68px;
+    font-size: 10px;
+    line-height: 1.15;
+    text-align: center;
   }
 
   .metrics-grid {
@@ -1597,44 +1749,290 @@ th {
   }
 }
 
-@media (max-width: 840px) {
-  .app-shell {
-    grid-template-columns: 1fr;
+@media screen and (max-width: 1180px) {
+  .primary-action,
+  .primary-action.compact,
+  .secondary-action,
+  .table-action,
+  .icon-button,
+  .nav-item,
+  .form-field input,
+  .form-field select,
+  .toolbar-actions select,
+  .status-editor select,
+  .toggle-field,
+  .agreement-item-row input[type='text'],
+  .agreement-item-row input[type='number'],
+  .agreement-item-row input:not([type]),
+  .agreement-item-row input[placeholder],
+  .agreement-item-row select,
+  .agreement-item-main label,
+  .checkbox-line,
+  .billing-confirmation-line,
+  .billing-month-options label,
+  .fee-record-view-switch button,
+  .link-button {
+    min-height: 44px;
   }
 
-  .sidebar {
-    position: sticky;
-    top: 0;
-    z-index: 10;
+  .link-button {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .search-box {
+    min-height: 44px;
+  }
+
+  .search-box input {
+    height: 100%;
+  }
+
+  .icon-button {
+    min-width: 44px;
+  }
+}
+
+@media screen and (max-width: 1023px) {
+  .charge-cell-row {
+    min-height: 56px;
+    align-items: flex-start;
     padding: 12px;
   }
 
-  .brand {
+  .charge-cell-row input,
+  .toggle-field input,
+  .checkbox-line input {
+    width: 20px;
+    height: 20px;
+    flex: 0 0 20px;
+  }
+
+  .charge-cell-row span {
+    min-width: 0;
+  }
+
+  .charge-cell-row small {
+    overflow-wrap: anywhere;
+  }
+
+  .student-list-table {
+    min-width: 0;
+  }
+
+  .student-list-table thead {
     display: none;
   }
 
-  .nav-list {
-    display: flex;
-    overflow-x: auto;
+  .student-list-table tbody,
+  .student-list-table tr,
+  .student-list-table td {
+    display: block;
+    width: 100%;
   }
 
-  .nav-item {
-    width: 44px;
+  .student-list-table tbody {
+    display: grid;
+    gap: 0;
+  }
+
+  .student-list-table tr {
+    position: relative;
+    padding: 14px 132px 14px 0;
+    border-bottom: 1px solid #edf0f4;
+  }
+
+  .student-list-table td {
+    border: 0;
+    padding: 2px 0;
+    font-size: 14px;
+  }
+
+  .student-list-table td::before {
+    content: attr(data-label) ': ';
+    color: #626773;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .student-list-table .student-primary-cell {
+    font-size: 16px;
+    font-weight: 800;
+  }
+
+  .student-list-table .student-primary-cell::before,
+  .student-list-table .student-secondary-cell,
+  .student-list-table .student-open-cell::before {
+    display: none;
+  }
+
+  .student-list-table .table-state-row {
+    padding-right: 0;
+  }
+
+  .student-list-table .table-state-row td::before {
+    display: none;
+  }
+
+  .student-list-table .student-open-cell {
+    position: absolute;
+    top: 50%;
+    right: 0;
+    width: 116px;
+    transform: translateY(-50%);
+  }
+
+  .student-list-table .student-open-cell .table-action {
+    width: 100%;
+  }
+
+  .toolbar-actions,
+  .payment-actions,
+  .payment-subheader,
+  .page-title-row,
+  .panel-header {
+    flex-wrap: wrap;
+  }
+
+  .toolbar-actions > *,
+  .payment-actions > * {
+    max-width: 100%;
+  }
+
+  .badge,
+  .permission-note,
+  td,
+  dd,
+  strong,
+  small {
+    overflow-wrap: anywhere;
+  }
+
+  .app-shell {
+    display: block;
+  }
+
+  .sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 40;
+    width: min(288px, calc(100vw - 48px));
+    padding: 18px 14px;
+    transform: translateX(-100%);
+    transition: transform 160ms ease;
+    overflow-y: auto;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    display: block;
+    border: 0;
+    background: rgba(19, 20, 24, 0.48);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  body.nav-open .sidebar-backdrop {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .sidebar-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .drawer-close,
+  .menu-button {
+    display: grid;
     flex: 0 0 44px;
   }
 
-  .main {
-    padding: 16px;
+  .icon-button {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
   }
 
-  .topbar,
-  .topbar-actions,
+  .nav-list {
+    display: grid;
+    overflow: visible;
+  }
+
+  .nav-item {
+    min-height: 48px;
+    height: auto;
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .nav-item span {
+    display: inline;
+  }
+
+  .main {
+    padding: 18px;
+  }
+
+  .topbar {
+    min-height: 64px;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .topbar > div:first-of-type {
+    min-width: 0;
+    flex: 1 1 240px;
+  }
+
+  .topbar h1,
+  .topbar .eyebrow {
+    overflow-wrap: anywhere;
+  }
+
+  .topbar-actions {
+    min-width: 0;
+    flex: 0 1 auto;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .topbar .search-box,
+  .topbar [aria-label='Notifications'] {
+    display: none;
+  }
+
+  .user-chip {
+    max-width: 220px;
+    min-width: 0;
+  }
+
+  .user-chip div {
+    min-width: 0;
+  }
+
+  .user-chip strong,
+  .user-chip small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .hero-strip {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .search-box,
   .primary-action {
     width: 100%;
     min-width: 0;
@@ -1648,6 +2046,32 @@ th {
   .report-grid,
   .form-grid,
   .detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .student-detail .panel-header {
+    align-items: flex-start;
+  }
+
+  .student-detail h2,
+  .student-detail dd {
+    overflow-wrap: anywhere;
+  }
+
+  .student-detail dl div {
+    align-items: flex-start;
+  }
+
+  .agreement-items-grid,
+  .allocation-row,
+  .allocation-row.charge,
+  .agreement-billing-config,
+  .fee-record-activation-bar,
+  .fee-record-filters,
+  .fee-record-filters.has-category,
+  .inline-payment-form,
+  .receipt-meta,
+  .receipt-two-column {
     grid-template-columns: 1fr;
   }
 
@@ -1665,8 +2089,27 @@ th {
     grid-template-columns: 1fr;
   }
 
+  .agreement-item-row {
+    padding: 12px;
+  }
+
   .billing-month-options {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(64px, 1fr));
+  }
+
+  .billing-month-options label {
+    min-height: 44px;
+    cursor: pointer;
+  }
+
+  .billing-month-options label.selected {
+    border-color: #167a4a;
+    background: #dff5e9;
+    box-shadow: inset 0 0 0 1px #167a4a;
+  }
+
+  .agreement-preview {
+    justify-content: flex-start;
   }
 
   .page-title-row {
@@ -1681,6 +2124,323 @@ th {
 
   .toolbar-actions select {
     width: 100%;
+  }
+}
+
+@media screen and (max-width: 479px) {
+  .student-list-table tr {
+    padding-right: 0;
+  }
+
+  .student-list-table .student-open-cell {
+    position: static;
+    width: 100%;
+    margin-top: 10px;
+    transform: none;
+  }
+
+  .billing-month-options {
+    grid-template-columns: repeat(3, minmax(72px, 1fr));
+  }
+}
+
+@media screen and (min-width: 768px) and (max-width: 1023px) {
+  .fee-record-filters,
+  .fee-record-filters.has-category {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .receipt-meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .payment-form > .form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .manual-charge-form .form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media screen and (max-width: 767px) {
+  .fee-record-view-switch {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .fee-record-filters,
+  .fee-record-filters.has-category {
+    width: 100%;
+    grid-template-columns: 1fr;
+  }
+
+  .fee-record-filters .wide {
+    grid-column: auto;
+  }
+
+  .table-scroll-hint {
+    display: block;
+  }
+
+  .fee-record-ledger {
+    overflow: hidden;
+  }
+
+  .month-cell {
+    min-width: 120px;
+    font-size: 13px;
+  }
+
+  .receipt-sheet {
+    width: 100%;
+    padding: 16px;
+  }
+
+  .receipt-brand {
+    align-items: flex-start;
+  }
+
+  .receipt-brand img {
+    width: 56px;
+    height: 56px;
+  }
+
+  .receipt-meta,
+  .receipt-two-column {
+    grid-template-columns: 1fr;
+  }
+
+  .receipt-two-column dl div {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .receipt-two-column dd {
+    text-align: left;
+  }
+
+  .receipt-items-scroll table {
+    min-width: 480px;
+  }
+
+  .receipt-sheet .no-print .primary-action {
+    width: 100%;
+  }
+
+  .payment-section,
+  .payment-form,
+  .payment-allocation-block {
+    padding: 12px;
+  }
+
+  .payment-form > .form-grid,
+  .allocation-row,
+  .allocation-row.charge {
+    grid-template-columns: 1fr;
+  }
+
+  .payment-subheader {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .payment-subheader .table-action,
+  .allocation-row .table-action {
+    width: 100%;
+  }
+
+  .payment-submit-area {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    margin-inline: -12px;
+    border-top: 1px solid #edf0f4;
+    background: #ffffff;
+    padding: 10px 12px max(8px, env(safe-area-inset-bottom));
+  }
+
+  .payment-history-table,
+  .receipt-history-table {
+    min-width: 0;
+  }
+
+  .payment-history-table thead,
+  .receipt-history-table thead {
+    display: none;
+  }
+
+  .payment-history-table tbody,
+  .payment-history-table tr,
+  .payment-history-table td,
+  .receipt-history-table tbody,
+  .receipt-history-table tr,
+  .receipt-history-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .payment-history-table tbody,
+  .receipt-history-table tbody {
+    display: grid;
+    gap: 12px;
+  }
+
+  .payment-history-table tr:not(.payment-allocation-summary):not(.history-state-row):not(.payment-action-row),
+  .receipt-history-table tr:not(.history-state-row):not(.payment-action-row) {
+    border: 1px solid #edf0f4;
+    border-radius: 8px;
+    padding: 12px;
+  }
+
+  .payment-history-table td,
+  .receipt-history-table td {
+    display: grid;
+    grid-template-columns: minmax(104px, 0.45fr) minmax(0, 1fr);
+    gap: 8px;
+    border: 0;
+    padding: 4px 0;
+  }
+
+  .payment-history-table td::before,
+  .receipt-history-table td::before {
+    content: attr(data-label);
+    color: #626773;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .payment-history-table td:has(.payment-actions),
+  .receipt-history-table td:has(.payment-actions) {
+    display: block;
+    margin-top: 8px;
+  }
+
+  .payment-history-table td:has(.payment-actions)::before,
+  .receipt-history-table td:has(.payment-actions)::before,
+  .payment-allocation-summary td::before,
+  .history-state-row td::before,
+  .payment-action-row td::before {
+    display: none;
+  }
+
+  .payment-allocation-summary td,
+  .history-state-row td,
+  .payment-action-row td {
+    display: block;
+    width: 100%;
+  }
+
+  .payment-action-row .inline-payment-form,
+  .payment-action-row .toolbar-actions,
+  .payment-action-row .toolbar-actions > * {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .payment-action-row .primary-action,
+  .payment-action-row .secondary-action {
+    min-height: 44px;
+  }
+
+  .payment-allocation-summary {
+    margin-top: -12px;
+    border: 1px solid #edf0f4;
+    border-top: 0;
+    border-radius: 0 0 8px 8px;
+  }
+
+  .payment-actions .table-action {
+    flex: 1 1 calc(50% - 4px);
+    min-height: 44px;
+  }
+
+  .receipt-history-table td[data-label='Receipt No'],
+  .receipt-history-table td[data-label='Void Details'] {
+    overflow-wrap: anywhere;
+  }
+
+  .main {
+    padding: 12px;
+  }
+
+  .topbar > div:first-of-type {
+    flex-basis: calc(100% - 56px);
+  }
+
+  .topbar-actions {
+    flex: 1 1 100%;
+    flex-wrap: nowrap;
+  }
+
+  .fee-record-activation-bar,
+  .manual-charge-form .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .fee-record-action-group > *,
+  .manual-charge-form > .primary-action {
+    width: 100%;
+  }
+
+  .preview-charge-table {
+    min-width: 0;
+  }
+
+  .preview-charge-table thead {
+    display: none;
+  }
+
+  .preview-charge-table tbody,
+  .preview-charge-table tr,
+  .preview-charge-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .preview-charge-table tbody {
+    display: grid;
+    gap: 10px;
+  }
+
+  .preview-charge-table tr {
+    border: 1px solid #edf0f4;
+    border-radius: 8px;
+    padding: 12px;
+  }
+
+  .preview-charge-table td {
+    display: grid;
+    grid-template-columns: minmax(88px, 0.45fr) minmax(0, 1fr);
+    gap: 8px;
+    border: 0;
+    padding: 4px 0;
+  }
+
+  .preview-charge-table td::before {
+    content: attr(data-label);
+    color: #626773;
+    font-size: 12px;
+    font-weight: 800;
+  }
+}
+
+@media screen and (max-width: 767px), screen and (max-height: 620px) {
+  .login-screen {
+    place-items: start center;
+  }
+
+  .login-card {
+    margin-block: auto;
+    padding: 18px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar {
+    transition: none;
   }
 }
 
