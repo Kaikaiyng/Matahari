@@ -80,6 +80,7 @@
   flex-direction: column;
   gap: 20px;
   min-width: 0;
+  max-width: 100%;
 }
 
 .topbar {
@@ -176,6 +177,16 @@ h2 {
   color: #3a3d44;
   display: grid;
   place-items: center;
+}
+
+.menu-button,
+.drawer-close,
+.sidebar-backdrop {
+  display: none;
+}
+
+body.nav-open {
+  overflow: hidden;
 }
 
 .user-chip {
@@ -299,6 +310,11 @@ h2 {
   background: #ffffff;
 }
 
+.panel {
+  min-width: 0;
+  max-width: 100%;
+}
+
 .metric-card {
   min-height: 92px;
   padding: 16px;
@@ -336,6 +352,8 @@ h2 {
 .page-stack {
   display: grid;
   gap: 18px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .page-title-row {
@@ -902,6 +920,8 @@ th {
 .student-detail {
   display: grid;
   gap: 16px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .student-detail .panel-header {
@@ -978,6 +998,8 @@ th {
   padding: 16px;
   display: grid;
   gap: 16px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .fee-record-activation-bar {
@@ -1080,6 +1102,8 @@ th {
   padding: 16px;
   display: grid;
   gap: 16px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .agreement-current {
@@ -1115,6 +1139,11 @@ th {
   padding: 14px;
   display: grid;
   gap: 14px;
+}
+
+.payment-form {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .payment-subheader {
@@ -1418,6 +1447,8 @@ th {
 .receipt-workspace {
   display: grid;
   gap: 18px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .receipt-history td {
@@ -1549,22 +1580,38 @@ th {
   margin: 4px 0;
 }
 
-@media (max-width: 1180px) {
+@media screen and (min-width: 1024px) and (max-width: 1180px) {
   .app-shell {
     grid-template-columns: 88px minmax(0, 1fr);
+  }
+
+  .sidebar {
+    padding: 18px 10px;
   }
 
   .brand {
     justify-content: center;
   }
 
-  .brand div,
-  .nav-item span {
+  .brand div {
     display: none;
   }
 
   .nav-item {
+    min-height: 52px;
+    height: auto;
     justify-content: center;
+    flex-direction: column;
+    gap: 4px;
+    padding: 6px 4px;
+  }
+
+  .nav-item span {
+    display: block;
+    max-width: 68px;
+    font-size: 10px;
+    line-height: 1.15;
+    text-align: center;
   }
 
   .metrics-grid {
@@ -1597,44 +1644,80 @@ th {
   }
 }
 
-@media (max-width: 840px) {
+@media screen and (max-width: 1023px) {
   .app-shell {
-    grid-template-columns: 1fr;
+    display: block;
   }
 
   .sidebar {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    padding: 12px;
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 40;
+    width: min(288px, calc(100vw - 48px));
+    padding: 18px 14px;
+    transform: translateX(-100%);
+    transition: transform 160ms ease;
+    overflow-y: auto;
   }
 
-  .brand {
-    display: none;
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    display: block;
+    border: 0;
+    background: rgba(19, 20, 24, 0.48);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  body.nav-open .sidebar-backdrop {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .sidebar-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .drawer-close,
+  .menu-button {
+    display: grid;
+    flex: 0 0 44px;
   }
 
   .nav-list {
-    display: flex;
-    overflow-x: auto;
+    display: grid;
+    overflow: visible;
   }
 
   .nav-item {
-    width: 44px;
-    flex: 0 0 44px;
+    min-height: 48px;
+    height: auto;
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .nav-item span {
+    display: inline;
   }
 
   .main {
     padding: 16px;
   }
 
-  .topbar,
-  .topbar-actions,
   .hero-strip {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .search-box,
   .primary-action {
     width: 100%;
     min-width: 0;
@@ -1648,6 +1731,19 @@ th {
   .report-grid,
   .form-grid,
   .detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .agreement-items-grid,
+  .allocation-row,
+  .allocation-row.charge,
+  .agreement-billing-config,
+  .fee-record-activation-bar,
+  .fee-record-filters,
+  .fee-record-filters.has-category,
+  .inline-payment-form,
+  .receipt-meta,
+  .receipt-two-column {
     grid-template-columns: 1fr;
   }
 
@@ -1681,6 +1777,12 @@ th {
 
   .toolbar-actions select {
     width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar {
+    transition: none;
   }
 }
 

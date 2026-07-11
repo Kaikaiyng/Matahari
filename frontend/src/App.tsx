@@ -15,6 +15,7 @@ import {
   LockKeyhole,
   LogOut,
   Mail,
+  Menu,
   Phone,
   Plus,
   Receipt,
@@ -24,6 +25,7 @@ import {
   ShieldCheck,
   UserPlus,
   Users,
+  X,
 } from 'lucide-react'
 import { ApiError, apiRequest } from './api'
 import misLogo from './assets/mis-logo.jpg'
@@ -4436,6 +4438,31 @@ function App() {
   const [user, setUser] = useState<CurrentUser | null>(null)
   const [activePage, setActivePage] = useState<PageKey>('dashboard')
   const [focusedStudentId, setFocusedStudentId] = useState<number | null>(null)
+  const [isNavOpen, setIsNavOpen] = useState(false)
+
+  const closeNavigation = () => setIsNavOpen(false)
+
+  const selectPage = (page: PageKey) => {
+    setActivePage(page)
+    closeNavigation()
+  }
+
+  useEffect(() => {
+    document.body.classList.toggle('nav-open', isNavOpen)
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        closeNavigation()
+      }
+    }
+
+    window.addEventListener('keydown', handleEscape)
+
+    return () => {
+      document.body.classList.remove('nav-open')
+      window.removeEventListener('keydown', handleEscape)
+    }
+  }, [isNavOpen])
 
   const loadDashboard = async () => {
     try {
@@ -4482,6 +4509,7 @@ function App() {
       setUser(null)
       setAuthState('guest')
       setActivePage('dashboard')
+      closeNavigation()
     }
   }
 
@@ -4555,13 +4583,25 @@ function App() {
 
   return (
     <div className="app-shell">
-      <aside className="sidebar">
-        <div className="brand">
-          <img src={misLogo} alt="MIS logo" />
-          <div>
-            <strong>MIS</strong>
-            <span>School ERP</span>
+      <button
+        className="sidebar-backdrop"
+        aria-label="Close navigation"
+        tabIndex={isNavOpen ? 0 : -1}
+        onClick={closeNavigation}
+      />
+
+      <aside className={isNavOpen ? 'sidebar open' : 'sidebar'} id="main-navigation">
+        <div className="sidebar-heading">
+          <div className="brand">
+            <img src={misLogo} alt="MIS logo" />
+            <div>
+              <strong>MIS</strong>
+              <span>School ERP</span>
+            </div>
           </div>
+          <button className="icon-button drawer-close" aria-label="Close navigation" onClick={closeNavigation}>
+            <X size={20} />
+          </button>
         </div>
 
         <nav className="nav-list" aria-label="Main navigation">
@@ -4569,9 +4609,11 @@ function App() {
             const Icon = item.icon
             return (
               <button
+                aria-current={activePage === item.key ? 'page' : undefined}
+                aria-label={item.label}
                 className={activePage === item.key ? 'nav-item active' : 'nav-item'}
                 key={item.label}
-                onClick={() => setActivePage(item.key)}
+                onClick={() => selectPage(item.key)}
               >
                 <Icon size={18} />
                 <span>{item.label}</span>
@@ -4583,6 +4625,15 @@ function App() {
 
       <main className="main">
         <header className="topbar">
+          <button
+            className="icon-button menu-button"
+            aria-controls="main-navigation"
+            aria-expanded={isNavOpen}
+            aria-label="Open navigation"
+            onClick={() => setIsNavOpen(true)}
+          >
+            <Menu size={20} />
+          </button>
           <div>
             <p className="eyebrow">Matahari School ERP / {dashboard.school.name}</p>
             <h1>{pageTitle}</h1>
