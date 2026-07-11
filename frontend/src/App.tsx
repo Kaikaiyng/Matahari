@@ -4154,7 +4154,8 @@ function FeeRecordSummaryPage({
                 Balances come from Fee Record charge cells. Corrections happen through Fee Agreement, Payment, or Receipt flows.
               </p>
 
-              <div className="table-wrap">
+              <p className="table-scroll-hint">Swipe horizontally to see all financial columns.</p>
+              <div className="table-wrap fee-record-table-wrap">
                 <table>
                   <thead>
                     <tr>
@@ -4233,7 +4234,8 @@ function FeeRecordSummaryPage({
                 item codes are confirmed.
               </p>
 
-              <div className="table-wrap">
+              <p className="table-scroll-hint">Swipe horizontally to see all financial columns.</p>
+              <div className="table-wrap fee-record-table-wrap">
                 <table>
                   <thead>
                     <tr>

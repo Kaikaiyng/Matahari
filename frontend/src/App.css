@@ -518,8 +518,22 @@ body.nav-open {
   color: #d82730;
 }
 
-.table-wrap {
+.table-wrap,
+.fee-record-table-wrap {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-gutter: stable;
+}
+
+.table-scroll-hint {
+  display: none;
+  margin: 0;
+  color: #626773;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .fee-record-view-switch {
@@ -592,8 +606,23 @@ body.nav-open {
   min-width: 1320px;
 }
 
+.fee-record-ledger th {
+  white-space: nowrap;
+}
+
 .monthly-ledger table {
   min-width: 1780px;
+}
+
+.monthly-ledger th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #ffffff;
+}
+
+.monthly-ledger td {
+  vertical-align: top;
 }
 
 .fee-record-row {
@@ -2088,6 +2117,11 @@ th {
 }
 
 @media screen and (min-width: 768px) and (max-width: 1023px) {
+  .fee-record-filters,
+  .fee-record-filters.has-category {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .receipt-meta {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -2102,6 +2136,35 @@ th {
 }
 
 @media screen and (max-width: 767px) {
+  .fee-record-view-switch {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .fee-record-filters,
+  .fee-record-filters.has-category {
+    width: 100%;
+    grid-template-columns: 1fr;
+  }
+
+  .fee-record-filters .wide {
+    grid-column: auto;
+  }
+
+  .table-scroll-hint {
+    display: block;
+  }
+
+  .fee-record-ledger {
+    overflow: hidden;
+  }
+
+  .month-cell {
+    min-width: 120px;
+    font-size: 13px;
+  }
+
   .receipt-sheet {
     width: 100%;
     padding: 16px;
