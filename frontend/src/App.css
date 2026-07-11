@@ -1012,6 +1012,12 @@ th {
   align-items: end;
 }
 
+.fee-record-action-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .fee-record-preview-block,
 .fee-record-warning-list,
 .manual-charge-form,
@@ -1052,7 +1058,7 @@ th {
   background: #ffffff;
 }
 
-.preview-charge-group table {
+.preview-charge-table {
   min-width: 860px;
 }
 
@@ -1957,8 +1963,27 @@ th {
     grid-template-columns: 1fr;
   }
 
+  .agreement-item-row {
+    padding: 12px;
+  }
+
   .billing-month-options {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(64px, 1fr));
+  }
+
+  .billing-month-options label {
+    min-height: 44px;
+    cursor: pointer;
+  }
+
+  .billing-month-options label.selected {
+    border-color: #167a4a;
+    background: #dff5e9;
+    box-shadow: inset 0 0 0 1px #167a4a;
+  }
+
+  .agreement-preview {
+    justify-content: flex-start;
   }
 
   .page-title-row {
@@ -1987,6 +2012,16 @@ th {
     margin-top: 10px;
     transform: none;
   }
+
+  .billing-month-options {
+    grid-template-columns: repeat(3, minmax(72px, 1fr));
+  }
+}
+
+@media screen and (min-width: 768px) and (max-width: 1023px) {
+  .manual-charge-form .form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media screen and (max-width: 767px) {
@@ -2001,6 +2036,57 @@ th {
   .topbar-actions {
     flex: 1 1 100%;
     flex-wrap: nowrap;
+  }
+
+  .fee-record-activation-bar,
+  .manual-charge-form .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .fee-record-action-group > *,
+  .manual-charge-form > .primary-action {
+    width: 100%;
+  }
+
+  .preview-charge-table {
+    min-width: 0;
+  }
+
+  .preview-charge-table thead {
+    display: none;
+  }
+
+  .preview-charge-table tbody,
+  .preview-charge-table tr,
+  .preview-charge-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .preview-charge-table tbody {
+    display: grid;
+    gap: 10px;
+  }
+
+  .preview-charge-table tr {
+    border: 1px solid #edf0f4;
+    border-radius: 8px;
+    padding: 12px;
+  }
+
+  .preview-charge-table td {
+    display: grid;
+    grid-template-columns: minmax(88px, 0.45fr) minmax(0, 1fr);
+    gap: 8px;
+    border: 0;
+    padding: 4px 0;
+  }
+
+  .preview-charge-table td::before {
+    content: attr(data-label);
+    color: #747985;
+    font-size: 12px;
+    font-weight: 800;
   }
 }
 

@@ -2706,7 +2706,7 @@ function StudentsPage({
                         {item.enabled && (
                           <div className="agreement-billing-config">
                             <label className="form-field">
-                              Classification
+                              Charge Type
                               <select
                                 value={item.classification}
                                 onChange={(event) =>
@@ -2721,7 +2721,7 @@ function StudentsPage({
                               </select>
                             </label>
                             <label className="form-field">
-                              Billing Frequency
+                              Billing Pattern
                               <select
                                 value={item.billing_frequency}
                                 onChange={(event) =>
@@ -2947,35 +2947,37 @@ function StudentsPage({
                       }}
                     />
                   </label>
-                  <button className="secondary-action" onClick={() => void previewFeeRecordCharges()} disabled={isPreviewingFeeRecord}>
-                    {isPreviewingFeeRecord ? 'Previewing...' : 'Preview Charges'}
-                  </button>
-                  {canActivateFeeRecord && (
-                    <button
-                      className="primary-action compact"
-                      onClick={() => void activateFeeRecordCharges()}
-                      disabled={!canActivateCurrentPreview || isActivatingFeeRecord}
-                    >
-                      {isActivatingFeeRecord ? 'Activating...' : 'Activate Charges'}
+                  <div className="fee-record-action-group">
+                    <button className="secondary-action" onClick={() => void previewFeeRecordCharges()} disabled={isPreviewingFeeRecord}>
+                      {isPreviewingFeeRecord ? 'Previewing...' : 'Preview Charges'}
                     </button>
-                  )}
-                  <button
-                    className="table-action"
-                    onClick={() => selectedStudent && void loadOutstandingCharges(selectedStudent.id, feeRecordAcademicYear)}
-                  >
-                    View Outstanding
-                  </button>
-                  {canManageFeeRecord && (
+                    {canActivateFeeRecord && (
+                      <button
+                        className="primary-action compact"
+                        onClick={() => void activateFeeRecordCharges()}
+                        disabled={!canActivateCurrentPreview || isActivatingFeeRecord}
+                      >
+                        {isActivatingFeeRecord ? 'Activating...' : 'Activate Charges'}
+                      </button>
+                    )}
                     <button
                       className="table-action"
-                      onClick={() => {
-                        setShowManualChargeForm((value) => !value)
-                        setManualChargeErrors(undefined)
-                      }}
+                      onClick={() => selectedStudent && void loadOutstandingCharges(selectedStudent.id, feeRecordAcademicYear)}
                     >
-                      {showManualChargeForm ? 'Close Manual Charge' : 'Add Manual Charge'}
+                      View Outstanding
                     </button>
-                  )}
+                    {canManageFeeRecord && (
+                      <button
+                        className="table-action"
+                        onClick={() => {
+                          setShowManualChargeForm((value) => !value)
+                          setManualChargeErrors(undefined)
+                        }}
+                      >
+                        {showManualChargeForm ? 'Close Manual Charge' : 'Add Manual Charge'}
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {!canActivateFeeRecord && (
@@ -3110,32 +3112,31 @@ function StudentsPage({
                               <b>{formatCurrency(group.charges.reduce((sum, charge) => sum + charge.expected_amount, 0))}</b>
                             </div>
                             <div className="table-wrap">
-                              <table>
+                              <table className="preview-charge-table">
                                 <thead>
                                   <tr>
                                     <th>Billing Month</th>
-                                    <th>Fee Code / Description</th>
+                                    <th>Fee Code</th>
+                                    <th>Description</th>
                                     <th>Category</th>
                                     <th>Expected Amount</th>
                                     <th>Status</th>
-                                    <th>Warning</th>
                                   </tr>
                                 </thead>
                                 <tbody>
                                   {group.charges.map((charge) => (
                                     <tr key={`${charge.fee_agreement_item_id}-${charge.billing_month}-${charge.description}`}>
-                                      <td>{formatBillingMonth(charge.billing_month)}</td>
-                                      <td>
-                                        {charge.fee_code ?? 'Manual'} / {charge.description}
-                                      </td>
-                                      <td>{charge.fee_record_category}</td>
-                                      <td>{formatCurrency(charge.expected_amount)}</td>
-                                      <td>
+                                      <td data-label="Month">{formatBillingMonth(charge.billing_month)}</td>
+                                      <td data-label="Fee">{charge.fee_code ?? 'Manual'}</td>
+                                      <td data-label="Description">{charge.description}</td>
+                                      <td data-label="Category">{charge.fee_record_category}</td>
+                                      <td data-label="Amount">{formatCurrency(charge.expected_amount)}</td>
+                                      <td data-label="Status">
                                         <span className={`badge ${statusClass(charge.collection_status)}`}>
                                           {formatStatus(charge.collection_status)}
                                         </span>
+                                        <small>{charge.warning ?? 'None'}</small>
                                       </td>
-                                      <td>{charge.warning ?? 'None'}</td>
                                     </tr>
                                   ))}
                                 </tbody>
