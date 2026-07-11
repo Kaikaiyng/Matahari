@@ -1692,6 +1692,68 @@ th {
 }
 
 @media screen and (max-width: 1023px) {
+  .student-list-table {
+    min-width: 0;
+  }
+
+  .student-list-table thead {
+    display: none;
+  }
+
+  .student-list-table tbody,
+  .student-list-table tr,
+  .student-list-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .student-list-table tbody {
+    display: grid;
+    gap: 0;
+  }
+
+  .student-list-table tr {
+    position: relative;
+    padding: 14px 132px 14px 0;
+    border-bottom: 1px solid #edf0f4;
+  }
+
+  .student-list-table td {
+    border: 0;
+    padding: 2px 0;
+    font-size: 14px;
+  }
+
+  .student-list-table td::before {
+    content: attr(data-label) ': ';
+    color: #747985;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .student-list-table .student-primary-cell {
+    font-size: 16px;
+    font-weight: 800;
+  }
+
+  .student-list-table .student-primary-cell::before,
+  .student-list-table .student-secondary-cell,
+  .student-list-table .student-open-cell::before {
+    display: none;
+  }
+
+  .student-list-table .student-open-cell {
+    position: absolute;
+    top: 50%;
+    right: 0;
+    width: 116px;
+    transform: translateY(-50%);
+  }
+
+  .student-list-table .student-open-cell .table-action {
+    width: 100%;
+  }
+
   .toolbar-actions,
   .payment-actions,
   .payment-subheader,
@@ -1855,6 +1917,19 @@ th {
     grid-template-columns: 1fr;
   }
 
+  .student-detail .panel-header {
+    align-items: flex-start;
+  }
+
+  .student-detail h2,
+  .student-detail dd {
+    overflow-wrap: anywhere;
+  }
+
+  .student-detail dl div {
+    align-items: flex-start;
+  }
+
   .agreement-items-grid,
   .allocation-row,
   .allocation-row.charge,
@@ -1898,6 +1973,19 @@ th {
 
   .toolbar-actions select {
     width: 100%;
+  }
+}
+
+@media screen and (max-width: 479px) {
+  .student-list-table tr {
+    padding-right: 0;
+  }
+
+  .student-list-table .student-open-cell {
+    position: static;
+    width: 100%;
+    margin-top: 10px;
+    transform: none;
   }
 }
 

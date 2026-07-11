@@ -2359,7 +2359,7 @@ function StudentsPage({
         </div>
 
         <div className="table-wrap">
-          <table>
+          <table className="student-list-table">
             <thead>
               <tr>
                 <th>Student Name</th>
@@ -2383,17 +2383,17 @@ function StudentsPage({
 
                 return (
                   <tr key={student.id}>
-                    <td>{student.full_name}</td>
-                    <td>{student.student_no}</td>
-                    <td>{student.class?.name ?? formatLevelGroup(student.level_group)}</td>
-                    <td>{canViewFeeRecord ? feeAmount : 'No access'}</td>
-                    <td>{canViewFeeRecord ? outstandingAmount : 'No access'}</td>
-                    <td>
+                    <td className="student-primary-cell" data-label="Student Name">{student.full_name}</td>
+                    <td data-label="Student ID">{student.student_no}</td>
+                    <td data-label="Class">{student.class?.name ?? formatLevelGroup(student.level_group)}</td>
+                    <td className="student-secondary-cell" data-label="Fee Amount">{canViewFeeRecord ? feeAmount : 'No access'}</td>
+                    <td className="student-secondary-cell" data-label="Outstanding">{canViewFeeRecord ? outstandingAmount : 'No access'}</td>
+                    <td data-label="Status">
                       <span className={`badge ${statusClass(student.status)}`}>{formatStatus(student.status)}</span>
                     </td>
-                    <td>
+                    <td className="student-open-cell" data-label="Action">
                       <button className="table-action" onClick={() => void loadStudentDetail(student.id)}>
-                        <Eye size={16} />
+                        <Eye size={15} />
                         Open
                       </button>
                     </td>
@@ -2401,12 +2401,12 @@ function StudentsPage({
                 )
               })}
               {!isLoading && students.length === 0 && (
-                <tr>
+                <tr className="table-state-row">
                   <td colSpan={7}>No students found for this filter.</td>
                 </tr>
               )}
               {isLoading && (
-                <tr>
+                <tr className="table-state-row">
                   <td colSpan={7}>Loading students...</td>
                 </tr>
               )}
@@ -2453,20 +2453,6 @@ function StudentsPage({
             </div>
 
             <div className="detail-block">
-              <h3>Parent / Guardian</h3>
-              {selectedStudent.parents.length > 0 ? (
-                selectedStudent.parents.map((parent) => (
-                  <p key={parent.id}>
-                    {parent.full_name}
-                    {parent.relationship ? ` / ${parent.relationship}` : ''}
-                  </p>
-                ))
-              ) : (
-                <p>No parent or guardian recorded.</p>
-              )}
-            </div>
-
-            <div className="detail-block">
               <h3>Fee Record Totals</h3>
               <dl>
                 <div>
@@ -2501,6 +2487,20 @@ function StudentsPage({
               )}
               {!canViewFeeRecord && <p>You do not have permission to view Fee Record totals.</p>}
               {studentFeeRecordSummaryError && <small>{studentFeeRecordSummaryError}</small>}
+            </div>
+
+            <div className="detail-block">
+              <h3>Parent / Guardian</h3>
+              {selectedStudent.parents.length > 0 ? (
+                selectedStudent.parents.map((parent) => (
+                  <p key={parent.id}>
+                    {parent.full_name}
+                    {parent.relationship ? ` / ${parent.relationship}` : ''}
+                  </p>
+                ))
+              ) : (
+                <p>No parent or guardian recorded.</p>
+              )}
             </div>
 
             <div className="detail-block">
