@@ -1647,8 +1647,9 @@ th {
   }
 }
 
-@media screen and (max-width: 1023px) {
+@media screen and (max-width: 1180px) {
   .primary-action,
+  .primary-action.compact,
   .secondary-action,
   .table-action,
   .icon-button,
@@ -1657,10 +1658,26 @@ th {
   .form-field select,
   .toolbar-actions select,
   .status-editor select,
-  .toggle-field {
+  .toggle-field,
+  .agreement-item-row input[type='text'],
+  .agreement-item-row input[type='number'],
+  .agreement-item-row input:not([type]),
+  .agreement-item-row input[placeholder],
+  .agreement-item-row select,
+  .billing-confirmation-line,
+  .billing-month-options label,
+  .fee-record-view-switch button,
+  .link-button {
     min-height: 44px;
   }
 
+  .link-button {
+    display: inline-flex;
+    align-items: center;
+  }
+}
+
+@media screen and (max-width: 1023px) {
   .toolbar-actions,
   .payment-actions,
   .payment-subheader,
