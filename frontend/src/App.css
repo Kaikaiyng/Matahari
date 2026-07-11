@@ -1664,6 +1664,8 @@ th {
   .agreement-item-row input:not([type]),
   .agreement-item-row input[placeholder],
   .agreement-item-row select,
+  .agreement-item-main label,
+  .checkbox-line,
   .billing-confirmation-line,
   .billing-month-options label,
   .fee-record-view-switch button,
