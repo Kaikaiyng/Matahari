@@ -3835,26 +3835,28 @@ function StudentsPage({
 
                   <div className="receipt-items">
                     <h3>Being Payment For</h3>
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>No</th>
-                          <th>Fee Code</th>
-                          <th>Description</th>
-                          <th>Amount</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {selectedReceipt.items.map((item, index) => (
-                          <tr key={item.id}>
-                            <td>{index + 1}</td>
-                            <td>{item.fee_code ?? 'Manual'}</td>
-                            <td>{item.description}</td>
-                            <td>{formatCurrency(item.amount)}</td>
+                    <div className="receipt-items-scroll">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>No</th>
+                            <th>Fee Code</th>
+                            <th>Description</th>
+                            <th>Amount</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody>
+                          {selectedReceipt.items.map((item, index) => (
+                            <tr key={item.id}>
+                              <td>{index + 1}</td>
+                              <td>{item.fee_code ?? 'Manual'}</td>
+                              <td>{item.description}</td>
+                              <td>{formatCurrency(item.amount)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
 
                   {selectedReceipt.status === 'voided' && (
