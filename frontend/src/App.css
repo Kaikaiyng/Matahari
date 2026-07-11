@@ -1443,7 +1443,25 @@ th {
 }
 
 .billing-month-options input {
-  display: none;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.billing-month-options label:not(.selected):hover {
+  border-color: #9ca2ae;
+  background: #f7f8fa;
+}
+
+.billing-month-options label:focus-within {
+  outline: 3px solid #b31923;
+  outline-offset: 2px;
 }
 
 .agreement-preview {
@@ -1832,7 +1850,7 @@ th {
 
   .student-list-table td::before {
     content: attr(data-label) ': ';
-    color: #747985;
+    color: #626773;
     font-size: 12px;
     font-weight: 800;
   }
@@ -2289,7 +2307,7 @@ th {
   .payment-history-table td::before,
   .receipt-history-table td::before {
     content: attr(data-label);
-    color: #747985;
+    color: #626773;
     font-size: 12px;
     font-weight: 800;
   }
@@ -2403,7 +2421,7 @@ th {
 
   .preview-charge-table td::before {
     content: attr(data-label);
-    color: #747985;
+    color: #626773;
     font-size: 12px;
     font-weight: 800;
   }

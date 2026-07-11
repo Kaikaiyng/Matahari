@@ -4449,6 +4449,7 @@ function App() {
   const [isNavOpen, setIsNavOpen] = useState(false)
   const [isNarrowViewport, setIsNarrowViewport] = useState(() => window.matchMedia('(max-width: 1023px)').matches)
   const menuButtonRef = useRef<HTMLButtonElement>(null)
+  const drawerCloseButtonRef = useRef<HTMLButtonElement>(null)
   const shouldRestoreNavigationFocusRef = useRef(false)
 
   const closeNavigation = useCallback(() => {
@@ -4497,6 +4498,12 @@ function App() {
 
     return () => mediaQuery.removeEventListener('change', handleBreakpointChange)
   }, [])
+
+  useEffect(() => {
+    if (isNavOpen && isNarrowViewport) {
+      drawerCloseButtonRef.current?.focus()
+    }
+  }, [isNavOpen, isNarrowViewport])
 
   useEffect(() => {
     if (!isNavOpen && isNarrowViewport && shouldRestoreNavigationFocusRef.current) {
@@ -4646,7 +4653,12 @@ function App() {
               <span>School ERP</span>
             </div>
           </div>
-          <button className="icon-button drawer-close" aria-label="Close navigation" onClick={closeNavigation}>
+          <button
+            className="icon-button drawer-close"
+            aria-label="Close navigation"
+            onClick={closeNavigation}
+            ref={drawerCloseButtonRef}
+          >
             <X size={20} />
           </button>
         </div>
@@ -4670,7 +4682,7 @@ function App() {
         </nav>
       </aside>
 
-      <main className="main">
+      <main className="main" inert={isNarrowViewport && isNavOpen ? true : undefined}>
         <header className="topbar">
           <button
             className="icon-button menu-button"

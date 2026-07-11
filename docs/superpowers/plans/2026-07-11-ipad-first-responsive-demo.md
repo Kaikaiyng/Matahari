@@ -1,6 +1,6 @@
 # Matahari iPad-First Responsive Demo Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Make the existing Matahari Admin Finance frontend demo-ready on desktop, iPad landscape, iPad portrait, and mobile portrait without changing finance business logic.
 
@@ -41,7 +41,7 @@
 - Consumes: existing `PageKey`, `navItems`, `activePage`, `setActivePage`, and Lucide icons.
 - Produces: `isNavOpen: boolean`, `closeNavigation(): void`, `selectPage(page: PageKey): void`, `.menu-button`, `.sidebar-backdrop`, `.sidebar.open`, and `body.nav-open`.
 
-- [ ] **Step 1: Record the failing responsive baseline**
+- [x] **Step 1: Record the failing responsive baseline**
 
 Run the existing app and evaluate at 820x1180 and 390x844:
 
@@ -56,7 +56,7 @@ Run the existing app and evaluate at 820x1180 and 390x844:
 
 Expected before implementation: `navButton` is `false`, the narrow sidebar is `sticky`, and the 820px topbar is approximately 322px tall.
 
-- [ ] **Step 2: Add drawer state, Escape handling, and body scroll locking**
+- [x] **Step 2: Add drawer state, Escape handling, and body scroll locking**
 
 Add `Menu` and `X` to the Lucide import. Inside `App`, add:
 
@@ -90,7 +90,7 @@ useEffect(() => {
 
 Update `handleLogout` to call `closeNavigation()` after returning to Dashboard.
 
-- [ ] **Step 3: Add semantic drawer controls without changing navigation data**
+- [x] **Step 3: Add semantic drawer controls without changing navigation data**
 
 Before the sidebar, add:
 
@@ -153,7 +153,7 @@ At the start of the topbar, place:
 </button>
 ```
 
-- [ ] **Step 4: Replace the two existing media queries with intentional shell ranges**
+- [x] **Step 4: Replace the two existing media queries with intentional shell ranges**
 
 Implement these exact structural rules in `App.css`, then retain screen-specific rules under the matching range:
 
@@ -272,7 +272,7 @@ body.nav-open {
 
 Use `@media (prefers-reduced-motion: reduce)` to remove the drawer transition.
 
-- [ ] **Step 5: Add root containment and focus rules**
+- [x] **Step 5: Add root containment and focus rules**
 
 Update `index.css` with:
 
@@ -305,7 +305,7 @@ textarea {
 
 Add `min-width: 0; max-width: 100%` to `.main`, `.page-stack`, `.panel`, `.student-detail`, `.fee-agreement-section`, `.fee-record-charge-section`, `.payment-section`, `.payment-form`, and `.receipt-workspace`.
 
-- [ ] **Step 6: Verify shell behavior and commit**
+- [x] **Step 6: Verify shell behavior and commit**
 
 At 1180x820 verify the compact labeled rail. At 820x1180 and 390x844 verify the drawer opens, Escape closes it, selecting Students closes it, body scroll is locked while open, active page is visible, and the topbar is under 150px.
 
@@ -338,7 +338,7 @@ git commit -m "feat: add responsive admin navigation"
 - Consumes: Task 1 drawer controls and breakpoint ranges.
 - Produces: compact `.topbar`, viewport-safe `.login-card`, 44px controls, wrapping `.toolbar-actions`, and safe text behavior.
 
-- [ ] **Step 1: Record failing measurements**
+- [x] **Step 1: Record failing measurements**
 
 At 390x844 evaluate:
 
@@ -351,7 +351,7 @@ Array.from(document.querySelectorAll('button, input, select')).slice(0, 30).map(
 
 Expected before implementation: table actions and month controls include heights below 44px.
 
-- [ ] **Step 2: Implement compact tablet/mobile topbar**
+- [x] **Step 2: Implement compact tablet/mobile topbar**
 
 Under `max-width: 1023px`, use:
 
@@ -407,7 +407,7 @@ Under `max-width: 1023px`, use:
 
 Below 768px, set `.main { padding: 12px; }`, `.topbar > div:first-of-type { flex-basis: calc(100% - 56px); }`, and keep actions on one compact second row.
 
-- [ ] **Step 3: Enforce usable controls and wrapping**
+- [x] **Step 3: Enforce usable controls and wrapping**
 
 Use:
 
@@ -450,7 +450,7 @@ Use:
 }
 ```
 
-- [ ] **Step 4: Harden login for mobile keyboards and short viewports**
+- [x] **Step 4: Harden login for mobile keyboards and short viewports**
 
 Use:
 
@@ -479,7 +479,7 @@ Use:
 }
 ```
 
-- [ ] **Step 5: Verify login and header, then commit**
+- [x] **Step 5: Verify login and header, then commit**
 
 Verify login at 820x1180 and 390x844, including a failed login error and a successful login. Confirm no horizontal overflow, readable labels, visible errors, and reachable Login button.
 
@@ -502,11 +502,11 @@ git commit -m "fix: improve responsive form and header usability"
 - Consumes: existing student table, `loadStudentDetail`, `StudentSummary`, status formatting, and detail sections.
 - Produces: `.student-list-table`, `.student-primary-cell`, `.student-secondary-cell`, mobile `data-label` values, and ordered detail blocks.
 
-- [ ] **Step 1: Confirm the failing mobile list**
+- [x] **Step 1: Confirm the failing mobile list**
 
 At 390x844 verify the seven-column Student List is compressed and that the page can be scrolled horizontally when dense finance content is open.
 
-- [ ] **Step 2: Add semantic classes and data labels to the existing student table**
+- [x] **Step 2: Add semantic classes and data labels to the existing student table**
 
 Change the table to `className="student-list-table"`. Add these attributes to each mapped row:
 
@@ -528,7 +528,7 @@ Change the table to `className="student-list-table"`. Add these attributes to ea
 
 Keep the existing loading and empty rows unchanged except for adding `className="table-state-row"`.
 
-- [ ] **Step 3: Convert the student table into an operational list below 1024px**
+- [x] **Step 3: Convert the student table into an operational list below 1024px**
 
 Add:
 
@@ -611,7 +611,7 @@ Add:
 }
 ```
 
-- [ ] **Step 4: Enforce the approved detail order and narrow layout**
+- [x] **Step 4: Enforce the approved detail order and narrow layout**
 
 Keep the existing DOM section sequence. Move the `Fee Record Totals` detail block immediately after `Student Profile` if it is not already there. Keep Parent/Guardian and Status Action after totals, then Remarks. Do not move finance business components across state boundaries.
 
@@ -640,7 +640,7 @@ Use:
 }
 ```
 
-- [ ] **Step 5: Verify Student List and Detail, then commit**
+- [x] **Step 5: Verify Student List and Detail, then commit**
 
 Verify required fields and Open action at 820x1180 and 390x844. Open the long seeded QA student and verify the approved detail order, wrapping ID, full-width status action, and no page overflow. Recheck 1440x900 table density.
 
@@ -663,11 +663,11 @@ git commit -m "fix: adapt student workflows for narrow screens"
 - Consumes: existing Fee Agreement form state, `classification`, `billing_frequency`, `billing_months`, preview state, and manual-charge state.
 - Produces: clearer display labels, `.preview-charge-table`, `.fee-record-action-group`, 44px month selectors, and contained form grids.
 
-- [ ] **Step 1: Record failing form measurements**
+- [x] **Step 1: Record failing form measurements**
 
 At 820x1180 and 390x844 open Supersede Current and measure `.billing-month-options label`. Expected before implementation: approximately 34px high.
 
-- [ ] **Step 2: Rename display labels without changing form keys**
+- [x] **Step 2: Rename display labels without changing form keys**
 
 Replace only the user-facing text in both agreement item configurations:
 
@@ -713,7 +713,7 @@ Replace only the user-facing text in both agreement item configurations:
 
 Do not remove the `manual` option.
 
-- [ ] **Step 3: Make agreement controls touch-safe and readable**
+- [x] **Step 3: Make agreement controls touch-safe and readable**
 
 Use:
 
@@ -758,7 +758,7 @@ Use:
 }
 ```
 
-- [ ] **Step 4: Contain activation and Manual Charge actions**
+- [x] **Step 4: Contain activation and Manual Charge actions**
 
 Wrap the activation buttons in `<div className="fee-record-action-group">`. Use:
 
@@ -788,7 +788,7 @@ Wrap the activation buttons in `<div className="fee-record-action-group">`. Use:
 }
 ```
 
-- [ ] **Step 5: Convert only preview rows to mobile record cards**
+- [x] **Step 5: Convert only preview rows to mobile record cards**
 
 Add `className="preview-charge-table"` to each preview table and add `data-label` values `Month`, `Fee`, `Description`, `Category`, `Amount`, and `Status` to its body cells.
 
@@ -839,7 +839,7 @@ Below 768px use this complete preview-record presentation. Keep tablet portrait 
 }
 ```
 
-- [ ] **Step 6: Verify agreement, preview, and manual form, then commit**
+- [x] **Step 6: Verify agreement, preview, and manual form, then commit**
 
 At 820x1180 and 390x844 verify labels, 44px month controls, selected/unselected distinction, wrapped actions, warning prominence, preview readability, local validation, and no page overflow. Confirm Supersede payload behavior is unchanged by inspecting the existing request body in source.
 
@@ -862,7 +862,7 @@ git commit -m "fix: improve responsive fee configuration flows"
 - Consumes: existing `paymentForm`, allocation totals, grouped outstanding charges, verify/void/generate/print handlers, and receipt history.
 - Produces: `.payment-history-table`, `.receipt-history-table`, `.history-state-row`, mobile `data-label` values, and `.payment-submit-area`.
 
-- [ ] **Step 1: Record the failing mobile payment baseline**
+- [x] **Step 1: Record the failing mobile payment baseline**
 
 At 390x844 open Create Payment and evaluate:
 
@@ -876,7 +876,7 @@ At 390x844 open Create Payment and evaluate:
 
 Expected before implementation: body width pair approximately `[375, 518]` and payment form wider than its panel.
 
-- [ ] **Step 2: Contain and stack the payment form**
+- [x] **Step 2: Contain and stack the payment form**
 
 Use:
 
@@ -923,7 +923,7 @@ Use:
 }
 ```
 
-- [ ] **Step 3: Improve charge and allocation touch usability**
+- [x] **Step 3: Improve charge and allocation touch usability**
 
 Use:
 
@@ -970,7 +970,7 @@ Wrap the balance strip and submit button in:
 
 On mobile make `.payment-submit-area` sticky at `bottom: 0`, add `padding-bottom: max(8px, env(safe-area-inset-bottom))`, a white background, and a top border. Confirm it does not cover the last allocation row; if it does, add matching bottom padding to `.payment-form`.
 
-- [ ] **Step 4: Add mobile labels to Payment History without duplicating actions**
+- [x] **Step 4: Add mobile labels to Payment History without duplicating actions**
 
 Add `className="payment-history-table"` to the payment table. Add these body-cell labels: `Payment Date`, `Received Date`, `Method`, `Amount`, `Status`, `Reference`, `Receipt`, `Recorded By`, `Verified By`, and `Actions`. Add `className="history-state-row"` to loading and empty rows, and `className="payment-allocation-summary"` to allocation detail rows.
 
@@ -1055,13 +1055,13 @@ Below 768px use the following record presentation for both history tables. Prese
 }
 ```
 
-- [ ] **Step 5: Add mobile labels to Receipt History**
+- [x] **Step 5: Add mobile labels to Receipt History**
 
 Add `className="receipt-history-table"` to the receipt history table while retaining `receipt-history no-print` on the wrapper. Add body-cell labels: `Receipt No`, `Date`, `Amount`, `Status`, `Paid By`, `Issued By`, `Void Details`, and `Actions`.
 
 The CSS block in Step 4 applies the complete mobile record presentation to `.receipt-history-table`. Add `overflow-wrap: anywhere` to receipt number and void detail cells. Keep status text and destructive actions visible.
 
-- [ ] **Step 6: Verify payment and history flows, then commit**
+- [x] **Step 6: Verify payment and history flows, then commit**
 
 At 820x1180 and 390x844:
 
@@ -1095,7 +1095,7 @@ git commit -m "fix: make payment workflows touch friendly"
 - Consumes: existing `.receipt-print-scope`, `.receipt-sheet`, receipt data, `printReceipt`, and `@media print` rules.
 - Produces: `.receipt-items-scroll`, contained receipt screen behavior, and screen-only responsive receipt rules.
 
-- [ ] **Step 1: Record the failing receipt baseline**
+- [x] **Step 1: Record the failing receipt baseline**
 
 At 390x844 open receipt `MIS.A0006 (07/2026)` and evaluate:
 
@@ -1111,7 +1111,7 @@ At 390x844 open receipt `MIS.A0006 (07/2026)` and evaluate:
 
 Expected before implementation: receipt width approximately 738px and page width approximately 792px.
 
-- [ ] **Step 2: Wrap only the receipt item table**
+- [x] **Step 2: Wrap only the receipt item table**
 
 Change the items markup to:
 
@@ -1143,7 +1143,7 @@ Change the items markup to:
 </div>
 ```
 
-- [ ] **Step 3: Add screen-only responsive receipt rules**
+- [x] **Step 3: Add screen-only responsive receipt rules**
 
 Use:
 
@@ -1219,7 +1219,7 @@ Use:
 
 Do not place these rules inside `@media print`.
 
-- [ ] **Step 4: Verify screen and print, then commit**
+- [x] **Step 4: Verify screen and print, then commit**
 
 Verify receipt screen at all four target sizes. Confirm the page does not scroll horizontally, the items table can scroll internally on mobile, IDs wrap, and Print Receipt is reachable.
 
@@ -1244,7 +1244,7 @@ git commit -m "fix: contain receipt screen without changing print"
 - Consumes: existing summary/monthly filters, tables, rows, `FeeRecordMonthCellView`, and student-open behavior.
 - Produces: `.table-scroll-hint`, `.fee-record-table-wrap`, and viewport-contained ledgers.
 
-- [ ] **Step 1: Record failing summary and monthly baselines**
+- [x] **Step 1: Record failing summary and monthly baselines**
 
 At 390x844 evaluate both Fee Record views. Expected before implementation:
 
@@ -1261,7 +1261,7 @@ At 390x844 evaluate both Fee Record views. Expected before implementation:
 
 The current body is about 518px wide and the filter panel about 486px wide.
 
-- [ ] **Step 2: Add explicit horizontal-scroll cues**
+- [x] **Step 2: Add explicit horizontal-scroll cues**
 
 Immediately before each ledger wrapper, add:
 
@@ -1271,7 +1271,7 @@ Immediately before each ledger wrapper, add:
 
 Change each wrapper to `className="table-wrap fee-record-table-wrap"`.
 
-- [ ] **Step 3: Contain filters and ledgers**
+- [x] **Step 3: Contain filters and ledgers**
 
 Use:
 
@@ -1330,7 +1330,7 @@ Use:
 
 Keep `.fee-record-ledger table { min-width: 1320px; }` and `.monthly-ledger table { min-width: 1780px; }` so financial columns remain readable.
 
-- [ ] **Step 4: Improve ledger readability without spreadsheet behavior**
+- [x] **Step 4: Improve ledger readability without spreadsheet behavior**
 
 Use:
 
@@ -1360,7 +1360,7 @@ Use:
 
 Do not add sticky Student Name/ID columns in this pass; at 390px they would consume most of the viewport and reduce month readability. The visible cue and contained scroll satisfy the small, safe scope.
 
-- [ ] **Step 5: Verify ledgers and commit**
+- [x] **Step 5: Verify ledgers and commit**
 
 At all four viewports verify:
 
@@ -1393,7 +1393,7 @@ git commit -m "fix: contain responsive fee record ledgers"
 - Consumes: all prior tasks.
 - Produces: verified branch, browser evidence, final responsive status, pushed branch, and merged GitHub change.
 
-- [ ] **Step 1: Run static verification**
+- [x] **Step 1: Run static verification**
 
 ```powershell
 cd C:\Users\chong\Documents\Matahari\frontend
@@ -1405,7 +1405,7 @@ git diff --check origin/master...HEAD -- frontend/src/App.tsx frontend/src/App.c
 
 Expected: build exits 0, lint reports zero errors, and diff check emits no output.
 
-- [ ] **Step 2: Run the requested browser matrix**
+- [x] **Step 2: Run the requested browser matrix**
 
 At 1440x900, 1180x820, 820x1180, and 390x844 test:
 
@@ -1445,9 +1445,11 @@ Accessibility checks in the same pass:
 
 - [ ] **Step 3: Check receipt print preview**
 
+> Native print preview is not exposed by the Codex in-app browser. The print action was invoked and the unchanged A4 print CSS was reviewed; real preview remains a known limitation.
+
 Open the issued receipt, trigger print, and inspect preview where supported. Confirm the A4 receipt remains readable and screen-only drawer, sidebar, topbar, histories, and buttons do not print.
 
-- [ ] **Step 4: Review the final diff**
+- [x] **Step 4: Review the final diff**
 
 Run:
 
@@ -1459,7 +1461,7 @@ git diff origin/master...HEAD -- frontend/src/App.tsx frontend/src/App.css front
 
 Confirm unrelated untracked `.gstack/`, `docs/business-rules/`, and `frontend/test-results/` content remains unstaged and unchanged.
 
-- [ ] **Step 5: Commit the implementation plan and any final QA correction**
+- [x] **Step 5: Commit the implementation plan and any final QA correction**
 
 If the plan is not yet committed:
 
