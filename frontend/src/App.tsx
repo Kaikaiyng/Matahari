@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { FormEvent, ReactNode } from 'react'
 import {
   AlertTriangle,
@@ -4440,8 +4440,16 @@ function App() {
   const [focusedStudentId, setFocusedStudentId] = useState<number | null>(null)
   const [isNavOpen, setIsNavOpen] = useState(false)
   const [isNarrowViewport, setIsNarrowViewport] = useState(() => window.matchMedia('(max-width: 1023px)').matches)
+  const menuButtonRef = useRef<HTMLButtonElement>(null)
+  const shouldRestoreNavigationFocusRef = useRef(false)
 
-  const closeNavigation = () => setIsNavOpen(false)
+  const closeNavigation = useCallback(() => {
+    if (isNarrowViewport && isNavOpen) {
+      shouldRestoreNavigationFocusRef.current = true
+    }
+
+    setIsNavOpen(false)
+  }, [isNavOpen, isNarrowViewport])
 
   const selectPage = (page: PageKey) => {
     setActivePage(page)
@@ -4463,7 +4471,7 @@ function App() {
       document.body.classList.remove('nav-open')
       window.removeEventListener('keydown', handleEscape)
     }
-  }, [isNavOpen])
+  }, [closeNavigation, isNavOpen])
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(max-width: 1023px)')
@@ -4481,6 +4489,13 @@ function App() {
 
     return () => mediaQuery.removeEventListener('change', handleBreakpointChange)
   }, [])
+
+  useEffect(() => {
+    if (!isNavOpen && isNarrowViewport && shouldRestoreNavigationFocusRef.current) {
+      shouldRestoreNavigationFocusRef.current = false
+      menuButtonRef.current?.focus()
+    }
+  }, [isNavOpen, isNarrowViewport])
 
   const loadDashboard = async () => {
     try {
@@ -4654,6 +4669,7 @@ function App() {
             aria-expanded={isNavOpen}
             aria-label="Open navigation"
             onClick={() => setIsNavOpen(true)}
+            ref={menuButtonRef}
           >
             <Menu size={20} />
           </button>
