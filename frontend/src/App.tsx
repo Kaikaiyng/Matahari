@@ -4439,6 +4439,7 @@ function App() {
   const [activePage, setActivePage] = useState<PageKey>('dashboard')
   const [focusedStudentId, setFocusedStudentId] = useState<number | null>(null)
   const [isNavOpen, setIsNavOpen] = useState(false)
+  const [isNarrowViewport, setIsNarrowViewport] = useState(() => window.matchMedia('(max-width: 1023px)').matches)
 
   const closeNavigation = () => setIsNavOpen(false)
 
@@ -4463,6 +4464,23 @@ function App() {
       window.removeEventListener('keydown', handleEscape)
     }
   }, [isNavOpen])
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 1023px)')
+
+    const handleBreakpointChange = (event: MediaQueryListEvent) => {
+      setIsNarrowViewport(event.matches)
+
+      if (!event.matches) {
+        setIsNavOpen(false)
+      }
+    }
+
+    setIsNarrowViewport(mediaQuery.matches)
+    mediaQuery.addEventListener('change', handleBreakpointChange)
+
+    return () => mediaQuery.removeEventListener('change', handleBreakpointChange)
+  }, [])
 
   const loadDashboard = async () => {
     try {
@@ -4590,7 +4608,12 @@ function App() {
         onClick={closeNavigation}
       />
 
-      <aside className={isNavOpen ? 'sidebar open' : 'sidebar'} id="main-navigation">
+      <aside
+        aria-hidden={isNarrowViewport && !isNavOpen ? true : undefined}
+        className={isNavOpen ? 'sidebar open' : 'sidebar'}
+        id="main-navigation"
+        inert={isNarrowViewport && !isNavOpen ? true : undefined}
+      >
         <div className="sidebar-heading">
           <div className="brand">
             <img src={misLogo} alt="MIS logo" />

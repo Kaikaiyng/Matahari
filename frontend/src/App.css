@@ -1691,6 +1691,10 @@ th {
   .menu-button {
     display: grid;
     flex: 0 0 44px;
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
   }
 
   .nav-list {
@@ -1710,7 +1714,52 @@ th {
   }
 
   .main {
-    padding: 16px;
+    padding: 18px;
+  }
+
+  .topbar {
+    min-height: 64px;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .topbar > div:first-of-type {
+    min-width: 0;
+    flex: 1 1 240px;
+  }
+
+  .topbar h1,
+  .topbar .eyebrow {
+    overflow-wrap: anywhere;
+  }
+
+  .topbar-actions {
+    min-width: 0;
+    flex: 0 1 auto;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .topbar .search-box,
+  .topbar [aria-label='Notifications'] {
+    display: none;
+  }
+
+  .user-chip {
+    max-width: 220px;
+    min-width: 0;
+  }
+
+  .user-chip div {
+    min-width: 0;
+  }
+
+  .user-chip strong,
+  .user-chip small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .hero-strip {
@@ -1777,6 +1826,21 @@ th {
 
   .toolbar-actions select {
     width: 100%;
+  }
+}
+
+@media screen and (max-width: 767px) {
+  .main {
+    padding: 12px;
+  }
+
+  .topbar > div:first-of-type {
+    flex-basis: calc(100% - 56px);
+  }
+
+  .topbar-actions {
+    flex: 1 1 100%;
+    flex-wrap: nowrap;
   }
 }
 
