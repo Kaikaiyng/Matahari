@@ -2133,8 +2133,8 @@ th {
     gap: 12px;
   }
 
-  .payment-history-table tr:not(.payment-allocation-summary):not(.history-state-row),
-  .receipt-history-table tr:not(.history-state-row) {
+  .payment-history-table tr:not(.payment-allocation-summary):not(.history-state-row):not(.payment-action-row),
+  .receipt-history-table tr:not(.history-state-row):not(.payment-action-row) {
     border: 1px solid #edf0f4;
     border-radius: 8px;
     padding: 12px;
@@ -2166,8 +2166,28 @@ th {
   .payment-history-table td:has(.payment-actions)::before,
   .receipt-history-table td:has(.payment-actions)::before,
   .payment-allocation-summary td::before,
-  .history-state-row td::before {
+  .history-state-row td::before,
+  .payment-action-row td::before {
     display: none;
+  }
+
+  .payment-allocation-summary td,
+  .history-state-row td,
+  .payment-action-row td {
+    display: block;
+    width: 100%;
+  }
+
+  .payment-action-row .inline-payment-form,
+  .payment-action-row .toolbar-actions,
+  .payment-action-row .toolbar-actions > * {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .payment-action-row .primary-action,
+  .payment-action-row .secondary-action {
+    min-height: 44px;
   }
 
   .payment-allocation-summary {
