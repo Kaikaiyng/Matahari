@@ -1062,6 +1062,19 @@ th {
   min-width: 860px;
 }
 
+.preview-status-value {
+  min-width: 0;
+  display: grid;
+  justify-items: start;
+  gap: 4px;
+}
+
+.preview-status-value small {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
 .preview-charge-group-header {
   display: flex;
   justify-content: space-between;

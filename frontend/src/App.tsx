@@ -3132,10 +3132,12 @@ function StudentsPage({
                                       <td data-label="Category">{charge.fee_record_category}</td>
                                       <td data-label="Amount">{formatCurrency(charge.expected_amount)}</td>
                                       <td data-label="Status">
-                                        <span className={`badge ${statusClass(charge.collection_status)}`}>
-                                          {formatStatus(charge.collection_status)}
-                                        </span>
-                                        <small>{charge.warning ?? 'None'}</small>
+                                        <div className="preview-status-value">
+                                          <span className={`badge ${statusClass(charge.collection_status)}`}>
+                                            {formatStatus(charge.collection_status)}
+                                          </span>
+                                          <small>{charge.warning ?? 'None'}</small>
+                                        </div>
                                       </td>
                                     </tr>
                                   ))}
