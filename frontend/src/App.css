@@ -1519,6 +1519,8 @@ th {
 
 .receipt-print-scope {
   display: block;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .receipt-sheet,
@@ -1843,6 +1845,14 @@ th {
   .student-list-table .student-primary-cell::before,
   .student-list-table .student-secondary-cell,
   .student-list-table .student-open-cell::before {
+    display: none;
+  }
+
+  .student-list-table .table-state-row {
+    padding-right: 0;
+  }
+
+  .student-list-table .table-state-row td::before {
     display: none;
   }
 
