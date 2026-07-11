@@ -1163,7 +1163,13 @@ th {
   gap: 14px;
 }
 
-.payment-form {
+.payment-form,
+.payment-allocation-block,
+.allocation-rows,
+.allocation-row,
+.charge-picker,
+.charge-month-group,
+.charge-category-group {
   min-width: 0;
   max-width: 100%;
 }
@@ -1432,6 +1438,11 @@ th {
 .agreement-preview.warning {
   background: #fff1d8;
   color: #744500;
+}
+
+.payment-submit-area {
+  display: grid;
+  gap: 10px;
 }
 
 .payment-actions {
@@ -1711,6 +1722,28 @@ th {
 }
 
 @media screen and (max-width: 1023px) {
+  .charge-cell-row {
+    min-height: 56px;
+    align-items: flex-start;
+    padding: 12px;
+  }
+
+  .charge-cell-row input,
+  .toggle-field input,
+  .checkbox-line input {
+    width: 20px;
+    height: 20px;
+    flex: 0 0 20px;
+  }
+
+  .charge-cell-row span {
+    min-width: 0;
+  }
+
+  .charge-cell-row small {
+    overflow-wrap: anywhere;
+  }
+
   .student-list-table {
     min-width: 0;
   }
@@ -2032,12 +2065,128 @@ th {
 }
 
 @media screen and (min-width: 768px) and (max-width: 1023px) {
+  .payment-form > .form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .manual-charge-form .form-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media screen and (max-width: 767px) {
+  .payment-section,
+  .payment-form,
+  .payment-allocation-block {
+    padding: 12px;
+  }
+
+  .payment-form > .form-grid,
+  .allocation-row,
+  .allocation-row.charge {
+    grid-template-columns: 1fr;
+  }
+
+  .payment-subheader {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .payment-subheader .table-action,
+  .allocation-row .table-action {
+    width: 100%;
+  }
+
+  .payment-submit-area {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    margin-inline: -12px;
+    border-top: 1px solid #edf0f4;
+    background: #ffffff;
+    padding: 10px 12px max(8px, env(safe-area-inset-bottom));
+  }
+
+  .payment-history-table,
+  .receipt-history-table {
+    min-width: 0;
+  }
+
+  .payment-history-table thead,
+  .receipt-history-table thead {
+    display: none;
+  }
+
+  .payment-history-table tbody,
+  .payment-history-table tr,
+  .payment-history-table td,
+  .receipt-history-table tbody,
+  .receipt-history-table tr,
+  .receipt-history-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .payment-history-table tbody,
+  .receipt-history-table tbody {
+    display: grid;
+    gap: 12px;
+  }
+
+  .payment-history-table tr:not(.payment-allocation-summary):not(.history-state-row),
+  .receipt-history-table tr:not(.history-state-row) {
+    border: 1px solid #edf0f4;
+    border-radius: 8px;
+    padding: 12px;
+  }
+
+  .payment-history-table td,
+  .receipt-history-table td {
+    display: grid;
+    grid-template-columns: minmax(104px, 0.45fr) minmax(0, 1fr);
+    gap: 8px;
+    border: 0;
+    padding: 4px 0;
+  }
+
+  .payment-history-table td::before,
+  .receipt-history-table td::before {
+    content: attr(data-label);
+    color: #747985;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .payment-history-table td:has(.payment-actions),
+  .receipt-history-table td:has(.payment-actions) {
+    display: block;
+    margin-top: 8px;
+  }
+
+  .payment-history-table td:has(.payment-actions)::before,
+  .receipt-history-table td:has(.payment-actions)::before,
+  .payment-allocation-summary td::before,
+  .history-state-row td::before {
+    display: none;
+  }
+
+  .payment-allocation-summary {
+    margin-top: -12px;
+    border: 1px solid #edf0f4;
+    border-top: 0;
+    border-radius: 0 0 8px 8px;
+  }
+
+  .payment-actions .table-action {
+    flex: 1 1 calc(50% - 4px);
+    min-height: 44px;
+  }
+
+  .receipt-history-table td[data-label='Receipt No'],
+  .receipt-history-table td[data-label='Void Details'] {
+    overflow-wrap: anywhere;
+  }
+
   .main {
     padding: 12px;
   }

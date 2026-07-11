@@ -3430,21 +3430,22 @@ function StudentsPage({
                   </div>
                 </div>
 
-                <div className={`agreement-preview ${paymentAmountCents === allocationTotalCents ? '' : 'warning'}`}>
-                  <span>Payment {formatCurrency(Number(paymentForm.amount || 0))}</span>
-                  <span>Allocation {formatCurrency(paymentAllocationTotal)}</span>
-                  <strong>{paymentAmountCents === allocationTotalCents ? 'Balanced' : 'Mismatch'}</strong>
+                <div className="payment-submit-area">
+                  <div className={`agreement-preview ${paymentAmountCents === allocationTotalCents ? '' : 'warning'}`}>
+                    <span>Payment {formatCurrency(Number(paymentForm.amount || 0))}</span>
+                    <span>Allocation {formatCurrency(paymentAllocationTotal)}</span>
+                    <strong>{paymentAmountCents === allocationTotalCents ? 'Balanced' : 'Mismatch'}</strong>
+                  </div>
+                  <button className="primary-action" disabled={isSavingPayment}>
+                    {isSavingPayment ? 'Saving...' : 'Record Payment'}
+                  </button>
                 </div>
-
-                <button className="primary-action" disabled={isSavingPayment}>
-                  {isSavingPayment ? 'Saving...' : 'Record Payment'}
-                </button>
               </form>
             )}
 
             {canViewPayments && (
               <div className="table-wrap">
-                <table>
+                <table className="payment-history-table">
                   <thead>
                     <tr>
                       <th>Payment Date</th>
@@ -3466,18 +3467,18 @@ function StudentsPage({
                       return (
                           <Fragment key={payment.id}>
                         <tr>
-                          <td>{payment.payment_date}</td>
-                          <td>{payment.received_date ?? 'Not recorded'}</td>
-                          <td>{formatStatus(payment.payment_method)}</td>
-                          <td>{formatCurrency(payment.amount)}</td>
-                          <td>
+                          <td data-label="Payment Date">{payment.payment_date}</td>
+                          <td data-label="Received Date">{payment.received_date ?? 'Not recorded'}</td>
+                          <td data-label="Method">{formatStatus(payment.payment_method)}</td>
+                          <td data-label="Amount">{formatCurrency(payment.amount)}</td>
+                          <td data-label="Status">
                             <span className={`badge ${paymentStatusClass(payment.status)}`}>{formatStatus(payment.status)}</span>
                           </td>
-                          <td>{payment.reference_no ?? 'Not recorded'}</td>
-                          <td>{issuedReceipt ? issuedReceipt.receipt_no : 'No issued receipt'}</td>
-                          <td>{payment.recorded_by?.name ?? 'Not recorded'}</td>
-                          <td>{payment.verified_by?.name ?? 'Not verified'}</td>
-                          <td>
+                          <td data-label="Reference">{payment.reference_no ?? 'Not recorded'}</td>
+                          <td data-label="Receipt">{issuedReceipt ? issuedReceipt.receipt_no : 'No issued receipt'}</td>
+                          <td data-label="Recorded By">{payment.recorded_by?.name ?? 'Not recorded'}</td>
+                          <td data-label="Verified By">{payment.verified_by?.name ?? 'Not verified'}</td>
+                          <td data-label="Actions">
                             <div className="payment-actions">
                               {canVerifyPayments && payment.status === 'pending_verification' && (
                                 <button className="table-action" onClick={() => beginVerifyPayment(payment)}>
@@ -3640,12 +3641,12 @@ function StudentsPage({
                       )
                     })}
                     {!isLoadingPayments && payments.length === 0 && (
-                      <tr>
+                      <tr className="history-state-row">
                         <td colSpan={10}>No payments recorded for this student yet.</td>
                       </tr>
                     )}
                     {isLoadingPayments && (
-                      <tr>
+                      <tr className="history-state-row">
                         <td colSpan={10}>Loading payments...</td>
                       </tr>
                     )}
@@ -3668,7 +3669,7 @@ function StudentsPage({
 
             {canViewReceipts && (
               <div className="table-wrap receipt-history no-print">
-                <table>
+                <table className="receipt-history-table">
                   <thead>
                     <tr>
                       <th>Receipt No</th>
@@ -3683,27 +3684,27 @@ function StudentsPage({
                   </thead>
                   <tbody>
                     {isLoadingReceipts && (
-                      <tr>
+                      <tr className="history-state-row">
                         <td colSpan={8}>Loading receipts...</td>
                       </tr>
                     )}
                     {!isLoadingReceipts && receipts.map((receipt) => (
                       <Fragment key={receipt.id}>
                         <tr>
-                          <td>{receipt.receipt_no}</td>
-                          <td>{receipt.receipt_date}</td>
-                          <td>{formatCurrency(receipt.amount)}</td>
-                          <td>
+                          <td data-label="Receipt No">{receipt.receipt_no}</td>
+                          <td data-label="Date">{receipt.receipt_date}</td>
+                          <td data-label="Amount">{formatCurrency(receipt.amount)}</td>
+                          <td data-label="Status">
                             <span className={`badge ${receiptStatusClass(receipt.status)}`}>{formatStatus(receipt.status)}</span>
                           </td>
-                          <td>{receipt.paid_by}</td>
-                          <td>{receipt.issued_by?.name ?? 'Not recorded'}</td>
-                          <td>
+                          <td data-label="Paid By">{receipt.paid_by}</td>
+                          <td data-label="Issued By">{receipt.issued_by?.name ?? 'Not recorded'}</td>
+                          <td data-label="Void Details">
                             {receipt.status === 'voided'
                               ? `${receipt.voided_by?.name ?? 'Not recorded'} / ${receipt.void_reason ?? 'No reason'}`
                               : 'Not voided'}
                           </td>
-                          <td>
+                          <td data-label="Actions">
                             <div className="payment-actions">
                               {canViewReceipts && (
                                 <button className="table-action" onClick={() => void viewReceipt(receipt.id)}>
@@ -3752,7 +3753,7 @@ function StudentsPage({
                       </Fragment>
                     ))}
                     {!isLoadingReceipts && receipts.length === 0 && (
-                      <tr>
+                      <tr className="history-state-row">
                         <td colSpan={8}>No receipts generated for this student yet.</td>
                       </tr>
                     )}
