@@ -1677,6 +1677,18 @@ th {
     display: inline-flex;
     align-items: center;
   }
+
+  .search-box {
+    min-height: 44px;
+  }
+
+  .search-box input {
+    height: 100%;
+  }
+
+  .icon-button {
+    min-width: 44px;
+  }
 }
 
 @media screen and (max-width: 1023px) {
