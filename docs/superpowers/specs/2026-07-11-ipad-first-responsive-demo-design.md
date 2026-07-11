@@ -2,7 +2,7 @@
 
 Date: 2026-07-11
 
-Status: Approved direction, awaiting written-spec review
+Status: Approved and implemented
 
 Primary device: iPad
 

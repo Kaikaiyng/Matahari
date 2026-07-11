@@ -4627,6 +4627,7 @@ function App() {
       <button
         className="sidebar-backdrop"
         aria-label="Close navigation"
+        aria-hidden={!isNavOpen}
         tabIndex={isNavOpen ? 0 : -1}
         onClick={closeNavigation}
       />
