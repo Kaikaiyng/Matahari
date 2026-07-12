@@ -1,403 +1,268 @@
-# System Architecture and API Draft
+# System Architecture
 
-Version: 0.2
-Date: 2026-06-26
+Status: Current implementation reference
 
-## 1. Architecture Summary
+Last updated: 2026-07-12
 
-Recommended MVP architecture:
+## 1. Runtime Topology
 
 ```text
-Users
-  ->
-Browser
-  ->
-Cloudflare
-  ->
-Ubuntu VPS
-  ->
-Docker
-  |-- Nginx
-  |-- React frontend
-  |-- Laravel API
-  |-- MySQL
+Desktop / iPad / Mobile Browser
+              |
+              | HTTP + Laravel session cookie
+              v
+React + TypeScript frontend (Vite)
+              |
+              | JSON API
+              v
+Laravel 13 application
+              |
+              | Eloquent / transactions
+              v
+MariaDB local demo database
 ```
 
-This architecture is intentionally simple. It supports the first Matahari deployment and can later grow into the multi-school IEM Education Platform and future SaaS setup.
+SQLite remains available for new-contributor setup, test isolation, and rollback. `backend/phpunit.xml` uses SQLite `:memory:` so automated tests do not modify the active demo database.
 
-## 2. Application Layers
+Deployment, Cloudflare, Docker, Nginx, domains, hosting, and TLS are not implemented in this repository.
 
-### 2.1 Frontend
+## 2. Frontend Boundary
 
 Stack:
 
-- React
-- TypeScript
-- TailwindCSS
+- React 19
+- TypeScript 6
+- Vite 8
+- Lucide React
+- Project CSS
 
-Responsibilities:
+Main files:
 
-- Admin dashboard
-- CRUD screens
-- Forms and validation feedback
-- Tables, filters, and exports
-- Invoice/payment/receipt workflows
-- Role-aware navigation
+- `frontend/src/App.tsx`: application shell, page state, screens, finance forms, and tables
+- `frontend/src/App.css`: visual system, responsive breakpoints, receipt screen, and print styles
+- `frontend/src/index.css`: root containment and focus foundation
+- `frontend/src/api.ts`: credentialed JSON requests and normalized API errors
 
-The frontend should not calculate official invoice totals, receipt numbers, or financial status. It can preview values, but backend remains the source of truth.
+The frontend may calculate display previews and allocation totals, but Laravel remains authoritative for validation, permissions, statuses, receipt numbers, and persisted financial effects.
 
-### 2.2 Backend
+## 3. Responsive Layout Architecture
 
-Recommended stack:
-
-- Laravel
-- MySQL
-- Laravel queues, optional later
-
-Responsibilities:
-
-- Authentication
-- Authorization and school scoping
-- Business validation
-- Invoice generation
-- Payment allocation
-- Receipt sequencing
-- PDF/Excel export
-- Audit logging
-
-### 2.3 Database
-
-Database:
-
-- MySQL
-
-Responsibilities:
-
-- Transactional financial records
-- Unique constraints for receipt and invoice integrity
-- School-level data separation
-- Historical snapshots
-
-## 3. Backend Module Boundaries
-
-Suggested Laravel modules/services:
-
-| Module | Responsibility |
+| Width | Shell behavior |
 | --- | --- |
-| Auth | Login, logout, password reset, current user |
-| Schools | School profile, prefixes, status |
-| Users | Users, roles, permissions |
-| Students | Students, classes, parent links |
-| Fees | Fee templates, fee items, student fee assignments |
-| Discounts | Discount items, student discount assignments |
-| Invoices | Invoice generation, invoice detail, invoice PDF |
-| Payments | Payment recording, allocations, void flow |
-| Receipts | Receipt sequence, receipt PDF, void flow |
-| Reports | Dashboard metrics and report exports |
-| Audit | Audit logs for important actions |
+| 1181px+ | Full 280px sidebar and desktop table density |
+| 1024-1180px | Compact 88px labelled navigation rail |
+| 768-1023px | Fixed drawer navigation and single-column task flow |
+| Below 768px | Drawer, stacked forms, mobile record rows, and contained ledgers |
 
-Important services:
+Wide Fee Record tables are deliberate scroll regions. Responsive CSS must not widen the document or override `@media print` receipt rules.
 
-- `InvoiceGenerationService`
-- `InvoiceNumberService`
-- `PaymentRecordingService`
-- `InvoiceBalanceService`
-- `ReceiptNumberService`
-- `ReceiptPdfService`
-- `AuditLogService`
+## 4. Backend Boundary
 
-## 4. Authorization Model
+Laravel responsibilities:
 
-Recommended approach:
+- Session authentication and current-user response
+- Permission middleware and finance action authorization
+- Student validation and status changes
+- Fee Agreement versioning
+- Charge preview, activation, manual charges, and outstanding calculation
+- Payment allocation, verification, and void reversal
+- Receipt sequence, snapshots, print data, and void/regeneration behavior
+- Fee Record Summary and Category Monthly aggregation
 
-- Use role-permission checks for feature access.
-- Use school scope checks for data access.
-- Apply school scope in backend, not only frontend.
+The current code follows Laravel controller/model/service patterns without a broad state-management or module-framework layer.
 
-Target model:
+## 5. Authentication and Authorization
+
+Authentication flow:
 
 ```text
-Role
-        ->
-Role Permission
-        ->
-Permission
-        ->
-Module
+POST /api/login
+  -> encrypted cookie + database-backed Laravel session
+  -> GET /api/me restores current user
+  -> frontend renders permission-aware navigation/actions
 ```
 
-Rules:
+Protected finance routes apply:
 
-- Super Admin can manage all schools and users.
-- CEO can view all schools and reports, but should not need daily data entry permissions.
-- School Admin can manage data within assigned school.
-- Finance can manage invoices, payments, receipts, and reports within assigned school.
-
-Every API that reads or writes school-owned data should verify the user's allowed `school_id`.
-
-Avoid hardcoding role names in business services. Role names can remain seeded defaults, but controller and policy checks should use permission slugs such as `payment.create`, `receipt.void`, or `student.delete`.
-
-## 5. API Style
-
-Recommended style:
-
-- REST API
-- JSON responses
-- Server-side pagination for list screens
-- Filter parameters for reports and tables
-- Consistent error format
-
-Example error response:
-
-```json
-{
-  "message": "Validation failed.",
-  "errors": {
-    "amount": ["Payment amount must be greater than zero."]
-  }
-}
+```text
+EncryptCookies
+AddQueuedCookiesToResponse
+StartSession
+auth
+permission:<permission-slug>
 ```
 
-## 6. API Endpoint Draft
+Examples:
 
-### 6.1 Auth
+- `students.view`
+- `fee_agreements.create`
+- `fee_record.generate`
+- `payments.verify`
+- `receipts.void`
+- `receipts.print`
+
+Frontend permission checks are usability controls, not the security boundary. The backend must reject unauthorized requests.
+
+### Current security limitation
+
+The legacy `GET /api/dashboard/school` and `POST /api/invoices/generate-monthly` routes are registered outside the authenticated finance route group. They are retained from the initial scaffold and must not be treated as production-secure endpoints. Production hardening must either protect or remove them before deployment.
+
+## 6. Finance Data Flow
+
+```text
+Student
+  -> Fee Agreement (versioned configuration)
+  -> Fee Agreement Items (amount and billing pattern)
+  -> Fee Record Preview
+  -> Activated Fee Record Charges
+  -> Outstanding Charge Selection
+  -> Payment Allocations
+  -> Payment Verification / Void
+  -> Receipt / Receipt Items
+  -> Fee Record Summary and Category Monthly views
+```
+
+### Fee Agreement
+
+- A student can have historical versions.
+- One version is current for the selected academic year.
+- Superseding creates a new version rather than overwriting history.
+- Items store charge identity, amount, classification, frequency, months, and preview-confirmation behavior.
+
+### Fee Record charges
+
+- Preview derives proposed charges from the agreement.
+- Activation persists expected charges.
+- Manual charges use the same expected/outstanding model with a manual origin.
+- Summary and category-monthly views read charge and valid-allocation state.
+
+### Payment allocation
+
+- A payment belongs to a student and school.
+- Allocation rows connect money to outstanding Fee Record charges.
+- Partial allocation is supported.
+- Selected allocation total must match the payment amount.
+- Manual allocation is an exceptional path and does not pretend to clear unrelated charge balances.
+
+### Receipts
+
+- Receipt generation starts from an eligible payment.
+- Active receipt generation is idempotent for the same payment.
+- Receipt numbers come from a backend sequence.
+- Receipt items snapshot the issued descriptions and amounts.
+- Voided numbers are never recycled.
+- An active receipt protects its payment from unsafe voiding.
+
+## 7. API Inventory
+
+The authoritative command is:
+
+```powershell
+cd backend
+..\tools\php\php-local.cmd artisan route:list --path=api --except-vendor
+```
+
+Current route count: 30.
+
+### Auth and legacy dashboard
 
 | Method | Endpoint | Purpose |
 | --- | --- | --- |
-| POST | `/api/login` | Login |
-| POST | `/api/logout` | Logout |
-| GET | `/api/me` | Current user |
-| POST | `/api/forgot-password` | Request reset |
-| POST | `/api/reset-password` | Reset password |
+| POST | `/api/login` | Start session |
+| POST | `/api/logout` | End session |
+| GET | `/api/me` | Current authenticated user |
+| GET | `/api/dashboard/school` | Legacy school dashboard data |
+| POST | `/api/invoices/generate-monthly` | Legacy invoice-generation endpoint |
 
-### 6.2 Schools and Users
-
-| Method | Endpoint | Purpose |
-| --- | --- | --- |
-| GET | `/api/schools` | List schools |
-| POST | `/api/schools` | Create school |
-| GET | `/api/schools/{school}` | School detail |
-| PUT | `/api/schools/{school}` | Update school |
-| GET | `/api/users` | List users |
-| POST | `/api/users` | Create user |
-| PUT | `/api/users/{user}` | Update user |
-| POST | `/api/users/{user}/roles` | Assign roles |
-
-### 6.3 Classes, Students, Parents
+### Students
 
 | Method | Endpoint | Purpose |
 | --- | --- | --- |
-| GET | `/api/classes` | List classes |
-| POST | `/api/classes` | Create class |
-| PUT | `/api/classes/{class}` | Update class |
-| GET | `/api/students` | List students |
+| GET | `/api/students` | List/search/filter students |
 | POST | `/api/students` | Create student |
 | GET | `/api/students/{student}` | Student detail |
-| PUT | `/api/students/{student}` | Update student |
-| POST | `/api/students/{student}/parents` | Link parent |
-| DELETE | `/api/students/{student}/parents/{parent}` | Unlink parent |
-| GET | `/api/parents` | List parents |
-| POST | `/api/parents` | Create parent |
-| GET | `/api/parents/{parent}` | Parent detail |
-| PUT | `/api/parents/{parent}` | Update parent |
+| PATCH | `/api/students/{student}` | Update student |
+| PATCH | `/api/students/{student}/status` | Change student status |
 
-### 6.4 Fees and Discounts
+### Fee Agreements and items
 
 | Method | Endpoint | Purpose |
 | --- | --- | --- |
-| GET | `/api/fee-templates` | List fee templates |
-| POST | `/api/fee-templates` | Create fee template |
-| GET | `/api/fee-templates/{feeTemplate}` | Fee template detail |
-| PUT | `/api/fee-templates/{feeTemplate}` | Update fee template |
-| POST | `/api/fee-templates/{feeTemplate}/items` | Add fee item to template |
-| PUT | `/api/fee-templates/{feeTemplate}/items/{templateItem}` | Update template item |
-| POST | `/api/students/{student}/fee-template` | Assign fee template |
-| GET | `/api/fee-items` | List fee items |
-| POST | `/api/fee-items` | Create fee item |
-| PUT | `/api/fee-items/{feeItem}` | Update fee item |
-| GET | `/api/students/{student}/fees` | Student fee assignments |
-| POST | `/api/students/{student}/fees` | Assign fee |
-| PUT | `/api/students/{student}/fees/{assignment}` | Update assigned fee |
-| DELETE | `/api/students/{student}/fees/{assignment}` | Disable assigned fee |
-| GET | `/api/discount-items` | List discount items |
-| POST | `/api/discount-items` | Create discount item |
-| PUT | `/api/discount-items/{discountItem}` | Update discount item |
-| GET | `/api/students/{student}/discounts` | Student discount assignments |
-| POST | `/api/students/{student}/discounts` | Assign discount |
-| PUT | `/api/students/{student}/discounts/{assignment}` | Update discount |
-| DELETE | `/api/students/{student}/discounts/{assignment}` | Disable discount |
+| GET | `/api/fee-items` | List available fee items |
+| GET | `/api/students/{student}/fee-agreements` | Agreement history/current version |
+| POST | `/api/students/{student}/fee-agreements` | Create agreement |
+| GET | `/api/fee-agreements/{feeAgreement}` | Agreement detail |
+| POST | `/api/fee-agreements/{feeAgreement}/supersede` | Create replacement version |
 
-### 6.5 Invoices
+### Fee Record
 
 | Method | Endpoint | Purpose |
 | --- | --- | --- |
-| GET | `/api/invoices` | List invoices |
-| GET | `/api/invoices/{invoice}` | Invoice detail |
-| POST | `/api/invoices/generation-preview` | Preview monthly generation |
-| POST | `/api/invoices/generate-monthly` | Generate monthly invoices |
-| POST | `/api/invoices/{invoice}/void` | Void invoice |
-| GET | `/api/invoices/{invoice}/pdf` | Download invoice PDF |
+| GET | `/api/students/{student}/fee-record/preview` | Preview scheduled charges |
+| POST | `/api/students/{student}/fee-record/activate` | Activate previewed charges |
+| POST | `/api/students/{student}/fee-record/manual-charges` | Add manual charge |
+| GET | `/api/students/{student}/fee-record/outstanding` | Outstanding charge picker data |
+| GET | `/api/fee-record/summary` | Student Fee Record summary |
+| GET | `/api/fee-record/category-monthly` | Category Jan-Dec ledger |
 
-Generation request example:
-
-```json
-{
-  "school_id": 1,
-  "invoice_month": "2026-07",
-  "issue_date": "2026-07-01",
-  "due_date": "2026-07-10",
-  "class_id": null
-}
-```
-
-Generation result example:
-
-```json
-{
-  "created_count": 187,
-  "skipped_count": 3,
-  "skipped": [
-    {
-      "student_id": 15,
-      "reason": "Invoice already exists for 2026-07."
-    }
-  ]
-}
-```
-
-### 6.6 Payments
+### Payments
 
 | Method | Endpoint | Purpose |
 | --- | --- | --- |
-| GET | `/api/payments` | List payments |
-| POST | `/api/payments` | Record payment |
-| GET | `/api/payments/{payment}` | Payment detail |
-| POST | `/api/payments/{payment}/void` | Void payment |
+| GET | `/api/students/{student}/payments` | Payment history |
+| POST | `/api/students/{student}/payments` | Create and allocate payment |
+| POST | `/api/payments/{payment}/verify` | Verify pending payment |
+| POST | `/api/payments/{payment}/void` | Void eligible payment |
 
-Payment request example:
-
-```json
-{
-  "student_id": 10,
-  "invoice_id": 99,
-  "payment_date": "2026-07-05",
-  "amount": "840.00",
-  "method": "bank_transfer",
-  "reference_no": "MBB123456"
-}
-```
-
-### 6.7 Receipts
+### Receipts
 
 | Method | Endpoint | Purpose |
 | --- | --- | --- |
-| GET | `/api/receipts` | List receipts |
+| GET | `/api/students/{student}/receipts` | Receipt history |
+| POST | `/api/payments/{payment}/receipts` | Generate/reuse receipt |
 | GET | `/api/receipts/{receipt}` | Receipt detail |
-| POST | `/api/payments/{payment}/receipt` | Generate receipt if not automatic |
+| GET | `/api/receipts/{receipt}/print` | Printable receipt response |
 | POST | `/api/receipts/{receipt}/void` | Void receipt |
-| GET | `/api/receipts/{receipt}/pdf` | Download receipt PDF |
 
-### 6.8 Dashboard and Reports
+## 8. Database Boundary
 
-| Method | Endpoint | Purpose |
-| --- | --- | --- |
-| GET | `/api/dashboard/school` | School-level dashboard |
-| GET | `/api/dashboard/group` | CEO group dashboard |
-| GET | `/api/reports/daily-collection` | Daily collection |
-| GET | `/api/reports/monthly-collection` | Monthly collection |
-| GET | `/api/reports/outstanding` | Outstanding report |
-| GET | `/api/reports/payment-history` | Payment history |
-| GET | `/api/reports/student-ledger` | Student ledger |
-| GET | `/api/reports/receipts` | Receipt listing |
+The active model contains 36 application and Laravel infrastructure tables. Every financial amount uses database decimal columns and application decimal/cents handling rather than floating-point business calculations.
 
-Export pattern:
+Important integrity controls:
 
-```text
-GET /api/reports/outstanding?format=json
-GET /api/reports/outstanding?format=xlsx
-GET /api/reports/outstanding?format=pdf
-```
+- School and student ownership foreign keys
+- Current/version constraints for Fee Agreements
+- Duplicate-charge prevention indexes
+- Payment allocation foreign keys
+- Unique receipt number and sequence rules
+- Status and void metadata rather than hard deletion
 
-## 7. Frontend Navigation
+See [Database Design](DATABASE_DESIGN.md) for table groups and relationships.
 
-Recommended navigation:
+## 9. Error and State Handling
 
-- Dashboard
-- Students
-- Parents
-- Fees
-- Invoices
-- Payments
-- Receipts
-- Reports
-- Users
-- Settings
-- Audit Logs
+- API validation returns HTTP 422 with field messages.
+- Unauthenticated and unauthorized requests return 401/403.
+- Frontend errors remain within the affected form or section where practical.
+- Buttons expose submitting/loading states.
+- Empty lists and unavailable finance data have explicit messages.
+- Financial warnings remain visible until the user resolves or acknowledges them.
 
-Initial dashboard widgets:
+## 10. Test Architecture
 
-- Today's Collection
-- Monthly Collection
-- Outstanding Fees
-- Active Students
-- Overdue Accounts
-- Invoices This Month
-- Recent Payments
-- Outstanding Students
+- Feature tests exercise auth, students, agreements, charge preview/activation, manual charges, allocations, payments, void guards, receipts, summary, and category monthly APIs.
+- Unit tests cover amount-in-words behavior.
+- PHPUnit uses SQLite `:memory:` for isolation.
+- Last verified baseline: 92 tests and 597 assertions.
 
-## 8. PDF and Export Direction
+## 11. Deferred Architecture
 
-MVP PDF documents:
+- Statements and reminders
+- General reports and export pipelines
+- PDF generation
+- Parent Portal
+- Production dashboard finance logic
+- Queue-driven communication workflows
+- Production deployment and network architecture
 
-- Invoice PDF
-- Receipt PDF
-- Outstanding report PDF
-
-MVP Excel exports:
-
-- Daily collection
-- Monthly collection
-- Outstanding report
-- Payment history
-- Receipt listing
-
-Implementation direction:
-
-- Generate PDFs on backend.
-- Generate Excel exports on backend.
-- Use official school name, address, and receipt prefix from `schools`.
-
-## 9. Testing Priorities
-
-Highest-risk tests:
-
-1. Monthly invoice generation does not duplicate invoices.
-2. Invoice item snapshots remain unchanged after fee edits.
-3. Partial payments correctly update invoice status.
-4. Receipt numbers never duplicate under concurrent requests.
-5. Voiding payment recalculates invoice balance.
-6. School-level users cannot access another school's records.
-7. Reports exclude void payments and void invoices correctly.
-8. Fee template edits do not change existing invoice snapshots.
-9. Permission checks are based on permission slugs, not hardcoded role names.
-10. Audit logs capture old_values and new_values for financial corrections.
-
-## 10. Deployment Notes
-
-Initial VPS setup:
-
-- Ubuntu VPS
-- Docker Compose
-- Nginx reverse proxy
-- MySQL container or managed MySQL
-- Daily database backup
-- Cloudflare DNS
-- Let's Encrypt SSL
-
-Estimated initial scale:
-
-- Around 200 students for first school
-- Low concurrent usage
-- Admin-heavy workload
-
-This scale does not require complex infrastructure. Reliability, backup, and clean financial records matter more than horizontal scaling in MVP.
+These should be designed as separate phases after the current finance flow passes real-device and school UAT.

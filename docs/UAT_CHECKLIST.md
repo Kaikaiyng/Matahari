@@ -1,228 +1,175 @@
-# MVP User Acceptance Test Checklist
-
-Version: 0.1
-Date: 2026-06-25
-
-This checklist defines what the first usable version must prove. The goal is to confirm that the system can replace the school's Excel-based fee workflow for a normal billing month.
-
-## 1. Test Roles
-
-Prepare test users:
-
-- Super Admin
-- CEO
-- School Admin
-- Finance
-
-Acceptance:
-
-- Each user can log in.
-- Each user sees only the navigation allowed for their role.
-- School-level users cannot access another school's data.
-- CEO can see group-level reports.
-
-## 2. School Setup
-
-Test data:
-
-- School name: Matahari International School
-- School code: MIS
-- Receipt prefix: MIS
-
-Acceptance:
-
-- School profile can be created and edited.
-- Receipt prefix is stored.
-- School status can be active or inactive.
-
-## 3. Student and Parent Workflow
-
-Scenario:
-
-Create three students:
-
-- One active student
-- One inactive student
-- One active student with sibling discount
-
-Acceptance:
-
-- Student can be created, edited, searched, and filtered.
-- Parent can be created and linked to more than one student.
-- Student detail shows linked parents.
-- Inactive student is not included in invoice generation.
-
-## 4. Fee Setup Workflow
-
-Scenario:
-
-Create fee items:
-
-- Tuition Fee, RM800, recurring
-- Transport, RM120, recurring
-- Registration, RM50, one-time
-
-Acceptance:
-
-- Fee items can be created and edited.
-- Student can be assigned multiple fees.
-- Assigned amount can override default amount.
-- One-time fee can be targeted to a billing month.
-
-## 5. Discount Workflow
-
-Scenario:
-
-Create and assign discounts:
-
-- Sibling Discount, 10 percent
-- Scholarship, RM100 fixed amount
-
-Acceptance:
-
-- Discount item can be created.
-- Discount can be assigned to a student.
-- Discount can be fixed or percentage.
-- Discount affects generated invoice total.
-- Invoice stores discount snapshot.
-
-## 6. Monthly Invoice Generation
-
-Scenario:
-
-Generate July 2026 invoices for Matahari International School.
-
-Acceptance:
-
-- Admin can preview invoice generation.
-- Only active students are included.
-- Students without assigned fees are skipped or flagged.
-- System creates invoices for eligible students.
-- Invoice contains fee and discount line snapshots.
-- Running the same generation again does not create duplicates.
-- Generated invoice has pending status and correct outstanding amount.
-
-## 7. Invoice Snapshot Test
-
-Scenario:
-
-After generating July 2026 invoice, change Tuition Fee from RM800 to RM900.
-
-Acceptance:
-
-- Existing July 2026 invoice remains RM800 for tuition.
-- New future invoice uses updated fee if assignment is updated.
-- Student ledger shows historical invoice correctly.
-
-## 8. Payment Workflow
-
-Scenario:
-
-Record partial and full payments.
-
-Acceptance:
-
-- Finance can record cash payment.
-- Finance can record bank transfer with reference number.
-- Partial payment updates invoice status to partial.
-- Full payment updates invoice status to paid.
-- Outstanding amount recalculates correctly.
-- Payment appears in payment history.
-
-## 9. Receipt Workflow
-
-Scenario:
-
-Record three confirmed payments.
-
-Acceptance:
-
-- Receipt is generated for each confirmed payment.
-- Receipt numbers are sequential:
-
-```text
-MIS-2026-000001
-MIS-2026-000002
-MIS-2026-000003
-```
-
-- Receipt number cannot duplicate.
-- Receipt PDF can be downloaded or printed.
-- Receipt can be voided with a reason.
-- Voided receipt number is not reused.
-
-## 10. Void and Correction Workflow
-
-Scenario:
-
-Void a mistaken payment.
-
-Acceptance:
-
-- Payment cannot be hard-deleted by normal users.
-- Payment can be voided with reason.
-- Invoice paid amount decreases after void.
-- Invoice outstanding amount recalculates.
-- Audit log records who voided the payment and why.
-
-## 11. Dashboard
-
-Acceptance:
-
-- Dashboard shows today's collection.
-- Dashboard shows monthly collection.
-- Dashboard shows outstanding fees.
-- Dashboard shows active student count.
-- Dashboard shows overdue accounts.
-- Dashboard shows invoices this month.
-- Recent payments table updates after payment entry.
-- Outstanding students panel updates after payment and void actions.
-
-## 12. Reports
-
-Acceptance:
-
-- Daily Collection report matches recorded confirmed payments.
-- Monthly Collection report totals confirmed payments for selected month.
-- Outstanding report lists unpaid and partial invoices.
-- Payment History report lists payment date, amount, method, reference, and received by.
-- Student Ledger shows invoice, payment, receipt, and outstanding history for one student.
-- Receipt Listing shows active and void receipts.
-- Reports can export to Excel.
-- Required reports can export or print to PDF where applicable.
-
-## 13. Multi-School Safety
-
-Scenario:
-
-Create a second test school.
-
-Acceptance:
-
-- Second school can have its own students and fees.
-- Second school has its own receipt prefix and sequence.
-- School Admin from MIS cannot see second school records.
-- CEO can view both schools in group dashboard.
-
-## 14. Audit Log
-
-Acceptance:
-
-- Creating student writes audit log.
-- Changing assigned fee writes audit log.
-- Generating invoice writes audit log.
-- Recording payment writes audit log.
-- Generating or voiding receipt writes audit log.
-- Exporting report writes audit log if required.
-
-## 15. MVP Pass Criteria
-
-The MVP passes UAT when:
-
-- A normal monthly invoice cycle can be completed without Excel.
-- Receipt numbers are automatic and non-duplicated.
-- Partial and full payments update balances correctly.
-- Outstanding report matches invoice/payment records.
-- Daily and monthly collection reports match payment records.
-- Principal or CEO can trust dashboard totals.
-- A second school can be added without code changes.
+# Finance MVP User Acceptance Checklist
+
+Status: Current implemented-scope UAT
+
+Last updated: 2026-07-12
+
+The MVP passes this checklist when a school administrator can complete the implemented student-to-receipt flow accurately on desktop and iPad. This checklist does not claim acceptance for deferred modules.
+
+## 1. Test Preparation
+
+- Use seeded or anonymized local data only.
+- Prepare School Admin and Finance users with different permission sets.
+- Prepare at least one active student with a current Fee Agreement.
+- Prepare one student with outstanding Fee Record charges.
+- Prepare pending, verified, and receipted payment examples where practical.
+- Back up the local database before destructive void/activation tests.
+
+## 2. Login and RBAC
+
+- [ ] Valid user can log in and restore the current session.
+- [ ] Invalid credentials show a readable error.
+- [ ] Logout clears the authenticated session.
+- [ ] School Admin and Finance see only permitted navigation/actions.
+- [ ] Direct API calls to protected actions return 401/403 when appropriate.
+- [ ] Permission rules are enforced by the backend, not only hidden by the frontend.
+
+## 3. Responsive Navigation
+
+- [ ] Desktop shows the full sidebar.
+- [ ] iPad landscape shows a readable compact navigation rail.
+- [ ] iPad portrait/mobile show a menu button and drawer.
+- [ ] Drawer closes after navigation, Escape, close control, or backdrop.
+- [ ] Background content does not scroll while the drawer is open.
+- [ ] Current page remains identifiable.
+- [ ] Focus states and touch targets are visible and usable.
+
+## 4. Student Management
+
+- [ ] Student List loads, searches, and filters by status.
+- [ ] Student Name, Student ID, Class, Status, and Open remain visible on narrow screens.
+- [ ] Authorized user can create and edit a student.
+- [ ] Validation appears beside the relevant field.
+- [ ] Student status can change to supported values without deleting the record.
+- [ ] Student Detail shows overview, Fee Record totals, agreements, charges, payments, and receipts in a readable flow.
+- [ ] Long names and identifiers wrap without widening the page.
+
+## 5. Fee Agreement
+
+- [ ] User can view current and historical agreement versions.
+- [ ] Authorized user can create an agreement.
+- [ ] Superseding preserves the old version and makes the new version current.
+- [ ] Agreement items keep amount, Charge Type, Billing Pattern, and billing months.
+- [ ] Monthly, termly, yearly, custom, one-time, and manual validation follows backend rules.
+- [ ] Jan-Dec controls wrap and remain distinguishable and touch friendly.
+- [ ] Preview totals match the item configuration.
+- [ ] Save/Supersede actions remain reachable on iPad/mobile.
+
+## 6. Fee Record Preview and Activation
+
+- [ ] Academic year control and Preview/Activate actions fit the viewport.
+- [ ] Preview lists scheduled charges with month, item, category, amount, and status.
+- [ ] Blocking warnings appear before activation.
+- [ ] Activation creates expected charges only when rules allow it.
+- [ ] Repeated activation does not create prohibited duplicate charges.
+- [ ] Mobile preview records remain readable without page overflow.
+
+## 7. Manual Charge
+
+- [ ] Form includes Academic Year, Billing Month, Category, Description, Amount, and Remark.
+- [ ] Required-field and amount validation are local and readable.
+- [ ] Authorized submission creates a manual charge without changing scheduled-charge behavior.
+- [ ] Created charge appears in outstanding and summary views.
+- [ ] Form is one column on mobile and no more than two readable columns on tablet.
+
+## 8. Payment Allocation
+
+- [ ] Outstanding charges are grouped by month/category.
+- [ ] Charge selection is easy to tap.
+- [ ] Expected and outstanding amounts are visible.
+- [ ] Partial allocation accepts a valid amount below the outstanding balance.
+- [ ] Allocation cannot exceed selected outstanding or payment amount.
+- [ ] Selected total and payment amount are clearly compared.
+- [ ] Mismatch blocks submission and shows a prominent warning.
+- [ ] Manual allocation warning remains visible.
+- [ ] Successful payment stores method, date, reference, status, and allocation rows.
+- [ ] Important payment actions are not hidden at the far edge of a scrollable row.
+
+## 9. Payment Verification and Void
+
+- [ ] Pending payment can be verified by an authorized user.
+- [ ] Verification records verifier and verification timestamp.
+- [ ] Unauthorized user cannot verify or void.
+- [ ] Void requires a valid reason and records the actor/time.
+- [ ] Voiding correctly reverses allocation effects on outstanding charges.
+- [ ] Payment with an issued active receipt is protected from unsafe voiding.
+- [ ] Payment history keeps status and allocation details readable on mobile.
+
+## 10. Receipts
+
+- [ ] Receipt can be generated from an eligible payment.
+- [ ] Repeated generation returns/reuses the active receipt rather than issuing a duplicate.
+- [ ] Receipt number is unique and generated by backend sequence logic.
+- [ ] Receipt amount and item snapshots match the payment.
+- [ ] Receipt screen shows school, payer, student, items, amount in words, issuer, and status.
+- [ ] Print action opens the browser print workflow.
+- [ ] Receipt can be voided only with permission and reason.
+- [ ] Voided receipt number is not reused.
+- [ ] Regeneration after an allowed void produces a new sequence number.
+- [ ] Long receipt numbers wrap safely on tablet/mobile.
+
+## 11. Fee Record Summary
+
+- [ ] Filters wrap and remain usable.
+- [ ] Student, Student ID, Expected, Paid, Outstanding, and Status are present.
+- [ ] Totals match activated charges and valid payment allocations.
+- [ ] Outstanding-only behavior returns the expected students.
+- [ ] Wide columns scroll inside the table container on portrait/mobile.
+- [ ] Opening a student returns to the correct Student Detail.
+
+## 12. Category Monthly Fee Record
+
+- [ ] Academic year, category, status, and search filters work as implemented.
+- [ ] Jan-Dec columns retain readable widths.
+- [ ] Paid, partial, unpaid, and no-charge states remain distinct in text and color.
+- [ ] The ledger scrolls horizontally inside its container.
+- [ ] The page itself does not scroll horizontally.
+- [ ] Student identity remains readable while using the ledger.
+
+## 13. Loading, Empty, and Error States
+
+- [ ] Each main list has a readable loading state.
+- [ ] Empty students, agreements, charges, payments, receipts, summaries, and ledgers are explained.
+- [ ] API errors stay within the affected section where possible.
+- [ ] Buttons show submitting/loading state and resist duplicate submission.
+- [ ] Financial warnings remain visible until resolved.
+
+## 14. Desktop and Device Regression
+
+Run the full flow at:
+
+- [ ] 1440x900 desktop
+- [ ] 1180x820 iPad landscape
+- [ ] 820x1180 iPad portrait
+- [ ] 390x844 mobile portrait
+- [ ] Real iPad Safari on the same LAN
+
+At every size:
+
+- [ ] No page-level horizontal overflow
+- [ ] No clipped primary or destructive actions
+- [ ] Touch targets are usable
+- [ ] Text, badges, IDs, and references wrap safely
+- [ ] Desktop tables and sidebar remain intact after mobile QA
+
+## 15. Print Acceptance
+
+- [ ] Receipt screen is readable before print.
+- [ ] Print button is reachable.
+- [ ] Native browser print preview shows only the receipt scope.
+- [ ] A4 margins and page breaks are acceptable.
+- [ ] Drawer, sidebar, topbar, histories, and buttons do not print.
+
+## 16. Deferred and Not Accepted by This Checklist
+
+- Statements and reminders
+- General reports and exports
+- PDF generation
+- Parent Portal
+- Production dashboard finance logic
+- Deployment, hosting, domain, and Cloudflare configuration
+- Cross-school CEO reporting and full production multi-school operations
+
+## 17. MVP Pass Criteria
+
+The current MVP passes when Sections 2-15 succeed for the implemented permission set and test data, with any real-device or print limitations explicitly recorded. Deferred items in Section 16 are not blockers because they are outside the approved demo scope.

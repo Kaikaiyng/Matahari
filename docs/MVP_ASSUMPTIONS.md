@@ -1,5 +1,7 @@
 # MVP Working Assumptions
 
+> **Historical assumptions (June 2026).** These assumptions enabled the first build and do not all describe the implemented MVP. See [Implementation Status](IMPLEMENTATION_STATUS.md), [System Architecture](SYSTEM_ARCHITECTURE.md), and [Database Design](DATABASE_DESIGN.md) for current behavior.
+
 Version: 0.2
 Date: 2026-06-26
 

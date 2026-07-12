@@ -1,5 +1,7 @@
 # Architecture Review and Improvement Plan
 
+> **Historical architecture review (June 2026).** This describes the intended direction before the current MVP was implemented. Use [System Architecture](SYSTEM_ARCHITECTURE.md) and [Database Design](DATABASE_DESIGN.md) for the active design.
+
 Version: 0.1
 Date: 2026-06-26
 Product: IEM Education Platform

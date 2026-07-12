@@ -1,200 +1,192 @@
-# MVP Demo and Review Script
+# Responsive Finance MVP Demo Script
 
-Version: 0.1
-Date: 2026-06-25
+Status: Current demo sequence
 
-Use this script to present the MVP concept to school stakeholders using the PRD and Canva mockup.
+Last updated: 2026-07-12
 
-Canva mockup:
+## 1. Demo Goal
 
-- Edit: https://www.canva.com/d/waTV5XSLkhk3c18
-- View: https://www.canva.com/d/CTiTU6jFQpFFMPy
-
-## 1. Meeting Goal
-
-The goal of the review is to confirm whether the proposed MVP solves the school's most painful Excel-based finance workflow.
-
-Do not present it as a complete ERP.
-
-Position it as:
+Show that a school administrator can complete the implemented finance flow without relying on the old monthly spreadsheet workflow:
 
 ```text
-A school fee, invoice, payment, receipt, and outstanding report system.
+Login
+  -> Find Student
+  -> Review Fee Agreement
+  -> Preview and Activate Charges
+  -> Add Manual Charge when needed
+  -> Allocate Payment
+  -> Verify Payment
+  -> Generate and Print Receipt
+  -> Review Fee Record summaries
 ```
 
-## 2. Suggested Attendees
+Do not present the system as a finished school ERP. Reports, Export, PDF generation, Parent Portal, Statements, Reminders, and production deployment are not part of this demo.
 
-- Finance/Admin staff who currently manage Excel
-- School Admin
-- Principal
-- CEO or group representative
-- Future system owner or IT contact
+## 2. Devices
 
-## 3. Opening Explanation
+Primary device: iPad.
 
-Suggested script:
+Recommended order:
+
+1. Desktop at 1440x900
+2. iPad landscape at approximately 1180x820
+3. iPad portrait at approximately 820x1180
+4. Mobile portrait at approximately 390x844
+5. Return to desktop to prove the responsive pass did not reduce desktop usability
+
+For a real iPad, connect both devices to the same trusted LAN and follow [Development Setup](DEVELOPMENT_SETUP.md).
+
+## 3. Opening Message
+
+Suggested explanation:
 
 ```text
-Today we are not reviewing a full school ERP.
+This is the current Matahari internal Admin Finance MVP.
 
-We are reviewing a focused first version that replaces the monthly Excel fee process:
-copying worksheets, changing receipt numbers, recording payments, checking outstanding fees, and preparing reports.
-
-If this workflow is correct, we can later add attendance, parent portal, WhatsApp reminders, and online payment.
+The demo focuses on student fee agreements, charge generation, payment allocation,
+payment verification, receipts, and fee-record ledgers. It is designed first for
+school admin work on desktop and iPad.
 ```
 
-## 4. Show Current Pain Point
+## 4. Login and Navigation
 
-Walk through the current manual process:
+1. Open the login page.
+2. Confirm labels, inputs, error placement, and Login button are readable.
+3. Log in with a seeded local School Admin account.
+4. On iPad portrait/mobile, open the menu drawer.
+5. Confirm the current page is visually identified.
+6. Select Students and confirm the drawer closes.
+7. Confirm Logout remains accessible.
 
-```text
-Previous Month Excel
-  -> Copy Sheet
-  -> Change Month
-  -> Change Receipt Number
-  -> Change Date
-  -> Manual Payment Recording
-  -> Manual Outstanding Checking
-```
+Expected:
 
-Ask:
+- No page-level horizontal scrolling
+- Touch targets are comfortable
+- Navigation does not depend on hover
+- Permission-restricted actions are absent or disabled
 
-- Is this accurate?
-- Which step is most painful?
-- Which step causes the most mistakes?
-- Which step takes the most time?
+## 5. Student List and Detail
 
-## 5. Show Proposed Workflow
+1. Search or filter the Student List.
+2. Confirm Student Name, Student ID, Class, Status, and Open remain visible on narrow screens.
+3. Open a student with a long name or identifier.
+4. Review Student overview and Fee Record totals.
+5. Confirm the narrow layout becomes a clear single-column task flow.
 
-Walk through proposed workflow:
+Explain that financial sections are kept separate so admin staff do not face one large unstructured ledger.
 
-```text
-Student Registration
-  -> Assign Fee Structure
-  -> Generate Monthly Invoice
-  -> Record Payment
-  -> Generate Receipt
-  -> Dashboard Updated
-  -> Reports
-```
+## 6. Fee Agreement
 
-Ask:
+1. Open the current Fee Agreement.
+2. Show amount, Charge Type, Billing Pattern, and Jan-Dec month controls.
+3. Open the create or supersede workflow without saving unless using dedicated demo data.
+4. Show selected and unselected month states.
+5. Trigger a harmless validation state if suitable.
 
-- Is any step missing?
-- Is the order correct?
-- Who performs each step today?
+Expected:
 
-## 6. Show Canva Dashboard Mockup
+- Month controls wrap and remain touch friendly
+- Validation appears near the relevant item
+- Save/Supersede actions remain reachable
+- Backend enum names and payloads remain unchanged
 
-Open the Canva view URL.
+## 7. Fee Record Preview and Activation
 
-Explain:
+1. Select the academic year.
+2. Preview scheduled charges.
+3. Point out activation warnings before the rows.
+4. On mobile, show stacked preview records.
+5. Activate only when using dedicated disposable demo data.
 
-- This is a concept mockup.
-- It shows the type of dashboard the school admin or finance user would see.
-- It is not final UI.
+Explain the distinction:
 
-Point out:
+- Fee Agreement defines the billing arrangement.
+- Fee Record charges are the actual expected balances used by payment allocation.
 
-- Today's Collection
-- Monthly Collection
-- Outstanding Fees
-- Active Students
-- Overdue Accounts
-- Generate Monthly Invoices button
-- Recent Payments
-- Outstanding Students
+## 8. Manual Charge
 
-Ask:
+1. Open Add Manual Charge.
+2. Show Academic Year, Billing Month, Category, Description, Amount, and Remark.
+3. Confirm the form is two columns where space permits and one column on mobile.
+4. Do not submit unless the charge is part of planned demo data.
 
-- Are these the right numbers to show first?
-- What number would finance check every morning?
-- What number would principal or CEO care about?
-- Is anything unnecessary?
+## 9. Payment Allocation
 
-## 7. Review Core Modules
+This is the highest-priority demo section.
 
-Use the PRD to walk through:
+1. Open Create Payment.
+2. Show outstanding charges grouped by month/category.
+3. Select one charge.
+4. Enter or adjust a partial allocation amount.
+5. Compare Payment Amount and Selected Allocation Total.
+6. Create a mismatch and show the warning.
+7. Show the manual-allocation warning without submitting it unless required.
+8. Review payment method and status fields.
 
-1. Students
-2. Parents
-3. Fee Items
-4. Discounts
-5. Monthly Invoices
-6. Payments
-7. Receipts
-8. Reports
-9. Multi-school support
+Expected:
 
-For each module, ask:
+- Charge targets are easy to tap
+- Expected and outstanding amounts remain visible
+- Important actions are not placed at the far edge of a scrolling row
+- Mismatch and manual-allocation warnings are prominent
 
-- Is this needed for first version?
-- Is this enough for first version?
-- What would block daily use if missing?
+## 10. Payment and Receipt History
 
-## 8. Confirm Critical Decisions
+1. Open Payment History.
+2. Show pending/verified/voided status and allocation details.
+3. Show Verify and Void controls according to the logged-in permission set.
+4. Open Receipt History.
+5. Generate or view an existing receipt.
+6. Show receipt status, void information, and long-number wrapping.
 
-Ask these directly:
+Explain that a payment with an issued receipt has stricter void safeguards.
 
-1. Should receipt be generated automatically after payment?
-2. Should bank transfer payment require verification before receipt?
-3. Do parents often pay multiple invoices or siblings in one transaction?
-4. Are discounts applied to the whole invoice or only certain fees?
-5. How should registration fee be billed?
-6. Is payment proof upload required for MVP?
-7. What exact receipt format is required?
-8. What reports must be exported to Excel?
+## 11. Receipt Screen and Print
 
-Record answers in `docs/DECISIONS.md`.
+1. Open an issued receipt.
+2. Confirm school, payer, student, receipt number, amount, and items are readable.
+3. On mobile, demonstrate that the receipt item table scrolls inside the receipt rather than widening the page.
+4. Select Print Receipt.
+5. Inspect native print preview on the actual demo browser when available.
 
-## 9. Review UAT Success Criteria
+Do not describe browser printing as PDF generation.
 
-Explain:
+## 12. Fee Record Summary
 
-The first version is successful if a normal billing month can be completed without Excel.
+1. Open Fee Record Summary.
+2. Filter by academic year, student, class/status, or outstanding state as available.
+3. Confirm Student, Student ID, Expected, Paid, Outstanding, and Status remain present.
+4. On narrow screens, show the horizontal-scroll cue and scroll the table inside its container.
 
-Review these pass criteria:
+## 13. Category Monthly
 
-- Generate monthly invoices for active students.
-- Prevent duplicate invoices.
-- Record full and partial payments.
-- Generate non-duplicate receipt numbers.
-- Print/download receipt.
-- Show accurate outstanding report.
-- Show daily and monthly collection report.
-- Support a second school without code changes.
+1. Open Category Monthly Fee Record.
+2. Select a category and academic year.
+3. Scroll the Jan-Dec ledger horizontally.
+4. Point out paid, partial, unpaid, and no-charge states.
+5. Open a student from the ledger when appropriate.
 
-Ask:
+The ledger intentionally remains wide. It is not compressed into tiny text or rebuilt as a spreadsheet component.
 
-- Would this be enough to test with real admin staff?
-- What must be added before they can stop using Excel?
+## 14. Close and Collect Feedback
 
-## 10. Close with Next Steps
+Ask finance/admin staff:
 
-Suggested close:
+- Is the Fee Agreement terminology clear?
+- Are preview and activation warnings sufficient?
+- Can staff understand partial allocation without explanation?
+- Is payment verification consistent with the real bank-transfer workflow?
+- Does the receipt contain the required official wording?
+- Which real-device or printer issue would block daily use?
 
-```text
-If these assumptions are correct, the next step is to build the technical foundation:
-Laravel backend, React admin UI, MySQL database, Docker deployment, and the first migrations.
+Record confirmed changes in `docs/DECISIONS.md` or a new dated decision record without rewriting historical decisions.
 
-The first development milestone should prove student records, fee setup, invoice generation, payment recording, and receipt numbering.
-```
+## 15. Demo Pass Criteria
 
-## 11. Meeting Output Checklist
-
-After the meeting, update:
-
-- `docs/DECISIONS.md`
-- `docs/MVP_ASSUMPTIONS.md`
-- `docs/PRD.md`
-- `docs/DATABASE_DESIGN.md` if schema-impacting answers changed
-- `docs/UAT_CHECKLIST.md` if acceptance criteria changed
-
-Minimum outputs:
-
-- Confirmed MVP scope
-- Confirmed receipt numbering format
-- Confirmed payment workflow
-- Confirmed discount behavior
-- Confirmed required reports
-- Named UAT approver
+- All named flows open and remain readable
+- No page-level horizontal overflow at the four target sizes
+- Drawer and compact navigation work
+- Financial statuses and destructive actions remain clear
+- Jan-Dec ledger scrolls inside its container
+- Desktop layout remains intact after narrow-screen testing
+- Real iPad and print-preview gaps are reported honestly

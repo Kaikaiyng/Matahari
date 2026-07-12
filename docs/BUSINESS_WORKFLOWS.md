@@ -1,5 +1,7 @@
 # Business Workflow Discovery
 
+> **Historical discovery record (June 2026).** Questions and target flows are retained for stakeholder context. The implemented demo flow is documented in [Demo Review Script](DEMO_REVIEW_SCRIPT.md), [UAT Checklist](UAT_CHECKLIST.md), and [Implementation Status](IMPLEMENTATION_STATUS.md).
+
 Version: 0.1
 Date: 2026-06-26
 Product: IEM Education Platform

@@ -1,5 +1,7 @@
 # Executive Summary
 
+> **Historical planning record (June 2026).** This captures the original product proposal; several proposed modules and stack choices are not part of the current MVP. For current implementation truth, see the [project README](../README.md), [Implementation Status](IMPLEMENTATION_STATUS.md), and [System Architecture](SYSTEM_ARCHITECTURE.md).
+
 Project: IEM Education Platform
 Version: 0.2
 Date: 2026-06-26

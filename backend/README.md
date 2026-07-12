@@ -1,58 +1,151 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Matahari Backend
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+The backend is a Laravel 13 JSON API for the Matahari Admin Finance MVP. It owns authentication, authorization, financial validation, Fee Record charges, payment allocation, and receipt integrity.
 
-## About Laravel
+## Requirements
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- PHP 8.3 or newer; the current local runtime is PHP 8.4
+- Composer dependencies from `composer.lock`
+- PHP extensions enabled by `../tools/php/php.ini`
+- SQLite or MariaDB
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+Use the project launcher on Windows:
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
-
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
-
-```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+```powershell
+..\tools\php\php-local.cmd artisan --version
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+## Environment
 
-## Contributing
+Create `backend/.env` from `.env.example`, generate an application key, and keep all credentials local:
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```powershell
+Copy-Item .env.example .env
+..\tools\php\php-local.cmd artisan key:generate
+```
 
-## Code of Conduct
+The default example uses SQLite:
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```dotenv
+DB_CONNECTION=sqlite
+```
 
-## Security Vulnerabilities
+For MariaDB, use local values and a restricted application account:
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```dotenv
+DB_CONNECTION=mariadb
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=matahari
+DB_USERNAME=your_local_app_user
+DB_PASSWORD=your_local_password
+```
 
-## License
+Never commit the populated `.env` file.
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## Database Setup
+
+For a new SQLite development database:
+
+```powershell
+..\tools\php\php-local.cmd artisan migrate:fresh --seed --force
+```
+
+For an existing local database:
+
+```powershell
+..\tools\php\php-local.cmd artisan config:clear
+..\tools\php\php-local.cmd artisan migrate --force
+```
+
+The current schema has 36 tables. The full domain grouping and MariaDB fresh-install caveat are documented in [Database Design](../docs/DATABASE_DESIGN.md).
+
+## Start the API
+
+```powershell
+..\tools\php\php-local.cmd artisan serve --host=127.0.0.1 --port=8000
+```
+
+Or from the repository root:
+
+```powershell
+tools\php\serve-backend.cmd
+```
+
+The default API base is `http://127.0.0.1:8000/api`.
+
+## Implemented Domain Areas
+
+- Session login, logout, and current user
+- Roles, permissions, user-role assignments, and permission middleware
+- Student list, create, update, detail, and status changes
+- Fee item lookup
+- Versioned Fee Agreements and superseding
+- Fee Record charge preview, activation, manual charges, and outstanding charges
+- Payment creation, allocation, verification, history, and void safeguards
+- Receipt creation, detail, print view, history, voiding, and regeneration
+- Fee Record Summary and Category Monthly ledger APIs
+- Legacy dashboard and monthly invoice-generation endpoints retained from the initial scaffold
+
+## API Inventory
+
+The application currently exposes 30 non-vendor API routes. Generate the authoritative list with:
+
+```powershell
+..\tools\php\php-local.cmd artisan route:list --path=api --except-vendor
+```
+
+Main route groups:
+
+| Group | Examples |
+| --- | --- |
+| Auth | `POST /api/login`, `POST /api/logout`, `GET /api/me` |
+| Students | list, create, detail, update, and status |
+| Fee Agreements | student agreement list/create, show, and supersede |
+| Fee Record | preview, activate, manual charge, outstanding, summary, and category monthly |
+| Payments | student history/create, verify, and void |
+| Receipts | student history, create from payment, show, print, and void |
+
+See [System Architecture](../docs/SYSTEM_ARCHITECTURE.md) for the complete endpoint table and finance data flow.
+
+## Authentication and Authorization
+
+- Authentication uses Laravel sessions and cookies.
+- API session routes apply cookie encryption and session middleware.
+- Protected routes use `auth` plus permission middleware such as `permission:payments.verify`.
+- The frontend hides actions based on the same permission slugs, but the backend remains authoritative.
+- School-owned records are scoped through their school relationships and current user context.
+
+## Financial Integrity
+
+- Fee Agreements are versioned; superseding preserves historical versions.
+- Activated Fee Record charges are the source of expected balances in the current UI.
+- Payment allocation cannot exceed the payment amount or selected outstanding charges.
+- Payment verification and voiding are separate actions.
+- A payment with an issued receipt cannot be casually voided.
+- Receipt numbers are generated through a sequence and voided numbers are not recycled.
+- Receipt item rows preserve the issued payment description and amount snapshot.
+
+## Tests
+
+```powershell
+..\tools\php\php-local.cmd vendor\bin\phpunit
+```
+
+`phpunit.xml` forces SQLite `:memory:` so the automated suite does not modify the active local MariaDB demo database.
+
+Last verified on 2026-07-12:
+
+```text
+92 tests
+597 assertions
+```
+
+## Deferred Backend Scope
+
+- Statements and reminders
+- General reports and exports
+- PDF generation
+- Parent Portal
+- Production dashboard finance logic
+- Deployment and hosting automation

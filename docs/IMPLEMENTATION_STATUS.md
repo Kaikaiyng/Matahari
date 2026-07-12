@@ -1,208 +1,121 @@
 # Implementation Status
 
-Version: 0.2
-Date: 2026-06-26
+Status: `RESPONSIVE_DEMO_READY_WITH_WARNINGS`
 
-## 1. Current Status
+Last verified: 2026-07-12
 
-The project has moved from planning-only into an initial frontend and backend scaffold.
+## 1. Product State
 
-Completed:
+Matahari has moved beyond scaffold status. The current repository contains a working internal Admin Finance MVP with a Laravel API, React frontend, seeded roles and sample data, finance workflows, and an iPad-first responsive pass.
 
-- Product documentation package
-- Canva dashboard concept mockup
-- Vite + React + TypeScript frontend scaffold
-- MIS dashboard prototype screen
-- Frontend dependency installation
-- Frontend lint check
-- Frontend production build check
-- Local Vite dev server started
-- Laravel backend scaffold
-- Project-local PHP config for required extensions
-- MVP database migrations
-- Core Laravel models and relationships
-- MIS demo seeder
-- Invoice generation service
-- Payment recording service with invoice balance recalculation
-- Receipt number service
-- Feature tests for invoice snapshots, duplicate invoice skips, payment recording, and receipt sequencing
-- API routes and controllers for dashboard, invoice generation, and payment recording
-- Frontend dashboard connected to backend dashboard API with demo fallback
-- Vite dev proxy to Laravel API
-- Backend local server launcher
-- Laravel migration verification
-- Laravel seed verification
-- Laravel PHPUnit verification
+The status includes warnings because real-device iPad Safari and native browser print preview still need operator verification, and several planned product modules remain intentionally deferred.
 
-Not completed:
+## 2. Completed Modules
 
-- Full CRUD API implementation
-- Docker setup
+- Login, logout, current user, session restoration, roles, and permission-gated actions
+- Student Management: list, search, filter, create, edit, detail, and status
+- Fee Agreement creation, version history, current agreement, and superseding
+- Fee Agreement billing configuration: Charge Type, Billing Pattern, Jan-Dec selection, and preview confirmation
+- Fee Record charge preview and activation
+- Manual and one-time charges
+- Outstanding-charge payment allocation with partial amounts
+- Payment history, verification, void safeguards, and allocation detail
+- Receipt generation, screen view, browser print, history, void, and regeneration
+- Student Fee Record totals
+- Fee Record Summary
+- Category Monthly Fee Record Jan-Dec ledger
 
-## 2. Frontend
+## 3. Responsive State
 
-Location:
+Browser QA covered:
 
-```text
-frontend/
-```
+- Desktop: 1440x900
+- iPad landscape: 1180x820
+- iPad portrait: 820x1180
+- Mobile portrait: 390x844
 
-Implemented screen:
+Implemented behavior:
 
-```text
-MIS School Fee Dashboard
-```
+- Full desktop sidebar
+- Compact labelled iPad-landscape rail
+- Drawer navigation below 1024px with backdrop, Escape close, active state, and body scroll lock
+- Mobile Student List records
+- Single-column Student Detail and form flows on narrow screens
+- Touch-friendly Fee Agreement month controls
+- Contained charge, payment, receipt, summary, and monthly-ledger layouts
+- Mobile Payment and Receipt history records
+- Screen-safe receipt with preserved print rules
+- Visible horizontal-scroll cues for wide financial ledgers
+- 44px tablet/mobile interaction targets and visible focus states
 
-The screen includes:
+## 4. Backend and API
 
-- MIS logo
-- Sidebar navigation
-- School and finance admin top bar
-- Search field
-- Generate July 2026 Invoices action
-- Dashboard metric cards
-- Recent payments table
-- Outstanding students panel
+- Framework: Laravel 13 on PHP 8.4
+- Non-vendor API routes: 30
+- Authentication: session cookies
+- Authorization: `auth` plus permission middleware
+- Active local demo database: MariaDB 12.3.2
+- Automated test database: SQLite `:memory:`
+- Active schema: 36 tables
 
-Verified commands:
+Main API groups:
 
-```powershell
-cd frontend
-npm.cmd run lint
-npm.cmd run build
-```
+- Auth
+- Students and status
+- Fee items and Fee Agreements
+- Fee Record preview, activation, manual charges, outstanding, summary, and category monthly
+- Payments, verification, and voiding
+- Receipts, print view, and voiding
+- Legacy dashboard and invoice-generation endpoints
 
-Result:
+## 5. Verification Evidence
+
+Latest local verification:
 
 ```text
-Both passed
+Frontend build: passed
+Frontend lint: zero errors, one existing exhaustive-deps warning
+Backend PHPUnit: 92 tests passed
+Backend assertions: 597
+API login: passed
+Student API: passed
+Fee Record Summary API: passed
+MariaDB foreign keys checked: 66, zero orphan rows at migration validation
 ```
 
-Local dev URL:
+## 6. Deferred Scope
 
-```text
-http://127.0.0.1:5173
-```
+Not implemented in the current MVP:
 
-HTTP check:
+- Statements
+- Reminders
+- General reports
+- Excel or other exports
+- PDF generation
+- Parent Portal
+- Production dashboard finance logic
+- Deployment, hosting, domain, Docker, Nginx, or Cloudflare setup
+- New major school ERP modules
 
-```text
-200 OK
-```
+Some navigation entries retain demo/future-phase content. A visible navigation item does not imply its full backend module is complete.
 
-## 3. Backend
+## 7. Known Limitations
 
-Location:
+- Real iPad Safari testing remains required for final device confidence.
+- Native print preview could not be automated. Receipt print CSS and print action were checked without changing the existing A4 rules.
+- `frontend/src/App.tsx` remains large by design for this stabilization phase.
+- Frontend lint retains one `react-hooks/exhaustive-deps` warning around `loadStudents`.
+- Fresh MariaDB migrations need a temporary foreign-key creation workaround because an early migration references `fee_agreement_items` before that table is created.
+- The portable local MariaDB/phpMyAdmin processes do not automatically start after a computer reboot.
 
-```text
-backend/
-```
+## 8. Next Recommended Work
 
-Implemented:
+Before adding new modules:
 
-- Laravel 13 app
-- `schools` and enhanced `users` migration
-- MVP school finance migration covering roles, classes, students, parents, fees, discounts, invoices, payments, receipts, sequences, and audit logs
-- Core Eloquent models and relationships for the MVP schema
-- Demo seeder for MIS school, roles, users, classes, fee items, discounts, students, parents, and student assignments
-- `InvoiceGenerationService` for monthly invoice generation and fee/discount snapshots
-- `PaymentRecordingService` for payment entry, invoice balance recalculation, and automatic receipt generation
-- `ReceiptNumberService` for backend receipt sequence generation
-- API endpoints:
-  - `GET /api/dashboard/school`
-  - `POST /api/invoices/generate-monthly`
-  - `POST /api/payments`
+1. Run the complete demo on a real iPad Safari device.
+2. Confirm receipt print preview on the target browser and printer.
+3. Add a database-safe migration to remove the MariaDB foreign-key ordering workaround.
+4. Resolve the remaining frontend hook warning.
+5. Confirm school business rules and real receipt wording with finance staff.
 
-Project-local PHP launcher:
-
-```text
-tools/php/php-local.cmd
-```
-
-Verified commands:
-
-```powershell
-cd backend
-..\tools\php\php-local.cmd artisan migrate:fresh --force
-..\tools\php\php-local.cmd artisan migrate:fresh --seed --force
-..\tools\php\php-local.cmd vendor\bin\phpunit
-..\tools\php\serve-backend.cmd
-```
-
-Result:
-
-```text
-Migrations passed
-Seed data passed
-PHPUnit passed, 8 tests, 42 assertions
-```
-
-## 4. Verification Evidence
-
-Frontend build output included:
-
-```text
-vite build
-built successfully
-```
-
-Backend migration output included:
-
-```text
-2026_06_26_000001_create_school_finance_tables .. DONE
-```
-
-Live API checks:
-
-```text
-GET http://127.0.0.1:8000/api/dashboard/school?school_id=1&invoice_month=2026-07
-GET http://127.0.0.1:5173/api/dashboard/school?school_id=1&invoice_month=2026-07
-```
-
-Both returned dashboard JSON through Laravel and Vite proxy.
-
-Seed count check:
-
-```text
-schools: 1
-roles: 4
-users: 2
-students: 3
-parents: 3
-fee_items: 3
-discount_items: 1
-student_fee_assignments: 7
-student_discount_assignments: 1
-```
-
-Git status currently shows new project files:
-
-```text
-README.md
-backend/
-docs/
-frontend/
-tools/
-```
-
-## 5. Implemented Business Rules
-
-- Monthly invoice generation includes only active students.
-- Existing monthly invoices are skipped to prevent duplicates.
-- Invoice items snapshot current fee and discount assignments.
-- One-time registration fee is included for its target billing month.
-- Percentage discount applies to the whole invoice in MVP.
-- Receipt numbers use school prefix, year, and six-digit running number.
-- Re-generating receipt for the same payment returns the existing active receipt.
-- Partial payment updates invoice status to `partial`.
-- Full payment updates invoice status to `paid` and outstanding amount to zero.
-- Dashboard API returns school metrics, recent payments, and outstanding students.
-- Frontend dashboard uses live API data when backend is running and falls back to demo data when unavailable.
-
-## 6. Recommended Next Work
-
-1. Add CRUD APIs for students, parents, fee items, and discount assignments.
-2. Add invoice list/detail and receipt list/detail APIs.
-3. Add void payment and void receipt flows.
-4. Add PDF generation for invoice and receipt.
-5. Add Docker setup after API foundations are stable.
+Only after those stabilization checks should Statements, Reminders, Reports, Export, PDF, Parent Portal, or deployment work begin.
