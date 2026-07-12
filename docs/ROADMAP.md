@@ -1,5 +1,7 @@
 # MVP Roadmap and Product Decisions
 
+> **Historical delivery plan (June 2026).** Phase names and proposed deliverables remain useful context, but the implementation evolved toward Fee Agreements and Fee Record charges. See [Implementation Status](IMPLEMENTATION_STATUS.md) and [Database Design](DATABASE_DESIGN.md) for the current state.
+
 Version: 0.2
 Date: 2026-06-26
 

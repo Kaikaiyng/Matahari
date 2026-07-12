@@ -1,5 +1,7 @@
 # IEM Education Platform PRD
 
+> **Historical planning baseline (June 2026).** This PRD preserves the original target scope and should not be read as a list of completed features. See the [project README](../README.md), [Implementation Status](IMPLEMENTATION_STATUS.md), and [UAT Checklist](UAT_CHECKLIST.md) for current implemented scope.
+
 Version: 0.2
 Date: 2026-06-26
 Initial school: Matahari International School

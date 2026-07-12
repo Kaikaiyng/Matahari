@@ -1,5 +1,7 @@
 # Stakeholder Validation Questions
 
+> **Historical validation guide (June 2026).** Use these questions for business discovery, but use the current [Demo Review Script](DEMO_REVIEW_SCRIPT.md) and [UAT Checklist](UAT_CHECKLIST.md) when evaluating the implemented MVP.
+
 Version: 0.1
 Date: 2026-06-25
 

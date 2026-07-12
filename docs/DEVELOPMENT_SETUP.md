@@ -1,65 +1,28 @@
 # Development Setup
 
-Version: 0.2
-Date: 2026-06-26
+Status: Current local-development guide
 
-This document records the current local development setup status and the steps needed to continue implementation.
+Last verified: 2026-07-12
 
-## 1. Current Scaffold Status
+## 1. Local Stack
 
-Created:
+- Frontend: React 19, TypeScript 6, Vite 8, Node.js, and `npm.cmd`
+- Backend: Laravel 13 on PHP 8.4
+- Local database: SQLite for the simplest setup; MariaDB for the active demo environment
+- Test database: SQLite `:memory:` through `backend/phpunit.xml`
 
-- `frontend/` Vite + React + TypeScript app
-- MIS dashboard prototype in `frontend/src/App.tsx`
-- MIS logo asset in `frontend/src/assets/mis-logo.jpg`
-- `backend/` Laravel app
-- MVP database migrations for school finance tables
-- Core Laravel models and relationships
-- MIS demo seed data
-- Invoice generation, payment recording, and receipt number services
-- Billing feature tests
-- Dashboard, invoice generation, and payment API endpoints
-- Frontend dashboard live API connection with fallback data
-- Backend server launcher in `tools/php/serve-backend.cmd`
-- Project-local PHP configuration in `tools/php/php.ini`
-- Project-local PHP launcher in `tools/php/php-local.cmd`
+The repository provides PHP helpers under `tools/php/`:
 
-Frontend verified:
+| File | Purpose |
+| --- | --- |
+| `php.ini` | Enables project extensions including `pdo_mysql`, `pdo_sqlite`, `mysqli`, `intl`, and `mbstring` |
+| `php-local.cmd` | Runs PHP with the project configuration |
+| `php-local.ps1` | PowerShell equivalent of the project PHP launcher |
+| `serve-backend.cmd` | Starts Laravel locally |
 
-```powershell
-cd frontend
-npm.cmd run lint
-npm.cmd run build
-```
+Plain `php` on this machine does not automatically load `tools/php/php.ini`. Prefer the provided launcher.
 
-Backend verified:
-
-```powershell
-cd backend
-..\tools\php\php-local.cmd artisan migrate:fresh --force
-..\tools\php\php-local.cmd artisan migrate:fresh --seed --force
-..\tools\php\php-local.cmd vendor\bin\phpunit
-```
-
-## 2. Local Tooling Observed
-
-Available:
-
-- PHP 8.4.21
-- Node.js 24.12.0
-- npm 11.6.2 through `npm.cmd`
-- npx 11.6.2 through `npx.cmd`
-
-Missing or blocked:
-
-- `composer` command is not installed globally
-- Docker is not installed or not in PATH
-- PowerShell blocks `npm.ps1`, so use `npm.cmd`
-- System PHP has no loaded `php.ini`; use `tools\php\php-local.cmd`
-
-## 3. Frontend Commands
-
-From repository root:
+## 2. Frontend Setup
 
 ```powershell
 cd frontend
@@ -67,112 +30,152 @@ npm.cmd install
 npm.cmd run dev
 ```
 
-Production build:
+Default URL:
+
+```text
+http://127.0.0.1:5173
+```
+
+The API defaults to `http://127.0.0.1:8000/api`. Override it in `frontend/.env.local`:
+
+```dotenv
+VITE_API_BASE_URL=http://127.0.0.1:8000/api
+```
+
+Production verification:
 
 ```powershell
-cd frontend
+npm.cmd run lint
 npm.cmd run build
 ```
 
-## 4. Backend PHP Configuration
+## 3. Backend Setup
 
-The repository includes a local PHP config for development:
-
-```text
-tools/php/php.ini
-```
-
-Use this launcher instead of plain `php`:
+From `backend/`:
 
 ```powershell
-tools\php\php-local.cmd
+Copy-Item .env.example .env
+..\tools\php\php-local.cmd artisan key:generate
+..\tools\php\php-local.cmd artisan migrate:fresh --seed --force
+..\tools\php\php-local.cmd artisan serve --host=127.0.0.1 --port=8000
 ```
 
-The local config enables:
-
-- `curl`
-- `fileinfo`
-- `mbstring`
-- `mysqli`
-- `openssl`
-- `pdo_mysql`
-- `pdo_sqlite`
-- `sqlite3`
-- `zip`
-
-System PHP still has no global `php.ini`, so plain `php artisan ...` may fail. Prefer the local launcher.
-
-## 5. Composer Workaround Used
-
-Composer was downloaded temporarily to:
-
-```text
-%TEMP%\composer.phar
-```
-
-Command used:
-
-```powershell
-$composer = Join-Path $env:TEMP 'composer.phar'
-Invoke-WebRequest -Uri 'https://getcomposer.org/composer-stable.phar' -OutFile $composer
-tools\php\php-local.cmd $composer --version
-```
-
-Laravel was scaffolded successfully with:
-
-```powershell
-$composer = Join-Path $env:TEMP 'composer.phar'
-tools\php\php-local.cmd $composer create-project laravel/laravel backend
-```
-
-## 6. Backend Commands
-
-Run Laravel commands through the local PHP launcher:
-
-```powershell
-cd backend
-..\tools\php\php-local.cmd artisan migrate:fresh --force
-```
+For an existing database, use `artisan migrate --force` instead of `migrate:fresh`.
 
 Run tests:
 
 ```powershell
-cd backend
 ..\tools\php\php-local.cmd vendor\bin\phpunit
 ```
 
-Start Laravel server:
+## 4. Database Options
+
+### SQLite
+
+The repository example configuration uses SQLite:
+
+```dotenv
+DB_CONNECTION=sqlite
+```
+
+SQLite is suitable for a new contributor, automated tests, and rollback. The local database file is ignored and must not be committed.
+
+### MariaDB
+
+Use a restricted local account and private `.env` values:
+
+```dotenv
+DB_CONNECTION=mariadb
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=matahari
+DB_USERNAME=your_local_app_user
+DB_PASSWORD=your_local_password
+```
+
+After changing database settings:
 
 ```powershell
-tools\php\serve-backend.cmd
+..\tools\php\php-local.cmd artisan config:clear
+..\tools\php\php-local.cmd artisan migrate --force
 ```
 
-The launcher uses the project PHP config and serves Laravel at:
+Do not publish database or phpMyAdmin credentials. phpMyAdmin is an optional local operator tool, not an application dependency.
+
+Fresh MariaDB schema creation has one known migration-order caveat. Read [Database Design](DATABASE_DESIGN.md) before running a clean MariaDB migration.
+
+## 5. Seeded Local Accounts
+
+The seeder creates local `.test` users for Super Admin, School Admin, and Finance roles. Their development password is defined in `backend/database/seeders/DatabaseSeeder.php`.
+
+Seeded credentials are local-only. Do not reuse them in any deployed environment.
+
+## 6. iPad and LAN Demo
+
+Connect the computer and iPad to the same trusted network. Find the computer's IPv4 address, then start the backend and frontend with host access.
+
+Backend:
+
+```powershell
+cd backend
+..\tools\php\php-local.cmd artisan serve --host=0.0.0.0 --port=8000
+```
+
+Frontend PowerShell session:
+
+```powershell
+$env:VITE_API_BASE_URL='http://YOUR_LAN_IP:8000/api'
+cd frontend
+npm.cmd run dev -- --host 0.0.0.0
+```
+
+Open on the iPad:
 
 ```text
-http://127.0.0.1:8000
+http://YOUR_LAN_IP:5173
 ```
 
-Do not use plain `php artisan serve` on this machine unless global PHP has the same extensions enabled.
+The backend CORS configuration must allow that exact frontend origin. Keep MariaDB port `3306` and phpMyAdmin bound to `127.0.0.1`; the iPad only needs the frontend and API ports.
 
-## 7. Recommended Docker Setup Later
+## 7. Responsive QA Sizes
 
-Once Docker is installed:
+- Desktop: 1440x900
+- iPad landscape: 1180x820
+- iPad portrait: 820x1180
+- Mobile portrait: 390x844
 
-- Add `docker-compose.yml`
-- Add app container for Laravel
-- Add frontend container for React
-- Add MySQL container
-- Add Nginx container
-- Add backup volume and backup script
+Follow [Demo Review Script](DEMO_REVIEW_SCRIPT.md) for the test sequence.
 
-For the MVP, Docker can wait until models, seeders, and core services are ready.
+## 8. Troubleshooting
 
-## 8. Next Implementation Step
+### PHP reports missing extensions
 
-Recommended immediate next step:
+Run through `tools/php/php-local.cmd` or pass the config explicitly:
 
-1. Add CRUD APIs for students, parents, fee items, and discount assignments.
-2. Add invoice list/detail and receipt list/detail APIs.
-3. Add void payment and void receipt flows.
-4. Add PDF generation for invoice and receipt.
+```powershell
+php -c ..\tools\php\php.ini artisan about
+```
+
+### Frontend cannot log in
+
+Check:
+
+- `VITE_API_BASE_URL` includes `/api`
+- backend is reachable from the browser device
+- backend CORS includes the frontend origin
+- browser accepts the session cookie
+- Laravel configuration cache was cleared after `.env` changes
+
+### PowerShell blocks npm
+
+Use `npm.cmd` rather than `npm`.
+
+## 9. Verified Baseline
+
+As of 2026-07-12:
+
+- Frontend lint: zero errors and one existing hook dependency warning
+- Frontend build: passed
+- Backend: 92 tests and 597 assertions
+- API inventory: 30 routes
+- Active demo schema: 36 tables

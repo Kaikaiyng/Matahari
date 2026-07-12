@@ -1,147 +1,159 @@
-# IEM Education Platform
+# Matahari Admin Finance MVP
 
-This repository contains the product planning and implementation preparation for the IEM Education Platform, a web-based school administration platform for Matahari International School and future schools under IEM Education Group.
+Matahari is an internal school administration finance system for Matahari International School. The current MVP replaces the most error-prone parts of spreadsheet-based fee administration with controlled student, charge, payment, and receipt workflows.
 
-The MVP is intentionally focused:
+The application is demo-ready on desktop and responsive for iPad landscape, iPad portrait, and mobile portrait. It is not yet a complete school ERP or production deployment package.
+
+## Implemented Modules
+
+- Login, session authentication, role assignments, and permission-gated actions
+- Student list, search, filters, create/edit, detail, and status updates
+- Versioned Fee Agreements with Charge Type, Billing Pattern, and Jan-Dec billing configuration
+- Fee Record charge preview and activation
+- Manual and one-time charges
+- Outstanding-charge payment allocation with partial amounts
+- Payment history, verification, void safeguards, and allocation detail
+- Receipt generation, viewing, browser printing, voiding, and regeneration
+- Student Fee Record totals
+- Fee Record Summary
+- Category Monthly Fee Record with a horizontally scrollable Jan-Dec ledger
+
+## Responsive Demo Support
+
+| Viewport | Navigation and content behavior |
+| --- | --- |
+| Desktop, 1181px+ | Full sidebar and dense finance tables |
+| iPad landscape, 1024-1180px | Compact labelled navigation rail |
+| iPad portrait, 768-1023px | Drawer navigation and single-column task flow |
+| Mobile, below 768px | Drawer navigation, stacked forms, mobile record rows, and contained ledgers |
+
+Wide financial ledgers intentionally scroll inside their own containers. The page itself should not scroll horizontally.
+
+## Technology
+
+- Frontend: React 19, TypeScript 6, Vite 8, Lucide React, and project CSS
+- Backend: Laravel 13 on PHP 8.4
+- Database: MariaDB for the active local demo; SQLite remains supported for isolated tests and rollback
+- Authentication: Laravel session cookies
+- Authorization: roles, permissions, and middleware-enforced permission slugs
+
+TailwindCSS, Docker, Nginx, Cloudflare, hosting, and deployment are planning directions, not current repository dependencies.
+
+## Repository Layout
 
 ```text
-Replace Excel-based school fee administration with a reliable web system for invoices, payments, receipts, outstanding fees, and reports.
+frontend/   React admin application
+backend/    Laravel JSON API and finance domain
+docs/       Product, architecture, database, setup, UAT, and demo documentation
+tools/php/  Project PHP configuration and Windows launch helpers
 ```
 
-It is not trying to become a full school ERP in the first release.
+## Quick Start on Windows
 
-## Current Product Direction
+Prerequisites:
 
-Platform name:
+- Node.js and `npm.cmd`
+- PHP 8.4
+- Backend dependencies already installed with Composer, or Composer available to install them
+- SQLite for the simplest setup, or a local MariaDB database
 
-```text
-IEM Education Platform
+Start the backend:
+
+```powershell
+cd backend
+..\tools\php\php-local.cmd artisan config:clear
+..\tools\php\php-local.cmd artisan migrate --force
+..\tools\php\php-local.cmd artisan serve --host=127.0.0.1 --port=8000
 ```
 
-Initial MVP module:
+Start the frontend in another terminal:
 
-```text
-Finance, Billing, Receipts, Outstanding Fees, and Reports
+```powershell
+cd frontend
+npm.cmd install
+npm.cmd run dev
 ```
 
-Primary MVP workflow:
+Open `http://127.0.0.1:5173`. The frontend defaults to `http://127.0.0.1:8000/api`.
 
-```text
-Student Registration
-  -> Parent Information
-  -> Assign Fee Template
-  -> Monthly Invoice Generation
-  -> Payment Recording
-  -> Receipt Generation
-  -> Dashboard and Reports
+For a different API address, create `frontend/.env.local`:
+
+```dotenv
+VITE_API_BASE_URL=http://127.0.0.1:8000/api
 ```
 
-Target first users:
+For iPad testing on the same LAN, bind both servers to `0.0.0.0` and set `VITE_API_BASE_URL` to the computer's LAN IP. Do not expose phpMyAdmin or database ports to the LAN.
 
-- School Admin
-- Finance/Admin Staff
-- Principal
-- CEO
-- Super Admin
+See [Development Setup](docs/DEVELOPMENT_SETUP.md) for database options, seed data, LAN commands, and troubleshooting.
 
-## Recommended Stack
+## Verification
 
-- Frontend: React, TypeScript, TailwindCSS
-- Backend: Laravel
-- Database: MySQL
-- Deployment: Docker, Nginx, Ubuntu VPS
-- DNS/Edge: Cloudflare
-- SSL: Let's Encrypt
+Frontend:
 
-## Documentation Map
+```powershell
+cd frontend
+npm.cmd run lint
+npm.cmd run build
+```
+
+Backend:
+
+```powershell
+cd backend
+..\tools\php\php-local.cmd vendor\bin\phpunit
+```
+
+Last verified baseline on 2026-07-12:
+
+- Frontend build: passed
+- Frontend lint: zero errors, with one existing `react-hooks/exhaustive-deps` warning in `App.tsx`
+- Backend: 92 tests, 597 assertions
+- Laravel API: 30 application routes
+- Active local schema: 36 tables
+
+## Documentation
 
 | Document | Purpose |
 | --- | --- |
-| [docs/EXECUTIVE_SUMMARY.md](docs/EXECUTIVE_SUMMARY.md) | Short non-technical project summary for school leaders and stakeholders |
-| [docs/PRD.md](docs/PRD.md) | Product requirements, MVP modules, user roles, workflow, success metrics |
-| [docs/ROADMAP.md](docs/ROADMAP.md) | Delivery phases, product decisions, recommended development order |
-| [docs/DECISIONS.md](docs/DECISIONS.md) | Product and technical decision log |
-| [docs/ARCHITECTURE_REVIEW_PLAN.md](docs/ARCHITECTURE_REVIEW_PLAN.md) | Architecture review notes and improvement plan |
-| [docs/BUSINESS_WORKFLOWS.md](docs/BUSINESS_WORKFLOWS.md) | Business workflow discovery notes and target operating flows |
-| [docs/MVP_ASSUMPTIONS.md](docs/MVP_ASSUMPTIONS.md) | Working assumptions to allow implementation to proceed |
-| [docs/DATABASE_DESIGN.md](docs/DATABASE_DESIGN.md) | MySQL schema draft, ERD, constraints, invoice/payment/receipt flows |
-| [docs/SYSTEM_ARCHITECTURE.md](docs/SYSTEM_ARCHITECTURE.md) | Architecture, module boundaries, authorization, API endpoint draft, deployment notes |
-| [docs/IMPLEMENTATION_BACKLOG.md](docs/IMPLEMENTATION_BACKLOG.md) | Backend/frontend task breakdown and suggested first sprints |
-| [docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md) | Current scaffold status and verification results |
-| [docs/DEVELOPMENT_SETUP.md](docs/DEVELOPMENT_SETUP.md) | Local scaffold status, frontend commands, and backend environment requirements |
-| [docs/UAT_CHECKLIST.md](docs/UAT_CHECKLIST.md) | User acceptance checklist for replacing the Excel workflow |
-| [docs/STAKEHOLDER_QUESTIONS.md](docs/STAKEHOLDER_QUESTIONS.md) | Questions for validating school workflow with admin, finance, principal, and CEO |
-| [docs/DEMO_REVIEW_SCRIPT.md](docs/DEMO_REVIEW_SCRIPT.md) | Meeting script for presenting the MVP concept and Canva mockup |
+| [Implementation Status](docs/IMPLEMENTATION_STATUS.md) | Implemented and deferred scope, verification, and known limitations |
+| [Development Setup](docs/DEVELOPMENT_SETUP.md) | Local frontend, backend, database, and LAN demo setup |
+| [System Architecture](docs/SYSTEM_ARCHITECTURE.md) | Runtime boundaries, authentication, RBAC, API inventory, and finance flow |
+| [Database Design](docs/DATABASE_DESIGN.md) | Active table groups, relationships, constraints, and migration caveat |
+| [UAT Checklist](docs/UAT_CHECKLIST.md) | Acceptance checks for implemented demo workflows |
+| [Demo Review Script](docs/DEMO_REVIEW_SCRIPT.md) | Desktop/iPad/mobile demonstration sequence |
+| [PRD](docs/PRD.md) | Historical product planning baseline |
+| [Decision Log](docs/DECISIONS.md) | Historical product and technical decisions |
+| [Roadmap](docs/ROADMAP.md) | Historical delivery plan and future direction |
 
-## Visual Mockup
+Additional project documentation:
 
-A first Canva concept mockup was generated for discussion:
+- Package guides: [Frontend README](frontend/README.md), [Backend README](backend/README.md)
+- Historical planning: [Executive Summary](docs/EXECUTIVE_SUMMARY.md), [Architecture Review Plan](docs/ARCHITECTURE_REVIEW_PLAN.md), [Business Workflows](docs/BUSINESS_WORKFLOWS.md), [MVP Assumptions](docs/MVP_ASSUMPTIONS.md), [Implementation Backlog](docs/IMPLEMENTATION_BACKLOG.md), and [Stakeholder Questions](docs/STAKEHOLDER_QUESTIONS.md)
+- Responsive delivery: [design](docs/superpowers/specs/2026-07-11-ipad-first-responsive-demo-design.md) and [implementation plan](docs/superpowers/plans/2026-07-11-ipad-first-responsive-demo.md)
+- MariaDB migration: [design](docs/superpowers/specs/2026-07-12-sqlite-to-mariadb-design.md) and [implementation plan](docs/superpowers/plans/2026-07-12-sqlite-to-mariadb.md)
+- Documentation refresh: [design](docs/superpowers/specs/2026-07-12-project-documentation-refresh-design.md) and [implementation plan](docs/superpowers/plans/2026-07-12-project-documentation-refresh.md)
 
-- Edit: https://www.canva.com/d/waTV5XSLkhk3c18
-- View: https://www.canva.com/d/CTiTU6jFQpFFMPy
+## Deferred Scope
 
-This mockup is a discussion artifact, not a final developer-ready design.
+The following are intentionally not implemented in this MVP:
 
-## MVP Defaults
+- Statements and reminders
+- General reports and exports
+- PDF generation
+- Parent Portal
+- Production dashboard finance logic
+- Hosting, deployment, domain, Docker, Nginx, and Cloudflare configuration
+- New major school ERP modules
 
-Current working assumptions:
+The existing receipt screen supports browser printing; that is separate from PDF generation.
 
-- Every business record is scoped by `school_id`.
-- Class is a real table from the first version.
-- Students should receive fees through fee templates where possible.
-- Invoice items are snapshots.
-- Discounts are assigned through explicit rules or overrides, then snapshotted into invoices.
-- Discounts apply to the whole invoice in MVP.
-- Payment UI starts with one payment to one invoice.
-- Database supports future multi-invoice payment allocation.
-- Receipt is generated automatically when payment is confirmed.
-- Receipt numbers are generated by backend transaction logic.
-- Voided receipt numbers are never reused.
-- Payment proof upload, email reminders, WhatsApp reminders, and online payment are deferred.
+## Known Limitations
 
-## Next Implementation Step
+- Real-device iPad Safari testing is still recommended even though the four target viewport sizes passed browser QA.
+- Receipt print CSS was preserved, but native browser print-preview automation was unavailable during responsive QA.
+- Fresh MariaDB setup needs special handling for one historical migration that creates `payment_allocations.fee_agreement_item_id` before `fee_agreement_items` exists. See [Database Design](docs/DATABASE_DESIGN.md).
+- MariaDB and phpMyAdmin used for the current local demo are local operator tools and are not part of a production deployment.
 
-Before scaffolding the application, confirm or adjust these decisions:
+## Security
 
-1. Should bank transfer payments require a pending/verified workflow?
-2. Should receipt generation be automatic for every payment method?
-3. Should discounts ever apply only to selected fee items?
-4. How should one-time fees such as registration be billed?
-5. Is payment proof upload required in the first deployed version?
-6. What exact fields must appear on the official receipt PDF?
-
-After those answers, the recommended next implementation step is:
-
-```text
-Add CRUD APIs, invoice/receipt detail screens, and void/PDF workflows.
-```
-
-Frontend scaffold status:
-
-```text
-frontend/ exists and builds successfully.
-```
-
-Backend scaffold status:
-
-```text
-backend/ exists, Laravel migrations pass, PHPUnit passes through tools/php/php-local.cmd.
-```
-
-Seed data status:
-
-```text
-MIS school, roles, demo users, classes, fee items, discounts, students, parents, and assignments are seeded.
-```
-
-Billing service status:
-
-```text
-Invoice generation, payment recording, and receipt number services are implemented and covered by feature tests.
-```
-
-API/frontend integration status:
-
-```text
-Dashboard API, invoice generation API, payment API, and frontend live dashboard connection are implemented.
-```
+Never commit `.env` files, database passwords, phpMyAdmin credentials, real student data, or local backup files. The seeded accounts and sample data are for local development only.

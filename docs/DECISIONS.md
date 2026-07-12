@@ -1,5 +1,7 @@
 # Product and Technical Decision Log
 
+> **Historical decision record (June 2026).** Preserve these decisions and open questions as planning history; later implementation may differ where the school-finance model was refined. Current behavior is documented in [System Architecture](SYSTEM_ARCHITECTURE.md), [Database Design](DATABASE_DESIGN.md), and [Implementation Status](IMPLEMENTATION_STATUS.md).
+
 Version: 0.2
 Date: 2026-06-26
 

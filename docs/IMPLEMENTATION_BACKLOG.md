@@ -1,5 +1,7 @@
 # MVP Implementation Backlog
 
+> **Historical backlog (June 2026).** This file preserves the original sprint plan and is not a current completion checklist. See [Implementation Status](IMPLEMENTATION_STATUS.md) for shipped modules and deferred scope.
+
 Version: 0.2
 Date: 2026-06-26
 
