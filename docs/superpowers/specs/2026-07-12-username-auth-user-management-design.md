@@ -31,6 +31,7 @@ This change does not include:
 - public registration;
 - email verification or email-based password recovery;
 - self-service password changes;
+- forced first-login password changes or a `must_change_password` flag;
 - custom role creation;
 - per-user permission overrides;
 - permanent deletion of staff users;
@@ -120,9 +121,12 @@ CEO is read-only and receives:
 - `fee_agreements.view`;
 - `fee_record.view`;
 - `payments.view`;
-- `receipts.view`.
+- `receipts.view`;
+- `receipts.print`.
 
-CEO cannot create, edit, generate, verify, void, print as an operational action, or manage users.
+Printing an existing record, receipt, or report is a read-only action. CEO may print content that the role is already permitted to view. In the current MVP this is represented by `receipts.print`; future record or report modules must follow the same read-only printing rule without granting generation, export, or mutation permissions.
+
+CEO cannot create, edit, delete, generate, verify, void, approve, change amounts, change statuses, alter payment details, alter Fee Records, alter receipts, maintain students or parents, maintain Fee Agreements, or manage users. Every restriction is enforced by backend permission middleware or backend authorization checks. Hiding a frontend control is only a usability measure and is never the authorization boundary.
 
 ### School Admin
 
@@ -174,6 +178,8 @@ Safety rules:
 ## 9. Password Handling
 
 Only Super Admin can set an initial password or reset a password. Ordinary staff cannot view, change, or recover their own password in this phase.
+
+A password set by Super Admin remains valid until Super Admin resets it. The system does not force a first-login password change and does not store a `must_change_password` state.
 
 On create or reset:
 
@@ -244,6 +250,8 @@ Backend test-first coverage includes:
 - invalid credentials and inactive-account rejection;
 - logout and session behavior;
 - CEO read-only access and mutation denial;
+- CEO permission to print existing receipts while remaining unable to create, generate, verify, void, approve, edit, or otherwise mutate business data;
+- direct backend `403` coverage for every available CEO mutation route, independent of frontend button visibility;
 - Super Admin user list, creation, edit, role assignment, activation, deactivation, and password reset;
 - non-Super Admin `403` responses for every management route;
 - duplicate and invalid username validation;
