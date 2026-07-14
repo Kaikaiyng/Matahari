@@ -1,0 +1,61 @@
+flowchart LR
+    openStudents(["Open Students"])
+    viewGate{"students.view?"}
+    schoolScope["Resolve user school"]
+    filters["Status search level class ID filters"]
+    studentList["Student list with Fee Record totals"]
+    selectStudent["Open student"]
+    loadDetail["Load profile and guardians"]
+    parallelData["Load agreements charges payments receipts"]
+    detailWorkspace["Student Detail workspace"]
+
+    createGate{"students.create?"}
+    createForm["Enter identity level dates status notes"]
+    validateStudent{"School-unique ID and valid fields?"}
+    createStudent["Create school-scoped student"]
+
+    statusGate{"students.update_status?"}
+    chooseStatus["Choose active withdraw graduate inactive"]
+    updateStatus["Persist status without deletion"]
+
+    profileApi["PATCH profile API"]
+    profileGap["No current React edit form"]
+    guardianData["Read linked guardians"]
+    parentPrototype["Static Parents page"]
+    parentGap["No parent CRUD routes"]
+    retainedHistory["Retain agreements payments receipts"]
+    schoolDenied["403 different school"]
+
+    openStudents --> viewGate
+    viewGate -->|"No"| schoolDenied
+    viewGate -->|"Yes"| schoolScope
+    schoolScope --> filters
+    filters --> studentList
+    studentList --> selectStudent
+    selectStudent --> loadDetail
+    loadDetail --> guardianData
+    loadDetail --> parallelData
+    parallelData --> detailWorkspace
+    studentList --> createGate
+    createGate -->|"Yes"| createForm
+    createGate -->|"No"| studentList
+    createForm --> validateStudent
+    validateStudent -->|"No"| createForm
+    validateStudent -->|"Yes"| createStudent
+    createStudent --> detailWorkspace
+    detailWorkspace --> statusGate
+    statusGate -->|"Yes"| chooseStatus
+    chooseStatus --> updateStatus
+    updateStatus --> retainedHistory
+    detailWorkspace -.-> profileApi
+    profileApi -.-> profileGap
+    guardianData -.-> parentPrototype
+    parentPrototype -.-> parentGap
+    updateStatus --> studentList
+    schoolScope -->|"Mismatch"| schoolDenied
+
+    style createStudent fill:#CDF4D3,stroke:#66D575
+    style updateStatus fill:#CDF4D3,stroke:#66D575
+    style profileGap fill:#FFECBD,stroke:#FFC943
+    style parentGap fill:#FFECBD,stroke:#FFC943
+    style schoolDenied fill:#FFCDC2,stroke:#FF7556

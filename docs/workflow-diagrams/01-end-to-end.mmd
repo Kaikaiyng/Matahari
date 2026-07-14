@@ -1,0 +1,77 @@
+flowchart LR
+    visitor(["Unauthenticated staff"])
+    superAdmin(["Super Admin (global)"])
+    ceo(["CEO (no current permissions)"])
+    schoolAdmin(["School Admin (own school)"])
+    finance(["Finance (own school)"])
+
+    subgraph accessLayer ["Access and authorization"]
+        sessionCheck["GET /me session restore"]
+        emailLogin["Email and password login"]
+        activeCheck{"Account active?"}
+        permissionGate{"Permission granted?"}
+        schoolGate{"School scope valid?"}
+        logout["Logout and invalidate session"]
+    end
+
+    subgraph studentFlow ["Implemented student workspace"]
+        studentList["List and filter students"]
+        studentCreate["Create student"]
+        studentDetail["Open student detail"]
+        studentStatus["Change student status"]
+        agreement["Create or supersede agreement"]
+        feeRecord["Preview and activate charges"]
+        manualCharge["Add manual charge"]
+        payment["Allocate and record payment"]
+        verifyVoid["Verify or void payment"]
+        receipt["Generate view print void receipt"]
+        ledgers["Summary and category ledgers"]
+    end
+
+    subgraph otherAreas ["Other current project areas"]
+        prototypes["Static and prototype modules"]
+        legacy["Legacy dashboard and invoice APIs"]
+        settings["Self-view settings and permissions"]
+        planned["Approved username and user management design"]
+        deferred["Deferred ERP and production modules"]
+    end
+
+    visitor --> sessionCheck
+    sessionCheck -->|"401"| emailLogin
+    emailLogin --> activeCheck
+    activeCheck -->|"No"| visitor
+    activeCheck -->|"Yes"| permissionGate
+    superAdmin --> permissionGate
+    schoolAdmin --> permissionGate
+    finance --> permissionGate
+    ceo -->|"Current 403"| permissionGate
+    permissionGate -->|"Allowed"| schoolGate
+    permissionGate -->|"Denied"| visitor
+    schoolGate -->|"Valid"| studentList
+    schoolGate -->|"Invalid"| visitor
+    studentList --> studentCreate
+    studentList --> studentDetail
+    studentDetail --> studentStatus
+    studentDetail --> agreement
+    agreement --> feeRecord
+    feeRecord --> manualCharge
+    feeRecord --> payment
+    payment --> verifyVoid
+    verifyVoid --> receipt
+    receipt --> ledgers
+    feeRecord --> ledgers
+    studentDetail --> settings
+    permissionGate --> prototypes
+    permissionGate -.-> legacy
+    planned -.-> emailLogin
+    deferred -.-> prototypes
+    settings --> logout
+    logout --> visitor
+
+    style accessLayer fill:#C2E5FF,stroke:#3DADFF
+    style studentFlow fill:#CDF4D3,stroke:#66D575
+    style otherAreas fill:#FFECBD,stroke:#FFC943
+    style ceo fill:#FFCDC2,stroke:#FF7556
+    style legacy fill:#FFCDC2,stroke:#FF7556
+    style planned fill:#DCCCFF,stroke:#874FFF
+    style deferred fill:#D9D9D9,stroke:#B3B3B3

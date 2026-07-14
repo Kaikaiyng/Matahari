@@ -1,0 +1,54 @@
+flowchart TD
+    audit(["Completion and truth audit"])
+
+    subgraph runtimeConflicts ["Runtime versus documentation"]
+        duplicateReceipt["Duplicate issued receipt returns 422"]
+        receiptDoc["Some UAT text says reuse active receipt"]
+        studentEdit["Backend student update exists"]
+        studentEditGap["React profile edit form missing"]
+        ceoRole["CEO role seeded"]
+        ceoGap["CEO permissions not currently synced"]
+        emailLogin["Runtime uses prefilled email login"]
+        usernamePlan["Username login is approved design only"]
+    end
+
+    subgraph incompleteModules ["Incomplete module surfaces"]
+        parentPerms["Parent permissions exist"]
+        parentGap["Parent CRUD and real UI missing"]
+        feePerms["Fee item manage permission exists"]
+        feeGap["Fee item mutation routes missing"]
+        navPrototype["Payment and Receipt nav pages prototype"]
+        realWorkspace["Real flows live in Student Detail"]
+    end
+
+    subgraph securityAndData ["Security and data caveats"]
+        dashboardUnsafe["Dashboard endpoint unauthenticated"]
+        invoiceUnsafe["Invoice generation unauthenticated"]
+        invoiceSeparate["Payments do not update legacy invoices"]
+        mapperTemp["Fee category mapper temporary"]
+        migrationOrder["Fresh MariaDB FK ordering workaround"]
+        globalSelector["Global school selector incomplete"]
+    end
+
+    subgraph verificationGaps ["External verification remaining"]
+        ipad["Real iPad Safari check"]
+        print["Native print preview check"]
+        businessRules["Sibling discount and proration TBD"]
+    end
+
+    audit --> duplicateReceipt & studentEdit & ceoRole & emailLogin
+    duplicateReceipt --> receiptDoc
+    studentEdit --> studentEditGap
+    ceoRole --> ceoGap
+    emailLogin --> usernamePlan
+    audit --> parentPerms & feePerms & navPrototype
+    parentPerms --> parentGap
+    feePerms --> feeGap
+    navPrototype --> realWorkspace
+    audit --> dashboardUnsafe & invoiceUnsafe & invoiceSeparate & mapperTemp & migrationOrder & globalSelector
+    audit --> ipad & print & businessRules
+
+    style runtimeConflicts fill:#FFECBD,stroke:#FFC943
+    style incompleteModules fill:#FFECBD,stroke:#FFC943
+    style securityAndData fill:#FFCDC2,stroke:#FF7556
+    style verificationGaps fill:#D9D9D9,stroke:#B3B3B3

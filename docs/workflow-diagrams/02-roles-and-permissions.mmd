@@ -1,0 +1,46 @@
+flowchart LR
+    subgraph superAdminLane ["Super Admin - current runtime"]
+        superAdmin(["Super Admin"])
+        saScope["Global user; school-scoped screens may require explicit school context"]
+        saPeople["students.view; students.create; students.update; students.update_status; parents.view; parents.create; parents.update"]
+        saFees["fee_items.view; fee_items.manage; fee_agreements.view; fee_agreements.create; fee_agreements.update; fee_record.view; fee_record.generate; fee_record.manage"]
+        saMoney["payments.view; payments.create; payments.verify; payments.void; receipts.view; receipts.create; receipts.void; receipts.print"]
+        saGaps["Parent CRUD missing; fee item mutations missing; global school selector incomplete; user management approved only"]
+        superAdmin --> saScope --> saPeople --> saFees --> saMoney --> saGaps
+    end
+
+    subgraph schoolAdminLane ["School Admin - current runtime"]
+        schoolAdmin(["School Admin"])
+        schoolScope["Own school only; 19 permissions"]
+        schoolPeople["students.view; students.create; students.update; students.update_status; parents.view; parents.create; parents.update"]
+        schoolFees["fee_items.view; fee_agreements.view; fee_agreements.create; fee_agreements.update; fee_record.view; fee_record.generate; fee_record.manage"]
+        schoolMoney["payments.view; payments.create; receipts.view; receipts.create; receipts.print"]
+        schoolLimits["Cannot verify or void payments; cannot void receipts; parent and fee item mutation surfaces missing"]
+        schoolAdmin --> schoolScope --> schoolPeople --> schoolFees --> schoolMoney --> schoolLimits
+    end
+
+    subgraph financeLane ["Finance - current runtime"]
+        finance(["Finance"])
+        financeScope["Own school only; 12 permissions"]
+        financeRead["students.view; parents.view; fee_items.view; fee_agreements.view; fee_record.view; payments.view; receipts.view"]
+        financeControl["payments.verify; payments.void; receipts.create; receipts.void; receipts.print"]
+        financeLimits["Cannot create/update students or agreements; cannot activate/add charges; cannot record payments"]
+        finance --> financeScope --> financeRead --> financeControl --> financeLimits
+    end
+
+    subgraph ceoLane ["CEO - current and approved future design"]
+        ceo(["CEO"])
+        ceoCurrent["Current seeder: zero permissions; protected routes return 403"]
+        ceoApproved["Approved only: students.view; parents.view; fee_items.view; fee_agreements.view; fee_record.view; payments.view; receipts.view; receipts.print"]
+        ceoFuture["Not implemented: read-only screens and cross-school reporting"]
+        ceo --> ceoCurrent -.-> ceoApproved -.-> ceoFuture
+    end
+
+    style superAdminLane fill:#DCCCFF,stroke:#874FFF
+    style schoolAdminLane fill:#CDF4D3,stroke:#66D575
+    style financeLane fill:#C2E5FF,stroke:#3DADFF
+    style ceoLane fill:#FFECBD,stroke:#FFC943
+    style saGaps fill:#FFCDC2,stroke:#FF7556
+    style schoolLimits fill:#FFCDC2,stroke:#FF7556
+    style financeLimits fill:#FFCDC2,stroke:#FF7556
+    style ceoCurrent fill:#FFCDC2,stroke:#FF7556

@@ -1,0 +1,57 @@
+flowchart TD
+    appShell(["Authenticated app shell"])
+
+    subgraph implementedUi ["Implemented UI"]
+        students["Students workspace"]
+        feeRecord["Fee Record ledgers"]
+        settings["Self-view settings"]
+        responsive["Responsive navigation and print"]
+    end
+
+    subgraph prototypeUi ["Prototype or static UI"]
+        parents["Parents sample contacts"]
+        fees["Fees static foundation"]
+        invoices["Invoices prototype"]
+        payments["Payments prototype nav"]
+        receipts["Receipts prototype nav"]
+        reports["Reports future cards"]
+    end
+
+    subgraph legacyBackend ["Legacy backend"]
+        dashboard["Unauthenticated dashboard endpoint"]
+        monthlyInvoice["Unauthenticated monthly invoice generation"]
+        feeAssignments["Legacy fee and discount assignments"]
+        invoiceRows["Pending invoice snapshots"]
+    end
+
+    subgraph approvedDesign ["Approved design not implemented"]
+        username["Username login"]
+        userAdmin["Super Admin user management"]
+        ceoRead["CEO read-only permissions"]
+        auditUsers["User action audit logs"]
+    end
+
+    subgraph deferredScope ["Explicitly deferred"]
+        comms["Statements reminders communications"]
+        exports["Reports exports PDF"]
+        portals["Parent and student portals"]
+        deployment["Hosting domain Cloudflare containers"]
+        multiSchool["Cross-school CEO and tenant runtime"]
+    end
+
+    appShell --> students & feeRecord & settings & responsive
+    appShell --> parents & fees & invoices & payments & receipts & reports
+    dashboard -.-> appShell
+    monthlyInvoice --> feeAssignments
+    feeAssignments --> invoiceRows
+    username -.-> appShell
+    userAdmin -.-> settings
+    ceoRead -.-> appShell
+    userAdmin -.-> auditUsers
+    appShell -.-> comms & exports & portals & deployment & multiSchool
+
+    style implementedUi fill:#CDF4D3,stroke:#66D575
+    style prototypeUi fill:#FFECBD,stroke:#FFC943
+    style legacyBackend fill:#FFCDC2,stroke:#FF7556
+    style approvedDesign fill:#DCCCFF,stroke:#874FFF
+    style deferredScope fill:#D9D9D9,stroke:#B3B3B3

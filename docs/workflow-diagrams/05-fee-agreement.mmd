@@ -1,0 +1,55 @@
+flowchart LR
+    studentDetail(["Student Detail"])
+    viewGate{"fee_agreements.view?"}
+    history["Current and version history"]
+    editGate{"Create or update permission?"}
+    chooseMode{"Create or supersede?"}
+    loadItems["Load active fee items"]
+    configure["Plan dates items billing discount"]
+    mandatory{"TUITION and MISC included?"}
+    itemRules{"Billing months valid?"}
+    discountRules{"Discount scope valid?"}
+    currentExists{"Current student year exists?"}
+    createCurrent["Create active current version"]
+    currentEligible{"Current active and newer date?"}
+    lockCurrent["Lock current agreement"]
+    supersedeOld["Close and supersede old version"]
+    createNext["Create version plus one"]
+    snapshotItems["Snapshot fee item identity amounts"]
+    snapshotDiscounts["Snapshot discounts and selected items"]
+    currentAgreement["Return current agreement"]
+    validation["422 validation error"]
+    financeView["Finance view only"]
+
+    studentDetail --> viewGate
+    viewGate -->|"Yes"| history
+    history --> editGate
+    editGate -->|"No"| financeView
+    editGate -->|"Yes"| chooseMode
+    chooseMode --> loadItems
+    loadItems --> configure
+    configure --> mandatory
+    mandatory -->|"No"| validation
+    mandatory -->|"Yes"| itemRules
+    itemRules -->|"No"| validation
+    itemRules -->|"Yes"| discountRules
+    discountRules -->|"No"| validation
+    discountRules -->|"Yes"| currentExists
+    currentExists -->|"Create and yes"| validation
+    currentExists -->|"Create and no"| createCurrent
+    currentExists -->|"Supersede"| currentEligible
+    currentEligible -->|"No"| validation
+    currentEligible -->|"Yes"| lockCurrent
+    lockCurrent --> supersedeOld
+    supersedeOld --> createNext
+    createCurrent --> snapshotItems
+    createNext --> snapshotItems
+    snapshotItems --> snapshotDiscounts
+    snapshotDiscounts --> currentAgreement
+    currentAgreement --> history
+
+    style validation fill:#FFCDC2,stroke:#FF7556
+    style createCurrent fill:#CDF4D3,stroke:#66D575
+    style createNext fill:#CDF4D3,stroke:#66D575
+    style supersedeOld fill:#FFECBD,stroke:#FFC943
+    style financeView fill:#C2E5FF,stroke:#3DADFF
