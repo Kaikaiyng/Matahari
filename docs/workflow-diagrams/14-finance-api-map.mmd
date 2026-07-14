@@ -1,0 +1,42 @@
+flowchart TD
+    authenticated(["Authenticated permission-gated client"])
+
+    subgraph paymentApi ["Payment API"]
+        paymentList["GET /students/:id/payments - payments.view"]
+        paymentCreate["POST /students/:id/payments - payments.create"]
+        paymentVerify["POST /payments/:id/verify - payments.verify"]
+        paymentVoid["POST /payments/:id/void - payments.void"]
+    end
+
+    subgraph receiptApi ["Receipt API"]
+        receiptList["GET /students/:id/receipts - receipts.view"]
+        receiptCreate["POST /payments/:id/receipts - receipts.create"]
+        receiptShow["GET /receipts/:id - receipts.view"]
+        receiptPrint["GET /receipts/:id/print - receipts.print"]
+        receiptVoid["POST /receipts/:id/void - receipts.void"]
+    end
+
+    subgraph legacyApi ["Legacy API outside auth group"]
+        publicClient(["Any JSON client"])
+        dashboard["GET /dashboard/school"]
+        invoiceGenerate["POST /invoices/generate-monthly"]
+        legacyInvoices["Legacy invoice snapshots"]
+    end
+
+    authenticated --> paymentList & paymentCreate & paymentVerify & paymentVoid
+    authenticated --> receiptList & receiptCreate & receiptShow & receiptPrint & receiptVoid
+    paymentCreate --> paymentList
+    paymentVerify --> paymentList
+    paymentVoid --> paymentList
+    receiptCreate --> receiptList
+    receiptShow --> receiptPrint
+    receiptVoid --> receiptList
+    receiptVoid --> paymentVoid
+    publicClient --> dashboard
+    publicClient --> invoiceGenerate
+    invoiceGenerate --> legacyInvoices
+    legacyInvoices -.-> dashboard
+
+    style paymentApi fill:#CDF4D3,stroke:#66D575
+    style receiptApi fill:#C2E5FF,stroke:#3DADFF
+    style legacyApi fill:#FFCDC2,stroke:#FF7556

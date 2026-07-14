@@ -1,0 +1,52 @@
+flowchart TD
+    browser(["Credentialed JSON client"])
+    sessionMiddleware["Cookie and session middleware"]
+    authMiddleware["auth middleware"]
+    permissionMiddleware["permission middleware"]
+
+    subgraph authApi ["Auth API"]
+        login["POST /login"]
+        me["GET /me"]
+        logout["POST /logout"]
+    end
+
+    subgraph studentApi ["Student API"]
+        studentList["GET /students - students.view"]
+        studentCreate["POST /students - students.create"]
+        studentShow["GET /students/:id - students.view"]
+        studentUpdate["PATCH /students/:id - students.update"]
+        studentStatus["PATCH /students/:id/status - students.update_status"]
+    end
+
+    subgraph agreementApi ["Fee item and Agreement API"]
+        feeItems["GET /fee-items - fee_items.view"]
+        agreementList["GET /students/:id/fee-agreements - fee_agreements.view"]
+        agreementCreate["POST /students/:id/fee-agreements - fee_agreements.create"]
+        agreementShow["GET /fee-agreements/:id - fee_agreements.view"]
+        agreementSupersede["POST /fee-agreements/:id/supersede - fee_agreements.update"]
+    end
+
+    subgraph feeRecordApi ["Fee Record API"]
+        feeSummary["GET /fee-record/summary - fee_record.view"]
+        feeMonthly["GET /fee-record/category-monthly - fee_record.view"]
+        feePreview["GET /students/:id/fee-record/preview - fee_record.view"]
+        feeActivate["POST /students/:id/fee-record/activate - fee_record.generate"]
+        feeManual["POST /students/:id/fee-record/manual-charges - fee_record.manage"]
+        feeOutstanding["GET /students/:id/fee-record/outstanding - fee_record.view"]
+    end
+
+    browser --> sessionMiddleware
+    sessionMiddleware --> login
+    login --> me
+    me --> authMiddleware
+    authMiddleware --> permissionMiddleware
+    permissionMiddleware --> studentList & studentCreate & studentShow & studentUpdate & studentStatus
+    permissionMiddleware --> feeItems & agreementList & agreementCreate & agreementShow & agreementSupersede
+    permissionMiddleware --> feeSummary & feeMonthly & feePreview & feeActivate & feeManual & feeOutstanding
+    logout --> browser
+    authMiddleware --> logout
+
+    style authApi fill:#C2E5FF,stroke:#3DADFF
+    style studentApi fill:#CDF4D3,stroke:#66D575
+    style agreementApi fill:#DCCCFF,stroke:#874FFF
+    style feeRecordApi fill:#FFECBD,stroke:#FFC943

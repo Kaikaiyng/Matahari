@@ -1,0 +1,62 @@
+flowchart LR
+    studentDetail(["Student Detail"])
+    viewGate{"fee_record.view?"}
+    selectYear["Select academic year"]
+    activeAgreement{"Active current agreement?"}
+    deriveMonths["Resolve item billing months"]
+    insideWindow{"Month inside effective window?"}
+    missingMonths{"Required months missing?"}
+    warning["Blocking preview warning"]
+    previewRows["Preview scheduled charge cells"]
+    activateGate{"fee_record.generate?"}
+    duplicate{"Charges already exist?"}
+    createCharges["Create scheduled charge cells"]
+    manualGate{"fee_record.manage?"}
+    manualForm["Year month category description amount remark"]
+    validateManual{"Valid month amount school item?"}
+    createManual["Create manual billable charge"]
+    outstanding["Billable unpaid or partial cells"]
+    paymentPicker["Payment allocation picker"]
+    summary["Fee Record Summary"]
+    categoryMonthly["Category Monthly Jan-Dec"]
+    mapper["Temporary category mapper"]
+    noCharge["Zero amount no-charge paid cell"]
+    billable["Positive amount unpaid cell"]
+    validation["422 validation error"]
+
+    studentDetail --> viewGate
+    viewGate -->|"Yes"| selectYear
+    selectYear --> activeAgreement
+    activeAgreement -->|"No"| validation
+    activeAgreement -->|"Yes"| deriveMonths
+    deriveMonths --> missingMonths
+    missingMonths -->|"Yes"| warning
+    missingMonths -->|"No"| insideWindow
+    insideWindow -->|"No"| deriveMonths
+    insideWindow -->|"Yes"| previewRows
+    previewRows --> mapper
+    previewRows --> activateGate
+    activateGate -->|"No"| previewRows
+    activateGate -->|"Yes"| duplicate
+    duplicate -->|"Yes"| validation
+    duplicate -->|"No"| createCharges
+    createCharges --> noCharge
+    createCharges --> billable
+    viewGate --> manualGate
+    manualGate -->|"Yes"| manualForm
+    manualForm --> validateManual
+    validateManual -->|"No"| validation
+    validateManual -->|"Yes"| createManual
+    createManual --> billable
+    billable --> outstanding
+    outstanding --> paymentPicker
+    createCharges --> summary
+    createManual --> summary
+    summary --> categoryMonthly
+    mapper --> categoryMonthly
+
+    style warning fill:#FFECBD,stroke:#FFC943
+    style validation fill:#FFCDC2,stroke:#FF7556
+    style createCharges fill:#CDF4D3,stroke:#66D575
+    style createManual fill:#CDF4D3,stroke:#66D575
+    style mapper fill:#DCCCFF,stroke:#874FFF

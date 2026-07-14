@@ -1,0 +1,53 @@
+flowchart LR
+    title["Matahari complete workflow board"]
+    implemented["Implemented and tested"]
+    backendOnly["Backend only or hidden UI"]
+    prototype["Prototype or static"]
+    legacy["Legacy or unsafe"]
+    approved["Approved design not implemented"]
+    deferred["Explicitly deferred"]
+
+    subgraph evidence ["Evidence hierarchy"]
+        runtime["Routes controllers services frontend"]
+        persistence["Migrations models database rules"]
+        tests["92 tests and 597 baseline assertions"]
+        currentDocs["Current architecture status UAT"]
+        historicalDocs["Historical PRD roadmap backlog"]
+    end
+
+    subgraph boardIndex ["Board diagram index"]
+        overview["01 End-to-end"]
+        roles["02 Roles and permissions"]
+        auth["03 Auth session RBAC"]
+        student["04 Student workspace"]
+        agreement["05 Fee Agreement"]
+        feeRecord["06 Fee Record"]
+        payment["07 Payment"]
+        receipt["08 Receipt"]
+        boundaries["09 UI legacy planned deferred"]
+        states["10 Finance state machines"]
+        schoolScope["11 School scope"]
+        caveats["12 Conflicts and caveats"]
+        coreApi["13 Auth student fee API map"]
+        financeApi["14 Payment receipt legacy API map"]
+    end
+
+    title --> implemented & backendOnly & prototype & legacy & approved & deferred
+    runtime --> implemented
+    persistence --> implemented
+    tests --> implemented
+    currentDocs --> implemented
+    historicalDocs -.-> approved
+    historicalDocs -.-> deferred
+    implemented --> overview
+    overview --> roles & auth & student & agreement & feeRecord & payment & receipt
+    overview --> boundaries & states & schoolScope & caveats & coreApi & financeApi
+
+    style evidence fill:#C2E5FF,stroke:#3DADFF
+    style boardIndex fill:#CDF4D3,stroke:#66D575
+    style implemented fill:#CDF4D3,stroke:#66D575
+    style backendOnly fill:#C2E5FF,stroke:#3DADFF
+    style prototype fill:#FFECBD,stroke:#FFC943
+    style legacy fill:#FFCDC2,stroke:#FF7556
+    style approved fill:#DCCCFF,stroke:#874FFF
+    style deferred fill:#D9D9D9,stroke:#B3B3B3

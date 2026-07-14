@@ -1,0 +1,61 @@
+stateDiagram-v2
+    direction LR
+
+    state "Student lifecycle" as StudentFlow {
+        [*] --> ActiveStudent
+        ActiveStudent: Active
+        WithdrawnStudent: Withdraw
+        GraduatedStudent: Graduate
+        InactiveStudent: Suspended or inactive
+        ActiveStudent --> WithdrawnStudent: withdraw
+        ActiveStudent --> GraduatedStudent: graduate
+        ActiveStudent --> InactiveStudent: suspend
+        InactiveStudent --> ActiveStudent: reactivate
+    }
+
+    state "Agreement lifecycle" as AgreementFlow {
+        [*] --> ActiveAgreement
+        ActiveAgreement: Active current
+        SupersededAgreement: Superseded history
+        ActiveAgreement --> SupersededAgreement: supersede
+        SupersededAgreement --> [*]
+    }
+
+    state "Charge collection" as ChargeFlow {
+        [*] --> UnpaidCharge
+        UnpaidCharge: Unpaid
+        PartialCharge: Partial
+        PaidCharge: Paid
+        NoCharge: No charge
+        UnpaidCharge --> PartialCharge: partial allocation
+        UnpaidCharge --> PaidCharge: full allocation
+        PartialCharge --> PaidCharge: clear remainder
+        PaidCharge --> PartialCharge: void payment
+        PartialCharge --> UnpaidCharge: void all paid
+        [*] --> NoCharge
+    }
+
+    state "Payment lifecycle" as PaymentFlow {
+        [*] --> PendingPayment
+        [*] --> VerifiedPayment
+        PendingPayment: Pending verification
+        VerifiedPayment: Verified
+        VoidedPayment: Voided
+        PendingPayment --> VerifiedPayment: verify
+        PendingPayment --> VoidedPayment: void
+        VerifiedPayment --> VoidedPayment: void after receipt guard
+        VoidedPayment --> [*]
+    }
+
+    state "Receipt lifecycle" as ReceiptFlow {
+        [*] --> IssuedReceipt
+        IssuedReceipt: Issued
+        VoidedReceipt: Voided
+        IssuedReceipt --> VoidedReceipt: void with reason
+        VoidedReceipt --> [*]
+    }
+
+    StudentFlow --> AgreementFlow: configure billing
+    AgreementFlow --> ChargeFlow: activate charges
+    ChargeFlow --> PaymentFlow: allocate money
+    PaymentFlow --> ReceiptFlow: verified payment

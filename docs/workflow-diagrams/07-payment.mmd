@@ -1,0 +1,66 @@
+flowchart LR
+    studentDetail(["Student Detail"])
+    createGate{"payments.create?"}
+    loadOutstanding["Load outstanding charge cells"]
+    enterPayment["Enter method dates amount payer references"]
+    selectAllocations["Select charge or manual allocations"]
+    totalMatch{"Allocation total equals payment?"}
+    chargeValid{"Charge usable and within outstanding?"}
+    paymentMethod{"Cash?"}
+    pending["Pending verification"]
+    cashVerified["Verified immediately"]
+    applyBalances["Apply charge paid and outstanding"]
+    verifyGate{"payments.verify?"}
+    verifyState{"Still pending and balances valid?"}
+    verified["Verified payment"]
+    receiptEligible["Eligible for receipt"]
+    voidGate{"payments.void?"}
+    issuedReceipt{"Issued receipt exists?"}
+    blockVoid["Void receipt first"]
+    reverseBalances["Reverse verified allocations"]
+    voided["Voided payment"]
+    history["Payment history and allocation detail"]
+    validation["422 validation error"]
+    manualNote["Manual allocation does not clear charges"]
+    invoiceNote["Legacy invoice balance unchanged"]
+
+    studentDetail --> createGate
+    createGate -->|"Yes"| loadOutstanding
+    loadOutstanding --> enterPayment
+    enterPayment --> selectAllocations
+    selectAllocations --> totalMatch
+    selectAllocations -.-> manualNote
+    totalMatch -->|"No"| validation
+    totalMatch -->|"Yes"| chargeValid
+    chargeValid -->|"No"| validation
+    chargeValid -->|"Yes"| paymentMethod
+    paymentMethod -->|"No"| pending
+    paymentMethod -->|"Yes"| cashVerified
+    cashVerified --> applyBalances
+    applyBalances --> verified
+    pending --> verifyGate
+    verifyGate -->|"No"| history
+    verifyGate -->|"Yes"| verifyState
+    verifyState -->|"No"| validation
+    verifyState -->|"Yes"| applyBalances
+    verified --> receiptEligible
+    pending --> history
+    verified --> history
+    pending --> voidGate
+    verified --> voidGate
+    voidGate -->|"Yes"| issuedReceipt
+    issuedReceipt -->|"Yes"| blockVoid
+    issuedReceipt -->|"No and verified"| reverseBalances
+    issuedReceipt -->|"No and pending"| voided
+    reverseBalances --> voided
+    voided --> history
+    verified -.-> invoiceNote
+
+    style pending fill:#FFECBD,stroke:#FFC943
+    style verified fill:#CDF4D3,stroke:#66D575
+    style cashVerified fill:#CDF4D3,stroke:#66D575
+    style voided fill:#D9D9D9,stroke:#B3B3B3
+    style validation fill:#FFCDC2,stroke:#FF7556
+    style blockVoid fill:#FFCDC2,stroke:#FF7556
+    style manualNote fill:#DCCCFF,stroke:#874FFF
+    style invoiceNote fill:#DCCCFF,stroke:#874FFF

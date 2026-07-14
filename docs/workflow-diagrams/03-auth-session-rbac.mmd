@@ -1,0 +1,60 @@
+flowchart LR
+    browser(["Browser opens app"])
+    checkSession["GET /api/me"]
+    sessionValid{"Session valid?"}
+    loginForm["Prefilled email login form"]
+    validateInput{"Valid email and password fields?"}
+    authAttempt{"Credentials match?"}
+    regenerate["Regenerate session"]
+    activeUser{"User active?"}
+    currentUser["Return user roles permissions school"]
+    renderApp["Render app shell"]
+    routeRequest["Request protected action"]
+    authGate{"Authenticated?"}
+    permissionGate{"Has permission slug?"}
+    schoolGate{"Target school allowed?"}
+    controller["Controller and service"]
+    jsonResult["JSON success"]
+    unauthorized["401 login again"]
+    forbidden["403 action denied"]
+    validation["422 field errors"]
+    logout["POST /api/logout"]
+    clearSession["Invalidate session and token"]
+    plannedLogin["Planned normalized username login"]
+    plannedUsers["Planned Super Admin user management"]
+
+    browser --> checkSession
+    checkSession --> sessionValid
+    sessionValid -->|"No"| loginForm
+    loginForm --> validateInput
+    validateInput -->|"No"| validation
+    validateInput -->|"Yes"| authAttempt
+    authAttempt -->|"No"| validation
+    authAttempt -->|"Yes"| regenerate
+    regenerate --> activeUser
+    activeUser -->|"No"| clearSession
+    activeUser -->|"Yes"| currentUser
+    sessionValid -->|"Yes"| currentUser
+    currentUser --> renderApp
+    renderApp --> routeRequest
+    routeRequest --> authGate
+    authGate -->|"No"| unauthorized
+    authGate -->|"Yes"| permissionGate
+    permissionGate -->|"No"| forbidden
+    permissionGate -->|"Yes"| schoolGate
+    schoolGate -->|"No"| forbidden
+    schoolGate -->|"Yes"| controller
+    controller -->|"Invalid data"| validation
+    controller -->|"Success"| jsonResult
+    renderApp --> logout
+    logout --> clearSession
+    clearSession --> loginForm
+    plannedLogin -.-> loginForm
+    plannedUsers -.-> permissionGate
+
+    style plannedLogin fill:#DCCCFF,stroke:#874FFF
+    style plannedUsers fill:#DCCCFF,stroke:#874FFF
+    style unauthorized fill:#FFCDC2,stroke:#FF7556
+    style forbidden fill:#FFCDC2,stroke:#FF7556
+    style validation fill:#FFECBD,stroke:#FFC943
+    style jsonResult fill:#CDF4D3,stroke:#66D575

@@ -1,0 +1,60 @@
+flowchart LR
+    verifiedPayment(["Verified payment"])
+    createGate{"receipts.create?"}
+    paymentLocked["Lock payment with allocations"]
+    paymentEligible{"Verified and not voided?"}
+    issuedExists{"Issued receipt exists?"}
+    duplicateError["422 duplicate issued receipt"]
+    payerKnown{"Paid by available?"}
+    requestPayer["Request and persist paid by"]
+    lockSequence["Lock or create school sequence"]
+    nextNumber["Increment continuous receipt number"]
+    snapshotHeader["Snapshot payment student payer amount"]
+    snapshotItems["Snapshot allocation line items"]
+    issued["Issued receipt"]
+    viewGate{"receipts.view?"}
+    viewReceipt["View immutable receipt"]
+    printGate{"receipts.print?"}
+    browserPrint["Browser print receipt scope"]
+    voidGate{"receipts.void?"}
+    voidReason{"Issued and reason supplied?"}
+    voided["Void receipt and clear active payment"]
+    paymentChoice{"Next action?"}
+    regenerate["Generate new next-number receipt"]
+    voidPayment["Void payment and reverse balances"]
+    balanceNote["Receipt actions do not change charge balances"]
+
+    verifiedPayment --> createGate
+    createGate -->|"Yes"| paymentLocked
+    paymentLocked --> paymentEligible
+    paymentEligible -->|"No"| duplicateError
+    paymentEligible -->|"Yes"| issuedExists
+    issuedExists -->|"Yes"| duplicateError
+    issuedExists -->|"No"| payerKnown
+    payerKnown -->|"No"| requestPayer
+    payerKnown -->|"Yes"| lockSequence
+    requestPayer --> lockSequence
+    lockSequence --> nextNumber
+    nextNumber --> snapshotHeader
+    snapshotHeader --> snapshotItems
+    snapshotItems --> issued
+    issued --> viewGate
+    viewGate -->|"Yes"| viewReceipt
+    viewReceipt --> printGate
+    printGate -->|"Yes"| browserPrint
+    issued --> voidGate
+    voidGate -->|"Yes"| voidReason
+    voidReason -->|"No"| duplicateError
+    voidReason -->|"Yes"| voided
+    voided --> paymentChoice
+    paymentChoice -->|"Receipt needed"| regenerate
+    regenerate --> lockSequence
+    paymentChoice -->|"Payment wrong"| voidPayment
+    issued -.-> balanceNote
+    voided -.-> balanceNote
+
+    style issued fill:#CDF4D3,stroke:#66D575
+    style voided fill:#D9D9D9,stroke:#B3B3B3
+    style duplicateError fill:#FFCDC2,stroke:#FF7556
+    style balanceNote fill:#DCCCFF,stroke:#874FFF
+    style browserPrint fill:#C2E5FF,stroke:#3DADFF

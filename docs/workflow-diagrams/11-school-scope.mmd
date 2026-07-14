@@ -1,0 +1,51 @@
+flowchart LR
+    request(["Business request"])
+    authenticatedUser["Authenticated user"]
+    userScope{"User school assigned?"}
+    ownSchool["Use user school_id"]
+    globalUser["Global Super Admin"]
+    requestedSchool{"Explicit school supplied?"}
+    targetRecord["Load target record"]
+    compareSchool{"School IDs match?"}
+    allow["Continue operation"]
+    deny["403 different school"]
+    missing["422 school required"]
+
+    subgraph scopedData ["School-scoped data"]
+        students["Students and guardians"]
+        agreements["Fee items and agreements"]
+        charges["Charges and allocations"]
+        payments["Payments and receipts"]
+        sequences["Invoice and receipt sequences"]
+    end
+
+    subgraph futureHook ["Future hook only"]
+        schoolCode["School code"]
+        subdomain["Subdomain resolver"]
+        schoolSwitch["School selector"]
+        tenantScope["Automatic query scope"]
+        ceoReporting["Cross-school CEO reports"]
+    end
+
+    request --> authenticatedUser
+    authenticatedUser --> userScope
+    userScope -->|"Yes"| ownSchool
+    userScope -->|"No"| globalUser
+    globalUser --> requestedSchool
+    requestedSchool -->|"No"| missing
+    requestedSchool -->|"Yes"| targetRecord
+    ownSchool --> targetRecord
+    targetRecord --> compareSchool
+    compareSchool -->|"No"| deny
+    compareSchool -->|"Yes"| allow
+    allow --> students & agreements & charges & payments & sequences
+    schoolCode -.-> subdomain
+    subdomain -.-> schoolSwitch
+    schoolSwitch -.-> tenantScope
+    tenantScope -.-> scopedData
+    tenantScope -.-> ceoReporting
+
+    style scopedData fill:#CDF4D3,stroke:#66D575
+    style futureHook fill:#DCCCFF,stroke:#874FFF
+    style deny fill:#FFCDC2,stroke:#FF7556
+    style missing fill:#FFECBD,stroke:#FFC943
