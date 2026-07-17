@@ -124,13 +124,115 @@ class StudentManagementApiTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_class_catalog_returns_the_configured_classes_grouped_by_level(): void
+    {
+        $school = School::query()->create([
+            'code' => 'MIS',
+            'name' => 'Matahari International School',
+            'receipt_prefix' => 'MIS',
+            'invoice_prefix' => 'MIS-INV',
+            'status' => 'active',
+        ]);
+
+        foreach ([
+            'kindergarten' => ['Kindergarten'],
+            'primary' => ['MA1', 'MB1', 'MC1', 'MD1', 'ME1', 'MF1'],
+            'secondary' => ['MP1', 'MQ1', 'MR1', 'MS1', 'MT1'],
+            'stp' => ['STP'],
+        ] as $levelGroup => $names) {
+            foreach ($names as $name) {
+                SchoolClass::query()->create([
+                    'school_id' => $school->id,
+                    'name' => $name,
+                    'status' => 'active',
+                ]);
+            }
+        }
+
+        $user = $this->userWithPermission($school, 'students.view');
+
+        $this->actingAs($user)
+            ->getJson('/api/classes')
+            ->assertOk()
+            ->assertJsonPath('data.0.name', 'Kindergarten')
+            ->assertJsonPath('data.0.level_group', 'kindergarten')
+            ->assertJsonPath('data.1.name', 'MA1')
+            ->assertJsonPath('data.7.name', 'MP1')
+            ->assertJsonPath('data.12.name', 'STP')
+            ->assertJsonCount(13, 'data');
+    }
+
+    public function test_student_class_must_match_the_selected_level_group(): void
+    {
+        $school = School::query()->create([
+            'code' => 'MIS',
+            'name' => 'Matahari International School',
+            'receipt_prefix' => 'MIS',
+            'invoice_prefix' => 'MIS-INV',
+            'status' => 'active',
+        ]);
+        $primaryClass = SchoolClass::query()->create([
+            'school_id' => $school->id,
+            'name' => 'MA1',
+            'status' => 'active',
+        ]);
+        $user = $this->userWithPermission($school, 'students.create');
+
+        $this->actingAs($user)
+            ->postJson('/api/students', [
+                'class_id' => $primaryClass->id,
+                'student_no' => 'MIS-STD-0003',
+                'full_name' => 'Mika Wong',
+                'level_group' => 'secondary',
+                'status' => 'active',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('class_id');
+    }
+
+    public function test_student_class_must_belong_to_the_signed_in_school(): void
+    {
+        $school = School::query()->create([
+            'code' => 'MIS',
+            'name' => 'Matahari International School',
+            'receipt_prefix' => 'MIS',
+            'invoice_prefix' => 'MIS-INV',
+            'status' => 'active',
+        ]);
+        $otherSchool = School::query()->create([
+            'code' => 'OTHER',
+            'name' => 'Other School',
+            'receipt_prefix' => 'OTH',
+            'invoice_prefix' => 'OTH-INV',
+            'status' => 'active',
+        ]);
+        $otherClass = SchoolClass::query()->create([
+            'school_id' => $otherSchool->id,
+            'name' => 'MA1',
+            'status' => 'active',
+        ]);
+        $user = $this->userWithPermission($school, 'students.create');
+
+        $this->actingAs($user)
+            ->postJson('/api/students', [
+                'school_id' => $otherSchool->id,
+                'class_id' => $otherClass->id,
+                'student_no' => 'MIS-STD-0004',
+                'full_name' => 'Cross School Student',
+                'level_group' => 'primary',
+                'status' => 'active',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('class_id');
+    }
+
     private function userWithPermission(School $school, string $permissionSlug): User
     {
         return $this->userWithPermissions($school, [$permissionSlug]);
     }
 
     /**
-     * @param array<int, string> $permissionSlugs
+     * @param  array<int, string>  $permissionSlugs
      */
     private function userWithPermissions(School $school, array $permissionSlugs): User
     {

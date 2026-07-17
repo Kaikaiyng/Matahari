@@ -119,11 +119,18 @@ type StudentForm = {
   student_no: string
   full_name: string
   level_group: LevelGroup
+  class_id: string
   gender: string
   dob: string
   registration_date: string
   status: StudentStatus
   notes: string
+}
+
+type SchoolClassOption = {
+  id: number
+  name: string
+  level_group: LevelGroup
 }
 
 type PaymentPlan = 'monthly' | 'termly' | 'yearly'
@@ -513,6 +520,7 @@ const emptyStudentForm: StudentForm = {
   student_no: '',
   full_name: '',
   level_group: 'primary',
+  class_id: '',
   gender: '',
   dob: '',
   registration_date: '',
@@ -1017,6 +1025,7 @@ function StudentsPage({
   initialStudentId?: number | null
 }) {
   const [students, setStudents] = useState<StudentSummary[]>([])
+  const [schoolClasses, setSchoolClasses] = useState<SchoolClassOption[]>([])
   const [selectedStudent, setSelectedStudent] = useState<StudentDetail | null>(null)
   const initialStudentIdRef = useRef<number | null>(initialStudentId ?? null)
   const startedWithFocusedStudentRef = useRef(Boolean(initialStudentId))
@@ -1256,6 +1265,15 @@ function StudentsPage({
       handleApiError(loadError)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const loadSchoolClasses = async () => {
+    try {
+      const response = await apiRequest<{ data: SchoolClassOption[] }>('/classes')
+      setSchoolClasses(response.data)
+    } catch (loadError) {
+      handleApiError(loadError)
     }
   }
 
@@ -1544,11 +1562,14 @@ function StudentsPage({
   }
 
   const loadStudentsRef = useRef(loadStudents)
+  const loadSchoolClassesRef = useRef(loadSchoolClasses)
   const loadStudentDetailRef = useRef(loadStudentDetail)
   loadStudentsRef.current = loadStudents
+  loadSchoolClassesRef.current = loadSchoolClasses
   loadStudentDetailRef.current = loadStudentDetail
 
   useEffect(() => {
+    void loadSchoolClassesRef.current()
     const studentId = initialStudentIdRef.current
 
     if (studentId) {
@@ -1568,6 +1589,10 @@ function StudentsPage({
     setForm((current) => ({ ...current, [field]: value }))
   }
 
+  const updateStudentLevelGroup = (levelGroup: LevelGroup) => {
+    setForm((current) => ({ ...current, level_group: levelGroup, class_id: '' }))
+  }
+
   const submitStudent = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setFormErrors(undefined)
@@ -1579,6 +1604,7 @@ function StudentsPage({
       student_no: form.student_no,
       full_name: form.full_name,
       level_group: form.level_group,
+      class_id: Number(form.class_id),
       gender: form.gender || null,
       dob: form.dob || null,
       registration_date: form.registration_date || null,
@@ -2327,7 +2353,7 @@ function StudentsPage({
               Level Group
               <select
                 value={form.level_group}
-                onChange={(event) => updateForm('level_group', event.target.value)}
+                onChange={(event) => updateStudentLevelGroup(event.target.value as LevelGroup)}
               >
                 {levelGroupOptions.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -2337,6 +2363,23 @@ function StudentsPage({
               </select>
               {formatValidationError(formErrors, 'level_group') && (
                 <small>{formatValidationError(formErrors, 'level_group')}</small>
+              )}
+            </label>
+
+            <label className="form-field">
+              Class
+              <select value={form.class_id} onChange={(event) => updateForm('class_id', event.target.value)} required>
+                <option value="">Select class</option>
+                {schoolClasses
+                  .filter((schoolClass) => schoolClass.level_group === form.level_group)
+                  .map((schoolClass) => (
+                    <option key={schoolClass.id} value={schoolClass.id}>
+                      {schoolClass.name}
+                    </option>
+                  ))}
+              </select>
+              {formatValidationError(formErrors, 'class_id') && (
+                <small>{formatValidationError(formErrors, 'class_id')}</small>
               )}
             </label>
 

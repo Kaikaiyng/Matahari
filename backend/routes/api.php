@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\FeeRecordController;
 use App\Http\Controllers\Api\InvoiceGenerationController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\ReceiptController;
+use App\Http\Controllers\Api\SchoolClassController;
 use App\Http\Controllers\Api\StudentController;
 use App\Http\Controllers\Api\StudentFeeAgreementController;
 use App\Http\Controllers\Api\StudentStatusController;
@@ -36,6 +37,8 @@ Route::get('/dashboard/school', [DashboardController::class, 'school']);
 Route::post('/invoices/generate-monthly', [InvoiceGenerationController::class, 'store']);
 
 Route::middleware([...$sessionMiddleware, 'auth'])->group(function (): void {
+    Route::get('/classes', [SchoolClassController::class, 'index'])
+        ->middleware('permission:students.view');
     Route::get('/students', [StudentController::class, 'index'])
         ->middleware('permission:students.view');
     Route::post('/students', [StudentController::class, 'store'])

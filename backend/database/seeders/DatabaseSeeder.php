@@ -33,6 +33,8 @@ class DatabaseSeeder extends Seeder
             ],
         );
 
+        $this->call(SchoolClassSeeder::class);
+
         $roles = collect([
             'super-admin' => 'Super Admin',
             'ceo' => 'CEO',
@@ -141,15 +143,15 @@ class DatabaseSeeder extends Seeder
         $admin->roles()->syncWithoutDetaching([$roles['school-admin']->id]);
         $finance->roles()->syncWithoutDetaching([$roles['finance']->id]);
 
-        $yearTwo = SchoolClass::query()->updateOrCreate(
-            ['school_id' => $school->id, 'name' => 'Year 2'],
-            ['status' => 'active'],
-        );
+        $yearTwo = SchoolClass::query()
+            ->where('school_id', $school->id)
+            ->where('name', 'MB1')
+            ->firstOrFail();
 
-        $yearFour = SchoolClass::query()->updateOrCreate(
-            ['school_id' => $school->id, 'name' => 'Year 4'],
-            ['status' => 'active'],
-        );
+        $yearFour = SchoolClass::query()
+            ->where('school_id', $school->id)
+            ->where('name', 'MD1')
+            ->firstOrFail();
 
         $tuition = FeeItem::query()->updateOrCreate(
             ['school_id' => $school->id, 'name' => 'Tuition Fee'],

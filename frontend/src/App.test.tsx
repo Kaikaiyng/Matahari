@@ -48,7 +48,7 @@ const student = {
   student_no: 'MIS-2026-001',
   full_name: 'Alyssa Tan',
   level_group: 'primary',
-  class: { id: 1, name: 'Year 4' },
+  class: { id: 5, name: 'MD1' },
   fee_amount: 0,
   outstanding_balance: 0,
   status: 'active',
@@ -58,6 +58,22 @@ const student = {
   notes: null,
   parents: [],
 }
+
+const schoolClasses = [
+  { id: 1, name: 'Kindergarten', level_group: 'kindergarten' },
+  { id: 2, name: 'MA1', level_group: 'primary' },
+  { id: 3, name: 'MB1', level_group: 'primary' },
+  { id: 4, name: 'MC1', level_group: 'primary' },
+  { id: 5, name: 'MD1', level_group: 'primary' },
+  { id: 6, name: 'ME1', level_group: 'primary' },
+  { id: 7, name: 'MF1', level_group: 'primary' },
+  { id: 8, name: 'MP1', level_group: 'secondary' },
+  { id: 9, name: 'MQ1', level_group: 'secondary' },
+  { id: 10, name: 'MR1', level_group: 'secondary' },
+  { id: 11, name: 'MS1', level_group: 'secondary' },
+  { id: 12, name: 'MT1', level_group: 'secondary' },
+  { id: 13, name: 'STP', level_group: 'stp' },
+]
 
 const feeRecordSummary = {
   student_id: 1,
@@ -140,6 +156,7 @@ function installApiMock() {
     if (url.pathname.endsWith('/students/1/receipts')) return json({ data: [issuedReceipt] })
     if (url.pathname.endsWith('/students/1/fee-record/outstanding')) return json({ data: [] })
     if (url.pathname.endsWith('/fee-items')) return json({ data: [] })
+    if (url.pathname.endsWith('/classes')) return json({ data: schoolClasses })
     if (url.pathname.endsWith('/students/1')) return json({ student })
     if (url.pathname.endsWith('/students')) return json({ data: [student] })
     if (url.pathname.endsWith('/fee-record/summary')) return json({ data: [feeRecordSummary] })
@@ -280,6 +297,49 @@ describe('demo shell', () => {
     expect(screen.getByRole('dialog', { name: 'Create Student Profile' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Cancel' }))
     expect(screen.queryByRole('dialog', { name: 'Create Student Profile' })).not.toBeInTheDocument()
+  })
+
+  it('shows the configured child classes for each student level group', async () => {
+    const user = userEvent.setup()
+    await renderAuthenticatedApp()
+
+    await user.click(screen.getByRole('button', { name: 'Students' }))
+    await user.click(await screen.findByRole('button', { name: 'Add Student' }))
+
+    const levelGroup = screen.getByLabelText('Level Group')
+    const schoolClass = screen.getByLabelText('Class')
+
+    expect(within(schoolClass).getAllByRole('option').map((option) => option.textContent)).toEqual([
+      'Select class',
+      'MA1',
+      'MB1',
+      'MC1',
+      'MD1',
+      'ME1',
+      'MF1',
+    ])
+
+    await user.selectOptions(levelGroup, 'secondary')
+    expect(within(schoolClass).getAllByRole('option').map((option) => option.textContent)).toEqual([
+      'Select class',
+      'MP1',
+      'MQ1',
+      'MR1',
+      'MS1',
+      'MT1',
+    ])
+
+    await user.selectOptions(levelGroup, 'kindergarten')
+    expect(within(schoolClass).getAllByRole('option').map((option) => option.textContent)).toEqual([
+      'Select class',
+      'Kindergarten',
+    ])
+
+    await user.selectOptions(levelGroup, 'stp')
+    expect(within(schoolClass).getAllByRole('option').map((option) => option.textContent)).toEqual([
+      'Select class',
+      'STP',
+    ])
   })
 
   it('uses the shared modal frame for financial workflows', async () => {
