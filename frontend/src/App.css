@@ -1304,7 +1304,7 @@ th {
 
 .billing-month-options {
   display: grid;
-  grid-template-columns: repeat(12, minmax(44px, 1fr));
+  grid-template-columns: repeat(6, minmax(44px, 1fr));
   gap: 6px;
 }
 

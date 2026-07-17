@@ -158,7 +158,10 @@ async function renderAuthenticatedApp() {
 }
 
 describe('demo shell', () => {
-  beforeEach(() => installApiMock())
+  beforeEach(() => {
+    vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined)
+    installApiMock()
+  })
   afterEach(() => vi.restoreAllMocks())
 
   it('explains that the saved session is being checked', () => {

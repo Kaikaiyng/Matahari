@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { LayoutDashboard, Users } from 'lucide-react'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AdminShell } from './AdminShell'
 
 const groups = [
@@ -39,6 +39,12 @@ function renderShell() {
 }
 
 describe('AdminShell', () => {
+  beforeEach(() => {
+    vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined)
+  })
+
+  afterEach(() => vi.restoreAllMocks())
+
   it('renders grouped navigation and dispatches page selection and logout', async () => {
     const user = userEvent.setup()
     const { onSelectPage, onLogout } = renderShell()
@@ -122,5 +128,32 @@ describe('AdminShell', () => {
     )
 
     expect(screen.getByRole('status')).toHaveTextContent('Service temporarily unavailable')
+  })
+
+  it('resets the workspace scroll position when the active page changes', () => {
+    const scrollTo = vi.mocked(window.scrollTo)
+    const shellProps = {
+      brandLogo: '/logo.jpg',
+      contextText: 'Matahari International School',
+      navGroups: groups,
+      apiState: 'live' as const,
+      user: { name: 'Demo Admin', email: 'admin@mis.test' },
+      onSelectPage: () => undefined,
+      onLogout: () => undefined,
+    }
+    const { rerender } = render(
+      <AdminShell {...shellProps} activePage="dashboard" pageTitle="Dashboard">
+        <p>Dashboard content</p>
+      </AdminShell>,
+    )
+    scrollTo.mockClear()
+
+    rerender(
+      <AdminShell {...shellProps} activePage="students" pageTitle="Students">
+        <p>Student content</p>
+      </AdminShell>,
+    )
+
+    expect(scrollTo).toHaveBeenCalledWith({ top: 0, left: 0, behavior: 'auto' })
   })
 })

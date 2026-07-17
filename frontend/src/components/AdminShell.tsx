@@ -101,6 +101,10 @@ export function AdminShell<PageKey extends string>({
     }
   }, [isOpen])
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+  }, [activePage])
+
   const selectPage = (page: PageKey) => {
     onSelectPage(page)
     closeDrawer(false)
