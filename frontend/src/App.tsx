@@ -3,20 +3,23 @@ import type { FormEvent, ReactNode } from 'react'
 import {
   AlertTriangle,
   BarChart3,
-  Building2,
   ClipboardList,
   CreditCard,
   Eye,
+  FileText,
   GraduationCap,
   LayoutDashboard,
   LockKeyhole,
   Mail,
   Phone,
+  ReceiptText,
   RefreshCw,
   Search,
   ShieldCheck,
+  Settings,
   UserPlus,
   Users,
+  WalletCards,
 } from 'lucide-react'
 import { ApiError, apiRequest } from './api'
 import { AdminShell } from './components/AdminShell'
@@ -469,6 +472,16 @@ const navGroups: NavigationGroup<PageKey>[] = [
     items: [
       { key: 'fees', label: 'Fees', icon: CreditCard },
       { key: 'fee-record', label: 'Fee Record', icon: ClipboardList },
+      { key: 'invoices', label: 'Invoices', icon: FileText },
+      { key: 'payments', label: 'Payments', icon: WalletCards },
+      { key: 'receipts', label: 'Receipts', icon: ReceiptText },
+    ],
+  },
+  {
+    label: 'Management',
+    items: [
+      { key: 'reports', label: 'Reports', icon: BarChart3 },
+      { key: 'settings', label: 'Settings', icon: Settings },
     ],
   },
 ]
@@ -494,12 +507,6 @@ const feeStructures = [
   { item: 'Tuition Fee', type: 'Mandatory Fee Item', amount: 'Configured per agreement', status: 'Configured in Fee Agreement' },
   { item: 'Misc Fee', type: 'Mandatory Fee Item', amount: 'Configured per agreement', status: 'Configured in Fee Agreement' },
   { item: 'Transport', type: 'Optional Fee Item', amount: 'Configured per agreement', status: 'Optional' },
-]
-
-const reports = [
-  { name: 'Daily Collection', owner: 'Finance', period: 'Future phase', output: 'Planned' },
-  { name: 'Outstanding Fees', owner: 'Admin', period: 'Future phase', output: 'Use Fee Record' },
-  { name: 'Student Ledger', owner: 'Finance', period: 'Future phase', output: 'Planned' },
 ]
 
 const emptyStudentForm: StudentForm = {
@@ -4465,63 +4472,6 @@ function FeeRecordMonthCellView({ cell }: { cell: FeeRecordMonthCell }) {
   )
 }
 
-function ReportsPage() {
-  return (
-    <section className="page-stack">
-      <PageHeader eyebrow="Reports" title="Basic Reports" description="Review the reporting outputs available in this demo." />
-      <DataPanel eyebrow="Available outputs" title="Report Directory">
-        <section className="cards-grid report-grid content-panel-grid">
-          {reports.map((report) => (
-            <article className="report-card" key={report.name}>
-              <BarChart3 size={22} />
-              <h3>{report.name}</h3>
-              <p>
-                {report.owner} / {report.period}
-              </p>
-              <strong>{report.output}</strong>
-            </article>
-          ))}
-        </section>
-      </DataPanel>
-    </section>
-  )
-}
-
-function SettingsPage({ user }: { user: CurrentUser }) {
-  return (
-    <section className="page-stack">
-      <PageHeader
-        eyebrow="Settings"
-        title="Users and Permissions"
-        description="Review the signed-in administrator and effective access rights."
-      />
-      <section className="content-grid">
-        <DataPanel eyebrow="Current user" title={user.name} action={<Building2 size={22} />}>
-          <div className="rule-list">
-            <div>
-              Email <b>{user.email}</b>
-            </div>
-            <div>
-              Roles <b>{user.roles.join(', ')}</b>
-            </div>
-            <div>
-              School ID <b>{user.school_id ?? 'Global'}</b>
-            </div>
-          </div>
-        </DataPanel>
-
-        <DataPanel eyebrow="RBAC" title="Permissions" action={<LockKeyhole size={22} />}>
-          <div className="permission-list">
-            {user.permissions.map((permission) => (
-              <StatusBadge key={permission}>{permission}</StatusBadge>
-            ))}
-          </div>
-        </DataPanel>
-      </section>
-    </section>
-  )
-}
-
 function DashboardPage({
   dashboard,
   setActivePage,
@@ -4736,15 +4686,15 @@ function App() {
     }
 
     if (activePage === 'receipts') {
-      return <PrototypePage label="Receipts" title="Receipt Builder" />
+      return <PrototypePage label="Receipts" title="Receipt Module" />
     }
 
     if (activePage === 'reports') {
-      return <ReportsPage />
+      return <PrototypePage label="Reports" title="Reports Module" />
     }
 
     if (activePage === 'settings') {
-      return <SettingsPage user={user} />
+      return <PrototypePage label="Settings" title="Settings Module" />
     }
 
     return <DashboardPage dashboard={dashboard} setActivePage={setActivePage} />

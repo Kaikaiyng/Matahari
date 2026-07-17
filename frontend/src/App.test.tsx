@@ -183,7 +183,7 @@ describe('demo shell', () => {
     expect(document.querySelectorAll('.stat-card')).toHaveLength(4)
   })
 
-  it('shows only destinations that are ready for the demo', async () => {
+  it('shows the complete sidebar including display-only modules', async () => {
     await renderAuthenticatedApp()
 
     const navigation = screen.getByRole('navigation', { name: 'Main navigation' })
@@ -193,12 +193,32 @@ describe('demo shell', () => {
       'Parents',
       'Fees',
       'Fee Record',
+      'Invoices',
+      'Payments',
+      'Receipts',
+      'Reports',
+      'Settings',
     ])
     expect(within(navigation).getByText('Overview')).toBeInTheDocument()
     expect(within(navigation).getByText('People')).toBeInTheDocument()
     expect(within(navigation).getByText('Finance')).toBeInTheDocument()
-    expect(screen.queryByText('MVP phase')).not.toBeInTheDocument()
-    expect(screen.queryByPlaceholderText(/coming in the next frontend pass/i)).not.toBeInTheDocument()
+    expect(within(navigation).getByText('Management')).toBeInTheDocument()
+  })
+
+  it.each([
+    ['Invoices', 'Invoice Module'],
+    ['Payments', 'Payment Module'],
+    ['Receipts', 'Receipt Module'],
+    ['Reports', 'Reports Module'],
+    ['Settings', 'Settings Module'],
+  ])('opens %s as a not-yet-developed display page', async (destination, pageTitle) => {
+    const user = userEvent.setup()
+    await renderAuthenticatedApp()
+
+    await user.click(screen.getByRole('button', { name: destination }))
+
+    expect((await screen.findAllByRole('heading', { name: pageTitle })).length).toBeGreaterThan(0)
+    expect(screen.getByText('Module not included in this MVP')).toBeInTheDocument()
   })
 
   it('uses a dedicated filter toolbar and data panel on Students', async () => {
