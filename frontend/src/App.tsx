@@ -14,6 +14,7 @@ import {
   Phone,
   Plus,
   RefreshCw,
+  Search,
   ShieldCheck,
   UserPlus,
   Users,
@@ -21,7 +22,8 @@ import {
 import { ApiError, apiRequest } from './api'
 import { AdminShell } from './components/AdminShell'
 import type { NavigationGroup } from './components/AdminShell'
-import { DataPanel, PageHeader, SessionLoader, StatCard } from './components/AdminUi'
+import { DataPanel, FilterToolbar, PageHeader, SessionLoader, StatCard, StatusBadge } from './components/AdminUi'
+import type { UiTone } from './components/AdminUi'
 import misLogo from './assets/mis-logo.jpg'
 import './App.css'
 
@@ -640,6 +642,24 @@ function statusClass(status: string) {
   return 'neutral'
 }
 
+function statusTone(status: string): UiTone {
+  const normalized = status.toLowerCase().replaceAll('_', ' ')
+
+  if (['active', 'paid', 'verified', 'issued', 'confirmed'].some((token) => normalized.includes(token))) {
+    return 'positive'
+  }
+
+  if (['pending', 'partial', 'optional', 'graduate'].some((token) => normalized.includes(token))) {
+    return 'warning'
+  }
+
+  if (['voided', 'withdraw', 'inactive', 'overdue', 'rejected', 'cancelled'].some((token) => normalized.includes(token))) {
+    return 'danger'
+  }
+
+  return 'neutral'
+}
+
 function paymentStatusClass(status: PaymentStatus) {
   if (status === 'verified') {
     return 'paid'
@@ -995,6 +1015,7 @@ function StudentsPage({
   const initialStudentIdRef = useRef<number | null>(initialStudentId ?? null)
   const startedWithFocusedStudentRef = useRef(Boolean(initialStudentId))
   const [statusFilter, setStatusFilter] = useState<StudentFilter>('active')
+  const [studentSearch, setStudentSearch] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [isCreating, setIsCreating] = useState(false)
   const [showCreateForm, setShowCreateForm] = useState(false)
@@ -1142,6 +1163,19 @@ function StudentsPage({
       ),
     [studentListFeeRecordSummaryByStudentId, students],
   )
+  const visibleStudents = useMemo(() => {
+    const needle = studentSearch.trim().toLowerCase()
+
+    if (!needle) {
+      return students
+    }
+
+    return students.filter((student) =>
+      [student.full_name, student.student_no, student.class?.name ?? ''].some((value) =>
+        value.toLowerCase().includes(needle),
+      ),
+    )
+  }, [studentSearch, students])
   const groupedPreviewCharges = useMemo(() => {
     if (!feeRecordPreview) {
       return []
@@ -2209,42 +2243,40 @@ function StudentsPage({
       {!selectedStudent && (
         <>
           <PageHeader
-        eyebrow="Student management"
-        title="Students"
-        action={
-          canCreateStudents ? (
-            <button className="primary-action compact" onClick={() => setShowCreateForm((value) => !value)}>
-              <UserPlus size={18} />
-              {showCreateForm ? 'Close Form' : 'Add Student'}
-            </button>
-          ) : (
-            <span className="permission-note">View only</span>
-          )
-        }
+            eyebrow="People"
+            title="Students"
+            description="Manage profiles, enrolment status, and fee visibility."
+            action={
+              canCreateStudents ? (
+                <button className="primary-action compact" onClick={() => setShowCreateForm(true)}>
+                  <UserPlus size={18} />
+                  Add Student
+                </button>
+              ) : (
+                <span className="permission-note">View only</span>
+              )
+            }
           />
 
-      <section className="summary-grid three">
-        <article className="metric-card positive">
-          <span>Visible Students</span>
-          <strong>{students.length}</strong>
-        </article>
-        <article className="metric-card">
-          <span>Status Filter</span>
-          <strong>{statusOptions.find((option) => option.value === statusFilter)?.label}</strong>
-        </article>
-        <article className="metric-card">
-          <span>Fee / Outstanding</span>
-          <strong>
-            {!canViewFeeRecord
-              ? 'No access'
-              : isLoadingStudentListFeeRecordSummary
-                ? 'Loading...'
-                : `${formatCurrency(studentListFeeTotals.totalExpected)} / ${formatCurrency(
-                    studentListFeeTotals.totalOutstanding,
-                  )}`}
-          </strong>
-        </article>
-      </section>
+          <section className="stats-grid three" aria-label="Student metrics">
+            <StatCard label="Visible Students" value={visibleStudents.length} tone="positive" icon={<Users size={20} />} />
+            <StatCard
+              label="Status Filter"
+              value={statusOptions.find((option) => option.value === statusFilter)?.label ?? 'All'}
+            />
+            <StatCard
+              label="Fee / Outstanding"
+              value={
+                !canViewFeeRecord
+                  ? 'No access'
+                  : isLoadingStudentListFeeRecordSummary
+                    ? 'Loading...'
+                    : `${formatCurrency(studentListFeeTotals.totalExpected)} / ${formatCurrency(
+                        studentListFeeTotals.totalOutstanding,
+                      )}`
+              }
+            />
+          </section>
 
       {showCreateForm && canCreateStudents && (
         <form className="panel student-form" onSubmit={submitStudent}>
@@ -2335,14 +2367,21 @@ function StudentsPage({
         </form>
       )}
 
-      <article className="panel">
-        <div className="panel-header">
-          <div>
-            <p className="eyebrow">Operational list</p>
-            <h2>Student List</h2>
-          </div>
-          <div className="toolbar-actions">
-            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as StudentFilter)}>
+          <FilterToolbar ariaLabel="Student filters">
+            <div className="toolbar-search">
+              <Search size={18} aria-hidden="true" />
+              <input
+                aria-label="Search students"
+                placeholder="Search student name or ID"
+                value={studentSearch}
+                onChange={(event) => setStudentSearch(event.target.value)}
+              />
+            </div>
+            <select
+              aria-label="Student status"
+              value={statusFilter}
+              onChange={(event) => setStatusFilter(event.target.value as StudentFilter)}
+            >
               {statusOptions.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
@@ -2353,10 +2392,10 @@ function StudentsPage({
               <RefreshCw size={16} />
               Refresh
             </button>
-          </div>
-        </div>
+          </FilterToolbar>
 
-        <div className="table-wrap">
+          <DataPanel eyebrow="Operational list" title="Student List">
+            <div className="table-wrap">
           <table className="student-list-table">
             <thead>
               <tr>
@@ -2370,7 +2409,7 @@ function StudentsPage({
               </tr>
             </thead>
             <tbody>
-              {students.map((student) => {
+              {visibleStudents.map((student) => {
                 const summary = studentListFeeRecordSummaryByStudentId.get(student.id)
                 const feeAmount = isLoadingStudentListFeeRecordSummary
                   ? 'Loading...'
@@ -2387,7 +2426,7 @@ function StudentsPage({
                     <td className="student-secondary-cell" data-label="Fee Amount">{canViewFeeRecord ? feeAmount : 'No access'}</td>
                     <td className="student-secondary-cell" data-label="Outstanding">{canViewFeeRecord ? outstandingAmount : 'No access'}</td>
                     <td data-label="Status">
-                      <span className={`badge ${statusClass(student.status)}`}>{formatStatus(student.status)}</span>
+                      <StatusBadge tone={statusTone(student.status)}>{formatStatus(student.status)}</StatusBadge>
                     </td>
                     <td className="student-open-cell" data-label="Action">
                       <button className="table-action" onClick={() => void loadStudentDetail(student.id)}>
@@ -2398,7 +2437,7 @@ function StudentsPage({
                   </tr>
                 )
               })}
-              {!isLoading && students.length === 0 && (
+              {!isLoading && visibleStudents.length === 0 && (
                 <tr className="table-state-row">
                   <td colSpan={7}>No students found for this filter.</td>
                 </tr>
@@ -2410,8 +2449,8 @@ function StudentsPage({
               )}
             </tbody>
           </table>
-        </div>
-      </article>
+            </div>
+          </DataPanel>
         </>
       )}
 
@@ -3908,30 +3947,36 @@ function StudentsPage({
 function ParentsPage() {
   return (
     <section className="page-stack">
-      <PageHeader eyebrow="Parent module" title="Parent Contacts" />
-      <section className="cards-grid">
-        {parents.map((parent) => (
-          <article className="contact-card" key={parent.email}>
-            <div className="contact-avatar">{initials(parent.name)}</div>
-            <div>
-              <h3>{parent.name}</h3>
-              <p>{parent.address}</p>
-            </div>
-            <span>
-              <Phone size={15} />
-              {parent.phone}
-            </span>
-            <span>
-              <Mail size={15} />
-              {parent.email}
-            </span>
-            <span>
-              <ShieldCheck size={15} />
-              Parent module remains prototype
-            </span>
-          </article>
-        ))}
-      </section>
+      <PageHeader
+        eyebrow="People"
+        title="Parent Contacts"
+        description="Review the current parent and guardian contact directory."
+      />
+      <DataPanel eyebrow="Directory" title="Parent Directory">
+        <section className="cards-grid contact-directory">
+          {parents.map((parent) => (
+            <article className="contact-card" key={parent.email}>
+              <div className="contact-avatar">{initials(parent.name)}</div>
+              <div>
+                <h3>{parent.name}</h3>
+                <p>{parent.address}</p>
+              </div>
+              <span>
+                <Phone size={15} />
+                {parent.phone}
+              </span>
+              <span>
+                <Mail size={15} />
+                {parent.email}
+              </span>
+              <span>
+                <ShieldCheck size={15} />
+                Parent module remains prototype
+              </span>
+            </article>
+          ))}
+        </section>
+      </DataPanel>
     </section>
   )
 }
@@ -3939,8 +3984,12 @@ function ParentsPage() {
 function FeesPage() {
   return (
     <section className="page-stack">
-      <PageHeader eyebrow="Fee structure" title="Fee Agreement Foundation" />
-      <article className="panel">
+      <PageHeader
+        eyebrow="Finance"
+        title="Fee Agreement Foundation"
+        description="Review the standard fee items used to build student agreements."
+      />
+      <DataPanel eyebrow="Fee structure" title="Fee Catalogue">
         <div className="table-wrap">
           <table>
             <thead>
@@ -3958,14 +4007,14 @@ function FeesPage() {
                   <td>{fee.type}</td>
                   <td>{fee.amount}</td>
                   <td>
-                    <span className={`badge ${statusClass(fee.status)}`}>{fee.status}</span>
+                    <StatusBadge tone={statusTone(fee.status)}>{fee.status}</StatusBadge>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-      </article>
+      </DataPanel>
     </section>
   )
 }
@@ -3973,8 +4022,14 @@ function FeesPage() {
 function PrototypePage({ title, label }: { title: string; label: string }) {
   return (
     <section className="page-stack">
-      <PageHeader eyebrow={label} title={title} />
-      <Message tone="info">This module is intentionally not implemented in this MVP phase.</Message>
+      <PageHeader eyebrow={label} title={title} description="This supporting module is reserved for a later delivery phase." />
+      <DataPanel eyebrow={label} title={title}>
+        <div className="empty-state compact">
+          <ClipboardList size={24} />
+          <strong>Module not included in this MVP</strong>
+          <p>The navigation and workspace are ready for future implementation.</p>
+        </div>
+      </DataPanel>
     </section>
   )
 }
@@ -4328,19 +4383,21 @@ function FeeRecordMonthCellView({ cell }: { cell: FeeRecordMonthCell }) {
 function ReportsPage() {
   return (
     <section className="page-stack">
-      <PageHeader eyebrow="Reports" title="Basic Reports" />
-      <section className="cards-grid report-grid">
-        {reports.map((report) => (
-          <article className="report-card" key={report.name}>
-            <BarChart3 size={22} />
-            <h3>{report.name}</h3>
-            <p>
-              {report.owner} / {report.period}
-            </p>
-            <strong>{report.output}</strong>
-          </article>
-        ))}
-      </section>
+      <PageHeader eyebrow="Reports" title="Basic Reports" description="Review the reporting outputs available in this demo." />
+      <DataPanel eyebrow="Available outputs" title="Report Directory">
+        <section className="cards-grid report-grid content-panel-grid">
+          {reports.map((report) => (
+            <article className="report-card" key={report.name}>
+              <BarChart3 size={22} />
+              <h3>{report.name}</h3>
+              <p>
+                {report.owner} / {report.period}
+              </p>
+              <strong>{report.output}</strong>
+            </article>
+          ))}
+        </section>
+      </DataPanel>
     </section>
   )
 }
@@ -4348,16 +4405,13 @@ function ReportsPage() {
 function SettingsPage({ user }: { user: CurrentUser }) {
   return (
     <section className="page-stack">
-      <PageHeader eyebrow="Settings" title="Users and Permissions" />
+      <PageHeader
+        eyebrow="Settings"
+        title="Users and Permissions"
+        description="Review the signed-in administrator and effective access rights."
+      />
       <section className="content-grid">
-        <article className="panel">
-          <div className="panel-header">
-            <div>
-              <p className="eyebrow">Current user</p>
-              <h2>{user.name}</h2>
-            </div>
-            <Building2 size={22} />
-          </div>
+        <DataPanel eyebrow="Current user" title={user.name} action={<Building2 size={22} />}>
           <div className="rule-list">
             <div>
               Email <b>{user.email}</b>
@@ -4369,24 +4423,15 @@ function SettingsPage({ user }: { user: CurrentUser }) {
               School ID <b>{user.school_id ?? 'Global'}</b>
             </div>
           </div>
-        </article>
+        </DataPanel>
 
-        <article className="panel">
-          <div className="panel-header">
-            <div>
-              <p className="eyebrow">RBAC</p>
-              <h2>Permissions</h2>
-            </div>
-            <LockKeyhole size={22} />
-          </div>
+        <DataPanel eyebrow="RBAC" title="Permissions" action={<LockKeyhole size={22} />}>
           <div className="permission-list">
             {user.permissions.map((permission) => (
-              <span className="badge neutral" key={permission}>
-                {permission}
-              </span>
+              <StatusBadge key={permission}>{permission}</StatusBadge>
             ))}
           </div>
-        </article>
+        </DataPanel>
       </section>
     </section>
   )

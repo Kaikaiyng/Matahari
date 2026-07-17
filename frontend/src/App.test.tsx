@@ -130,6 +130,29 @@ describe('demo shell', () => {
     expect(screen.queryByPlaceholderText(/coming in the next frontend pass/i)).not.toBeInTheDocument()
   })
 
+  it('uses a dedicated filter toolbar and data panel on Students', async () => {
+    const user = userEvent.setup()
+    await renderAuthenticatedApp()
+
+    await user.click(screen.getByRole('button', { name: 'Students' }))
+
+    expect(await screen.findByRole('region', { name: 'Student filters' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Student List' })).toBeInTheDocument()
+    expect(screen.getAllByText('Active').some((element) => element.classList.contains('status-badge'))).toBe(true)
+  })
+
+  it.each([
+    ['Parents', 'Parent Directory'],
+    ['Fees', 'Fee Catalogue'],
+  ])('uses the shared data hierarchy on %s', async (destination, panelTitle) => {
+    const user = userEvent.setup()
+    await renderAuthenticatedApp()
+
+    await user.click(screen.getByRole('button', { name: destination }))
+
+    expect(await screen.findByRole('region', { name: panelTitle })).toBeInTheDocument()
+  })
+
   it('replaces the student list with a focused student workspace', async () => {
     const user = userEvent.setup()
     await renderAuthenticatedApp()

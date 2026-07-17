@@ -222,6 +222,13 @@ h2 {
   gap: 16px;
 }
 
+.contact-directory,
+.content-panel-grid,
+.data-panel .rule-list,
+.data-panel .permission-list {
+  padding: 18px;
+}
+
 .contact-card,
 .report-card {
   border: 1px solid #e1e4ea;
