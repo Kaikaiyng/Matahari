@@ -10,7 +10,23 @@ const currentUser = {
   email: 'admin@mis.test',
   school_id: 1,
   roles: ['school-admin'],
-  permissions: ['students.view', 'fee_record.view'],
+  permissions: [
+    'students.view',
+    'students.create',
+    'fee_agreements.create',
+    'fee_agreements.update',
+    'fee_record.view',
+    'fee_record.generate',
+    'fee_record.manage',
+    'payments.view',
+    'payments.create',
+    'payments.verify',
+    'payments.void',
+    'receipts.view',
+    'receipts.create',
+    'receipts.void',
+    'receipts.print',
+  ],
 }
 
 const dashboard = {
@@ -59,6 +75,54 @@ const feeRecordSummary = {
   collection_status_summary: 'partial',
 }
 
+const pendingPayment = {
+  id: 11,
+  student_id: 1,
+  payment_method: 'bank_transfer',
+  payment_date: '2026-07-17',
+  received_date: null,
+  amount: 400,
+  paid_by: 'Michelle Tan',
+  bank_account: null,
+  reference_no: 'PAY-11',
+  payment_proof: null,
+  remark: null,
+  status: 'pending_verification',
+  recorded_by: { id: 1, name: 'Demo Admin' },
+  verified_by: null,
+  verified_at: null,
+  voided_by: null,
+  voided_at: null,
+  void_reason: null,
+  issued_receipt: null,
+  allocations: [],
+}
+
+const issuedReceipt = {
+  id: 21,
+  receipt_no: 'RCP-21',
+  receipt_date: '2026-07-17',
+  status: 'issued',
+  school_id: 1,
+  payment_id: 11,
+  active_payment_id: 11,
+  student_id: 1,
+  student_no: student.student_no,
+  student_name: student.full_name,
+  paid_by: 'Michelle Tan',
+  payment_method: 'bank_transfer',
+  payment_date: '2026-07-17',
+  received_date: '2026-07-17',
+  amount: 400,
+  amount_in_words: 'Four hundred ringgit only',
+  issued_by: { id: 1, name: 'Demo Admin' },
+  issued_at: '2026-07-17T12:00:00Z',
+  voided_by: null,
+  voided_at: null,
+  void_reason: null,
+  items: [],
+}
+
 function json(data: unknown, status = 200) {
   return Promise.resolve(
     new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } }),
@@ -72,6 +136,10 @@ function installApiMock() {
     if (url.pathname.endsWith('/me')) return json({ user: currentUser })
     if (url.pathname.endsWith('/dashboard/school')) return json(dashboard)
     if (url.pathname.endsWith('/students/1/fee-agreements')) return json({ data: [] })
+    if (url.pathname.endsWith('/students/1/payments')) return json({ data: [pendingPayment] })
+    if (url.pathname.endsWith('/students/1/receipts')) return json({ data: [issuedReceipt] })
+    if (url.pathname.endsWith('/students/1/fee-record/outstanding')) return json({ data: [] })
+    if (url.pathname.endsWith('/fee-items')) return json({ data: [] })
     if (url.pathname.endsWith('/students/1')) return json({ student })
     if (url.pathname.endsWith('/students')) return json({ data: [student] })
     if (url.pathname.endsWith('/fee-record/summary')) return json({ data: [feeRecordSummary] })
@@ -174,9 +242,65 @@ describe('demo shell', () => {
     await screen.findByRole('heading', { name: 'Fee Record' })
 
     const totalExpectedLabel = screen.getAllByText('Total Expected').find((element) => element.tagName === 'SPAN')
-    expect(totalExpectedLabel?.closest('article')).toHaveClass('metric-card')
+    expect(totalExpectedLabel?.closest('article')).toHaveClass('stat-card')
     expect(screen.queryByText(/read-only charge-cell/i)).not.toBeInTheDocument()
     await waitFor(() => expect(globalThis.fetch).toHaveBeenCalled())
+  })
+
+  it('opens Add Student in the shared modal and closes without submitting', async () => {
+    const user = userEvent.setup()
+    await renderAuthenticatedApp()
+
+    await user.click(screen.getByRole('button', { name: 'Students' }))
+    await user.click(await screen.findByRole('button', { name: 'Add Student' }))
+
+    expect(screen.getByRole('dialog', { name: 'Create Student Profile' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(screen.queryByRole('dialog', { name: 'Create Student Profile' })).not.toBeInTheDocument()
+  })
+
+  it('uses the shared modal frame for financial workflows', async () => {
+    const user = userEvent.setup()
+    await renderAuthenticatedApp()
+
+    await user.click(screen.getByRole('button', { name: 'Students' }))
+    await user.click(await screen.findByRole('button', { name: 'Open' }))
+    await screen.findByRole('heading', { name: /Alyssa Tan/ })
+
+    await user.click(screen.getByRole('button', { name: 'Create Agreement' }))
+    expect(screen.getByRole('dialog', { name: 'Create Fee Agreement' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+
+    await user.click(screen.getByRole('button', { name: 'Add Manual Charge' }))
+    expect(screen.getByRole('dialog', { name: 'Add Manual Charge' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+
+    await user.click(screen.getByRole('button', { name: 'Create Payment' }))
+    expect(screen.getByRole('dialog', { name: 'Record Payment' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+
+    await user.click(await screen.findByRole('button', { name: 'Verify' }))
+    expect(screen.getByRole('dialog', { name: 'Verify Payment' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+
+    const voidButtons = screen.getAllByRole('button', { name: 'Void' })
+    await user.click(voidButtons[0])
+    expect(screen.getByRole('dialog', { name: 'Void Payment' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+
+    await user.click(screen.getAllByRole('button', { name: 'Void' }).at(-1)!)
+    expect(screen.getByRole('dialog', { name: 'Void Receipt' })).toBeInTheDocument()
+  })
+
+  it('uses shared summary and data regions on Fee Record', async () => {
+    const user = userEvent.setup()
+    await renderAuthenticatedApp()
+
+    await user.click(screen.getByRole('button', { name: 'Fee Record' }))
+
+    expect(await screen.findByRole('region', { name: 'Fee Record filters' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Student Fee Records' })).toBeInTheDocument()
+    expect(document.querySelectorAll('.stat-card').length).toBeGreaterThanOrEqual(3)
   })
 
   it('opens a Fee Record student directly without loading the full student list', async () => {

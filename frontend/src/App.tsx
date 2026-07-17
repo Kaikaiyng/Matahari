@@ -12,7 +12,6 @@ import {
   LockKeyhole,
   Mail,
   Phone,
-  Plus,
   RefreshCw,
   Search,
   ShieldCheck,
@@ -22,7 +21,7 @@ import {
 import { ApiError, apiRequest } from './api'
 import { AdminShell } from './components/AdminShell'
 import type { NavigationGroup } from './components/AdminShell'
-import { DataPanel, FilterToolbar, PageHeader, SessionLoader, StatCard, StatusBadge } from './components/AdminUi'
+import { DataPanel, FilterToolbar, ModalFrame, PageHeader, SessionLoader, StatCard, StatusBadge } from './components/AdminUi'
 import type { UiTone } from './components/AdminUi'
 import misLogo from './assets/mis-logo.jpg'
 import './App.css'
@@ -2279,16 +2278,28 @@ function StudentsPage({
           </section>
 
       {showCreateForm && canCreateStudents && (
-        <form className="panel student-form" onSubmit={submitStudent}>
-          <div className="panel-header">
-            <div>
-              <p className="eyebrow">New student</p>
-              <h2>Create Student Profile</h2>
-            </div>
-            <Plus size={20} />
-          </div>
-
-          <div className="form-grid">
+        <ModalFrame
+          title="Create Student Profile"
+          description="Add enrolment and profile details."
+          onClose={() => setShowCreateForm(false)}
+          footer={
+            <>
+              <button type="button" className="secondary-action" onClick={() => setShowCreateForm(false)}>
+                Cancel
+              </button>
+              <button
+                className="primary-action compact"
+                type="submit"
+                form="create-student-form"
+                disabled={isCreating}
+              >
+                <UserPlus size={18} />
+                {isCreating ? 'Creating...' : 'Create Student'}
+              </button>
+            </>
+          }
+        >
+          <form id="create-student-form" className="form-grid student-form" onSubmit={submitStudent}>
             <label className="form-field">
               Student ID
               <input value={form.student_no} onChange={(event) => updateForm('student_no', event.target.value)} />
@@ -2358,13 +2369,8 @@ function StudentsPage({
               Remarks
               <textarea value={form.notes} onChange={(event) => updateForm('notes', event.target.value)} />
             </label>
-          </div>
-
-          <button className="primary-action" disabled={isCreating}>
-            <UserPlus size={18} />
-            {isCreating ? 'Creating...' : 'Create Student'}
-          </button>
-        </form>
+          </form>
+        </ModalFrame>
       )}
 
           <FilterToolbar ariaLabel="Student filters">
@@ -2639,7 +2645,32 @@ function StudentsPage({
             )}
 
             {showFeeAgreementForm && canEditFeeAgreement && (
-              <form className="agreement-form" onSubmit={submitFeeAgreement}>
+              <ModalFrame
+                title={feeAgreementMode === 'create' ? 'Create Fee Agreement' : 'Supersede Fee Agreement'}
+                description="Configure billing items, timing, and any approved discount."
+                onClose={() => setShowFeeAgreementForm(false)}
+                className="financial-modal"
+                footer={
+                  <>
+                    <button type="button" className="secondary-action" onClick={() => setShowFeeAgreementForm(false)}>
+                      Cancel
+                    </button>
+                    <button
+                      className="primary-action compact"
+                      type="submit"
+                      form="fee-agreement-form"
+                      disabled={isSavingFeeAgreement}
+                    >
+                      {isSavingFeeAgreement
+                        ? 'Saving...'
+                        : feeAgreementMode === 'create'
+                          ? 'Create Fee Agreement'
+                          : 'Supersede Agreement'}
+                    </button>
+                  </>
+                }
+              >
+              <form id="fee-agreement-form" className="agreement-form" onSubmit={submitFeeAgreement}>
                 <div className="form-grid">
                   {feeAgreementMode === 'create' && (
                     <label className="form-field">
@@ -2921,14 +2952,8 @@ function StudentsPage({
                   <strong>Preview Total {formatCurrency(feeAgreementPreview.total)}</strong>
                 </div>
 
-                <button className="primary-action" disabled={isSavingFeeAgreement}>
-                  {isSavingFeeAgreement
-                    ? 'Saving...'
-                    : feeAgreementMode === 'create'
-                      ? 'Create Fee Agreement'
-                      : 'Supersede Agreement'}
-                </button>
               </form>
+              </ModalFrame>
             )}
 
             <div className="agreement-history">
@@ -3037,14 +3062,27 @@ function StudentsPage({
                 )}
 
                 {showManualChargeForm && canManageFeeRecord && (
-                  <form className="manual-charge-form" onSubmit={submitManualCharge} noValidate>
-                    <div className="payment-subheader">
-                      <div>
-                        <h3>Add Manual Charge</h3>
-                        <p>Use this for one-time or ad-hoc charge cells such as Uniform, Books, Worksheet, PE, deposits, or old balances.</p>
-                      </div>
-                    </div>
-
+                  <ModalFrame
+                    title="Add Manual Charge"
+                    description="Add a one-time or ad-hoc charge cell to this student account."
+                    onClose={() => setShowManualChargeForm(false)}
+                    footer={
+                      <>
+                        <button type="button" className="secondary-action" onClick={() => setShowManualChargeForm(false)}>
+                          Cancel
+                        </button>
+                        <button
+                          className="primary-action compact"
+                          type="submit"
+                          form="manual-charge-form"
+                          disabled={isSavingManualCharge}
+                        >
+                          {isSavingManualCharge ? 'Adding...' : 'Add Manual Charge'}
+                        </button>
+                      </>
+                    }
+                  >
+                  <form id="manual-charge-form" className="manual-charge-form" onSubmit={submitManualCharge} noValidate>
                     <div className="form-grid">
                       <label className="form-field">
                         Academic Year
@@ -3111,10 +3149,8 @@ function StudentsPage({
                       </label>
                     </div>
 
-                    <button className="primary-action compact" disabled={isSavingManualCharge}>
-                      {isSavingManualCharge ? 'Adding...' : 'Add Manual Charge'}
-                    </button>
                   </form>
+                  </ModalFrame>
                 )}
 
                 {feeRecordPreview?.warnings.length ? (
@@ -3231,12 +3267,29 @@ function StudentsPage({
             {!canViewPayments && <Message tone="info">You do not have permission to view payments.</Message>}
 
             {showPaymentForm && canCreatePayments && (
-              <form className="payment-form" onSubmit={submitPayment} noValidate>
-                <div className="panel-header">
-                  <div>
-                    <p className="eyebrow">Admin recording</p>
-                    <h3>Create Payment</h3>
-                  </div>
+              <ModalFrame
+                title="Record Payment"
+                description="Record the payment details and allocate the amount to outstanding charge cells."
+                onClose={() => setShowPaymentForm(false)}
+                className="financial-modal"
+                footer={
+                  <>
+                    <button type="button" className="secondary-action" onClick={() => setShowPaymentForm(false)}>
+                      Cancel
+                    </button>
+                    <button
+                      className="primary-action compact"
+                      type="submit"
+                      form="payment-record-form"
+                      disabled={isSavingPayment}
+                    >
+                      {isSavingPayment ? 'Saving...' : 'Record Payment'}
+                    </button>
+                  </>
+                }
+              >
+              <form id="payment-record-form" className="payment-form" onSubmit={submitPayment} noValidate>
+                <div className="payment-form-state">
                   <span className={`badge ${paymentForm.payment_method === 'cash' ? 'paid' : 'partial'}`}>
                     {paymentForm.payment_method === 'cash' ? 'Cash verifies on save' : 'Pending verification'}
                   </span>
@@ -3488,11 +3541,9 @@ function StudentsPage({
                     <span>Allocation {formatCurrency(paymentAllocationTotal)}</span>
                     <strong>{paymentAmountCents === allocationTotalCents ? 'Balanced' : 'Mismatch'}</strong>
                   </div>
-                  <button className="primary-action" disabled={isSavingPayment}>
-                    {isSavingPayment ? 'Saving...' : 'Record Payment'}
-                  </button>
                 </div>
               </form>
+              </ModalFrame>
             )}
 
             {canViewPayments && (
@@ -3612,83 +3663,6 @@ function StudentsPage({
                             </td>
                           </tr>
                         )}
-                        {verifyingPaymentId === payment.id && (
-                          <tr className="payment-action-row">
-                            <td colSpan={10}>
-                              <form className="inline-payment-form" onSubmit={(event) => submitVerifyPayment(event, payment.id)}>
-                                <label className="form-field">
-                                  Received Date
-                                  <input
-                                    type="date"
-                                    value={verifyForm.received_date}
-                                    onChange={(event) => setVerifyForm((current) => ({ ...current, received_date: event.target.value }))}
-                                  />
-                                  {formatValidationError(verifyErrors, 'received_date') && (
-                                    <small>{formatValidationError(verifyErrors, 'received_date')}</small>
-                                  )}
-                                </label>
-                                <label className="form-field">
-                                  Bank Account
-                                  <input
-                                    value={verifyForm.bank_account}
-                                    onChange={(event) => setVerifyForm((current) => ({ ...current, bank_account: event.target.value }))}
-                                  />
-                                </label>
-                                <label className="form-field">
-                                  Reference No
-                                  <input
-                                    value={verifyForm.reference_no}
-                                    onChange={(event) => setVerifyForm((current) => ({ ...current, reference_no: event.target.value }))}
-                                  />
-                                </label>
-                                <label className="form-field wide">
-                                  Remark
-                                  <textarea
-                                    value={verifyForm.remark}
-                                    onChange={(event) => setVerifyForm((current) => ({ ...current, remark: event.target.value }))}
-                                  />
-                                  {formatValidationError(verifyErrors, 'payment') && (
-                                    <small>{formatValidationError(verifyErrors, 'payment')}</small>
-                                  )}
-                                </label>
-                                <div className="toolbar-actions">
-                                  <button className="primary-action compact" disabled={isVerifyingPayment}>
-                                    {isVerifyingPayment ? 'Verifying...' : 'Confirm Verify'}
-                                  </button>
-                                  <button type="button" className="secondary-action" onClick={() => setVerifyingPaymentId(null)}>
-                                    Cancel
-                                  </button>
-                                </div>
-                              </form>
-                            </td>
-                          </tr>
-                        )}
-                        {voidingPaymentId === payment.id && (
-                          <tr className="payment-action-row">
-                            <td colSpan={10}>
-                              <form className="inline-payment-form" onSubmit={(event) => submitVoidPayment(event, payment.id)}>
-                                <label className="form-field wide">
-                                  Void Reason
-                                  <textarea value={voidReason} onChange={(event) => setVoidReason(event.target.value)} />
-                                  {formatValidationError(voidErrors, 'void_reason') && (
-                                    <small>{formatValidationError(voidErrors, 'void_reason')}</small>
-                                  )}
-                                  {formatValidationError(voidErrors, 'payment') && (
-                                    <small>{formatValidationError(voidErrors, 'payment')}</small>
-                                  )}
-                                </label>
-                                <div className="toolbar-actions">
-                                  <button className="primary-action compact" disabled={isVoidingPayment}>
-                                    {isVoidingPayment ? 'Voiding...' : 'Confirm Void'}
-                                  </button>
-                                  <button type="button" className="secondary-action" onClick={() => setVoidingPaymentId(null)}>
-                                    Cancel
-                                  </button>
-                                </div>
-                              </form>
-                            </td>
-                          </tr>
-                        )}
                       </Fragment>
                       )
                     })}
@@ -3705,6 +3679,111 @@ function StudentsPage({
                   </tbody>
                 </table>
               </div>
+            )}
+
+            {verifyingPaymentId !== null && (
+              <ModalFrame
+                title="Verify Payment"
+                description="Confirm the received date and bank reference before verification."
+                onClose={() => setVerifyingPaymentId(null)}
+                footer={
+                  <>
+                    <button type="button" className="secondary-action" onClick={() => setVerifyingPaymentId(null)}>
+                      Cancel
+                    </button>
+                    <button
+                      className="primary-action compact"
+                      type="submit"
+                      form="verify-payment-form"
+                      disabled={isVerifyingPayment}
+                    >
+                      {isVerifyingPayment ? 'Verifying...' : 'Confirm Verify'}
+                    </button>
+                  </>
+                }
+              >
+                <form
+                  id="verify-payment-form"
+                  className="form-grid inline-payment-form"
+                  onSubmit={(event) => submitVerifyPayment(event, verifyingPaymentId)}
+                >
+                  <label className="form-field">
+                    Received Date
+                    <input
+                      type="date"
+                      value={verifyForm.received_date}
+                      onChange={(event) => setVerifyForm((current) => ({ ...current, received_date: event.target.value }))}
+                    />
+                    {formatValidationError(verifyErrors, 'received_date') && (
+                      <small>{formatValidationError(verifyErrors, 'received_date')}</small>
+                    )}
+                  </label>
+                  <label className="form-field">
+                    Bank Account
+                    <input
+                      value={verifyForm.bank_account}
+                      onChange={(event) => setVerifyForm((current) => ({ ...current, bank_account: event.target.value }))}
+                    />
+                  </label>
+                  <label className="form-field">
+                    Reference No
+                    <input
+                      value={verifyForm.reference_no}
+                      onChange={(event) => setVerifyForm((current) => ({ ...current, reference_no: event.target.value }))}
+                    />
+                  </label>
+                  <label className="form-field wide">
+                    Remark
+                    <textarea
+                      value={verifyForm.remark}
+                      onChange={(event) => setVerifyForm((current) => ({ ...current, remark: event.target.value }))}
+                    />
+                    {formatValidationError(verifyErrors, 'payment') && (
+                      <small>{formatValidationError(verifyErrors, 'payment')}</small>
+                    )}
+                  </label>
+                </form>
+              </ModalFrame>
+            )}
+
+            {voidingPaymentId !== null && (
+              <ModalFrame
+                title="Void Payment"
+                description="Record the reason for voiding this payment."
+                onClose={() => setVoidingPaymentId(null)}
+                footer={
+                  <>
+                    <button type="button" className="secondary-action" onClick={() => setVoidingPaymentId(null)}>
+                      Cancel
+                    </button>
+                    <button
+                      className="primary-action compact"
+                      type="submit"
+                      form="void-payment-form"
+                      disabled={isVoidingPayment}
+                    >
+                      {isVoidingPayment ? 'Voiding...' : 'Confirm Void'}
+                    </button>
+                  </>
+                }
+              >
+                <form
+                  id="void-payment-form"
+                  className="inline-payment-form"
+                  onSubmit={(event) => submitVoidPayment(event, voidingPaymentId)}
+                >
+                  <label className="form-field wide">
+                    Void Reason
+                    <textarea value={voidReason} onChange={(event) => setVoidReason(event.target.value)} />
+                    {formatValidationError(voidErrors, 'void_reason') && (
+                      <small>{formatValidationError(voidErrors, 'void_reason')}</small>
+                    )}
+                    {formatValidationError(voidErrors, 'payment') && (
+                      <small>{formatValidationError(voidErrors, 'payment')}</small>
+                    )}
+                  </label>
+                </form>
+              </ModalFrame>
             )}
           </section>
 
@@ -3776,32 +3855,6 @@ function StudentsPage({
                             </div>
                           </td>
                         </tr>
-                        {voidingReceiptId === receipt.id && (
-                          <tr className="payment-action-row">
-                            <td colSpan={8}>
-                              <form className="inline-payment-form" onSubmit={(event) => submitVoidReceipt(event, receipt.id)}>
-                                <label className="form-field wide">
-                                  Void Reason
-                                  <textarea value={receiptVoidReason} onChange={(event) => setReceiptVoidReason(event.target.value)} />
-                                  {formatValidationError(receiptVoidErrors, 'void_reason') && (
-                                    <small>{formatValidationError(receiptVoidErrors, 'void_reason')}</small>
-                                  )}
-                                  {formatValidationError(receiptVoidErrors, 'receipt') && (
-                                    <small>{formatValidationError(receiptVoidErrors, 'receipt')}</small>
-                                  )}
-                                </label>
-                                <div className="toolbar-actions">
-                                  <button className="primary-action compact" disabled={isVoidingReceipt}>
-                                    {isVoidingReceipt ? 'Voiding...' : 'Confirm Void Receipt'}
-                                  </button>
-                                  <button type="button" className="secondary-action" onClick={() => setVoidingReceiptId(null)}>
-                                    Cancel
-                                  </button>
-                                </div>
-                              </form>
-                            </td>
-                          </tr>
-                        )}
                       </Fragment>
                     ))}
                     {!isLoadingReceipts && receipts.length === 0 && (
@@ -3812,6 +3865,46 @@ function StudentsPage({
                   </tbody>
                 </table>
               </div>
+            )}
+
+            {voidingReceiptId !== null && (
+              <ModalFrame
+                title="Void Receipt"
+                description="Record the reason for voiding this issued receipt."
+                onClose={() => setVoidingReceiptId(null)}
+                footer={
+                  <>
+                    <button type="button" className="secondary-action" onClick={() => setVoidingReceiptId(null)}>
+                      Cancel
+                    </button>
+                    <button
+                      className="primary-action compact"
+                      type="submit"
+                      form="void-receipt-form"
+                      disabled={isVoidingReceipt}
+                    >
+                      {isVoidingReceipt ? 'Voiding...' : 'Confirm Void Receipt'}
+                    </button>
+                  </>
+                }
+              >
+                <form
+                  id="void-receipt-form"
+                  className="inline-payment-form"
+                  onSubmit={(event) => submitVoidReceipt(event, voidingReceiptId)}
+                >
+                  <label className="form-field wide">
+                    Void Reason
+                    <textarea value={receiptVoidReason} onChange={(event) => setReceiptVoidReason(event.target.value)} />
+                    {formatValidationError(receiptVoidErrors, 'void_reason') && (
+                      <small>{formatValidationError(receiptVoidErrors, 'void_reason')}</small>
+                    )}
+                    {formatValidationError(receiptVoidErrors, 'receipt') && (
+                      <small>{formatValidationError(receiptVoidErrors, 'receipt')}</small>
+                    )}
+                  </label>
+                </form>
+              </ModalFrame>
             )}
 
             {selectedReceipt && (
@@ -4144,22 +4237,17 @@ function FeeRecordSummaryPage({
             </button>
           </div>
 
-          <section className="summary-grid three">
-            <article className="metric-card">
-              <span>Total Expected</span>
-              <strong>{formatCurrency(totals.expected)}</strong>
-            </article>
-            <article className="metric-card positive">
-              <span>Total Paid</span>
-              <strong>{formatCurrency(totals.paid)}</strong>
-            </article>
-            <article className={`metric-card ${totals.outstanding > 0 ? 'warning' : ''}`}>
-              <span>Total Outstanding</span>
-              <strong>{formatCurrency(totals.outstanding)}</strong>
-            </article>
+          <section className="stats-grid three" aria-label="Fee Record totals">
+            <StatCard label="Total Expected" value={formatCurrency(totals.expected)} />
+            <StatCard label="Total Paid" value={formatCurrency(totals.paid)} tone="positive" />
+            <StatCard
+              label="Total Outstanding"
+              value={formatCurrency(totals.outstanding)}
+              tone={totals.outstanding > 0 ? 'warning' : 'neutral'}
+            />
           </section>
 
-          <section className={`panel fee-record-filters ${activeView === 'category-monthly' ? 'has-category' : ''}`}>
+          <FilterToolbar ariaLabel="Fee Record filters">
             <label className="form-field">
               Academic Year
               <input value={academicYear} onChange={(event) => setAcademicYear(event.target.value)} />
@@ -4207,17 +4295,15 @@ function FeeRecordSummaryPage({
               <input type="checkbox" checked={outstandingOnly} onChange={(event) => setOutstandingOnly(event.target.checked)} />
               Outstanding only
             </label>
-          </section>
+          </FilterToolbar>
 
           {activeView === 'summary' ? (
-            <section className="panel fee-record-ledger">
-              <div className="panel-header">
-                <div>
-                  <p className="eyebrow">Student accounts</p>
-                  <h2>Fee Record Overview</h2>
-                </div>
-                {isLoading && <span className="permission-note">Loading...</span>}
-              </div>
+            <DataPanel
+              className="fee-record-ledger"
+              eyebrow="Student accounts"
+              title="Student Fee Records"
+              action={isLoading ? <span className="permission-note">Loading...</span> : undefined}
+            >
               <p className="ledger-note">
                 Open a student to review the fee agreement, record a payment, or issue a receipt.
               </p>
@@ -4268,9 +4354,9 @@ function FeeRecordSummaryPage({
                         <td>{row.outstanding_categories.length > 0 ? row.outstanding_categories.join(', ') : 'None'}</td>
                         <td>{row.latest_receipt_no ? `${row.latest_receipt_no} / ${row.latest_receipt_date}` : 'No receipt'}</td>
                         <td>
-                          <span className={`badge ${statusClass(row.collection_status_summary)}`}>
+                          <StatusBadge tone={statusTone(row.collection_status_summary)}>
                             {formatStatus(row.collection_status_summary)}
-                          </span>
+                          </StatusBadge>
                         </td>
                       </tr>
                     ))}
@@ -4287,18 +4373,17 @@ function FeeRecordSummaryPage({
                   </tbody>
                 </table>
               </div>
-            </section>
+            </DataPanel>
           ) : (
-            <section className="panel fee-record-ledger monthly-ledger">
-              <div className="panel-header">
-                <div>
-                  <p className="eyebrow">Monthly breakdown</p>
-                  <h2>{feeRecordCategories.find((option) => option.value === category)?.label} by Month</h2>
-                </div>
-                {isLoading && <span className="permission-note">Loading...</span>}
-              </div>
+            <DataPanel
+              className="fee-record-ledger monthly-ledger"
+              eyebrow="Monthly breakdown"
+              title="Student Fee Records"
+              action={isLoading ? <span className="permission-note">Loading...</span> : undefined}
+            >
               <p className="ledger-note">
-                Review expected, paid, and outstanding amounts for each student by billing month.
+                {feeRecordCategories.find((option) => option.value === category)?.label} by month. Review expected,
+                paid, and outstanding amounts for each student.
               </p>
 
               <p className="table-scroll-hint">Swipe horizontally to see all financial columns.</p>
@@ -4356,7 +4441,7 @@ function FeeRecordSummaryPage({
                   </tbody>
                 </table>
               </div>
-            </section>
+            </DataPanel>
           )}
         </>
       )}

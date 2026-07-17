@@ -421,9 +421,20 @@ h2 {
   height: 16px;
 }
 
-.fee-record-ledger {
+.fee-record-page > .filter-toolbar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  align-items: end;
+}
+
+.fee-record-page > .filter-toolbar .form-field.wide {
+  grid-column: auto;
+}
+
+.fee-record-ledger .data-panel-body {
   display: grid;
   gap: 12px;
+  padding: 18px;
 }
 
 .fee-record-table-wrap {
@@ -1611,6 +1622,24 @@ th {
     align-items: center;
   }
 
+}
+
+.financial-modal {
+  width: min(1040px, 100%);
+}
+
+.modal-body > .agreement-form,
+.modal-body > .manual-charge-form,
+.modal-body > .payment-form,
+.modal-body > .inline-payment-form {
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.payment-form-state {
+  display: flex;
+  justify-content: flex-end;
 }
 
 @media screen and (max-width: 1023px) {
