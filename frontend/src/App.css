@@ -25,25 +25,6 @@ h2 {
   letter-spacing: 0;
 }
 
-.hero-strip {
-  min-height: 116px;
-  border-radius: 8px;
-  background: #2b2c31;
-  color: #ffffff;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 24px;
-  padding: 22px 24px;
-}
-
-.hero-strip p:not(.eyebrow) {
-  max-width: 660px;
-  margin-top: 8px;
-  color: #c9cbd1;
-  font-size: 14px;
-}
-
 .primary-action,
 .secondary-action {
   border: 0;
@@ -92,12 +73,6 @@ h2 {
   justify-content: center;
   gap: 8px;
   font-size: 13px;
-}
-
-.metrics-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
 }
 
 .metric-card,
@@ -151,6 +126,64 @@ h2 {
   gap: 18px;
   min-width: 0;
   max-width: 100%;
+}
+
+.dashboard-grid {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.dashboard-list {
+  display: grid;
+}
+
+.dashboard-list > div {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 15px 20px;
+  border-bottom: 1px solid #edf0f4;
+}
+
+.dashboard-list > div:last-child {
+  border-bottom: 0;
+}
+
+.dashboard-list span,
+.dashboard-list span strong,
+.dashboard-list span small {
+  min-width: 0;
+  display: block;
+}
+
+.dashboard-list span small {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.empty-state.compact {
+  min-height: 190px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  padding: 28px;
+  color: #8a5a00;
+  text-align: center;
+}
+
+.empty-state.compact.positive {
+  color: #167a4a;
+}
+
+.empty-state.compact p {
+  color: var(--muted);
+  font-size: 13px;
 }
 
 .page-title-row {
@@ -270,10 +303,6 @@ h2 {
 .rule-list b {
   color: #25272d;
   white-space: nowrap;
-}
-
-.hero-strip.slim {
-  min-height: 92px;
 }
 
 .report-grid {
@@ -1520,10 +1549,6 @@ th {
 }
 
 @media screen and (min-width: 1024px) and (max-width: 1180px) {
-  .metrics-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
   .cards-grid,
   .report-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1696,18 +1721,13 @@ th {
     overflow-wrap: anywhere;
   }
 
-  .hero-strip {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
   .primary-action {
     width: 100%;
     min-width: 0;
     box-sizing: border-box;
   }
 
-  .metrics-grid,
+  .dashboard-grid,
   .content-grid,
   .summary-grid.three,
   .cards-grid,

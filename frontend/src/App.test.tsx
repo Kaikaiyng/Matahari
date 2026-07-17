@@ -93,6 +93,25 @@ describe('demo shell', () => {
   beforeEach(() => installApiMock())
   afterEach(() => vi.restoreAllMocks())
 
+  it('explains that the saved session is being checked', () => {
+    vi.mocked(globalThis.fetch).mockImplementation(() => new Promise<Response>(() => undefined))
+
+    render(<App />)
+
+    expect(screen.getByRole('heading', { name: 'Checking your session' })).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('Verifying your secure admin access')
+  })
+
+  it('uses a compact Dashboard header and shared metric cards', async () => {
+    await renderAuthenticatedApp()
+
+    expect(screen.getByRole('heading', { name: 'School overview' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Open Students' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Dashboard metrics' })).toBeInTheDocument()
+    expect(document.querySelector('.hero-strip')).not.toBeInTheDocument()
+    expect(document.querySelectorAll('.stat-card')).toHaveLength(4)
+  })
+
   it('shows only destinations that are ready for the demo', async () => {
     await renderAuthenticatedApp()
 

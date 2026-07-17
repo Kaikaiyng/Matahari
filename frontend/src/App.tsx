@@ -21,6 +21,7 @@ import {
 import { ApiError, apiRequest } from './api'
 import { AdminShell } from './components/AdminShell'
 import type { NavigationGroup } from './components/AdminShell'
+import { DataPanel, PageHeader, SessionLoader, StatCard } from './components/AdminUi'
 import misLogo from './assets/mis-logo.jpg'
 import './App.css'
 
@@ -890,26 +891,6 @@ function agreementPreview(form: FeeAgreementForm) {
     discountAmount,
     total: Math.max(subtotal - discountAmount, 0),
   }
-}
-
-function PageHeader({
-  eyebrow,
-  title,
-  action,
-}: {
-  eyebrow: string
-  title: string
-  action?: ReactNode
-}) {
-  return (
-    <div className="page-title-row">
-      <div>
-        <p className="eyebrow">{eyebrow}</p>
-        <h2>{title}</h2>
-      </div>
-      {action}
-    </div>
-  )
 }
 
 function Message({
@@ -4424,49 +4405,102 @@ function DashboardPage({
         label: "Today's Collection",
         value: formatCurrency(dashboard.metrics.today_collection),
         tone: 'positive',
+        icon: <CreditCard size={20} />,
       },
       {
         label: 'Monthly Collection',
         value: formatCurrency(dashboard.metrics.monthly_collection),
         tone: 'neutral',
+        icon: <BarChart3 size={20} />,
       },
       {
         label: 'Outstanding Fees',
         value: 'View Fee Record',
-        tone: 'neutral',
+        tone: 'warning',
+        icon: <AlertTriangle size={20} />,
       },
       {
         label: 'Active Students',
         value: String(dashboard.metrics.active_students),
         tone: 'neutral',
+        icon: <GraduationCap size={20} />,
       },
     ],
     [dashboard],
   )
 
   return (
-    <>
-      <section className="hero-strip">
-        <div>
-          <p className="eyebrow">School overview</p>
-          <h2>Welcome to Matahari School ERP</h2>
-          <p>Review student accounts, fee agreements, collections, and outstanding balances from one place.</p>
-        </div>
-        <button className="primary-action" onClick={() => setActivePage('students')}>
-          <GraduationCap size={18} />
-          Open Students
-        </button>
-      </section>
+    <section className="page-stack dashboard-page">
+      <PageHeader
+        eyebrow="Overview"
+        title="School overview"
+        description="Review student accounts, fee agreements, collections, and outstanding balances."
+        action={
+          <button className="primary-action compact" onClick={() => setActivePage('students')}>
+            <GraduationCap size={18} />
+            Open Students
+          </button>
+        }
+      />
 
-      <section className="metrics-grid" aria-label="Dashboard metrics">
+      <section className="stats-grid" aria-label="Dashboard metrics">
         {metrics.map((metric) => (
-          <article className={`metric-card ${metric.tone}`} key={metric.label}>
-            <span>{metric.label}</span>
-            <strong>{metric.value}</strong>
-          </article>
+          <StatCard
+            key={metric.label}
+            label={metric.label}
+            value={metric.value}
+            tone={metric.tone as 'neutral' | 'positive' | 'warning'}
+            icon={metric.icon}
+          />
         ))}
       </section>
-    </>
+
+      <section className="dashboard-grid">
+        <DataPanel eyebrow="Latest activity" title="Recent collections">
+          {dashboard.recent_payments.length > 0 ? (
+            <div className="dashboard-list">
+              {dashboard.recent_payments.slice(0, 5).map((payment) => (
+                <div key={payment.id}>
+                  <span>
+                    <strong>{payment.student}</strong>
+                    <small>{payment.method} / {payment.payment_date}</small>
+                  </span>
+                  <strong>{formatCurrency(payment.amount)}</strong>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-state compact">
+              <CreditCard size={23} />
+              <strong>No collection activity yet</strong>
+              <p>Verified payments will appear here.</p>
+            </div>
+          )}
+        </DataPanel>
+
+        <DataPanel eyebrow="Attention needed" title="Outstanding accounts">
+          {dashboard.outstanding_students.length > 0 ? (
+            <div className="dashboard-list">
+              {dashboard.outstanding_students.slice(0, 5).map((student) => (
+                <div key={student.invoice_id}>
+                  <span>
+                    <strong>{student.student}</strong>
+                    <small>{student.class_name} / due {student.due_date}</small>
+                  </span>
+                  <strong>{formatCurrency(student.amount)}</strong>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-state compact positive">
+              <ShieldCheck size={23} />
+              <strong>No urgent outstanding accounts</strong>
+              <p>New overdue items will be shown here.</p>
+            </div>
+          )}
+        </DataPanel>
+      </section>
+    </section>
   )
 }
 
@@ -4539,15 +4573,7 @@ function App() {
   const pageTitle = navItems.find((item) => item.key === activePage)?.label ?? 'Dashboard'
 
   if (authState === 'checking') {
-    return (
-      <main className="login-screen">
-        <section className="login-card">
-          <img src={misLogo} alt="MIS logo" />
-          <p className="eyebrow">Matahari School ERP</p>
-          <h1>Checking session...</h1>
-        </section>
-      </main>
-    )
+    return <SessionLoader logoSrc={misLogo} brand="Matahari School ERP" />
   }
 
   if (!user) {
