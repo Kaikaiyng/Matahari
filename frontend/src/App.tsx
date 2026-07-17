@@ -1,33 +1,26 @@
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import type { FormEvent, ReactNode } from 'react'
 import {
   AlertTriangle,
-  Banknote,
   BarChart3,
-  Bell,
   Building2,
   ClipboardList,
   CreditCard,
   Eye,
-  FileText,
   GraduationCap,
   LayoutDashboard,
   LockKeyhole,
-  LogOut,
   Mail,
-  Menu,
   Phone,
   Plus,
-  Receipt,
   RefreshCw,
-  Search,
-  Settings,
   ShieldCheck,
   UserPlus,
   Users,
-  X,
 } from 'lucide-react'
 import { ApiError, apiRequest } from './api'
+import { AdminShell } from './components/AdminShell'
+import type { NavigationGroup } from './components/AdminShell'
 import misLogo from './assets/mis-logo.jpg'
 import './App.css'
 
@@ -457,18 +450,28 @@ const fallbackDashboard: DashboardResponse = {
   outstanding_students: [],
 }
 
-const navItems = [
-  { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { key: 'students', label: 'Students', icon: GraduationCap },
-  { key: 'parents', label: 'Parents', icon: Users },
-  { key: 'fees', label: 'Fees', icon: CreditCard },
-  { key: 'fee-record', label: 'Fee Record', icon: ClipboardList },
-  { key: 'invoices', label: 'Invoices', icon: FileText },
-  { key: 'payments', label: 'Payments', icon: Banknote },
-  { key: 'receipts', label: 'Receipts', icon: Receipt },
-  { key: 'reports', label: 'Reports', icon: BarChart3 },
-  { key: 'settings', label: 'Settings', icon: Settings },
-] satisfies Array<{ key: PageKey; label: string; icon: typeof LayoutDashboard }>
+const navGroups: NavigationGroup<PageKey>[] = [
+  {
+    label: 'Overview',
+    items: [{ key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard }],
+  },
+  {
+    label: 'People',
+    items: [
+      { key: 'students', label: 'Students', icon: GraduationCap },
+      { key: 'parents', label: 'Parents', icon: Users },
+    ],
+  },
+  {
+    label: 'Finance',
+    items: [
+      { key: 'fees', label: 'Fees', icon: CreditCard },
+      { key: 'fee-record', label: 'Fee Record', icon: ClipboardList },
+    ],
+  },
+]
+
+const navItems = navGroups.flatMap((group) => group.items)
 
 const parents = [
   {
@@ -1008,7 +1011,8 @@ function StudentsPage({
 }) {
   const [students, setStudents] = useState<StudentSummary[]>([])
   const [selectedStudent, setSelectedStudent] = useState<StudentDetail | null>(null)
-  const [pendingInitialStudentId, setPendingInitialStudentId] = useState<number | null>(initialStudentId ?? null)
+  const initialStudentIdRef = useRef<number | null>(initialStudentId ?? null)
+  const startedWithFocusedStudentRef = useRef(Boolean(initialStudentId))
   const [statusFilter, setStatusFilter] = useState<StudentFilter>('active')
   const [isLoading, setIsLoading] = useState(true)
   const [isCreating, setIsCreating] = useState(false)
@@ -1227,12 +1231,6 @@ function StudentsPage({
       const response = await apiRequest<{ data: StudentSummary[] }>(`/students?status=${filter}`)
       setStudents(response.data)
       await loadStudentListFeeRecordSummary(feeRecordAcademicYear)
-
-      if (pendingInitialStudentId) {
-        const studentId = pendingInitialStudentId
-        setPendingInitialStudentId(null)
-        await loadStudentDetail(studentId)
-      }
     } catch (loadError) {
       handleApiError(loadError)
     } finally {
@@ -1524,8 +1522,25 @@ function StudentsPage({
     }
   }
 
+  const loadStudentsRef = useRef(loadStudents)
+  const loadStudentDetailRef = useRef(loadStudentDetail)
+  loadStudentsRef.current = loadStudents
+  loadStudentDetailRef.current = loadStudentDetail
+
   useEffect(() => {
-    void loadStudents(statusFilter)
+    const studentId = initialStudentIdRef.current
+
+    if (studentId) {
+      initialStudentIdRef.current = null
+      void loadStudentDetailRef.current(studentId)
+      return
+    }
+
+    if (startedWithFocusedStudentRef.current) {
+      return
+    }
+
+    void loadStudentsRef.current(statusFilter)
   }, [statusFilter])
 
   const updateForm = (field: keyof StudentForm, value: string) => {
@@ -2207,7 +2222,12 @@ function StudentsPage({
 
   return (
     <section className="page-stack">
-      <PageHeader
+      {error && <Message tone="error">{error}</Message>}
+      {message && <Message tone="success">{message}</Message>}
+
+      {!selectedStudent && (
+        <>
+          <PageHeader
         eyebrow="Student management"
         title="Students"
         action={
@@ -2220,7 +2240,7 @@ function StudentsPage({
             <span className="permission-note">View only</span>
           )
         }
-      />
+          />
 
       <section className="summary-grid three">
         <article className="metric-card positive">
@@ -2244,9 +2264,6 @@ function StudentsPage({
           </strong>
         </article>
       </section>
-
-      {error && <Message tone="error">{error}</Message>}
-      {message && <Message tone="success">{message}</Message>}
 
       {showCreateForm && canCreateStudents && (
         <form className="panel student-form" onSubmit={submitStudent}>
@@ -2414,6 +2431,8 @@ function StudentsPage({
           </table>
         </div>
       </article>
+        </>
+      )}
 
       {selectedStudent && (
         <article className="panel student-detail">
@@ -2424,9 +2443,22 @@ function StudentsPage({
                 {selectedStudent.full_name} <span>{selectedStudent.student_no}</span>
               </h2>
             </div>
-            <span className={`badge ${statusClass(selectedStudent.status)}`}>
-              {formatStatus(selectedStudent.status)}
-            </span>
+            <div className="toolbar-actions">
+              <button
+                className="secondary-action"
+                onClick={() => {
+                  setSelectedStudent(null)
+                  initialStudentIdRef.current = null
+                  startedWithFocusedStudentRef.current = false
+                  void loadStudentsRef.current(statusFilter)
+                }}
+              >
+                Back to students
+              </button>
+              <span className={`badge ${statusClass(selectedStudent.status)}`}>
+                {formatStatus(selectedStudent.status)}
+              </span>
+            </div>
           </div>
 
           <section className="detail-grid">
@@ -4077,15 +4109,15 @@ function FeeRecordSummaryPage({
           </div>
 
           <section className="summary-grid three">
-            <article>
+            <article className="metric-card">
               <span>Total Expected</span>
               <strong>{formatCurrency(totals.expected)}</strong>
             </article>
-            <article>
+            <article className="metric-card positive">
               <span>Total Paid</span>
               <strong>{formatCurrency(totals.paid)}</strong>
             </article>
-            <article className={totals.outstanding > 0 ? 'warning' : ''}>
+            <article className={`metric-card ${totals.outstanding > 0 ? 'warning' : ''}`}>
               <span>Total Outstanding</span>
               <strong>{formatCurrency(totals.outstanding)}</strong>
             </article>
@@ -4145,13 +4177,13 @@ function FeeRecordSummaryPage({
             <section className="panel fee-record-ledger">
               <div className="panel-header">
                 <div>
-                  <p className="eyebrow">Working ledger</p>
-                  <h2>Read-only charge-cell summary</h2>
+                  <p className="eyebrow">Student accounts</p>
+                  <h2>Fee Record Overview</h2>
                 </div>
                 {isLoading && <span className="permission-note">Loading...</span>}
               </div>
               <p className="ledger-note">
-                Balances come from Fee Record charge cells. Corrections happen through Fee Agreement, Payment, or Receipt flows.
+                Open a student to review the fee agreement, record a payment, or issue a receipt.
               </p>
 
               <p className="table-scroll-hint">Swipe horizontally to see all financial columns.</p>
@@ -4224,14 +4256,13 @@ function FeeRecordSummaryPage({
             <section className="panel fee-record-ledger monthly-ledger">
               <div className="panel-header">
                 <div>
-                  <p className="eyebrow">Category monthly</p>
-                  <h2>Read-only {category} month cells</h2>
+                  <p className="eyebrow">Monthly breakdown</p>
+                  <h2>{feeRecordCategories.find((option) => option.value === category)?.label} by Month</h2>
                 </div>
                 {isLoading && <span className="permission-note">Loading...</span>}
               </div>
               <p className="ledger-note">
-                Month cells aggregate charge cells by student, mapped category and billing month. The category mapper is temporary until real fee
-                item codes are confirmed.
+                Review expected, paid, and outstanding amounts for each student by billing month.
               </p>
 
               <p className="table-scroll-hint">Swipe horizontally to see all financial columns.</p>
@@ -4303,9 +4334,9 @@ function FeeRecordMonthCellView({ cell }: { cell: FeeRecordMonthCell }) {
       <span className="month-cell-status">{cell.collection_status === 'no_charge' ? 'No charge' : formatStatus(cell.collection_status)}</span>
       {cell.charge_count > 0 && (
         <>
-          <span>E {formatCurrency(cell.expected_amount)}</span>
-          <span>P {formatCurrency(cell.paid_amount)}</span>
-          <strong>O {formatCurrency(cell.outstanding_amount)}</strong>
+          <span>Expected {formatCurrency(cell.expected_amount)}</span>
+          <span>Paid {formatCurrency(cell.paid_amount)}</span>
+          <strong>Due {formatCurrency(cell.outstanding_amount)}</strong>
           {cell.receipt_refs.length > 0 && <small>{cell.receipt_refs.join(', ')}</small>}
         </>
       )}
@@ -4417,9 +4448,9 @@ function DashboardPage({
     <>
       <section className="hero-strip">
         <div>
-          <p className="eyebrow">MVP phase</p>
-          <h2>Authentication and Student Management are connected to the backend</h2>
-          <p>Use Fee Record for the working finance ledger; dashboard finance widgets remain future phase.</p>
+          <p className="eyebrow">School overview</p>
+          <h2>Welcome to Matahari School ERP</h2>
+          <p>Review student accounts, fee agreements, collections, and outstanding balances from one place.</p>
         </div>
         <button className="primary-action" onClick={() => setActivePage('students')}>
           <GraduationCap size={18} />
@@ -4446,71 +4477,6 @@ function App() {
   const [user, setUser] = useState<CurrentUser | null>(null)
   const [activePage, setActivePage] = useState<PageKey>('dashboard')
   const [focusedStudentId, setFocusedStudentId] = useState<number | null>(null)
-  const [isNavOpen, setIsNavOpen] = useState(false)
-  const [isNarrowViewport, setIsNarrowViewport] = useState(() => window.matchMedia('(max-width: 1023px)').matches)
-  const menuButtonRef = useRef<HTMLButtonElement>(null)
-  const drawerCloseButtonRef = useRef<HTMLButtonElement>(null)
-  const shouldRestoreNavigationFocusRef = useRef(false)
-
-  const closeNavigation = useCallback(() => {
-    if (isNarrowViewport && isNavOpen) {
-      shouldRestoreNavigationFocusRef.current = true
-    }
-
-    setIsNavOpen(false)
-  }, [isNavOpen, isNarrowViewport])
-
-  const selectPage = (page: PageKey) => {
-    setActivePage(page)
-    closeNavigation()
-  }
-
-  useEffect(() => {
-    document.body.classList.toggle('nav-open', isNavOpen)
-
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        closeNavigation()
-      }
-    }
-
-    window.addEventListener('keydown', handleEscape)
-
-    return () => {
-      document.body.classList.remove('nav-open')
-      window.removeEventListener('keydown', handleEscape)
-    }
-  }, [closeNavigation, isNavOpen])
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(max-width: 1023px)')
-
-    const handleBreakpointChange = (event: MediaQueryListEvent) => {
-      setIsNarrowViewport(event.matches)
-
-      if (!event.matches) {
-        setIsNavOpen(false)
-      }
-    }
-
-    setIsNarrowViewport(mediaQuery.matches)
-    mediaQuery.addEventListener('change', handleBreakpointChange)
-
-    return () => mediaQuery.removeEventListener('change', handleBreakpointChange)
-  }, [])
-
-  useEffect(() => {
-    if (isNavOpen && isNarrowViewport) {
-      drawerCloseButtonRef.current?.focus()
-    }
-  }, [isNavOpen, isNarrowViewport])
-
-  useEffect(() => {
-    if (!isNavOpen && isNarrowViewport && shouldRestoreNavigationFocusRef.current) {
-      shouldRestoreNavigationFocusRef.current = false
-      menuButtonRef.current?.focus()
-    }
-  }, [isNavOpen, isNarrowViewport])
 
   const loadDashboard = async () => {
     try {
@@ -4557,7 +4523,6 @@ function App() {
       setUser(null)
       setAuthState('guest')
       setActivePage('dashboard')
-      closeNavigation()
     }
   }
 
@@ -4630,100 +4595,19 @@ function App() {
   }
 
   return (
-    <div className="app-shell">
-      <button
-        className="sidebar-backdrop"
-        aria-label="Close navigation"
-        aria-hidden={!isNavOpen}
-        tabIndex={isNavOpen ? 0 : -1}
-        onClick={closeNavigation}
-      />
-
-      <aside
-        aria-hidden={isNarrowViewport && !isNavOpen ? true : undefined}
-        className={isNavOpen ? 'sidebar open' : 'sidebar'}
-        id="main-navigation"
-        inert={isNarrowViewport && !isNavOpen ? true : undefined}
-      >
-        <div className="sidebar-heading">
-          <div className="brand">
-            <img src={misLogo} alt="MIS logo" />
-            <div>
-              <strong>MIS</strong>
-              <span>School ERP</span>
-            </div>
-          </div>
-          <button
-            className="icon-button drawer-close"
-            aria-label="Close navigation"
-            onClick={closeNavigation}
-            ref={drawerCloseButtonRef}
-          >
-            <X size={20} />
-          </button>
-        </div>
-
-        <nav className="nav-list" aria-label="Main navigation">
-          {navItems.map((item) => {
-            const Icon = item.icon
-            return (
-              <button
-                aria-current={activePage === item.key ? 'page' : undefined}
-                aria-label={item.label}
-                className={activePage === item.key ? 'nav-item active' : 'nav-item'}
-                key={item.label}
-                onClick={() => selectPage(item.key)}
-              >
-                <Icon size={18} />
-                <span>{item.label}</span>
-              </button>
-            )
-          })}
-        </nav>
-      </aside>
-
-      <main className="main" inert={isNarrowViewport && isNavOpen ? true : undefined}>
-        <header className="topbar">
-          <button
-            className="icon-button menu-button"
-            aria-controls="main-navigation"
-            aria-expanded={isNavOpen}
-            aria-label="Open navigation"
-            onClick={() => setIsNavOpen(true)}
-            ref={menuButtonRef}
-          >
-            <Menu size={20} />
-          </button>
-          <div>
-            <p className="eyebrow">Matahari School ERP / {dashboard.school.name}</p>
-            <h1>{pageTitle}</h1>
-          </div>
-
-          <div className="topbar-actions">
-            <div className={`api-pill ${apiState}`}>{apiState === 'live' ? 'Live API' : 'Demo data'}</div>
-            <label className="search-box">
-              <Search size={17} />
-              <input placeholder="Search is coming in the next frontend pass" />
-            </label>
-            <button className="icon-button" aria-label="Notifications">
-              <Bell size={19} />
-            </button>
-            <div className="user-chip">
-              <span>{initials(user.name)}</span>
-              <div>
-                <strong>{user.name}</strong>
-                <small>{user.roles.join(', ')}</small>
-              </div>
-            </div>
-            <button className="icon-button" aria-label="Logout" onClick={() => void handleLogout()}>
-              <LogOut size={19} />
-            </button>
-          </div>
-        </header>
-
-        {renderPage()}
-      </main>
-    </div>
+    <AdminShell
+      brandLogo={misLogo}
+      activePage={activePage}
+      pageTitle={pageTitle}
+      contextText={dashboard.school.name}
+      navGroups={navGroups}
+      apiState={apiState}
+      user={user}
+      onSelectPage={setActivePage}
+      onLogout={() => void handleLogout()}
+    >
+      {renderPage()}
+    </AdminShell>
   )
 }
 

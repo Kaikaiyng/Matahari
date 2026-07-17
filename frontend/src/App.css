@@ -1,96 +1,3 @@
-.app-shell {
-  min-height: 100vh;
-  display: grid;
-  grid-template-columns: 280px minmax(0, 1fr);
-  background: #f5f6f8;
-  color: #25272d;
-}
-
-.sidebar {
-  background: #222225;
-  color: #f4f4f5;
-  padding: 24px 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 28px;
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px;
-}
-
-.brand img {
-  width: 58px;
-  height: 58px;
-  object-fit: contain;
-  border-radius: 8px;
-  background: #ffffff;
-}
-
-.brand strong {
-  display: block;
-  font-size: 18px;
-  line-height: 1.1;
-}
-
-.brand span {
-  display: block;
-  margin-top: 4px;
-  color: #b7b8bd;
-  font-size: 13px;
-}
-
-.nav-list {
-  display: grid;
-  gap: 6px;
-}
-
-.nav-item {
-  width: 100%;
-  height: 42px;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  color: #c9c9ce;
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  padding: 0 12px;
-  font: inherit;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.nav-item:hover,
-.nav-item.active {
-  background: #343438;
-  color: #ffffff;
-}
-
-.nav-item.active {
-  box-shadow: inset 3px 0 0 #ee2f37;
-}
-
-.main {
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  min-width: 0;
-  max-width: 100%;
-}
-
-.topbar {
-  min-height: 72px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 20px;
-}
-
 .eyebrow {
   margin: 0 0 5px;
   color: #7b7f89;
@@ -116,116 +23,6 @@ h2 {
   font-size: 18px;
   line-height: 1.25;
   letter-spacing: 0;
-}
-
-.topbar-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.api-pill {
-  height: 30px;
-  display: inline-flex;
-  align-items: center;
-  border-radius: 999px;
-  padding: 0 10px;
-  font-size: 12px;
-  font-weight: 800;
-  white-space: nowrap;
-}
-
-.api-pill.live {
-  background: #e7f7ef;
-  color: #167a4a;
-}
-
-.api-pill.demo,
-.api-pill.loading {
-  background: #fff1d8;
-  color: #9b5c00;
-}
-
-.search-box {
-  width: 310px;
-  height: 42px;
-  border: 1px solid #dde0e6;
-  border-radius: 8px;
-  background: #ffffff;
-  color: #7b7f89;
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 0 12px;
-}
-
-.search-box input {
-  width: 100%;
-  border: 0;
-  outline: 0;
-  color: #25272d;
-  font: inherit;
-  font-size: 14px;
-}
-
-.icon-button {
-  width: 42px;
-  height: 42px;
-  border: 1px solid #dde0e6;
-  border-radius: 8px;
-  background: #ffffff;
-  color: #3a3d44;
-  display: grid;
-  place-items: center;
-}
-
-.menu-button,
-.drawer-close,
-.sidebar-backdrop {
-  display: none;
-}
-
-body.nav-open {
-  overflow: hidden;
-}
-
-.user-chip {
-  height: 42px;
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 0 10px;
-  border: 1px solid #dde0e6;
-  border-radius: 8px;
-  background: #ffffff;
-}
-
-.user-chip > span {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  background: #ee2f37;
-  color: #ffffff;
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.user-chip strong,
-.user-chip small {
-  display: block;
-  line-height: 1.1;
-}
-
-.user-chip strong {
-  font-size: 13px;
-}
-
-.user-chip small {
-  margin-top: 3px;
-  color: #7b7f89;
-  font-size: 11px;
 }
 
 .hero-strip {
@@ -299,7 +96,7 @@ body.nav-open {
 
 .metrics-grid {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
 }
 
@@ -529,7 +326,7 @@ body.nav-open {
 }
 
 .table-scroll-hint {
-  display: none;
+  display: block;
   margin: 0;
   color: #626773;
   font-size: 13px;
@@ -591,6 +388,43 @@ body.nav-open {
 .fee-record-ledger {
   display: grid;
   gap: 12px;
+}
+
+.fee-record-table-wrap {
+  border: 1px solid #edf0f4;
+  border-radius: 8px;
+  scrollbar-color: #b8bdc7 #f1f2f5;
+}
+
+.fee-record-table-wrap th:first-child,
+.fee-record-table-wrap td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  min-width: 180px;
+  background: #ffffff;
+}
+
+.fee-record-table-wrap th:nth-child(2),
+.fee-record-table-wrap td:nth-child(2) {
+  position: sticky;
+  left: 180px;
+  z-index: 2;
+  min-width: 132px;
+  background: #ffffff;
+  white-space: nowrap;
+  overflow-wrap: normal;
+}
+
+.fee-record-table-wrap th:first-child,
+.fee-record-table-wrap th:nth-child(2) {
+  z-index: 3;
+  background: #f7f8fa;
+}
+
+.fee-record-row.has-outstanding td:first-child,
+.fee-record-row.has-outstanding td:nth-child(2) {
+  background: #fffafa;
 }
 
 .fee-record-ledger .panel-header {
@@ -1686,39 +1520,6 @@ th {
 }
 
 @media screen and (min-width: 1024px) and (max-width: 1180px) {
-  .app-shell {
-    grid-template-columns: 88px minmax(0, 1fr);
-  }
-
-  .sidebar {
-    padding: 18px 10px;
-  }
-
-  .brand {
-    justify-content: center;
-  }
-
-  .brand div {
-    display: none;
-  }
-
-  .nav-item {
-    min-height: 52px;
-    height: auto;
-    justify-content: center;
-    flex-direction: column;
-    gap: 4px;
-    padding: 6px 4px;
-  }
-
-  .nav-item span {
-    display: block;
-    max-width: 68px;
-    font-size: 10px;
-    line-height: 1.15;
-    text-align: center;
-  }
-
   .metrics-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -1754,8 +1555,6 @@ th {
   .primary-action.compact,
   .secondary-action,
   .table-action,
-  .icon-button,
-  .nav-item,
   .form-field input,
   .form-field select,
   .toolbar-actions select,
@@ -1780,17 +1579,6 @@ th {
     align-items: center;
   }
 
-  .search-box {
-    min-height: 44px;
-  }
-
-  .search-box input {
-    height: 100%;
-  }
-
-  .icon-button {
-    min-width: 44px;
-  }
 }
 
 @media screen and (max-width: 1023px) {
@@ -1908,126 +1696,6 @@ th {
     overflow-wrap: anywhere;
   }
 
-  .app-shell {
-    display: block;
-  }
-
-  .sidebar {
-    position: fixed;
-    inset: 0 auto 0 0;
-    z-index: 40;
-    width: min(288px, calc(100vw - 48px));
-    padding: 18px 14px;
-    transform: translateX(-100%);
-    transition: transform 160ms ease;
-    overflow-y: auto;
-  }
-
-  .sidebar.open {
-    transform: translateX(0);
-  }
-
-  .sidebar-backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: 30;
-    display: block;
-    border: 0;
-    background: rgba(19, 20, 24, 0.48);
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  body.nav-open .sidebar-backdrop {
-    opacity: 1;
-    pointer-events: auto;
-  }
-
-  .sidebar-heading {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-  }
-
-  .drawer-close,
-  .menu-button {
-    display: grid;
-    flex: 0 0 44px;
-  }
-
-  .icon-button {
-    width: 44px;
-    min-width: 44px;
-    height: 44px;
-    min-height: 44px;
-  }
-
-  .nav-list {
-    display: grid;
-    overflow: visible;
-  }
-
-  .nav-item {
-    min-height: 48px;
-    height: auto;
-    width: 100%;
-    justify-content: flex-start;
-  }
-
-  .nav-item span {
-    display: inline;
-  }
-
-  .main {
-    padding: 18px;
-  }
-
-  .topbar {
-    min-height: 64px;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 10px;
-  }
-
-  .topbar > div:first-of-type {
-    min-width: 0;
-    flex: 1 1 240px;
-  }
-
-  .topbar h1,
-  .topbar .eyebrow {
-    overflow-wrap: anywhere;
-  }
-
-  .topbar-actions {
-    min-width: 0;
-    flex: 0 1 auto;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-  }
-
-  .topbar .search-box,
-  .topbar [aria-label='Notifications'] {
-    display: none;
-  }
-
-  .user-chip {
-    max-width: 220px;
-    min-width: 0;
-  }
-
-  .user-chip div {
-    min-width: 0;
-  }
-
-  .user-chip strong,
-  .user-chip small {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
   .hero-strip {
     align-items: stretch;
     flex-direction: column;
@@ -2051,6 +1719,16 @@ th {
 
   .student-detail .panel-header {
     align-items: flex-start;
+  }
+
+  .student-detail .panel-header .toolbar-actions {
+    width: 100%;
+    align-items: stretch;
+    flex-direction: column-reverse;
+  }
+
+  .student-detail .panel-header .secondary-action {
+    min-height: 44px;
   }
 
   .student-detail h2,
@@ -2180,12 +1858,19 @@ th {
     grid-column: auto;
   }
 
-  .table-scroll-hint {
-    display: block;
-  }
-
   .fee-record-ledger {
     overflow: hidden;
+  }
+
+  .fee-record-table-wrap th:first-child,
+  .fee-record-table-wrap td:first-child {
+    min-width: 150px;
+  }
+
+  .fee-record-table-wrap th:nth-child(2),
+  .fee-record-table-wrap td:nth-child(2) {
+    left: 150px;
+    min-width: 118px;
   }
 
   .month-cell {
@@ -2362,19 +2047,6 @@ th {
     overflow-wrap: anywhere;
   }
 
-  .main {
-    padding: 12px;
-  }
-
-  .topbar > div:first-of-type {
-    flex-basis: calc(100% - 56px);
-  }
-
-  .topbar-actions {
-    flex: 1 1 100%;
-    flex-wrap: nowrap;
-  }
-
   .fee-record-activation-bar,
   .manual-charge-form .form-grid {
     grid-template-columns: 1fr;
@@ -2435,12 +2107,6 @@ th {
   .login-card {
     margin-block: auto;
     padding: 18px;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .sidebar {
-    transition: none;
   }
 }
 
