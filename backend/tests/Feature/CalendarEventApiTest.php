@@ -59,6 +59,51 @@ class CalendarEventApiTest extends TestCase
         $this->assertDatabaseMissing('calendar_events', ['id' => $eventId]);
     }
 
+    public function test_create_normalizes_offset_datetimes_to_the_correct_utc_instant(): void
+    {
+        $school = $this->school('MIS');
+        $user = $this->userWithPermissions($school, ['calendar.create']);
+
+        $response = $this->actingAs($user)
+            ->postJson('/api/calendar-events', $this->validEventPayload())
+            ->assertCreated()
+            ->assertJsonPath('calendar_event.created_by.id', $user->id)
+            ->assertJsonPath('calendar_event.updated_by.id', $user->id)
+            ->assertJsonPath('calendar_event.starts_at', '2026-07-21T01:00:00.000000Z')
+            ->assertJsonPath('calendar_event.ends_at', '2026-07-21T02:00:00.000000Z');
+
+        $event = CalendarEvent::query()->findOrFail($response->json('calendar_event.id'));
+
+        $this->assertSame('2026-07-21 01:00:00', $event->getRawOriginal('starts_at'));
+        $this->assertSame('2026-07-21 02:00:00', $event->getRawOriginal('ends_at'));
+    }
+
+    public function test_update_normalizes_offset_datetimes_without_changing_creator(): void
+    {
+        $school = $this->school('MIS');
+        $creator = User::factory()->create(['school_id' => $school->id]);
+        $updater = $this->userWithPermissions($school, ['calendar.update']);
+        $event = $this->event($school, [
+            'created_by' => $creator->id,
+            'updated_by' => $creator->id,
+        ]);
+
+        $this->actingAs($updater)
+            ->patchJson("/api/calendar-events/{$event->id}", $this->validEventPayload())
+            ->assertOk()
+            ->assertJsonPath('calendar_event.created_by.id', $creator->id)
+            ->assertJsonPath('calendar_event.updated_by.id', $updater->id)
+            ->assertJsonPath('calendar_event.starts_at', '2026-07-21T01:00:00.000000Z')
+            ->assertJsonPath('calendar_event.ends_at', '2026-07-21T02:00:00.000000Z');
+
+        $event->refresh();
+
+        $this->assertSame('2026-07-21 01:00:00', $event->getRawOriginal('starts_at'));
+        $this->assertSame('2026-07-21 02:00:00', $event->getRawOriginal('ends_at'));
+        $this->assertSame($creator->id, $event->created_by);
+        $this->assertSame($updater->id, $event->updated_by);
+    }
+
     public function test_range_query_includes_events_that_overlap_the_boundary(): void
     {
         $school = $this->school('MIS');

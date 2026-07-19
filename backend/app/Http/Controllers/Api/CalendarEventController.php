@@ -45,8 +45,9 @@ class CalendarEventController extends Controller
 
     public function store(StoreCalendarEventRequest $request): JsonResponse
     {
+        $data = $this->normalizeDateTimes($request->validated());
         $event = CalendarEvent::query()->create([
-            ...$request->validated(),
+            ...$data,
             'school_id' => $this->schoolId($request),
             'created_by' => $request->user()->id,
             'updated_by' => $request->user()->id,
@@ -60,8 +61,9 @@ class CalendarEventController extends Controller
     public function update(UpdateCalendarEventRequest $request, int $calendarEvent): JsonResponse
     {
         $event = $this->eventForSchool($request, $calendarEvent);
+        $data = $this->normalizeDateTimes($request->validated());
         $event->update([
-            ...$request->validated(),
+            ...$data,
             'updated_by' => $request->user()->id,
         ]);
 
@@ -92,6 +94,23 @@ class CalendarEventController extends Controller
         return CalendarEvent::query()
             ->where('school_id', $this->schoolId($request))
             ->findOrFail($eventId);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function normalizeDateTimes(array $data): array
+    {
+        $data['starts_at'] = CarbonImmutable::parse($data['starts_at'])
+            ->setTimezone(config('app.timezone'));
+
+        if (isset($data['ends_at'])) {
+            $data['ends_at'] = CarbonImmutable::parse($data['ends_at'])
+                ->setTimezone(config('app.timezone'));
+        }
+
+        return $data;
     }
 
     /** @return array<string, mixed> */

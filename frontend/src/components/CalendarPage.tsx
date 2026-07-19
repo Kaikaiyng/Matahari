@@ -42,15 +42,37 @@ type CalendarPageProps = {
   onUnauthorized: () => void
 }
 
+const SCHOOL_TIME_ZONE = 'Asia/Kuala_Lumpur'
 const monthFormatter = new Intl.DateTimeFormat('en-MY', {
   month: 'long',
   year: 'numeric',
+  timeZone: 'UTC',
 })
 const timeFormatter = new Intl.DateTimeFormat('en-MY', {
   hour: 'numeric',
   minute: '2-digit',
+  timeZone: SCHOOL_TIME_ZONE,
 })
-const weekdayFormatter = new Intl.DateTimeFormat('en-MY', { weekday: 'short' })
+const schoolDateTimeFormatter = new Intl.DateTimeFormat('en-GB', {
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  hourCycle: 'h23',
+  timeZone: SCHOOL_TIME_ZONE,
+})
+const weekdayFormatter = new Intl.DateTimeFormat('en-MY', {
+  weekday: 'short',
+  timeZone: 'UTC',
+})
+const calendarDateFormatter = new Intl.DateTimeFormat('en-MY', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+  timeZone: 'UTC',
+})
 const eventTypeLabels: Record<CalendarEvent['event_type'], string> = {
   appointment: 'Appointment',
   training: 'Training',
@@ -58,17 +80,46 @@ const eventTypeLabels: Record<CalendarEvent['event_type'], string> = {
   school_event: 'School event',
   other: 'Other',
 }
+const EVENT_TYPE_ERROR_ID = 'calendar-event-type-errors'
+const IS_ALL_DAY_ERROR_ID = 'calendar-is-all-day-errors'
 
 function dateKey(date: Date) {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
+  const year = date.getUTCFullYear()
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0')
+  const day = String(date.getUTCDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
 }
 
+function schoolDateTimeParts(date: Date) {
+  const parts = Object.fromEntries(
+    schoolDateTimeFormatter
+      .formatToParts(date)
+      .filter((part) => part.type !== 'literal')
+      .map((part) => [part.type, Number(part.value)]),
+  )
+  return {
+    year: parts.year,
+    month: parts.month,
+    day: parts.day,
+    hour: parts.hour,
+    minute: parts.minute,
+    second: parts.second,
+  }
+}
+
+function schoolDateKey(date: Date) {
+  const { year, month, day } = schoolDateTimeParts(date)
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+}
+
+function calendarMonthFor(date: Date) {
+  const { year, month } = schoolDateTimeParts(date)
+  return new Date(Date.UTC(year, month - 1, 1, 12))
+}
+
 function startOfCalendarGrid(month: Date) {
-  const first = new Date(month.getFullYear(), month.getMonth(), 1, 12)
-  first.setDate(first.getDate() - first.getDay())
+  const first = new Date(Date.UTC(month.getUTCFullYear(), month.getUTCMonth(), 1, 12))
+  first.setUTCDate(first.getUTCDate() - first.getUTCDay())
   return first
 }
 
@@ -76,14 +127,19 @@ function visibleDates(month: Date) {
   const start = startOfCalendarGrid(month)
   return Array.from({ length: 42 }, (_, index) => {
     const date = new Date(start)
-    date.setDate(start.getDate() + index)
+    date.setUTCDate(start.getUTCDate() + index)
     return date
   })
 }
 
 function eventDateKey(event: CalendarEvent) {
   if (event.is_all_day) return new Date(event.starts_at).toISOString().slice(0, 10)
-  return dateKey(new Date(event.starts_at))
+  return schoolDateKey(new Date(event.starts_at))
+}
+
+function eventIsInRange(event: CalendarEvent, rangeStart: string, rangeEnd: string) {
+  const eventKey = eventDateKey(event)
+  return eventKey >= rangeStart && eventKey <= rangeEnd
 }
 
 function eventLabel(event: CalendarEvent) {
@@ -105,7 +161,7 @@ function emptyForm(): CalendarEventForm {
     title: '',
     event_type: 'school_event',
     is_all_day: false,
-    start_date: dateKey(new Date()),
+    start_date: schoolDateKey(new Date()),
     start_time: '09:00',
     end_date: '',
     end_time: '',
@@ -115,8 +171,9 @@ function emptyForm(): CalendarEventForm {
   }
 }
 
-function localTime(date: Date) {
-  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+function schoolTime(date: Date) {
+  const { hour, minute } = schoolDateTimeParts(date)
+  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
 }
 
 function formFromEvent(event: CalendarEvent): CalendarEventForm {
@@ -127,22 +184,38 @@ function formFromEvent(event: CalendarEvent): CalendarEventForm {
     title: event.title,
     event_type: event.event_type,
     is_all_day: event.is_all_day,
-    start_date: event.is_all_day ? start.toISOString().slice(0, 10) : dateKey(start),
-    start_time: localTime(start),
+    start_date: event.is_all_day ? start.toISOString().slice(0, 10) : schoolDateKey(start),
+    start_time: event.is_all_day ? '00:00' : schoolTime(start),
     end_date: end
       ? event.is_all_day
         ? end.toISOString().slice(0, 10)
-        : dateKey(end)
+        : schoolDateKey(end)
       : '',
-    end_time: end ? localTime(end) : '',
+    end_time: end ? (event.is_all_day ? '00:00' : schoolTime(end)) : '',
     location: event.location ?? '',
     participants: event.participants ?? '',
     notes: event.notes ?? '',
   }
 }
 
-function toLocalIso(date: string, time: string) {
-  return new Date(`${date}T${time}:00`).toISOString()
+function timeZoneOffsetMilliseconds(date: Date) {
+  const { year, month, day, hour, minute, second } = schoolDateTimeParts(date)
+  return Date.UTC(year, month - 1, day, hour, minute, second) - date.getTime()
+}
+
+function toSchoolIso(date: string, time: string) {
+  const [year, month, day] = date.split('-').map(Number)
+  const [hour, minute] = time.split(':').map(Number)
+  const wallClockAsUtc = Date.UTC(year, month - 1, day, hour, minute)
+  let instant = new Date(wallClockAsUtc)
+  let offset = timeZoneOffsetMilliseconds(instant)
+  instant = new Date(wallClockAsUtc - offset)
+  const correctedOffset = timeZoneOffsetMilliseconds(instant)
+  if (correctedOffset !== offset) {
+    offset = correctedOffset
+    instant = new Date(wallClockAsUtc - offset)
+  }
+  return instant.toISOString()
 }
 
 function toUtcMidnightIso(date: string) {
@@ -161,11 +234,11 @@ function eventPayload(form: CalendarEventForm) {
     is_all_day: form.is_all_day,
     starts_at: form.is_all_day
       ? toUtcMidnightIso(form.start_date)
-      : toLocalIso(form.start_date, form.start_time),
+      : toSchoolIso(form.start_date, form.start_time),
     ends_at: hasEnd
       ? form.is_all_day
         ? toUtcMidnightIso(form.end_date)
-        : toLocalIso(form.end_date, form.end_time)
+        : toSchoolIso(form.end_date, form.end_time)
       : null,
     location: form.location.trim() || null,
     participants: form.participants.trim() || null,
@@ -175,11 +248,15 @@ function eventPayload(form: CalendarEventForm) {
 
 export function CalendarPage({ schoolId, permissions, onUnauthorized }: CalendarPageProps) {
   const [displayedMonth, setDisplayedMonth] = useState(
-    () => new Date(new Date().getFullYear(), new Date().getMonth(), 1, 12),
+    () => calendarMonthFor(new Date()),
   )
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [loadedScope, setLoadedScope] = useState<string | null>(null)
-  const [loadError, setLoadError] = useState('')
+  const [loadState, setLoadState] = useState<{
+    scope: string | null
+    status: 'idle' | 'loading' | 'success' | 'error'
+    error: string
+  }>({ scope: null, status: 'idle', error: '' })
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null | undefined>(undefined)
   const [form, setForm] = useState<CalendarEventForm>(() => emptyForm())
   const [formError, setFormError] = useState('')
@@ -194,6 +271,7 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
   const canUpdate = permissions.includes('calendar.update')
   const canDelete = permissions.includes('calendar.delete')
   const canOpenEvent = canUpdate || canDelete
+  const todayKey = schoolDateKey(new Date())
   const rangeStart = dateKey(dates[0])
   const rangeEnd = dateKey(dates[dates.length - 1])
   const scopeKey = `${canView ? 'view' : 'hidden'}:${schoolId}:${rangeStart}:${rangeEnd}`
@@ -202,6 +280,10 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
   const requestGenerationRef = useRef(0)
   const onUnauthorizedRef = useRef(onUnauthorized)
   const visibleEvents = loadedScope === scopeKey ? events : []
+  const visibleLoadState =
+    loadState.scope === scopeKey
+      ? loadState
+      : { scope: scopeKey, status: canView ? ('loading' as const) : ('idle' as const), error: '' }
   activeScopeRef.current = scopeKey
   onUnauthorizedRef.current = onUnauthorized
 
@@ -213,7 +295,11 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
 
     setEvents([])
     setLoadedScope(scopeKey)
-    setLoadError('')
+    setLoadState({
+      scope: scopeKey,
+      status: canView ? 'loading' : 'idle',
+      error: '',
+    })
     if (scopeChanged) {
       setEditingEvent(undefined)
       setEventToDelete(null)
@@ -243,6 +329,7 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
         ) {
           setEvents(response.data)
           setLoadedScope(scopeKey)
+          setLoadState({ scope: scopeKey, status: 'success', error: '' })
         }
       })
       .catch((error: unknown) => {
@@ -257,7 +344,11 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
           onUnauthorizedRef.current()
           return
         }
-        setLoadError(error instanceof Error ? error.message : 'Unable to load calendar events.')
+        setLoadState({
+          scope: scopeKey,
+          status: 'error',
+          error: error instanceof Error ? error.message : 'Unable to load calendar events.',
+        })
       })
 
     return () => controller.abort()
@@ -265,9 +356,11 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
 
   const changeMonth = (offset: number) => {
     setDisplayedMonth(
-      (month) => new Date(month.getFullYear(), month.getMonth() + offset, 1, 12),
+      (month) => new Date(Date.UTC(month.getUTCFullYear(), month.getUTCMonth() + offset, 1, 12)),
     )
   }
+
+  const goToToday = () => setDisplayedMonth(calendarMonthFor(new Date()))
 
   const openCreate = () => {
     setForm(emptyForm())
@@ -336,14 +429,16 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
       if (activeScopeRef.current !== mutationScope) return
       requestGenerationRef.current += 1
 
-      setEvents((current) =>
-        eventBeingEdited
+      setEvents((current) => {
+        const mergedEvents = eventBeingEdited
           ? current.map((item) =>
               item.id === response.calendar_event.id ? response.calendar_event : item,
             )
-          : [...current, response.calendar_event],
-      )
+          : [...current, response.calendar_event]
+        return mergedEvents.filter((event) => eventIsInRange(event, rangeStart, rangeEnd))
+      })
       setLoadedScope(mutationScope)
+      setLoadState({ scope: mutationScope, status: 'success', error: '' })
       setEditingEvent(undefined)
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
@@ -384,6 +479,7 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
       requestGenerationRef.current += 1
       setEvents((current) => current.filter((event) => event.id !== targetEvent.id))
       setLoadedScope(mutationScope)
+      setLoadState({ scope: mutationScope, status: 'success', error: '' })
       setEventToDelete(null)
       setEditingEvent(undefined)
     } catch (error) {
@@ -421,6 +517,9 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
             <h2>{monthFormatter.format(displayedMonth)}</h2>
           </div>
           <div className="calendar-navigation">
+            <button className="secondary-action calendar-today-action" type="button" onClick={goToToday}>
+              Today
+            </button>
             <button
               className="icon-button"
               type="button"
@@ -440,7 +539,19 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
           </div>
         </header>
 
-        {loadError && <InlineMessage tone="error">{loadError}</InlineMessage>}
+        {visibleLoadState.status === 'loading' && (
+          <div className="calendar-request-state" role="status" aria-live="polite">
+            Loading calendar events…
+          </div>
+        )}
+        {visibleLoadState.status === 'error' && (
+          <InlineMessage tone="error">{visibleLoadState.error}</InlineMessage>
+        )}
+        {visibleLoadState.status === 'success' && visibleEvents.length === 0 && (
+          <div className="calendar-request-state calendar-empty-state" role="status">
+            No events
+          </div>
+        )}
         {!canView && (
           <InlineMessage tone="info">You do not have permission to view calendar events.</InlineMessage>
         )}
@@ -453,19 +564,17 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
         <div className="calendar-grid">
           {dates.map((date) => {
             const dayEvents = visibleEvents.filter((event) => eventDateKey(event) === dateKey(date))
-            const isCurrentMonth = date.getMonth() === displayedMonth.getMonth()
+            const isCurrentMonth = date.getUTCMonth() === displayedMonth.getUTCMonth()
+            const isToday = dateKey(date) === todayKey
 
             return (
               <section
                 key={dateKey(date)}
-                className={`calendar-day${isCurrentMonth ? '' : ' outside-month'}${isCurrentMonth || dayEvents.length ? ' calendar-mobile-day' : ''}`}
-                aria-label={date.toLocaleDateString('en-MY', {
-                  day: 'numeric',
-                  month: 'long',
-                  year: 'numeric',
-                })}
+                className={`calendar-day${isCurrentMonth ? '' : ' outside-month'}${isCurrentMonth || dayEvents.length ? ' calendar-mobile-day' : ''}${isToday ? ' calendar-today' : ''}`}
+                aria-current={isToday ? 'date' : undefined}
+                aria-label={calendarDateFormatter.format(date)}
               >
-                <span className="calendar-day-number">{date.getDate()}</span>
+                <span className="calendar-day-number">{date.getUTCDate()}</span>
                 <div className="calendar-day-events">
                   {dayEvents.map((event) =>
                     canOpenEvent ? (
@@ -552,12 +661,18 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
                 {fieldErrors.title?.map((message) => <small key={message}>{message}</small>)}
               </label>
 
-              <label className="calendar-form-field">
-                Event type
+              <div className="calendar-form-field">
+                <label htmlFor="calendar-event-type">Event type</label>
                 <select
+                  id="calendar-event-type"
+                  aria-label="Event type"
                   value={form.event_type}
                   onChange={(event) =>
                     updateForm('event_type', event.target.value as CalendarEvent['event_type'])
+                  }
+                  aria-invalid={Boolean(fieldErrors.event_type?.length)}
+                  aria-describedby={
+                    fieldErrors.event_type?.length ? EVENT_TYPE_ERROR_ID : undefined
                   }
                 >
                   <option value="appointment">Appointment</option>
@@ -566,16 +681,33 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
                   <option value="school_event">School event</option>
                   <option value="other">Other</option>
                 </select>
-              </label>
+                {fieldErrors.event_type?.length ? (
+                  <div className="calendar-field-errors" id={EVENT_TYPE_ERROR_ID}>
+                    {fieldErrors.event_type.map((message) => <small key={message}>{message}</small>)}
+                  </div>
+                ) : null}
+              </div>
 
-              <label className="calendar-checkbox-field">
-                <input
-                  type="checkbox"
-                  checked={form.is_all_day}
-                  onChange={(event) => updateForm('is_all_day', event.target.checked)}
-                />
-                All-day event
-              </label>
+              <div className="calendar-checkbox-group">
+                <label className="calendar-checkbox-field">
+                  <input
+                    type="checkbox"
+                    aria-label="All-day event"
+                    checked={form.is_all_day}
+                    onChange={(event) => updateForm('is_all_day', event.target.checked)}
+                    aria-invalid={Boolean(fieldErrors.is_all_day?.length)}
+                    aria-describedby={
+                      fieldErrors.is_all_day?.length ? IS_ALL_DAY_ERROR_ID : undefined
+                    }
+                  />
+                  All-day event
+                </label>
+                {fieldErrors.is_all_day?.length ? (
+                  <div className="calendar-field-errors" id={IS_ALL_DAY_ERROR_ID}>
+                    {fieldErrors.is_all_day.map((message) => <small key={message}>{message}</small>)}
+                  </div>
+                ) : null}
+              </div>
 
               <label className="calendar-form-field">
                 Start date

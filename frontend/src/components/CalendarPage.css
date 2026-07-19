@@ -59,6 +59,22 @@
   text-transform: uppercase;
 }
 
+.calendar-request-state {
+  min-height: 46px;
+  display: grid;
+  place-items: center;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border, #e1e4ea);
+  background: #fafafb;
+  color: var(--muted, #737782);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.calendar-empty-state {
+  background: #ffffff;
+}
+
 .calendar-day {
   min-width: 0;
   min-height: 118px;
@@ -74,6 +90,15 @@
 .calendar-day.outside-month {
   background: #fafafb;
   color: #a2a6ae;
+}
+
+.calendar-day.calendar-today {
+  background: #fff6f6;
+  box-shadow: inset 0 0 0 2px var(--brand-red, #ee2f37);
+}
+
+.calendar-day.calendar-today .calendar-day-number {
+  color: var(--brand-red-dark, #b31923);
 }
 
 .calendar-day-number {
@@ -195,10 +220,27 @@
   font-weight: 800;
 }
 
+.calendar-checkbox-group {
+  display: grid;
+  gap: 6px;
+  align-self: end;
+}
+
 .calendar-checkbox-field input {
   width: 18px;
   height: 18px;
   accent-color: var(--brand-red, #ee2f37);
+}
+
+.calendar-field-errors {
+  display: grid;
+  gap: 4px;
+}
+
+.calendar-field-errors small {
+  color: var(--brand-red-dark, #b31923);
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .calendar-delete-action {
@@ -230,6 +272,19 @@
 }
 
 @media (max-width: 767px) {
+  .calendar-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .calendar-navigation {
+    width: 100%;
+  }
+
+  .calendar-today-action {
+    margin-right: auto;
+  }
+
   .calendar-weekdays {
     display: none;
   }
