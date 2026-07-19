@@ -11,6 +11,10 @@ const currentUser = {
   school_id: 1,
   roles: ['school-admin'],
   permissions: [
+    'calendar.view',
+    'calendar.create',
+    'calendar.update',
+    'calendar.delete',
     'students.view',
     'students.create',
     'fee_agreements.create',
@@ -151,6 +155,7 @@ function installApiMock() {
 
     if (url.pathname.endsWith('/me')) return json({ user: currentUser })
     if (url.pathname.endsWith('/dashboard/school')) return json(dashboard)
+    if (url.pathname.endsWith('/calendar-events')) return json({ data: [] })
     if (url.pathname.endsWith('/students/1/fee-agreements')) return json({ data: [] })
     if (url.pathname.endsWith('/students/1/payments')) return json({ data: [pendingPayment] })
     if (url.pathname.endsWith('/students/1/receipts')) return json({ data: [issuedReceipt] })
@@ -206,6 +211,7 @@ describe('demo shell', () => {
     const navigation = screen.getByRole('navigation', { name: 'Main navigation' })
     expect(within(navigation).getAllByRole('button').map((button) => button.textContent)).toEqual([
       'Dashboard',
+      'Calendar',
       'Students',
       'Parents',
       'Fees',
@@ -220,6 +226,23 @@ describe('demo shell', () => {
     expect(within(navigation).getByText('People')).toBeInTheDocument()
     expect(within(navigation).getByText('Finance')).toBeInTheDocument()
     expect(within(navigation).getByText('Management')).toBeInTheDocument()
+  })
+
+  it('opens Calendar with the active school context', async () => {
+    const user = userEvent.setup()
+    await renderAuthenticatedApp()
+
+    await user.click(screen.getByRole('button', { name: 'Calendar' }))
+
+    expect(await screen.findByRole('region', { name: 'School calendar' })).toBeInTheDocument()
+    await waitFor(() =>
+      expect(
+        vi.mocked(globalThis.fetch).mock.calls.some(([input]) => {
+          const url = new URL(String(input))
+          return url.pathname.endsWith('/calendar-events') && url.searchParams.get('school_id') === '1'
+        }),
+      ).toBe(true),
+    )
   })
 
   it.each([

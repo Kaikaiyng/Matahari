@@ -3,6 +3,7 @@ import type { FormEvent, ReactNode } from 'react'
 import {
   AlertTriangle,
   BarChart3,
+  CalendarDays,
   ClipboardList,
   CreditCard,
   Eye,
@@ -26,11 +27,13 @@ import { AdminShell } from './components/AdminShell'
 import type { NavigationGroup } from './components/AdminShell'
 import { DataPanel, FilterToolbar, ModalFrame, PageHeader, SessionLoader, StatCard, StatusBadge } from './components/AdminUi'
 import type { UiTone } from './components/AdminUi'
+import { CalendarPage } from './components/CalendarPage'
 import misLogo from './assets/mis-logo.jpg'
 import './App.css'
 
 type PageKey =
   | 'dashboard'
+  | 'calendar'
   | 'students'
   | 'parents'
   | 'fees'
@@ -465,7 +468,10 @@ const fallbackDashboard: DashboardResponse = {
 const navGroups: NavigationGroup<PageKey>[] = [
   {
     label: 'Overview',
-    items: [{ key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard }],
+    items: [
+      { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+      { key: 'calendar', label: 'Calendar', icon: CalendarDays },
+    ],
   },
   {
     label: 'People',
@@ -4704,6 +4710,16 @@ function App() {
   }
 
   const renderPage = () => {
+    if (activePage === 'calendar') {
+      return (
+        <CalendarPage
+          schoolId={dashboard.school.id}
+          permissions={user.permissions}
+          onUnauthorized={handleUnauthorized}
+        />
+      )
+    }
+
     if (activePage === 'students') {
       return <StudentsPage key={focusedStudentId ?? 'students'} user={user} onUnauthorized={handleUnauthorized} initialStudentId={focusedStudentId} />
     }
