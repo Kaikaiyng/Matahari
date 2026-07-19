@@ -2,11 +2,11 @@
 
 Status: `RESPONSIVE_DEMO_READY_WITH_WARNINGS`
 
-Last verified: 2026-07-12
+Last verified: 2026-07-19
 
 ## 1. Product State
 
-Matahari has moved beyond scaffold status. The current repository contains a working internal Admin Finance MVP with a Laravel API, React frontend, seeded roles and sample data, finance workflows, and an iPad-first responsive pass.
+Matahari has moved beyond scaffold status. The current repository contains a working internal Admin Finance MVP with a Laravel API, React frontend, seeded roles and sample data, finance workflows, a shared school calendar, and an iPad-first responsive pass.
 
 The status includes warnings because real-device iPad Safari and native browser print preview still need operator verification, and several planned product modules remain intentionally deferred.
 
@@ -24,6 +24,7 @@ The status includes warnings because real-device iPad Safari and native browser 
 - Student Fee Record totals
 - Fee Record Summary
 - Category Monthly Fee Record Jan-Dec ledger
+- Shared Calendar: school-isolated visible-range month loading; create, edit, and confirmed delete access for every initial role; all-day and timed events; Appointment, Training, Meeting, School Event, and Other types; optional location, participants/person-in-charge, and notes; creator/updater audit users; seven-column desktop/tablet views; and compact mobile date rows
 
 ## 3. Responsive State
 
@@ -33,6 +34,15 @@ Browser QA covered:
 - iPad landscape: 1180x820
 - iPad portrait: 820x1180
 - Mobile portrait: 390x844
+
+Shared Calendar browser QA additionally covered the exact delivery viewports:
+
+- Desktop: 1440x900
+- iPad landscape: 1024x768
+- iPad portrait: 768x1024
+- Mobile portrait: 390x844
+
+At each Calendar viewport, the page had no horizontal overflow. Desktop and tablet retained the seven-column month grid; mobile switched to readable date-and-event rows. Drawer checks at 768px and 390px confirmed Calendar directly below Dashboard.
 
 Implemented behavior:
 
@@ -51,7 +61,7 @@ Implemented behavior:
 ## 4. Backend and API
 
 - Framework: Laravel 13 on PHP 8.4
-- Non-vendor API routes: 30
+- Non-vendor API routes: 35
 - Authentication: session cookies
 - Authorization: `auth` plus permission middleware
 - Active local demo database: MariaDB 12.3.2
@@ -67,20 +77,26 @@ Main API groups:
 - Payments, verification, and voiding
 - Receipts, print view, and voiding
 - Legacy dashboard and invoice-generation endpoints
+- Calendar visible-range list, create, update, and delete endpoints, each protected by its matching `calendar.*` permission
 
 ## 5. Verification Evidence
 
-Latest local verification:
+Fresh shared-calendar delivery verification on 2026-07-19:
 
 ```text
-Frontend build: passed
-Frontend lint: zero errors, one existing exhaustive-deps warning
-Backend PHPUnit: 92 tests passed
-Backend assertions: 597
-API login: passed
-Student API: passed
-Fee Record Summary API: passed
-MariaDB foreign keys checked: 66, zero orphan rows at migration validation
+Frontend Vitest: 5 files passed, 45 tests passed
+Frontend lint: zero errors and zero warnings
+Frontend production build: passed; 63 modules transformed
+Backend PHPUnit: 106 tests passed, 662 assertions
+Focused Calendar API: 8 tests passed, 40 assertions
+Laravel API routes: 35
+Calendar API routes: 4, with auth and calendar.view/create/update/delete middleware
+Seeded browser roles: Super Admin, School Admin, and Finance all opened Calendar with CRUD controls
+CEO: no seeded login; backend role-permission coverage confirms all four calendar permissions
+Responsive Calendar QA: 1440x900, 1024x768, 768x1024, and 390x844; zero page-level horizontal overflow
+Calendar runtime flow: timed Appointment create/edit/cancel-delete/confirmed-delete passed; all-day Training create/display passed; validation values, Escape close, and focus restoration passed
+School isolation: second-school fixture excluded from the MIS user's runtime response; cross-school backend tests passed
+Browser console: zero application errors or warnings after Calendar interactions
 ```
 
 ## 6. Deferred Scope
