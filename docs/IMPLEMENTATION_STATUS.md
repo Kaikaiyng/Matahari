@@ -24,7 +24,7 @@ The status includes warnings because real-device iPad Safari and native browser 
 - Student Fee Record totals
 - Fee Record Summary
 - Category Monthly Fee Record Jan-Dec ledger
-- Shared Calendar: school-isolated visible-range month loading; create, edit, and confirmed delete access for every initial role; all-day and timed events; Appointment, Training, Meeting, School Event, and Other types; optional location, participants/person-in-charge, and notes; creator/updater audit users; seven-column desktop/tablet views; and compact mobile date rows
+- Shared Calendar: school-isolated visible-range month loading; create, edit, and confirmed delete access for every initial role; all-day and Malaysia-time timed events; Appointment, Training, Meeting, School Event, and Other types; optional location, participants/person-in-charge, and notes; creator/updater audit users; Today navigation and current-day highlighting; explicit loading/empty/error states; seven-column desktop/tablet views; and compact mobile date rows
 
 ## 3. Responsive State
 
@@ -81,23 +81,23 @@ Main API groups:
 
 ## 5. Verification Evidence
 
-Final detached-worktree verification at commit `17f8070` on 2026-07-19:
+Final detached-worktree verification at commit `5ed3e26` on 2026-07-19:
 
 ```text
 Frontend clean install: npm ci installed 119 packages; zero vulnerabilities
-Frontend Vitest: 4 files passed, 43 tests passed
+Frontend Vitest: 4 files passed, 52 tests passed
 Frontend lint: zero errors and zero warnings
 Frontend production build: passed; 63 modules transformed
-Backend PHPUnit: 105 tests passed, 653 assertions with an ephemeral APP_KEY
-Focused Calendar API: 8 tests passed, 40 assertions
+Backend PHPUnit: 107 tests passed, 669 assertions with an ephemeral APP_KEY
+Focused Calendar API: 10 tests passed, 56 assertions
 Laravel API routes: 35
 Calendar API routes: 4, with auth and calendar.view/create/update/delete middleware
-Production browser QA from commit 9f7bca0: School Admin login and Calendar navigation passed at 1440x900 and 390x844 with no horizontal overflow
-Calendar runtime flow: timed Appointment create/edit/cancel-delete/confirmed-delete passed; all-day Training rendered without time text
-Browser console: zero application errors or warnings on the production Calendar tab
+Exact-head browser QA: School Admin login and Calendar navigation passed at 1440x900, 1024x768, 768x1024, and 390x844 with zero horizontal overflow
+Calendar runtime flow: Today navigation/current-day highlighting passed; a 9:00 Malaysia-time event round-tripped and displayed as 9:00 AM; the named delete confirmation opened and cancel preserved the event
+Browser console: zero application errors or warnings on the exact-head Calendar tab
 ```
 
-Commit `17f8070` changed only frontend package metadata, Vitest configuration/setup, and `CalendarPage.test.tsx`; it did not change production Calendar source. The exact production browser evidence from commit `9f7bca0` therefore remains applicable. Earlier broader role, viewport, validation, and runtime-isolation QA from the pre-existing dirty workspace is retained in the Task 5 report as non-authoritative context.
+The final clean worktree verified that PHP autoload resolved Calendar source from the detached worktree itself. Backend offset-datetime regression tests cover create/update normalization and audit identity; frontend tests cover Malaysia-time display/serialization, Today highlighting, request states, validation accessibility, and events moving outside the visible range. Earlier Finance and Super Admin role checks and the broader CRUD/isolation browser evidence remain recorded in the Task 5 report; the final exact-head browser pass rechecked the changed Calendar UI with School Admin at all four delivery viewports.
 
 ## 6. Deferred Scope
 
