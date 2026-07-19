@@ -343,13 +343,11 @@ describe('CalendarPage', () => {
 
   it('keeps a failed request distinguishable from a successful empty calendar', async () => {
     vi.mocked(globalThis.fetch).mockImplementation(() =>
-      json({ message: 'Calendar unavailable.' }, 503),
+      json({ message: 'Calendar unavailable.' }, 422),
     )
     renderCalendar()
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'The service is temporarily unavailable. Please try again.',
-    )
+    expect(await screen.findByRole('alert')).toHaveTextContent('Calendar unavailable.')
     expect(screen.queryByText('Loading calendar events')).not.toBeInTheDocument()
     expect(screen.queryByText('No events')).not.toBeInTheDocument()
   })
