@@ -215,7 +215,7 @@ describe('CalendarPage', () => {
     vi.mocked(globalThis.fetch).mockImplementation((input) => {
       const url = new URL(String(input))
       if (url.searchParams.get('school_id') === '8') {
-        return json({ message: 'Unable to load the new school calendar.' }, 503)
+        return json({ message: 'Unable to load the new school calendar.' }, 422)
       }
       return json({ data: [appointment] })
     })
@@ -226,7 +226,7 @@ describe('CalendarPage', () => {
 
     expect(screen.queryByText('Parent Appointment')).not.toBeInTheDocument()
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'The service is temporarily unavailable. Please try again.',
+      'Unable to load the new school calendar.',
     )
     expect(screen.queryByText('Parent Appointment')).not.toBeInTheDocument()
   })
