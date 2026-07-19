@@ -81,23 +81,24 @@ Main API groups:
 
 ## 5. Verification Evidence
 
-Fresh shared-calendar delivery verification on 2026-07-19:
+Detached-worktree verification of shared-calendar delivery commit `9f7bca0` on 2026-07-19:
 
 ```text
-Frontend Vitest: 5 files passed, 45 tests passed
+Frontend test command: not reproducible from the commit; package.json has no test script or committed Vitest/jsdom setup
+Frontend committed tests via an ephemeral harness: 4 files, 43 tests; 42 passed and 1 failed
+Frontend failure: CalendarPage 503-message test expected the generic fallback but the committed client rendered the server message
 Frontend lint: zero errors and zero warnings
-Frontend production build: passed; 63 modules transformed
-Backend PHPUnit: 106 tests passed, 662 assertions
+Frontend production build: failed because committed TypeScript configuration does not register jest-dom matcher types for test files
+Backend PHPUnit: 105 tests passed, 653 assertions with an ephemeral APP_KEY
 Focused Calendar API: 8 tests passed, 40 assertions
 Laravel API routes: 35
 Calendar API routes: 4, with auth and calendar.view/create/update/delete middleware
-Seeded browser roles: Super Admin, School Admin, and Finance all opened Calendar with CRUD controls
-CEO: no seeded login; backend role-permission coverage confirms all four calendar permissions
-Responsive Calendar QA: 1440x900, 1024x768, 768x1024, and 390x844; zero page-level horizontal overflow
-Calendar runtime flow: timed Appointment create/edit/cancel-delete/confirmed-delete passed; all-day Training create/display passed; validation values, Escape close, and focus restoration passed
-School isolation: second-school fixture excluded from the MIS user's runtime response; cross-school backend tests passed
-Browser console: zero application errors or warnings after Calendar interactions
+Exact-head browser QA: School Admin login and Calendar navigation passed at 1440x900 and 390x844 with no horizontal overflow
+Calendar runtime flow: timed Appointment create/edit/cancel-delete/confirmed-delete passed; all-day Training rendered without time text
+Browser console: zero application errors or warnings on the exact-head Calendar tab
 ```
+
+The earlier broader role, viewport, validation, and runtime-isolation QA was run in the pre-existing dirty workspace and is retained in the Task 5 report as non-authoritative context; it is not evidence attributable to commit `9f7bca0`.
 
 ## 6. Deferred Scope
 
@@ -120,7 +121,8 @@ Some navigation entries retain demo/future-phase content. A visible navigation i
 - Real iPad Safari testing remains required for final device confidence.
 - Native print preview could not be automated. Receipt print CSS and print action were checked without changing the existing A4 rules.
 - `frontend/src/App.tsx` remains large by design for this stabilization phase.
-- Frontend lint retains one `react-hooks/exhaustive-deps` warning around `loadStudents`.
+- The committed frontend package does not provide a reproducible test script/configuration. An ephemeral exact-head harness found one failing Calendar error-message assertion (42/43 passed).
+- The committed frontend production build fails because jest-dom matcher types are not registered for the committed test files.
 - Fresh MariaDB migrations need a temporary foreign-key creation workaround because an early migration references `fee_agreement_items` before that table is created.
 - The portable local MariaDB/phpMyAdmin processes do not automatically start after a computer reboot.
 
@@ -131,7 +133,8 @@ Before adding new modules:
 1. Run the complete demo on a real iPad Safari device.
 2. Confirm receipt print preview on the target browser and printer.
 3. Add a database-safe migration to remove the MariaDB foreign-key ordering workaround.
-4. Resolve the remaining frontend hook warning.
-5. Confirm school business rules and real receipt wording with finance staff.
+4. Commit a reproducible frontend test setup and register jest-dom matcher types for TypeScript builds.
+5. Align the Calendar 503-message behavior and test expectation.
+6. Confirm school business rules and real receipt wording with finance staff.
 
 Only after those stabilization checks should Statements, Reminders, Reports, Export, PDF, Parent Portal, or deployment work begin.
