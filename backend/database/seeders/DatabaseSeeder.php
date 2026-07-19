@@ -98,11 +98,21 @@ class DatabaseSeeder extends Seeder
             'receipts.create' => 'Create receipts',
             'receipts.void' => 'Void receipts',
             'receipts.print' => 'Print receipts',
+            'calendar.view' => 'View calendar events',
+            'calendar.create' => 'Create calendar events',
+            'calendar.update' => 'Update calendar events',
+            'calendar.delete' => 'Delete calendar events',
         ])->mapWithKeys(fn (string $name, string $slug) => [
             $slug => Permission::query()->updateOrCreate(['slug' => $slug], ['name' => $name]),
         ]);
 
         $roles['super-admin']->permissions()->sync($permissions->pluck('id')->all());
+        $roles['ceo']->permissions()->sync($permissions->only([
+            'calendar.view',
+            'calendar.create',
+            'calendar.update',
+            'calendar.delete',
+        ])->pluck('id')->all());
         $roles['school-admin']->permissions()->sync($permissions->only([
             'students.view',
             'students.create',
@@ -123,6 +133,10 @@ class DatabaseSeeder extends Seeder
             'receipts.view',
             'receipts.create',
             'receipts.print',
+            'calendar.view',
+            'calendar.create',
+            'calendar.update',
+            'calendar.delete',
         ])->pluck('id')->all());
         $roles['finance']->permissions()->sync($permissions->only([
             'students.view',
@@ -137,6 +151,10 @@ class DatabaseSeeder extends Seeder
             'receipts.create',
             'receipts.void',
             'receipts.print',
+            'calendar.view',
+            'calendar.create',
+            'calendar.update',
+            'calendar.delete',
         ])->pluck('id')->all());
 
         $superAdmin->roles()->syncWithoutDetaching([$roles['super-admin']->id]);

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -32,6 +33,16 @@ class User extends Authenticatable
     public function roles(): BelongsToMany
     {
         return $this->belongsToMany(Role::class, 'user_roles')->withTimestamps();
+    }
+
+    public function createdCalendarEvents(): HasMany
+    {
+        return $this->hasMany(CalendarEvent::class, 'created_by');
+    }
+
+    public function updatedCalendarEvents(): HasMany
+    {
+        return $this->hasMany(CalendarEvent::class, 'updated_by');
     }
 
     public function hasPermissionTo(string $permissionSlug): bool

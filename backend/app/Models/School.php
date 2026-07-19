@@ -52,4 +52,9 @@ class School extends Model
     {
         return $this->hasMany(Receipt::class);
     }
+
+    public function calendarEvents(): HasMany
+    {
+        return $this->hasMany(CalendarEvent::class);
+    }
 }
