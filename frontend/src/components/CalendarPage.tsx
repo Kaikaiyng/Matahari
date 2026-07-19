@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { CalendarDays, ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import { ApiError, apiRequest } from '../api'
@@ -82,6 +82,7 @@ function visibleDates(month: Date) {
 }
 
 function eventDateKey(event: CalendarEvent) {
+  if (event.is_all_day) return new Date(event.starts_at).toISOString().slice(0, 10)
   return dateKey(new Date(event.starts_at))
 }
 
@@ -126,9 +127,13 @@ function formFromEvent(event: CalendarEvent): CalendarEventForm {
     title: event.title,
     event_type: event.event_type,
     is_all_day: event.is_all_day,
-    start_date: dateKey(start),
+    start_date: event.is_all_day ? start.toISOString().slice(0, 10) : dateKey(start),
     start_time: localTime(start),
-    end_date: end ? dateKey(end) : '',
+    end_date: end
+      ? event.is_all_day
+        ? end.toISOString().slice(0, 10)
+        : dateKey(end)
+      : '',
     end_time: end ? localTime(end) : '',
     location: event.location ?? '',
     participants: event.participants ?? '',
@@ -140,19 +145,28 @@ function toLocalIso(date: string, time: string) {
   return new Date(`${date}T${time}:00`).toISOString()
 }
 
+function toUtcMidnightIso(date: string) {
+  const [year, month, day] = date.split('-').map(Number)
+  return new Date(Date.UTC(year, month - 1, day)).toISOString()
+}
+
 function eventPayload(form: CalendarEventForm) {
-  const startTime = form.is_all_day ? '00:00' : form.start_time
   const hasEnd = form.is_all_day
     ? Boolean(form.end_date)
     : Boolean(form.end_date && form.end_time)
-  const endTime = form.is_all_day ? '00:00' : form.end_time
 
   return {
     title: form.title.trim(),
     event_type: form.event_type,
     is_all_day: form.is_all_day,
-    starts_at: toLocalIso(form.start_date, startTime),
-    ends_at: hasEnd ? toLocalIso(form.end_date, endTime) : null,
+    starts_at: form.is_all_day
+      ? toUtcMidnightIso(form.start_date)
+      : toLocalIso(form.start_date, form.start_time),
+    ends_at: hasEnd
+      ? form.is_all_day
+        ? toUtcMidnightIso(form.end_date)
+        : toLocalIso(form.end_date, form.end_time)
+      : null,
     location: form.location.trim() || null,
     participants: form.participants.trim() || null,
     notes: form.notes.trim() || null,
@@ -164,6 +178,7 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
     () => new Date(new Date().getFullYear(), new Date().getMonth(), 1, 12),
   )
   const [events, setEvents] = useState<CalendarEvent[]>([])
+  const [loadedScope, setLoadedScope] = useState<string | null>(null)
   const [loadError, setLoadError] = useState('')
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null | undefined>(undefined)
   const [form, setForm] = useState<CalendarEventForm>(() => emptyForm())
@@ -178,38 +193,75 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
   const canCreate = permissions.includes('calendar.create')
   const canUpdate = permissions.includes('calendar.update')
   const canDelete = permissions.includes('calendar.delete')
+  const canOpenEvent = canUpdate || canDelete
+  const rangeStart = dateKey(dates[0])
+  const rangeEnd = dateKey(dates[dates.length - 1])
+  const scopeKey = `${canView ? 'view' : 'hidden'}:${schoolId}:${rangeStart}:${rangeEnd}`
+  const activeScopeRef = useRef(scopeKey)
+  const previousScopeRef = useRef(scopeKey)
+  const requestGenerationRef = useRef(0)
+  const onUnauthorizedRef = useRef(onUnauthorized)
+  const visibleEvents = loadedScope === scopeKey ? events : []
+  activeScopeRef.current = scopeKey
+  onUnauthorizedRef.current = onUnauthorized
 
   useEffect(() => {
-    if (!canView) {
-      setEvents([])
-      return
+    const scopeChanged = previousScopeRef.current !== scopeKey
+    previousScopeRef.current = scopeKey
+    const generation = ++requestGenerationRef.current
+    const controller = new AbortController()
+
+    setEvents([])
+    setLoadedScope(scopeKey)
+    setLoadError('')
+    if (scopeChanged) {
+      setEditingEvent(undefined)
+      setEventToDelete(null)
+      setFormError('')
+      setFieldErrors({})
+      setDeleteError('')
     }
 
-    let active = true
+    if (!canView) {
+      return () => controller.abort()
+    }
+
     const params = new URLSearchParams({
       school_id: String(schoolId),
-      start: dateKey(dates[0]),
-      end: dateKey(dates[dates.length - 1]),
+      start: rangeStart,
+      end: rangeEnd,
     })
 
-    setLoadError('')
-    apiRequest<{ data: CalendarEvent[] }>(`/calendar-events?${params.toString()}`)
+    apiRequest<{ data: CalendarEvent[] }>(`/calendar-events?${params.toString()}`, {
+      signal: controller.signal,
+    })
       .then((response) => {
-        if (active) setEvents(response.data)
+        if (
+          !controller.signal.aborted &&
+          activeScopeRef.current === scopeKey &&
+          requestGenerationRef.current === generation
+        ) {
+          setEvents(response.data)
+          setLoadedScope(scopeKey)
+        }
       })
       .catch((error: unknown) => {
-        if (!active) return
+        if (
+          controller.signal.aborted ||
+          activeScopeRef.current !== scopeKey ||
+          requestGenerationRef.current !== generation
+        ) {
+          return
+        }
         if (error instanceof ApiError && error.status === 401) {
-          onUnauthorized()
+          onUnauthorizedRef.current()
           return
         }
         setLoadError(error instanceof Error ? error.message : 'Unable to load calendar events.')
       })
 
-    return () => {
-      active = false
-    }
-  }, [canView, dates, onUnauthorized, schoolId])
+    return () => controller.abort()
+  }, [canView, rangeEnd, rangeStart, schoolId, scopeKey])
 
   const changeMonth = (offset: number) => {
     setDisplayedMonth(
@@ -240,11 +292,20 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
     value: CalendarEventForm[Key],
   ) => {
     setForm((current) => ({ ...current, [key]: value }))
-    setFieldErrors((current) => ({ ...current, [key]: [] }))
+    setFieldErrors((current) => {
+      const mappedKey =
+        key === 'start_date' || key === 'start_time'
+          ? 'starts_at'
+          : key === 'end_date' || key === 'end_time'
+            ? 'ends_at'
+            : key
+      return { ...current, [key]: [], [mappedKey]: [] }
+    })
   }
 
   const submitEvent = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    if (editingEvent && !canUpdate) return
     const localErrors: ApiValidationErrors = {}
     if (!form.title.trim()) localErrors.title = ['A title is required.']
     if (!form.start_date) localErrors.start_date = ['A start date is required.']
@@ -260,6 +321,7 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
     setIsSaving(true)
     setFormError('')
     setFieldErrors({})
+    const mutationScope = activeScopeRef.current
 
     try {
       const eventBeingEdited = editingEvent ?? null
@@ -271,6 +333,9 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
         body: eventPayload(form),
       })
 
+      if (activeScopeRef.current !== mutationScope) return
+      requestGenerationRef.current += 1
+
       setEvents((current) =>
         eventBeingEdited
           ? current.map((item) =>
@@ -278,11 +343,13 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
             )
           : [...current, response.calendar_event],
       )
+      setLoadedScope(mutationScope)
       setEditingEvent(undefined)
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
-        onUnauthorized()
+        if (activeScopeRef.current === mutationScope) onUnauthorizedRef.current()
       } else {
+        if (activeScopeRef.current !== mutationScope) return
         setFormError(error instanceof Error ? error.message : 'Unable to save the event.')
         if (error instanceof ApiError && error.errors) setFieldErrors(error.errors)
       }
@@ -304,20 +371,26 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
   const confirmDelete = async () => {
     if (!eventToDelete || isDeleting) return
 
+    const targetEvent = eventToDelete
+    const mutationScope = activeScopeRef.current
     setIsDeleting(true)
     setDeleteError('')
     try {
       await apiRequest<void>(
-        `/calendar-events/${eventToDelete.id}?school_id=${schoolId}`,
+        `/calendar-events/${targetEvent.id}?school_id=${schoolId}`,
         { method: 'DELETE' },
       )
-      setEvents((current) => current.filter((event) => event.id !== eventToDelete.id))
+      if (activeScopeRef.current !== mutationScope) return
+      requestGenerationRef.current += 1
+      setEvents((current) => current.filter((event) => event.id !== targetEvent.id))
+      setLoadedScope(mutationScope)
       setEventToDelete(null)
       setEditingEvent(undefined)
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
-        onUnauthorized()
+        if (activeScopeRef.current === mutationScope) onUnauthorizedRef.current()
       } else {
+        if (activeScopeRef.current !== mutationScope) return
         setDeleteError(error instanceof Error ? error.message : 'Unable to delete the event.')
       }
     } finally {
@@ -379,7 +452,7 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
         </div>
         <div className="calendar-grid">
           {dates.map((date) => {
-            const dayEvents = events.filter((event) => eventDateKey(event) === dateKey(date))
+            const dayEvents = visibleEvents.filter((event) => eventDateKey(event) === dateKey(date))
             const isCurrentMonth = date.getMonth() === displayedMonth.getMonth()
 
             return (
@@ -395,7 +468,7 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
                 <span className="calendar-day-number">{date.getDate()}</span>
                 <div className="calendar-day-events">
                   {dayEvents.map((event) =>
-                    canUpdate ? (
+                    canOpenEvent ? (
                       <button
                         className={`calendar-event calendar-event-${event.event_type}`}
                         type="button"
@@ -420,10 +493,22 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
         </div>
       </section>
 
-      {editingEvent !== undefined && (
+      {editingEvent !== undefined && !eventToDelete && (
         <ModalFrame
-          title={editingEvent ? `Edit ${editingEvent.title}` : 'Add event'}
-          description={editingEvent ? 'Update this calendar event.' : 'Add an event to the school calendar.'}
+          title={
+            editingEvent
+              ? canUpdate
+                ? `Edit ${editingEvent.title}`
+                : `${editingEvent.title} details`
+              : 'Add event'
+          }
+          description={
+            editingEvent
+              ? canUpdate
+                ? 'Update this calendar event.'
+                : 'Review this calendar event before deleting it.'
+              : 'Add an event to the school calendar.'
+          }
           onClose={closeForm}
           footer={
             <>
@@ -440,20 +525,22 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
               <button className="secondary-action" type="button" onClick={closeForm} disabled={isSaving}>
                 Cancel
               </button>
-              <button
-                className="primary-action compact"
-                type="submit"
-                form="calendar-event-form"
-                disabled={isSaving}
-              >
-                {isSaving ? 'Saving…' : editingEvent ? 'Save changes' : 'Create event'}
-              </button>
+              {(!editingEvent || canUpdate) && (
+                <button
+                  className="primary-action compact"
+                  type="submit"
+                  form="calendar-event-form"
+                  disabled={isSaving}
+                >
+                  {isSaving ? 'Saving…' : editingEvent ? 'Save changes' : 'Create event'}
+                </button>
+              )}
             </>
           }
         >
           <form id="calendar-event-form" className="calendar-event-form" onSubmit={submitEvent}>
             {formError && <InlineMessage tone="error">{formError}</InlineMessage>}
-            <div className="calendar-form-grid">
+            <fieldset className="calendar-form-grid" disabled={Boolean(editingEvent) && !canUpdate}>
               <label className="calendar-form-field wide">
                 Title
                 <input
@@ -510,7 +597,7 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
                     type="time"
                     value={form.start_time}
                     onChange={(event) => updateForm('start_time', event.target.value)}
-                    aria-invalid={Boolean(fieldErrors.start_time?.length)}
+                    aria-invalid={Boolean(fieldErrors.start_time?.length || fieldErrors.starts_at?.length)}
                   />
                   {fieldErrors.start_time?.map((message) => <small key={message}>{message}</small>)}
                 </label>
@@ -534,6 +621,7 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
                     type="time"
                     value={form.end_time}
                     onChange={(event) => updateForm('end_time', event.target.value)}
+                    aria-invalid={Boolean(fieldErrors.ends_at?.length)}
                   />
                 </label>
               )}
@@ -558,7 +646,7 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
                 <textarea value={form.notes} onChange={(event) => updateForm('notes', event.target.value)} />
                 {fieldErrors.notes?.map((message) => <small key={message}>{message}</small>)}
               </label>
-            </div>
+            </fieldset>
           </form>
         </ModalFrame>
       )}

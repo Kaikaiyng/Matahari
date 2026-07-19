@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { CalendarPage } from './CalendarPage'
@@ -78,10 +78,23 @@ function requestBody(method: 'POST' | 'PATCH') {
   return request ? JSON.parse(String(request[1]?.body)) : undefined
 }
 
-function renderCalendar(permissions = allPermissions) {
+function renderCalendar(permissions = allPermissions, schoolId = 7) {
   const onUnauthorized = vi.fn()
-  render(<CalendarPage schoolId={7} permissions={permissions} onUnauthorized={onUnauthorized} />)
-  return { onUnauthorized }
+  const result = render(
+    <CalendarPage schoolId={schoolId} permissions={permissions} onUnauthorized={onUnauthorized} />,
+  )
+  return {
+    onUnauthorized,
+    rerenderCalendar(nextSchoolId: number, nextPermissions = permissions) {
+      result.rerender(
+        <CalendarPage
+          schoolId={nextSchoolId}
+          permissions={nextPermissions}
+          onUnauthorized={onUnauthorized}
+        />,
+      )
+    },
+  }
 }
 
 describe('CalendarPage', () => {
@@ -130,29 +143,169 @@ describe('CalendarPage', () => {
     )
   })
 
-  it('creates an all-day event with a school-scoped request', async () => {
+  it('persists and renders an all-day date at UTC midnight in Malaysia', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     renderCalendar()
     await screen.findByRole('heading', { name: 'July 2026' })
 
     await user.click(screen.getByRole('button', { name: 'Add event' }))
-    await user.type(screen.getByLabelText('Title'), 'Teacher Training')
+    await user.type(screen.getByLabelText('Title'), 'Boundary Training')
     await user.selectOptions(screen.getByLabelText('Event type'), 'training')
     await user.click(screen.getByLabelText('All-day event'))
     expect(screen.queryByLabelText('Start time')).not.toBeInTheDocument()
     await user.clear(screen.getByLabelText('Start date'))
-    await user.type(screen.getByLabelText('Start date'), '2026-07-24')
+    await user.type(screen.getByLabelText('Start date'), '2026-07-26')
     await user.click(screen.getByRole('button', { name: 'Create event' }))
 
     await waitFor(() =>
       expect(requestBody('POST')).toMatchObject({
-        title: 'Teacher Training',
+        title: 'Boundary Training',
         event_type: 'training',
         is_all_day: true,
-        starts_at: new Date(2026, 6, 24, 0, 0, 0).toISOString(),
+        starts_at: '2026-07-26T00:00:00.000Z',
       }),
     )
     expect(String(mutationRequest('POST')?.[0])).toContain('/calendar-events?school_id=7')
+    expect(
+      within(screen.getByRole('region', { name: '26 July 2026' })).getByText('Boundary Training'),
+    ).toBeInTheDocument()
+  })
+
+  it('buckets all-day events by UTC date and includes the visible-range boundary', async () => {
+    const utcDatedEvent = {
+      ...training,
+      id: 40,
+      title: 'UTC Dated Event',
+      starts_at: '2026-07-25T18:00:00.000Z',
+    }
+    const boundaryEvent = {
+      ...training,
+      id: 41,
+      title: 'Boundary Holiday',
+      starts_at: '2026-07-26T00:00:00.000Z',
+    }
+    vi.mocked(globalThis.fetch).mockImplementation((input) => {
+      const url = new URL(String(input))
+      return json({
+        data: url.searchParams.get('start') === '2026-07-26' ? [boundaryEvent] : [utcDatedEvent],
+      })
+    })
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    renderCalendar()
+
+    expect(
+      within(await screen.findByRole('region', { name: '25 July 2026' })).getByText(
+        'UTC Dated Event',
+      ),
+    ).toBeInTheDocument()
+    expect(
+      within(screen.getByRole('region', { name: '26 July 2026' })).queryByText('UTC Dated Event'),
+    ).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Next month' }))
+
+    expect(
+      within(await screen.findByRole('region', { name: '26 July 2026' })).getByText(
+        'Boundary Holiday',
+      ),
+    ).toBeInTheDocument()
+  })
+
+  it('clears prior-school events immediately and keeps them cleared when reload fails', async () => {
+    vi.mocked(globalThis.fetch).mockImplementation((input) => {
+      const url = new URL(String(input))
+      if (url.searchParams.get('school_id') === '8') {
+        return json({ message: 'Unable to load the new school calendar.' }, 503)
+      }
+      return json({ data: [appointment] })
+    })
+    const { rerenderCalendar } = renderCalendar()
+    expect(await screen.findByText('Parent Appointment')).toBeInTheDocument()
+
+    rerenderCalendar(8)
+
+    expect(screen.queryByText('Parent Appointment')).not.toBeInTheDocument()
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'The service is temporarily unavailable. Please try again.',
+    )
+    expect(screen.queryByText('Parent Appointment')).not.toBeInTheDocument()
+  })
+
+  it('does not let an older GET replace a successful mutation result', async () => {
+    let resolveGet!: (response: Response) => void
+    vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
+      const url = new URL(String(input))
+      if (init?.method === 'POST') {
+        const body = JSON.parse(String(init.body))
+        return json({ calendar_event: { ...appointment, ...body, id: 50 } }, 201)
+      }
+      if (url.pathname.endsWith('/calendar-events')) {
+        return new Promise<Response>((resolve) => {
+          resolveGet = resolve
+        })
+      }
+      return json({ message: 'Unhandled request' }, 404)
+    })
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    renderCalendar()
+    await user.click(screen.getByRole('button', { name: 'Add event' }))
+    await user.type(screen.getByLabelText('Title'), 'New Calendar Event')
+    await user.click(screen.getByRole('button', { name: 'Create event' }))
+    expect(await screen.findByText('New Calendar Event')).toBeInTheDocument()
+
+    await act(async () => {
+      resolveGet(
+        new Response(JSON.stringify({ data: [appointment] }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      )
+    })
+
+    expect(screen.getByText('New Calendar Event')).toBeInTheDocument()
+  })
+
+  it('does not merge a mutation response after the active school changes', async () => {
+    const schoolEightEvent = {
+      ...appointment,
+      id: 1,
+      school_id: 8,
+      title: 'School Eight Meeting',
+    }
+    let resolvePatch!: (response: Response) => void
+    vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
+      const url = new URL(String(input))
+      if (init?.method === 'PATCH') {
+        return new Promise<Response>((resolve) => {
+          resolvePatch = resolve
+        })
+      }
+      return json({ data: url.searchParams.get('school_id') === '8' ? [schoolEightEvent] : [appointment] })
+    })
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    const { rerenderCalendar } = renderCalendar()
+    await user.click(await screen.findByRole('button', { name: /Parent Appointment/ }))
+    await user.clear(screen.getByLabelText('Title'))
+    await user.type(screen.getByLabelText('Title'), 'Stale School Update')
+    await user.click(screen.getByRole('button', { name: 'Save changes' }))
+    await waitFor(() => expect(mutationRequest('PATCH')).toBeDefined())
+
+    rerenderCalendar(8)
+    expect(await screen.findByText('School Eight Meeting')).toBeInTheDocument()
+
+    await act(async () => {
+      resolvePatch(
+        new Response(
+          JSON.stringify({
+            calendar_event: { ...appointment, title: 'Stale School Update' },
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        ),
+      )
+    })
+
+    expect(screen.getByText('School Eight Meeting')).toBeInTheDocument()
+    expect(screen.queryByText('Stale School Update')).not.toBeInTheDocument()
   })
 
   it('preserves edited values and shows API validation errors after a failed update', async () => {
@@ -269,5 +422,88 @@ describe('CalendarPage', () => {
     await user.click(await screen.findByRole('button', { name: /Parent Appointment/ }))
 
     expect(screen.queryByRole('button', { name: 'Delete event' })).not.toBeInTheDocument()
+  })
+
+  it('lets a delete-only role open read-only details and delete the event', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    renderCalendar(['calendar.view', 'calendar.delete'])
+    await user.click(await screen.findByRole('button', { name: /Parent Appointment/ }))
+
+    expect(screen.getByRole('dialog', { name: 'Parent Appointment details' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Title')).toBeDisabled()
+    expect(screen.queryByRole('button', { name: 'Save changes' })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Delete event' }))
+    await user.click(screen.getByRole('button', { name: 'Confirm delete' }))
+
+    await waitFor(() => expect(screen.queryByText('Parent Appointment')).not.toBeInTheDocument())
+  })
+
+  it('mounts one modal and Escape returns to unsaved edit values', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    renderCalendar()
+    await user.click(await screen.findByRole('button', { name: /Parent Appointment/ }))
+    await user.clear(screen.getByLabelText('Title'))
+    await user.type(screen.getByLabelText('Title'), 'Unsaved Parent Appointment')
+    await user.click(screen.getByRole('button', { name: 'Delete event' }))
+
+    expect(screen.getAllByRole('dialog')).toHaveLength(1)
+    expect(screen.getByRole('dialog', { name: 'Delete Parent Appointment?' })).toBeInTheDocument()
+    await user.keyboard('{Escape}')
+
+    expect(screen.getAllByRole('dialog')).toHaveLength(1)
+    expect(screen.getByRole('dialog', { name: 'Edit Parent Appointment' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Title')).toHaveValue('Unsaved Parent Appointment')
+  })
+
+  it('clears mapped timestamp errors when either source field changes', async () => {
+    vi.mocked(globalThis.fetch).mockImplementation((_input, init) => {
+      if (init?.method === 'PATCH') {
+        return json(
+          {
+            message: 'Please check the event times.',
+            errors: {
+              starts_at: ['The start is invalid.'],
+              ends_at: ['The end is invalid.'],
+            },
+          },
+          422,
+        )
+      }
+      return json({ data: [appointment] })
+    })
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    renderCalendar()
+    await user.click(await screen.findByRole('button', { name: /Parent Appointment/ }))
+    const startDate = screen.getByLabelText('Start date')
+    const startTime = screen.getByLabelText('Start time')
+    const endDate = screen.getByLabelText('End date')
+    const endTime = screen.getByLabelText('End time')
+    const submit = screen.getByRole('button', { name: 'Save changes' })
+
+    await user.click(submit)
+    expect(await screen.findByText('The start is invalid.')).toBeInTheDocument()
+    expect(screen.getByText('The end is invalid.')).toBeInTheDocument()
+
+    await user.clear(startDate)
+    await user.type(startDate, '2026-07-21')
+    expect(screen.queryByText('The start is invalid.')).not.toBeInTheDocument()
+    await user.click(submit)
+    expect(await screen.findByText('The start is invalid.')).toBeInTheDocument()
+
+    await user.clear(startTime)
+    await user.type(startTime, '10:00')
+    expect(screen.queryByText('The start is invalid.')).not.toBeInTheDocument()
+    await user.click(submit)
+    expect(await screen.findByText('The end is invalid.')).toBeInTheDocument()
+
+    await user.clear(endDate)
+    await user.type(endDate, '2026-07-21')
+    expect(screen.queryByText('The end is invalid.')).not.toBeInTheDocument()
+    await user.click(submit)
+    expect(await screen.findByText('The end is invalid.')).toBeInTheDocument()
+
+    await user.clear(endTime)
+    await user.type(endTime, '11:00')
+    expect(screen.queryByText('The end is invalid.')).not.toBeInTheDocument()
   })
 })
