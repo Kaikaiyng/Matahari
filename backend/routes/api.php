@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CalendarEventController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FeeAgreementController;
 use App\Http\Controllers\Api\FeeItemController;
@@ -37,6 +38,15 @@ Route::get('/dashboard/school', [DashboardController::class, 'school']);
 Route::post('/invoices/generate-monthly', [InvoiceGenerationController::class, 'store']);
 
 Route::middleware([...$sessionMiddleware, 'auth'])->group(function (): void {
+    Route::get('/calendar-events', [CalendarEventController::class, 'index'])
+        ->middleware('permission:calendar.view');
+    Route::post('/calendar-events', [CalendarEventController::class, 'store'])
+        ->middleware('permission:calendar.create');
+    Route::patch('/calendar-events/{calendarEvent}', [CalendarEventController::class, 'update'])
+        ->middleware('permission:calendar.update');
+    Route::delete('/calendar-events/{calendarEvent}', [CalendarEventController::class, 'destroy'])
+        ->middleware('permission:calendar.delete');
+
     Route::get('/classes', [SchoolClassController::class, 'index'])
         ->middleware('permission:students.view');
     Route::get('/students', [StudentController::class, 'index'])
