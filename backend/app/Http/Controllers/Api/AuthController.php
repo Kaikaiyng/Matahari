@@ -16,7 +16,7 @@ class AuthController extends Controller
     {
         if (! Auth::guard('web')->attempt($request->validated())) {
             throw ValidationException::withMessages([
-                'email' => 'The provided credentials are incorrect.',
+                'username' => 'The username or password is incorrect.',
             ]);
         }
 
@@ -31,7 +31,7 @@ class AuthController extends Controller
             $request->session()->regenerateToken();
 
             throw ValidationException::withMessages([
-                'email' => 'This user account is inactive.',
+                'username' => 'The username or password is incorrect.',
             ]);
         }
 
@@ -68,8 +68,10 @@ class AuthController extends Controller
      * @return array{
      *     id: int,
      *     name: string,
-     *     email: string,
+     *     username: string,
      *     school_id: int|null,
+     *     status: string,
+     *     last_login_at: string|null,
      *     roles: array<int, string>,
      *     permissions: array<int, string>
      * }
@@ -81,8 +83,10 @@ class AuthController extends Controller
         return [
             'id' => $user->id,
             'name' => $user->name,
-            'email' => $user->email,
+            'username' => $user->username,
             'school_id' => $user->school_id,
+            'status' => $user->status,
+            'last_login_at' => $user->last_login_at?->toISOString(),
             'roles' => $user->roles->pluck('slug')->values()->all(),
             'permissions' => $user->roles
                 ->flatMap(fn ($role) => $role->permissions->pluck('slug'))

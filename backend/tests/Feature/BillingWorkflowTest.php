@@ -76,7 +76,7 @@ class BillingWorkflowTest extends TestCase
 
         $student = Student::query()->where('student_no', 'MIS-2026-002')->firstOrFail();
         $feeItem = FeeItem::query()->where('school_id', $school->id)->where('code', 'TUITION')->firstOrFail();
-        $admin = User::query()->where('email', 'admin@mis.test')->firstOrFail();
+        $admin = User::query()->where('username', 'admin')->firstOrFail();
 
         $firstPayment = Payment::query()->create([
             'school_id' => $school->id,
@@ -116,7 +116,7 @@ class BillingWorkflowTest extends TestCase
         $school = School::query()->where('code', 'MIS')->firstOrFail();
         $student = Student::query()->where('student_no', 'MIS-2026-002')->firstOrFail();
         $feeItem = FeeItem::query()->where('school_id', $school->id)->where('code', 'TUITION')->firstOrFail();
-        $admin = User::query()->where('email', 'admin@mis.test')->firstOrFail();
+        $admin = User::query()->where('username', 'admin')->firstOrFail();
 
         $firstPayment = Payment::query()->create([
             'school_id' => $school->id,
@@ -160,7 +160,7 @@ class BillingWorkflowTest extends TestCase
         $student = Student::query()->where('student_no', 'MIS-2026-002')->firstOrFail();
         $invoice = $student->invoices()->firstOrFail();
         $feeItem = FeeItem::query()->where('school_id', $school->id)->where('code', 'TUITION')->firstOrFail();
-        $admin = User::query()->where('email', 'admin@mis.test')->firstOrFail();
+        $admin = User::query()->where('username', 'admin')->firstOrFail();
 
         $service = app(PaymentRecordingService::class);
         $payment = $service->createForStudent($student, [

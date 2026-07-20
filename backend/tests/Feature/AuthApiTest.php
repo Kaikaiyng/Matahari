@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\FeeItem;
 use App\Models\School;
 use App\Models\Student;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -17,11 +18,12 @@ class AuthApiTest extends TestCase
         $this->seed();
 
         $this->postJson('/api/login', [
-            'email' => 'admin@mis.test',
+            'username' => ' ADMIN ',
             'password' => 'password',
         ])
             ->assertOk()
-            ->assertJsonPath('user.email', 'admin@mis.test')
+            ->assertJsonPath('user.username', 'admin')
+            ->assertJsonMissingPath('user.email')
             ->assertJsonPath('user.roles.0', 'school-admin')
             ->assertJson(fn ($json) => $json
                 ->has('user.permissions')
@@ -30,7 +32,8 @@ class AuthApiTest extends TestCase
 
         $this->getJson('/api/me')
             ->assertOk()
-            ->assertJsonPath('user.email', 'admin@mis.test')
+            ->assertJsonPath('user.username', 'admin')
+            ->assertJsonMissingPath('user.email')
             ->assertJson(fn ($json) => $json
                 ->whereContains('user.permissions', 'students.view')
                 ->whereContains('user.permissions', 'fee_agreements.create')
@@ -42,7 +45,7 @@ class AuthApiTest extends TestCase
         $this->seed();
 
         $this->postJson('/api/login', [
-            'email' => 'admin@mis.test',
+            'username' => 'admin',
             'password' => 'password',
         ])->assertOk();
 
@@ -56,11 +59,39 @@ class AuthApiTest extends TestCase
         $this->seed();
 
         $this->postJson('/api/login', [
-            'email' => 'admin@mis.test',
+            'username' => 'admin',
             'password' => 'wrong-password',
         ])
             ->assertUnprocessable()
-            ->assertJsonValidationErrors(['email']);
+            ->assertJsonPath('message', 'The username or password is incorrect.')
+            ->assertJsonValidationErrors(['username']);
+    }
+
+    public function test_legacy_email_login_payload_is_rejected(): void
+    {
+        $this->seed();
+
+        $this->postJson('/api/login', [
+            'email' => 'admin@mis.test',
+            'password' => 'password',
+        ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['username']);
+    }
+
+    public function test_inactive_account_uses_the_generic_credentials_error(): void
+    {
+        $this->seed();
+
+        User::query()->where('username', 'admin')->update(['status' => 'inactive']);
+
+        $this->postJson('/api/login', [
+            'username' => 'admin',
+            'password' => 'password',
+        ])
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'The username or password is incorrect.')
+            ->assertJsonValidationErrors(['username']);
     }
 
     public function test_unauthenticated_students_api_returns_401(): void
@@ -92,7 +123,7 @@ class AuthApiTest extends TestCase
         $this->seed();
 
         $this->postJson('/api/login', [
-            'email' => 'admin@mis.test',
+            'username' => 'admin',
             'password' => 'password',
         ])->assertOk();
 
@@ -111,7 +142,7 @@ class AuthApiTest extends TestCase
         $misc = FeeItem::query()->where('school_id', $school->id)->where('code', 'MISC')->firstOrFail();
 
         $this->postJson('/api/login', [
-            'email' => 'finance@mis.test',
+            'username' => 'finance',
             'password' => 'password',
         ])->assertOk();
 

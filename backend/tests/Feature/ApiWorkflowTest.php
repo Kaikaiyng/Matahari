@@ -16,7 +16,7 @@ class ApiWorkflowTest extends TestCase
         $this->seed();
 
         $school = School::query()->where('code', 'MIS')->firstOrFail();
-        $admin = User::query()->where('email', 'admin@mis.test')->firstOrFail();
+        $admin = User::query()->where('username', 'admin')->firstOrFail();
 
         $this->actingAs($admin)->postJson('/api/invoices/generate-monthly', [
             'school_id' => $school->id,
@@ -42,7 +42,7 @@ class ApiWorkflowTest extends TestCase
         $this->seed();
 
         $school = School::query()->where('code', 'MIS')->firstOrFail();
-        $admin = User::query()->where('email', 'admin@mis.test')->firstOrFail();
+        $admin = User::query()->where('username', 'admin')->firstOrFail();
 
         $this->actingAs($admin)->postJson('/api/invoices/generate-monthly', [
             'school_id' => $school->id,
