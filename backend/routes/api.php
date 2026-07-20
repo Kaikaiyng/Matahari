@@ -33,11 +33,10 @@ Route::middleware($sessionMiddleware)->group(function (): void {
     });
 });
 
-Route::get('/dashboard/school', [DashboardController::class, 'school']);
-
-Route::post('/invoices/generate-monthly', [InvoiceGenerationController::class, 'store']);
-
 Route::middleware([...$sessionMiddleware, 'auth'])->group(function (): void {
+    Route::get('/dashboard/school', [DashboardController::class, 'school']);
+    Route::post('/invoices/generate-monthly', [InvoiceGenerationController::class, 'store']);
+
     Route::get('/calendar-events', [CalendarEventController::class, 'index'])
         ->middleware('permission:calendar.view');
     Route::post('/calendar-events', [CalendarEventController::class, 'store'])

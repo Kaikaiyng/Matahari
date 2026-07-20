@@ -70,6 +70,23 @@ class AuthApiTest extends TestCase
         $this->getJson('/api/students')->assertUnauthorized();
     }
 
+    public function test_legacy_dashboard_and_invoice_generation_require_authentication(): void
+    {
+        $this->seed();
+
+        $school = School::query()->where('code', 'MIS')->firstOrFail();
+
+        $this->getJson('/api/dashboard/school?school_id='.$school->id.'&invoice_month=2026-07')
+            ->assertUnauthorized();
+
+        $this->postJson('/api/invoices/generate-monthly', [
+            'school_id' => $school->id,
+            'invoice_month' => '2026-07',
+            'issue_date' => '2026-07-01',
+            'due_date' => '2026-07-10',
+        ])->assertUnauthorized();
+    }
+
     public function test_authenticated_school_admin_can_access_students_api(): void
     {
         $this->seed();

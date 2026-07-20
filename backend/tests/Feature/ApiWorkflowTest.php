@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\School;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -15,8 +16,9 @@ class ApiWorkflowTest extends TestCase
         $this->seed();
 
         $school = School::query()->where('code', 'MIS')->firstOrFail();
+        $admin = User::query()->where('email', 'admin@mis.test')->firstOrFail();
 
-        $this->postJson('/api/invoices/generate-monthly', [
+        $this->actingAs($admin)->postJson('/api/invoices/generate-monthly', [
             'school_id' => $school->id,
             'invoice_month' => '2026-07',
             'issue_date' => '2026-07-01',
@@ -26,7 +28,8 @@ class ApiWorkflowTest extends TestCase
             ->assertJsonPath('created_count', 3)
             ->assertJsonPath('skipped_count', 0);
 
-        $this->getJson('/api/dashboard/school?school_id='.$school->id.'&invoice_month=2026-07')
+        $this->actingAs($admin)
+            ->getJson('/api/dashboard/school?school_id='.$school->id.'&invoice_month=2026-07')
             ->assertOk()
             ->assertJsonPath('school.code', 'MIS')
             ->assertJsonPath('metrics.active_students', 3)
@@ -39,8 +42,9 @@ class ApiWorkflowTest extends TestCase
         $this->seed();
 
         $school = School::query()->where('code', 'MIS')->firstOrFail();
+        $admin = User::query()->where('email', 'admin@mis.test')->firstOrFail();
 
-        $this->postJson('/api/invoices/generate-monthly', [
+        $this->actingAs($admin)->postJson('/api/invoices/generate-monthly', [
             'school_id' => $school->id,
             'invoice_month' => '2026-07',
             'issue_date' => '2026-07-01',
