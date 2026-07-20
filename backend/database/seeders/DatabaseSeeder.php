@@ -45,7 +45,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $superAdmin = User::query()->updateOrCreate(
-            ['email' => 'superadmin@mis.test'],
+            ['username' => 'superadmin'],
             [
                 'school_id' => null,
                 'name' => 'MIS Super Admin',
@@ -55,7 +55,7 @@ class DatabaseSeeder extends Seeder
         );
 
         $admin = User::query()->updateOrCreate(
-            ['email' => 'admin@mis.test'],
+            ['username' => 'admin'],
             [
                 'school_id' => $school->id,
                 'name' => 'MIS School Admin',
@@ -65,7 +65,7 @@ class DatabaseSeeder extends Seeder
         );
 
         $finance = User::query()->updateOrCreate(
-            ['email' => 'finance@mis.test'],
+            ['username' => 'finance'],
             [
                 'school_id' => $school->id,
                 'name' => 'MIS Finance Admin',
@@ -157,9 +157,9 @@ class DatabaseSeeder extends Seeder
             'calendar.delete',
         ])->pluck('id')->all());
 
-        $superAdmin->roles()->syncWithoutDetaching([$roles['super-admin']->id]);
-        $admin->roles()->syncWithoutDetaching([$roles['school-admin']->id]);
-        $finance->roles()->syncWithoutDetaching([$roles['finance']->id]);
+        $superAdmin->roles()->sync([$roles['super-admin']->id]);
+        $admin->roles()->sync([$roles['school-admin']->id]);
+        $finance->roles()->sync([$roles['finance']->id]);
 
         $yearTwo = SchoolClass::query()
             ->where('school_id', $school->id)

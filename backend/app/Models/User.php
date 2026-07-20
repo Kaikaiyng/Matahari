@@ -19,7 +19,7 @@ class User extends Authenticatable
     protected $fillable = [
         'school_id',
         'name',
-        'email',
+        'username',
         'password',
         'status',
         'last_login_at',
@@ -60,7 +60,6 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
             'last_login_at' => 'datetime',
             'password' => 'hashed',
         ];
