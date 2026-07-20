@@ -47,7 +47,7 @@ type PageKey =
 type CurrentUser = {
   id: number
   name: string
-  email: string
+  username: string
   school_id: number | null
   roles: string[]
   permissions: string[]
@@ -953,8 +953,8 @@ function LoginScreen({
 }: {
   onLogin: (user: CurrentUser) => void
 }) {
-  const [email, setEmail] = useState('admin@mis.test')
-  const [password, setPassword] = useState('password')
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [errors, setErrors] = useState<ValidationErrors>()
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -968,7 +968,7 @@ function LoginScreen({
     try {
       const response = await apiRequest<{ user: CurrentUser }>('/login', {
         method: 'POST',
-        body: { email, password },
+        body: { username, password },
       })
       onLogin(response.user)
     } catch (loginError) {
@@ -993,16 +993,21 @@ function LoginScreen({
         {error && <Message tone="error">{error}</Message>}
 
         <label className="form-field">
-          Email
-          <input value={email} onChange={(event) => setEmail(event.target.value)} />
-          {formatValidationError(errors, 'email') && (
-            <small>{formatValidationError(errors, 'email')}</small>
+          Username
+          <input
+            autoComplete="username"
+            value={username}
+            onChange={(event) => setUsername(event.target.value)}
+          />
+          {formatValidationError(errors, 'username') && (
+            <small>{formatValidationError(errors, 'username')}</small>
           )}
         </label>
 
         <label className="form-field">
           Password
           <input
+            autoComplete="current-password"
             type="password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}

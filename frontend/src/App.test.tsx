@@ -7,7 +7,7 @@ import App from './App'
 const currentUser = {
   id: 1,
   name: 'Demo Admin',
-  email: 'admin@mis.test',
+  username: 'admin',
   school_id: 1,
   roles: ['school-admin'],
   permissions: [
@@ -193,6 +193,38 @@ describe('demo shell', () => {
 
     expect(screen.getByRole('heading', { name: 'Checking your session' })).toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveTextContent('Verifying your secure admin access')
+  })
+
+  it('uses empty username credentials and submits the username login payload', async () => {
+    const user = userEvent.setup()
+    vi.mocked(globalThis.fetch).mockImplementation((input) => {
+      const url = new URL(String(input))
+
+      if (url.pathname.endsWith('/me')) return json({ message: 'Unauthenticated.' }, 401)
+      if (url.pathname.endsWith('/login')) return json({ user: currentUser })
+
+      return json({ message: `Unhandled test endpoint: ${url.pathname}` }, 404)
+    })
+
+    render(<App />)
+
+    const username = await screen.findByLabelText('Username')
+    const password = screen.getByLabelText('Password')
+    expect(username).toHaveValue('')
+    expect(password).toHaveValue('')
+    expect(screen.queryByLabelText('Email')).not.toBeInTheDocument()
+
+    await user.type(username, 'admin')
+    await user.type(password, 'password')
+    await user.click(screen.getByRole('button', { name: 'Login' }))
+
+    await waitFor(() => expect(globalThis.fetch).toHaveBeenCalledWith(
+      expect.stringMatching(/\/login$/),
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ username: 'admin', password: 'password' }),
+      }),
+    ))
   })
 
   it('uses a compact Dashboard header and shared metric cards', async () => {

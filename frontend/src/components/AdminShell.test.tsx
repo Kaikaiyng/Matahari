@@ -27,7 +27,7 @@ function renderShell() {
       contextText="Matahari International School"
       navGroups={groups}
       apiState="live"
-      user={{ name: 'Demo Admin', email: 'admin@mis.test' }}
+      user={{ name: 'Demo Admin', username: 'admin' }}
       onSelectPage={onSelectPage}
       onLogout={onLogout}
     >
@@ -101,7 +101,7 @@ describe('AdminShell', () => {
         contextText="Matahari International School"
         navGroups={groups}
         apiState="live"
-        user={{ name: 'Demo Admin', email: 'admin@mis.test' }}
+        user={{ name: 'Demo Admin', username: 'admin' }}
         onSelectPage={() => undefined}
         onLogout={() => undefined}
       >
@@ -119,7 +119,7 @@ describe('AdminShell', () => {
         contextText="Matahari International School"
         navGroups={groups}
         apiState="demo"
-        user={{ name: 'Demo Admin', email: 'admin@mis.test' }}
+        user={{ name: 'Demo Admin', username: 'admin' }}
         onSelectPage={() => undefined}
         onLogout={() => undefined}
       >
@@ -137,7 +137,7 @@ describe('AdminShell', () => {
       contextText: 'Matahari International School',
       navGroups: groups,
       apiState: 'live' as const,
-      user: { name: 'Demo Admin', email: 'admin@mis.test' },
+      user: { name: 'Demo Admin', username: 'admin' },
       onSelectPage: () => undefined,
       onLogout: () => undefined,
     }

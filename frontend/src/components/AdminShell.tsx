@@ -24,7 +24,7 @@ type AdminShellProps<PageKey extends string> = {
   apiState: 'live' | 'demo' | 'loading'
   user: {
     name: string
-    email: string
+    username: string
   }
   onSelectPage: (page: PageKey) => void
   onLogout: () => void
@@ -193,7 +193,7 @@ export function AdminShell<PageKey extends string>({
               <span>{initial}</span>
               <div>
                 <strong>{user.name}</strong>
-                <small>{user.email}</small>
+                <small>{user.username}</small>
               </div>
             </div>
             <button className="icon-button" aria-label="Logout" onClick={onLogout}>
