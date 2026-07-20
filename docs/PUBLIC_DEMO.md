@@ -22,7 +22,7 @@ Cloudflare may need up to two minutes to publish a new random hostname. Keep the
 
 1. Double-click `tools\public-demo\start-public-demo.cmd`.
 2. Send the displayed URL to the small demo audience.
-3. Sign in with a seeded demo account.
+3. Sign in with the seeded demo username `admin` and the separately shared demo password. The login form does not prefill either credential.
 4. Double-click `tools\public-demo\stop-public-demo.cmd` when the demonstration ends.
 
 Starting and stopping does not reset `backend/database/database.sqlite`; calendar entries and other demo changes remain for the next session.
