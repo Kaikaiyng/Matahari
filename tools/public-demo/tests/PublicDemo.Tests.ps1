@@ -15,6 +15,7 @@ function Assert-Throws([scriptblock]$Action, [string]$Pattern) {
 
 $tempRoot = Join-Path ([IO.Path]::GetTempPath()) ('matahari-public-demo-' + [guid]::NewGuid())
 $listener = $null
+$httpJob = $null
 New-Item -ItemType Directory -Path $tempRoot | Out-Null
 
 try {
@@ -29,6 +30,128 @@ try {
     Assert-Throws { Assert-PublicDemoPortAvailable -Port $occupiedPort } 'already in use'
     $listener.Stop()
     $listener = $null
+
+    $portProbe = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Loopback, 0)
+    $portProbe.Start()
+    $httpPort = ([Net.IPEndPoint]$portProbe.LocalEndpoint).Port
+    $portProbe.Stop()
+    $readyPath = Join-Path $tempRoot 'http-ready.txt'
+    $httpJob = Start-Job -ArgumentList $httpPort, $readyPath -ScriptBlock {
+        param($Port, $ReadyPath)
+        $server = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Loopback, $Port)
+        try {
+            $server.Start()
+            Set-Content -LiteralPath $ReadyPath -Value 'ready'
+            $client = $server.AcceptTcpClient()
+            $stream = $client.GetStream()
+            $reader = New-Object IO.StreamReader($stream, [Text.Encoding]::ASCII, $false, 1024, $true)
+            $acceptsJson = $false
+            while (($line = $reader.ReadLine()) -ne '') {
+                if ($line -match '^Accept:\s*application/json') { $acceptsJson = $true }
+            }
+            $status = if ($acceptsJson) { '401 Unauthorized' } else { '500 Internal Server Error' }
+            $body = [Text.Encoding]::UTF8.GetBytes('{}')
+            $head = [Text.Encoding]::ASCII.GetBytes("HTTP/1.1 $status`r`nContent-Type: application/json`r`nContent-Length: $($body.Length)`r`nConnection: close`r`n`r`n")
+            $stream.Write($head, 0, $head.Length)
+            $stream.Write($body, 0, $body.Length)
+            $stream.Flush()
+            $client.Close()
+        }
+        finally {
+            $server.Stop()
+        }
+    }
+    $readyDeadline = [DateTime]::UtcNow.AddSeconds(5)
+    while (-not (Test-Path -LiteralPath $readyPath) -and [DateTime]::UtcNow -lt $readyDeadline) {
+        Start-Sleep -Milliseconds 50
+    }
+    Assert-True (Test-Path -LiteralPath $readyPath) 'Local HTTP probe did not start.'
+    Wait-PublicDemoHttp -Uri "http://127.0.0.1:$httpPort/" -ExpectedStatus 401 -TimeoutSeconds 2 -AcceptJson
+    Wait-Job -Job $httpJob -Timeout 5 | Out-Null
+    Receive-Job -Job $httpJob -ErrorAction Stop | Out-Null
+    Remove-Job -Job $httpJob -Force
+    $httpJob = $null
+
+    $resolveArgument = New-PublicDemoCurlResolveArgument -HostName 'demo.trycloudflare.com' -Port 443 -IpAddress '104.16.231.132'
+    Assert-True ($resolveArgument -eq 'demo.trycloudflare.com:443:104.16.231.132') 'Curl resolve argument was malformed.'
+
+    $portProbe = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Loopback, 0)
+    $portProbe.Start()
+    $htmlPort = ([Net.IPEndPoint]$portProbe.LocalEndpoint).Port
+    $portProbe.Stop()
+    $htmlReadyPath = Join-Path $tempRoot 'html-ready.txt'
+    $httpJob = Start-Job -ArgumentList $htmlPort, $htmlReadyPath -ScriptBlock {
+        param($Port, $ReadyPath)
+        $server = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Loopback, $Port)
+        try {
+            $server.Start()
+            Set-Content -LiteralPath $ReadyPath -Value 'ready'
+            $client = $server.AcceptTcpClient()
+            $stream = $client.GetStream()
+            $reader = New-Object IO.StreamReader($stream, [Text.Encoding]::ASCII, $false, 1024, $true)
+            $acceptsJson = $false
+            while (($line = $reader.ReadLine()) -ne '') {
+                if ($line -match '^Accept:\s*application/json') { $acceptsJson = $true }
+            }
+            $status = if ($acceptsJson) { '406 Not Acceptable' } else { '200 OK' }
+            $body = [Text.Encoding]::UTF8.GetBytes('ok')
+            $head = [Text.Encoding]::ASCII.GetBytes("HTTP/1.1 $status`r`nContent-Type: text/plain`r`nContent-Length: $($body.Length)`r`nConnection: close`r`n`r`n")
+            $stream.Write($head, 0, $head.Length)
+            $stream.Write($body, 0, $body.Length)
+            $stream.Flush()
+            $client.Close()
+        }
+        finally {
+            $server.Stop()
+        }
+    }
+    $readyDeadline = [DateTime]::UtcNow.AddSeconds(5)
+    while (-not (Test-Path -LiteralPath $htmlReadyPath) -and [DateTime]::UtcNow -lt $readyDeadline) {
+        Start-Sleep -Milliseconds 50
+    }
+    Assert-True (Test-Path -LiteralPath $htmlReadyPath) 'Local HTML probe did not start.'
+    Wait-PublicDemoHttp -Uri "http://127.0.0.1:$htmlPort/" -ExpectedStatus 200 -TimeoutSeconds 2
+    Wait-Job -Job $httpJob -Timeout 5 | Out-Null
+    Receive-Job -Job $httpJob -ErrorAction Stop | Out-Null
+    Remove-Job -Job $httpJob -Force
+    $httpJob = $null
+
+    $portProbe = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Loopback, 0)
+    $portProbe.Start()
+    $publicProbePort = ([Net.IPEndPoint]$portProbe.LocalEndpoint).Port
+    $portProbe.Stop()
+    $publicReadyPath = Join-Path $tempRoot 'public-probe-ready.txt'
+    $httpJob = Start-Job -ArgumentList $publicProbePort, $publicReadyPath -ScriptBlock {
+        param($Port, $ReadyPath)
+        $server = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Loopback, $Port)
+        try {
+            $server.Start()
+            Set-Content -LiteralPath $ReadyPath -Value 'ready'
+            $client = $server.AcceptTcpClient()
+            $stream = $client.GetStream()
+            $reader = New-Object IO.StreamReader($stream, [Text.Encoding]::ASCII, $false, 1024, $true)
+            while (($line = $reader.ReadLine()) -ne '') {}
+            $body = [Text.Encoding]::UTF8.GetBytes('public-ok')
+            $head = [Text.Encoding]::ASCII.GetBytes("HTTP/1.1 200 OK`r`nContent-Type: text/plain`r`nContent-Length: $($body.Length)`r`nConnection: close`r`n`r`n")
+            $stream.Write($head, 0, $head.Length)
+            $stream.Write($body, 0, $body.Length)
+            $stream.Flush()
+            $client.Close()
+        }
+        finally {
+            $server.Stop()
+        }
+    }
+    $readyDeadline = [DateTime]::UtcNow.AddSeconds(5)
+    while (-not (Test-Path -LiteralPath $publicReadyPath) -and [DateTime]::UtcNow -lt $readyDeadline) {
+        Start-Sleep -Milliseconds 50
+    }
+    Assert-True (Test-Path -LiteralPath $publicReadyPath) 'Local public probe did not start.'
+    Wait-PublicDemoPublicHttp -Uri "http://127.0.0.1:$publicProbePort/" -ExpectedStatus 200 -TimeoutSeconds 5
+    Wait-Job -Job $httpJob -Timeout 5 | Out-Null
+    Receive-Job -Job $httpJob -ErrorAction Stop | Out-Null
+    Remove-Job -Job $httpJob -Force
+    $httpJob = $null
 
     $hashFile = Join-Path $tempRoot 'hash.txt'
     Set-Content -LiteralPath $hashFile -Value 'abc' -NoNewline -Encoding Ascii
@@ -68,9 +191,17 @@ try {
     $url = Wait-PublicDemoTunnelUrl -LogPaths @($log) -TimeoutSeconds 1
     Assert-True ($url -eq 'https://sunny-demo.trycloudflare.com') 'Tunnel URL was not parsed.'
 
+    $emptyLog = Join-Path $tempRoot 'empty-cloudflared.log'
+    New-Item -ItemType File -Path $emptyLog | Out-Null
+    Assert-Throws { Wait-PublicDemoTunnelUrl -LogPaths @($emptyLog) -TimeoutSeconds 1 } 'Timed out waiting for Cloudflare'
+
     Write-Host 'PublicDemo.Tests.ps1: PASS'
 }
 finally {
     if ($listener) { try { $listener.Stop() } catch {} }
+    if ($httpJob) {
+        Stop-Job -Job $httpJob -ErrorAction SilentlyContinue
+        Remove-Job -Job $httpJob -Force -ErrorAction SilentlyContinue
+    }
     Remove-Item -LiteralPath $tempRoot -Recurse -Force -ErrorAction SilentlyContinue
 }

@@ -36,7 +36,7 @@ function Assert-PublicDemoPrerequisites($Paths) {
         }
     }
 
-    foreach ($command in @('php.exe', 'node.exe', 'npm.cmd')) {
+    foreach ($command in @('php.exe', 'node.exe', 'npm.cmd', 'curl.exe')) {
         if (-not (Get-Command $command -ErrorAction SilentlyContinue)) {
             throw "Required command not found: $command"
         }
@@ -56,9 +56,18 @@ function Assert-PublicDemoPortAvailable([int]$Port) {
     }
 }
 
-function Get-PublicDemoHttpStatus([string]$Uri) {
+function Get-PublicDemoHttpStatus([string]$Uri, [switch]$AcceptJson) {
+    $request = @{
+        Uri = $Uri
+        UseBasicParsing = $true
+        TimeoutSec = 5
+    }
+    if ($AcceptJson) {
+        $request.Headers = @{ Accept = 'application/json' }
+    }
+
     try {
-        return [int](Invoke-WebRequest -Uri $Uri -UseBasicParsing -TimeoutSec 5).StatusCode
+        return [int](Invoke-WebRequest @request).StatusCode
     }
     catch {
         if ($_.Exception.Response) {
@@ -69,10 +78,10 @@ function Get-PublicDemoHttpStatus([string]$Uri) {
     }
 }
 
-function Wait-PublicDemoHttp([string]$Uri, [int]$ExpectedStatus, [int]$TimeoutSeconds) {
+function Wait-PublicDemoHttp([string]$Uri, [int]$ExpectedStatus, [int]$TimeoutSeconds, [switch]$AcceptJson) {
     $deadline = [DateTime]::UtcNow.AddSeconds($TimeoutSeconds)
     do {
-        if ((Get-PublicDemoHttpStatus -Uri $Uri) -eq $ExpectedStatus) {
+        if ((Get-PublicDemoHttpStatus -Uri $Uri -AcceptJson:$AcceptJson.IsPresent) -eq $ExpectedStatus) {
             return
         }
 
@@ -80,6 +89,54 @@ function Wait-PublicDemoHttp([string]$Uri, [int]$ExpectedStatus, [int]$TimeoutSe
     } while ([DateTime]::UtcNow -lt $deadline)
 
     throw "Timed out waiting for HTTP $ExpectedStatus from $Uri"
+}
+
+function New-PublicDemoCurlResolveArgument([string]$HostName, [int]$Port, [string]$IpAddress) {
+    return "${HostName}:${Port}:${IpAddress}"
+}
+
+function Wait-PublicDemoPublicHttp([string]$Uri, [int]$ExpectedStatus, [int]$TimeoutSeconds) {
+    $target = [Uri]$Uri
+    $curl = (Get-Command curl.exe -ErrorAction Stop).Source
+    $deadline = [DateTime]::UtcNow.AddSeconds($TimeoutSeconds)
+
+    do {
+        $systemResolved = $false
+        try {
+            $systemResolved = @([Net.Dns]::GetHostAddresses($target.DnsSafeHost)).Count -gt 0
+        }
+        catch {}
+
+        $resolveArgument = $null
+        if (-not $systemResolved) {
+            try {
+                $fallbackIp = Resolve-DnsName $target.DnsSafeHost -Type A -Server 1.1.1.1 -DnsOnly -ErrorAction Stop |
+                    Where-Object { $_.IPAddress } |
+                    Select-Object -First 1 -ExpandProperty IPAddress
+                if ($fallbackIp) {
+                    $resolveArgument = New-PublicDemoCurlResolveArgument -HostName $target.DnsSafeHost -Port $target.Port -IpAddress $fallbackIp
+                }
+            }
+            catch {}
+        }
+
+        if ($systemResolved -or $resolveArgument) {
+            $arguments = @('-sS', '-o', 'NUL', '-w', '%{http_code}', '--max-time', '5')
+            if ($resolveArgument) {
+                $arguments += @('--resolve', $resolveArgument)
+            }
+            $arguments += $target.AbsoluteUri
+
+            $status = [string](& $curl @arguments 2>$null | Select-Object -Last 1)
+            if ($status.Trim() -eq [string]$ExpectedStatus) {
+                return
+            }
+        }
+
+        Start-Sleep -Seconds 2
+    } while ([DateTime]::UtcNow -lt $deadline)
+
+    throw "Timed out waiting for public HTTP $ExpectedStatus from $Uri"
 }
 
 function Assert-PublicDemoSha256([string]$Path, [string]$Expected) {
@@ -194,6 +251,10 @@ function Wait-PublicDemoTunnelUrl([string[]]$LogPaths, [int]$TimeoutSeconds) {
                 continue
             }
 
+            if ([string]::IsNullOrWhiteSpace([string]$content)) {
+                continue
+            }
+
             $match = [regex]::Match($content, 'https://[a-z0-9-]+\.trycloudflare\.com')
             if ($match.Success) {
                 return $match.Value
@@ -211,6 +272,8 @@ Export-ModuleMember -Function @(
     'Assert-PublicDemoPrerequisites'
     'Assert-PublicDemoPortAvailable'
     'Wait-PublicDemoHttp'
+    'New-PublicDemoCurlResolveArgument'
+    'Wait-PublicDemoPublicHttp'
     'Assert-PublicDemoSha256'
     'Get-PublicDemoCloudflared'
     'Save-PublicDemoState'

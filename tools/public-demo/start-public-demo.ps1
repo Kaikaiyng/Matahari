@@ -57,7 +57,7 @@ try {
     if (Test-PublicDemoStateHealthy -State $existing) {
         try {
             Wait-PublicDemoHttp -Uri 'http://127.0.0.1:4175/' -ExpectedStatus 200 -TimeoutSeconds 5
-            Wait-PublicDemoHttp -Uri ($existing.url + '/') -ExpectedStatus 200 -TimeoutSeconds 10
+            Wait-PublicDemoPublicHttp -Uri ($existing.url + '/') -ExpectedStatus 200 -TimeoutSeconds 20
             Show-PublicUrl -Url $existing.url
             exit 0
         }
@@ -99,7 +99,7 @@ try {
     $backendArgs = "-c $(Quote-Argument $paths.PhpIniPath) -S 127.0.0.1:8002 -t $(Quote-Argument $paths.BackendPublicPath) $(Quote-Argument $paths.LaravelRouterPath)"
     $backend = Start-Process -FilePath $php -ArgumentList $backendArgs -WorkingDirectory $paths.BackendPublicPath -WindowStyle Hidden -RedirectStandardOutput $backendOut -RedirectStandardError $backendErr -PassThru
     Add-StartedProcess -Name 'backend' -Process $backend
-    Wait-PublicDemoHttp -Uri 'http://127.0.0.1:8002/api/me' -ExpectedStatus 401 -TimeoutSeconds 30
+    Wait-PublicDemoHttp -Uri 'http://127.0.0.1:8002/api/me' -ExpectedStatus 401 -TimeoutSeconds 30 -AcceptJson
 
     $node = (Get-Command node.exe -ErrorAction Stop).Source
     $previewOut = Join-Path $paths.LogRoot 'preview.out.log'
@@ -109,18 +109,18 @@ try {
     $preview = Start-Process -FilePath $node -ArgumentList $previewArgs -WorkingDirectory $paths.FrontendPath -WindowStyle Hidden -RedirectStandardOutput $previewOut -RedirectStandardError $previewErr -PassThru
     Add-StartedProcess -Name 'preview' -Process $preview
     Wait-PublicDemoHttp -Uri 'http://127.0.0.1:4175/' -ExpectedStatus 200 -TimeoutSeconds 30
-    Wait-PublicDemoHttp -Uri 'http://127.0.0.1:4175/api/me' -ExpectedStatus 401 -TimeoutSeconds 30
+    Wait-PublicDemoHttp -Uri 'http://127.0.0.1:4175/api/me' -ExpectedStatus 401 -TimeoutSeconds 30 -AcceptJson
 
     Set-Content -LiteralPath $paths.CloudflaredConfigPath -Value 'no-autoupdate: true' -Encoding Ascii
     $tunnelLog = Join-Path $paths.LogRoot 'cloudflared.log'
     $tunnelOut = Join-Path $paths.LogRoot 'cloudflared.out.log'
     $tunnelErr = Join-Path $paths.LogRoot 'cloudflared.err.log'
     Remove-Item -LiteralPath $tunnelLog, $tunnelOut, $tunnelErr -Force -ErrorAction SilentlyContinue
-    $tunnelArgs = "tunnel --config $(Quote-Argument $paths.CloudflaredConfigPath) --url http://127.0.0.1:4175 --no-autoupdate --loglevel info --logfile $(Quote-Argument $tunnelLog)"
+    $tunnelArgs = "tunnel --config $(Quote-Argument $paths.CloudflaredConfigPath) --url http://127.0.0.1:4175 --protocol http2 --no-autoupdate --loglevel info --logfile $(Quote-Argument $tunnelLog)"
     $tunnel = Start-Process -FilePath $cloudflared -ArgumentList $tunnelArgs -WorkingDirectory $paths.RuntimeRoot -WindowStyle Hidden -RedirectStandardOutput $tunnelOut -RedirectStandardError $tunnelErr -PassThru
     Add-StartedProcess -Name 'tunnel' -Process $tunnel
     $url = Wait-PublicDemoTunnelUrl -LogPaths @($tunnelLog, $tunnelOut, $tunnelErr) -TimeoutSeconds 60
-    Wait-PublicDemoHttp -Uri ($url + '/') -ExpectedStatus 200 -TimeoutSeconds 60
+    Wait-PublicDemoPublicHttp -Uri ($url + '/') -ExpectedStatus 200 -TimeoutSeconds 120
 
     $state = [pscustomobject]@{
         url = $url
@@ -132,11 +132,12 @@ try {
     Write-Host 'Share it only with intended testers. Run stop-public-demo.cmd when the demo ends.'
 }
 catch {
-    Write-Error $_.Exception.Message
+    $failureMessage = $_.Exception.Message
     if ($started.Count -gt 0) {
         [void](Stop-PublicDemoStateProcesses -State ([pscustomobject]@{ processes = @($started) }))
     }
     Remove-Item -LiteralPath $paths.StatePath, $paths.UrlPath -Force -ErrorAction SilentlyContinue
+    Write-Error $failureMessage -ErrorAction Continue
     exit 1
 }
 finally {
