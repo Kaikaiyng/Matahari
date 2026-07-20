@@ -26,7 +26,7 @@ Require ($start -match '--protocol http2') 'Tunnel must use HTTP/2 for restricti
 Require ($start -notmatch 'migrate:fresh|db:wipe|reset-demo-sqlite') 'Start script contains a database reset command.'
 Require ($stop -notmatch 'database\.sqlite|migrate:fresh|db:wipe') 'Stop script may alter the database.'
 Require ($module -match '-OutFile \$download -UseBasicParsing -TimeoutSec 120') 'Cloudflare download is not time-bounded.'
-Require ($ignore -match '(?m)^/\.demo-public/$') 'Runtime directory is not ignored.'
+Require ($ignore -match '(?m)^/\.demo-public/\r?$') 'Runtime directory is not ignored.'
 
 $lastCleanup = $start.LastIndexOf('Stop-PublicDemoStateProcesses')
 $lastError = $start.LastIndexOf('Write-Error')
