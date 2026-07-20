@@ -99,7 +99,7 @@ function Get-PublicDemoCloudflared($Paths) {
 
     $download = $Paths.CloudflaredPath + '.download'
     try {
-        Invoke-WebRequest -Uri $script:CloudflaredUrl -OutFile $download -UseBasicParsing
+        Invoke-WebRequest -Uri $script:CloudflaredUrl -OutFile $download -UseBasicParsing -TimeoutSec 120
         Assert-PublicDemoSha256 -Path $download -Expected $script:CloudflaredSha256
         Move-Item -LiteralPath $download -Destination $Paths.CloudflaredPath -Force
         return $Paths.CloudflaredPath
