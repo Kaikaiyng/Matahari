@@ -95,6 +95,14 @@ const feeRecordSummary = {
   collection_status_summary: 'partial',
 }
 
+const julyFeeRecordSummary = {
+  ...feeRecordSummary,
+  total_expected: 500,
+  total_paid: 300,
+  total_outstanding: 200,
+  outstanding_months: ['2026-07'],
+}
+
 const pendingPayment = {
   id: 11,
   student_id: 1,
@@ -164,7 +172,11 @@ function installApiMock() {
     if (url.pathname.endsWith('/classes')) return json({ data: schoolClasses })
     if (url.pathname.endsWith('/students/1')) return json({ student })
     if (url.pathname.endsWith('/students')) return json({ data: [student] })
-    if (url.pathname.endsWith('/fee-record/summary')) return json({ data: [feeRecordSummary] })
+    if (url.pathname.endsWith('/fee-record/summary')) {
+      const billingMonth = url.searchParams.get('billing_month')
+      if (billingMonth === '2026-12') return json({ data: [] })
+      return json({ data: [billingMonth === '2026-07' ? julyFeeRecordSummary : feeRecordSummary] })
+    }
 
     return json({ message: `Unhandled test endpoint: ${url.pathname}` }, 404)
   })
@@ -440,6 +452,47 @@ describe('demo shell', () => {
     expect(screen.getByRole('dialog', { name: 'Create Student Profile' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Cancel' }))
     expect(screen.queryByRole('dialog', { name: 'Create Student Profile' })).not.toBeInTheDocument()
+  })
+
+  it('shows annual paid progress by default and synchronizes a selected month with student rows', async () => {
+    const user = userEvent.setup()
+    await renderAuthenticatedApp()
+
+    await user.click(screen.getByRole('button', { name: 'Students' }))
+    await screen.findByRole('heading', { name: 'Student List' })
+
+    expect(screen.getByLabelText('Fee Period')).toHaveValue('')
+    expect(screen.getByText('Paid / Total Fees')).toBeInTheDocument()
+    expect(screen.getByText('RM 400 / RM 1,200')).toBeInTheDocument()
+
+    await user.selectOptions(screen.getByLabelText('Fee Period'), '2026-07')
+
+    await waitFor(() => {
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        expect.stringMatching(/fee-record\/summary\?.*billing_month=2026-07/),
+        expect.any(Object),
+      )
+    })
+    expect(await screen.findByText('RM 300 / RM 500')).toBeInTheDocument()
+
+    const studentRow = screen.getByText('Alyssa Tan').closest('tr')
+    expect(studentRow).not.toBeNull()
+    expect(within(studentRow!).getByText('RM 500')).toBeInTheDocument()
+    expect(within(studentRow!).getByText('RM 200')).toBeInTheDocument()
+  })
+
+  it('shows zero fee progress and zero student balances for a month without charges', async () => {
+    const user = userEvent.setup()
+    await renderAuthenticatedApp()
+
+    await user.click(screen.getByRole('button', { name: 'Students' }))
+    await screen.findByRole('heading', { name: 'Student List' })
+    await user.selectOptions(screen.getByLabelText('Fee Period'), '2026-12')
+
+    expect(await screen.findByText('RM 0 / RM 0')).toBeInTheDocument()
+    const studentRow = screen.getByText('Alyssa Tan').closest('tr')
+    expect(studentRow).not.toBeNull()
+    expect(within(studentRow!).getAllByText('RM 0')).toHaveLength(2)
   })
 
   it('shows the configured child classes for each student level group', async () => {

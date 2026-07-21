@@ -158,6 +158,10 @@ button.stat-card {
   color: var(--text, #25272d);
 }
 
+.fee-period-select {
+  min-width: 176px;
+}
+
 .toolbar-search {
   min-width: 220px;
   min-height: 40px;

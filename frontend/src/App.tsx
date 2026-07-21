@@ -559,6 +559,20 @@ const feeRecordCategories: Array<{ value: FeeRecordCategory; label: string }> = 
 ]
 
 const monthShortLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+const monthLongLabels = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+]
 
 const paymentPlanOptions: Array<{ value: PaymentPlan; label: string }> = [
   { value: 'monthly', label: 'Monthly' },
@@ -1076,6 +1090,7 @@ function StudentsPage({
   const [studentListFeeRecordSummaries, setStudentListFeeRecordSummaries] = useState<FeeRecordSummaryRow[]>([])
   const [studentListFeeRecordSummaryYear, setStudentListFeeRecordSummaryYear] = useState('')
   const [isLoadingStudentListFeeRecordSummary, setIsLoadingStudentListFeeRecordSummary] = useState(false)
+  const [studentFeePeriod, setStudentFeePeriod] = useState('')
   const [studentFeeRecordSummary, setStudentFeeRecordSummary] = useState<FeeRecordSummaryRow | null>(null)
   const [studentFeeRecordSummaryYear, setStudentFeeRecordSummaryYear] = useState('')
   const [isLoadingStudentFeeRecordSummary, setIsLoadingStudentFeeRecordSummary] = useState(false)
@@ -1190,10 +1205,11 @@ function StudentsPage({
 
           return {
             totalExpected: totals.totalExpected + (summary?.total_expected ?? 0),
+            totalPaid: totals.totalPaid + (summary?.total_paid ?? 0),
             totalOutstanding: totals.totalOutstanding + (summary?.total_outstanding ?? 0),
           }
         },
-        { totalExpected: 0, totalOutstanding: 0 },
+        { totalExpected: 0, totalPaid: 0, totalOutstanding: 0 },
       ),
     [studentListFeeRecordSummaryByStudentId, students],
   )
@@ -1249,7 +1265,10 @@ function StudentsPage({
     setError(mapError(apiError))
   }
 
-  const loadStudentListFeeRecordSummary = async (academicYear = feeRecordAcademicYear) => {
+  const loadStudentListFeeRecordSummary = async (
+    academicYear = feeRecordAcademicYear,
+    billingMonth = studentFeePeriod,
+  ) => {
     if (!canViewFeeRecord) {
       setStudentListFeeRecordSummaries([])
       setStudentListFeeRecordSummaryYear('')
@@ -1257,9 +1276,11 @@ function StudentsPage({
     }
 
     setIsLoadingStudentListFeeRecordSummary(true)
+    setStudentListFeeRecordSummaries([])
 
     try {
       const params = new URLSearchParams({ academic_year: academicYear })
+      if (billingMonth) params.set('billing_month', billingMonth)
       const response = await apiRequest<{ data: FeeRecordSummaryRow[] }>(`/fee-record/summary?${params.toString()}`)
       setStudentListFeeRecordSummaries(response.data)
       setStudentListFeeRecordSummaryYear(academicYear)
@@ -1279,7 +1300,7 @@ function StudentsPage({
     try {
       const response = await apiRequest<{ data: StudentSummary[] }>(`/students?status=${filter}`)
       setStudents(response.data)
-      await loadStudentListFeeRecordSummary(feeRecordAcademicYear)
+      await loadStudentListFeeRecordSummary(feeRecordAcademicYear, studentFeePeriod)
     } catch (loadError) {
       handleApiError(loadError)
     } finally {
@@ -2316,14 +2337,14 @@ function StudentsPage({
               value={statusOptions.find((option) => option.value === statusFilter)?.label ?? 'All'}
             />
             <StatCard
-              label="Fee / Outstanding"
+              label="Paid / Total Fees"
               value={
                 !canViewFeeRecord
                   ? 'No access'
                   : isLoadingStudentListFeeRecordSummary
                     ? 'Loading...'
-                    : `${formatCurrency(studentListFeeTotals.totalExpected)} / ${formatCurrency(
-                        studentListFeeTotals.totalOutstanding,
+                    : `${formatCurrency(studentListFeeTotals.totalPaid)} / ${formatCurrency(
+                        studentListFeeTotals.totalExpected,
                       )}`
               }
             />
@@ -2462,6 +2483,27 @@ function StudentsPage({
                   {option.label}
                 </option>
               ))}
+            </select>
+            <select
+              className="fee-period-select"
+              aria-label="Fee Period"
+              value={studentFeePeriod}
+              onChange={(event) => {
+                const nextPeriod = event.target.value
+                setStudentFeePeriod(nextPeriod)
+                void loadStudentListFeeRecordSummary(feeRecordAcademicYear, nextPeriod)
+              }}
+            >
+              <option value="">All Year ({feeRecordAcademicYear})</option>
+              {monthLongLabels.map((month, index) => {
+                const monthNumber = String(index + 1).padStart(2, '0')
+
+                return (
+                  <option key={month} value={`${feeRecordAcademicYear}-${monthNumber}`}>
+                    {month} {feeRecordAcademicYear}
+                  </option>
+                )
+              })}
             </select>
             <button className="secondary-action" onClick={() => void loadStudents()}>
               <RefreshCw size={16} />
