@@ -75,6 +75,23 @@ try {
     $resolveArgument = New-PublicDemoCurlResolveArgument -HostName 'demo.trycloudflare.com' -Port 443 -IpAddress '104.16.231.132'
     Assert-True ($resolveArgument -eq 'demo.trycloudflare.com:443:104.16.231.132') 'Curl resolve argument was malformed.'
 
+    $queriedDnsServers = [Collections.ArrayList]::new()
+    $resolver = {
+        param([string]$HostName, [string]$DnsServer)
+        [void]$queriedDnsServers.Add($DnsServer)
+        if ($DnsServer -eq '8.8.8.8') {
+            return [pscustomobject]@{ IPAddress = '104.16.230.132' }
+        }
+
+        throw "DNS lookup failed for $HostName via $DnsServer"
+    }.GetNewClosure()
+    $fallbackIp = Resolve-PublicDemoFallbackIp `
+        -HostName 'demo.trycloudflare.com' `
+        -DnsServers @('1.1.1.1', '8.8.8.8') `
+        -Resolver $resolver
+    Assert-True ($fallbackIp -eq '104.16.230.132') 'DNS fallback did not return the first successful address.'
+    Assert-True (($queriedDnsServers -join ',') -eq '1.1.1.1,8.8.8.8') 'DNS fallback did not try resolvers in order.'
+
     $portProbe = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Loopback, 0)
     $portProbe.Start()
     $htmlPort = ([Net.IPEndPoint]$portProbe.LocalEndpoint).Port

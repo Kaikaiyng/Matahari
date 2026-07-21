@@ -95,6 +95,33 @@ function New-PublicDemoCurlResolveArgument([string]$HostName, [int]$Port, [strin
     return "${HostName}:${Port}:${IpAddress}"
 }
 
+function Resolve-PublicDemoFallbackIp(
+    [string]$HostName,
+    [string[]]$DnsServers = @('1.1.1.1', '8.8.8.8'),
+    [scriptblock]$Resolver
+) {
+    if (-not $Resolver) {
+        $Resolver = {
+            param([string]$Name, [string]$Server)
+            Resolve-DnsName $Name -Type A -Server $Server -DnsOnly -ErrorAction Stop
+        }
+    }
+
+    foreach ($dnsServer in $DnsServers) {
+        try {
+            $fallbackIp = @(& $Resolver $HostName $dnsServer) |
+                Where-Object { $_.IPAddress } |
+                Select-Object -First 1 -ExpandProperty IPAddress
+            if ($fallbackIp) {
+                return [string]$fallbackIp
+            }
+        }
+        catch {}
+    }
+
+    return $null
+}
+
 function Wait-PublicDemoPublicHttp([string]$Uri, [int]$ExpectedStatus, [int]$TimeoutSeconds) {
     $target = [Uri]$Uri
     $curl = (Get-Command curl.exe -ErrorAction Stop).Source
@@ -109,15 +136,10 @@ function Wait-PublicDemoPublicHttp([string]$Uri, [int]$ExpectedStatus, [int]$Tim
 
         $resolveArgument = $null
         if (-not $systemResolved) {
-            try {
-                $fallbackIp = Resolve-DnsName $target.DnsSafeHost -Type A -Server 1.1.1.1 -DnsOnly -ErrorAction Stop |
-                    Where-Object { $_.IPAddress } |
-                    Select-Object -First 1 -ExpandProperty IPAddress
-                if ($fallbackIp) {
-                    $resolveArgument = New-PublicDemoCurlResolveArgument -HostName $target.DnsSafeHost -Port $target.Port -IpAddress $fallbackIp
-                }
+            $fallbackIp = Resolve-PublicDemoFallbackIp -HostName $target.DnsSafeHost
+            if ($fallbackIp) {
+                $resolveArgument = New-PublicDemoCurlResolveArgument -HostName $target.DnsSafeHost -Port $target.Port -IpAddress $fallbackIp
             }
-            catch {}
         }
 
         if ($systemResolved -or $resolveArgument) {
@@ -273,6 +295,7 @@ Export-ModuleMember -Function @(
     'Assert-PublicDemoPortAvailable'
     'Wait-PublicDemoHttp'
     'New-PublicDemoCurlResolveArgument'
+    'Resolve-PublicDemoFallbackIp'
     'Wait-PublicDemoPublicHttp'
     'Assert-PublicDemoSha256'
     'Get-PublicDemoCloudflared'
