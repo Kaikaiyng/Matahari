@@ -19,11 +19,13 @@ class FeeRecordSummaryService
     public function summary(?int $schoolId, array $filters): array
     {
         $academicYear = (string) $filters['academic_year'];
+        $billingMonth = $filters['billing_month'] ?? null;
         $studentStatus = $filters['student_status'] ?? 'active';
 
         $students = Student::query()
-            ->with(['class', 'feeRecordCharges' => function ($query) use ($academicYear): void {
+            ->with(['class', 'feeRecordCharges' => function ($query) use ($academicYear, $billingMonth): void {
                 $query->where('academic_year', $academicYear)
+                    ->when($billingMonth, fn ($monthQuery, string $month) => $monthQuery->where('billing_month', $month))
                     ->orderBy('billing_month')
                     ->orderBy('fee_record_category')
                     ->orderBy('id');
@@ -38,8 +40,9 @@ class FeeRecordSummaryService
                         ->orWhere('full_name', 'like', "%{$search}%");
                 });
             })
-            ->whereHas('feeRecordCharges', function (Builder $query) use ($academicYear): void {
-                $query->where('academic_year', $academicYear);
+            ->whereHas('feeRecordCharges', function (Builder $query) use ($academicYear, $billingMonth): void {
+                $query->where('academic_year', $academicYear)
+                    ->when($billingMonth, fn (Builder $monthQuery, string $month) => $monthQuery->where('billing_month', $month));
             })
             ->orderBy('full_name')
             ->orderBy('student_no')

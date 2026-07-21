@@ -54,6 +54,75 @@ class FeeRecordSummaryApiTest extends TestCase
             ->assertJsonPath('data.0.collection_status_summary', 'partial');
     }
 
+    public function test_summary_filters_charge_totals_by_billing_month(): void
+    {
+        [$school, $admin] = $this->schoolAndUser(['fee_record.view']);
+        $student = $this->student($school, 'MIS-2026-001', 'Alyssa Tan');
+
+        $this->charge($school, $student, '2026-01', 'TUITION', 'mandatory', 1000, 400);
+        $this->charge($school, $student, '2026-02', 'TRANSPORT', 'optional', 200, 0);
+
+        $this->actingAs($admin)
+            ->getJson('/api/fee-record/summary?academic_year=2026&billing_month=2026-01')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.total_expected', 1000)
+            ->assertJsonPath('data.0.total_paid', 400)
+            ->assertJsonPath('data.0.total_outstanding', 600)
+            ->assertJsonPath('data.0.outstanding_months', ['2026-01']);
+
+        $this->actingAs($admin)
+            ->getJson('/api/fee-record/summary?academic_year=2026&billing_month=2026-03')
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
+    }
+
+    public function test_summary_rejects_invalid_or_mismatched_billing_months(): void
+    {
+        [$school, $admin] = $this->schoolAndUser(['fee_record.view']);
+
+        $this->actingAs($admin)
+            ->getJson('/api/fee-record/summary?academic_year=2026&billing_month=July')
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('billing_month');
+
+        $this->actingAs($admin)
+            ->getJson('/api/fee-record/summary?academic_year=2026&billing_month=2025-07')
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('billing_month');
+    }
+
+    public function test_month_filter_preserves_school_and_student_status_scope(): void
+    {
+        [$school, $admin] = $this->schoolAndUser(['fee_record.view']);
+        $active = $this->student($school, 'MIS-2026-001', 'Alyssa Tan');
+        $withdrawn = $this->student($school, 'MIS-2026-002', 'Daniel Lim', status: 'withdraw');
+        $otherSchool = School::query()->create([
+            'code' => 'OTHER',
+            'name' => 'Other School',
+            'receipt_prefix' => 'OTH',
+            'invoice_prefix' => 'OTH-INV',
+            'status' => 'active',
+        ]);
+        $outsideScope = $this->student($otherSchool, 'OTH-2026-001', 'Outside Student');
+
+        $this->charge($school, $active, '2026-07', 'TUITION', 'mandatory', 500, 300);
+        $this->charge($school, $withdrawn, '2026-07', 'TUITION', 'mandatory', 600, 0);
+        $this->charge($otherSchool, $outsideScope, '2026-07', 'TUITION', 'mandatory', 700, 0);
+
+        $this->actingAs($admin)
+            ->getJson('/api/fee-record/summary?academic_year=2026&billing_month=2026-07')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.student_no', 'MIS-2026-001');
+
+        $this->actingAs($admin)
+            ->getJson('/api/fee-record/summary?academic_year=2026&billing_month=2026-07&student_status=withdraw')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.student_no', 'MIS-2026-002');
+    }
+
     public function test_summary_filters_outstanding_search_and_student_status(): void
     {
         [$school, $admin] = $this->schoolAndUser(['fee_record.view']);
