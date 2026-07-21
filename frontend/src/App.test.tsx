@@ -277,6 +277,63 @@ describe('demo shell', () => {
     expect(document.querySelectorAll('.stat-card')).toHaveLength(4)
   })
 
+  it('shows loading values instead of fallback metrics while the dashboard request is pending', async () => {
+    const fetchMock = vi.mocked(globalThis.fetch)
+    const installedImplementation = fetchMock.getMockImplementation()
+
+    if (!installedImplementation) throw new Error('API mock is not installed')
+
+    fetchMock.mockImplementation((input, init) => {
+      const url = new URL(String(input))
+
+      if (url.pathname.endsWith('/dashboard/school')) {
+        return new Promise<Response>(() => undefined)
+      }
+
+      return installedImplementation(input, init)
+    })
+
+    render(<App />)
+
+    await screen.findByRole('heading', { name: 'School overview' })
+    const metrics = screen.getByRole('region', { name: 'Dashboard metrics' })
+
+    expect(within(metrics).getAllByText('Loading...')).toHaveLength(4)
+    expect(screen.queryByText('RM 5,230')).not.toBeInTheDocument()
+    expect(screen.queryByText('RM 86,420')).not.toBeInTheDocument()
+    expect(screen.queryByText('RM 38,500')).not.toBeInTheDocument()
+    expect(screen.queryByText('187')).not.toBeInTheDocument()
+  })
+
+  it('shows an unavailable state instead of fallback metrics when the dashboard request fails', async () => {
+    const fetchMock = vi.mocked(globalThis.fetch)
+    const installedImplementation = fetchMock.getMockImplementation()
+
+    if (!installedImplementation) throw new Error('API mock is not installed')
+
+    fetchMock.mockImplementation((input, init) => {
+      const url = new URL(String(input))
+
+      if (url.pathname.endsWith('/dashboard/school')) {
+        return json({ message: 'Dashboard unavailable.' }, 500)
+      }
+
+      return installedImplementation(input, init)
+    })
+
+    render(<App />)
+
+    await screen.findByRole('heading', { name: 'School overview' })
+    expect(await screen.findByRole('status')).toHaveTextContent('Service temporarily unavailable')
+
+    const metrics = screen.getByRole('region', { name: 'Dashboard metrics' })
+    expect(within(metrics).getAllByText('Unavailable')).toHaveLength(4)
+    expect(screen.queryByText('RM 5,230')).not.toBeInTheDocument()
+    expect(screen.queryByText('RM 86,420')).not.toBeInTheDocument()
+    expect(screen.queryByText('RM 38,500')).not.toBeInTheDocument()
+    expect(screen.queryByText('187')).not.toBeInTheDocument()
+  })
+
   it('shows the Fee Record outstanding total and opens Fee Record from the metric', async () => {
     const user = userEvent.setup()
     await renderAuthenticatedApp()

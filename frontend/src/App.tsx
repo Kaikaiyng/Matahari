@@ -449,20 +449,6 @@ type VerifyPaymentForm = {
 
 type ValidationErrors = Record<string, string[]>
 
-const fallbackDashboard: DashboardResponse = {
-  school: { id: 1, code: 'MIS', name: 'Matahari International School' },
-  metrics: {
-    today_collection: 5230,
-    monthly_collection: 86420,
-    outstanding_fees: 38500,
-    active_students: 187,
-    overdue_accounts: 16,
-    invoices_this_month: 187,
-  },
-  recent_payments: [],
-  outstanding_students: [],
-}
-
 const navGroups: NavigationGroup<PageKey>[] = [
   {
     label: 'Overview',
@@ -4583,14 +4569,17 @@ function FeeRecordMonthCellView({ cell }: { cell: FeeRecordMonthCell }) {
 
 function DashboardPage({
   dashboard,
+  apiState,
   user,
   setActivePage,
 }: {
-  dashboard: DashboardResponse
+  dashboard: DashboardResponse | null
+  apiState: 'live' | 'demo' | 'loading'
   user: CurrentUser
   setActivePage: (page: PageKey) => void
 }) {
   const canViewFeeRecord = hasPermission(user, 'fee_record.view')
+  const unavailableValue = apiState === 'loading' ? 'Loading...' : 'Unavailable'
   const metrics = useMemo<Array<{
     label: string
     value: string
@@ -4602,19 +4591,23 @@ function DashboardPage({
     () => [
       {
         label: "Today's Collection",
-        value: formatCurrency(dashboard.metrics.today_collection),
+        value: dashboard ? formatCurrency(dashboard.metrics.today_collection) : unavailableValue,
         tone: 'positive',
         icon: <CreditCard size={20} />,
       },
       {
         label: 'Monthly Collection',
-        value: formatCurrency(dashboard.metrics.monthly_collection),
+        value: dashboard ? formatCurrency(dashboard.metrics.monthly_collection) : unavailableValue,
         tone: 'neutral',
         icon: <BarChart3 size={20} />,
       },
       {
         label: 'Outstanding Fees',
-        value: canViewFeeRecord ? formatCurrency(dashboard.metrics.outstanding_fees) : 'No access',
+        value: !canViewFeeRecord
+          ? 'No access'
+          : dashboard
+            ? formatCurrency(dashboard.metrics.outstanding_fees)
+            : unavailableValue,
         tone: 'warning',
         icon: <AlertTriangle size={20} />,
         onClick: canViewFeeRecord ? () => setActivePage('fee-record') : undefined,
@@ -4622,12 +4615,12 @@ function DashboardPage({
       },
       {
         label: 'Active Students',
-        value: String(dashboard.metrics.active_students),
+        value: dashboard ? String(dashboard.metrics.active_students) : unavailableValue,
         tone: 'neutral',
         icon: <GraduationCap size={20} />,
       },
     ],
-    [canViewFeeRecord, dashboard, setActivePage],
+    [canViewFeeRecord, dashboard, setActivePage, unavailableValue],
   )
 
   return (
@@ -4643,6 +4636,10 @@ function DashboardPage({
           </button>
         }
       />
+
+      {apiState === 'demo' && (
+        <Message tone="error">Dashboard data could not be loaded. Please reload the page to try again.</Message>
+      )}
 
       <section className="stats-grid" aria-label="Dashboard metrics">
         {metrics.map((metric) => (
@@ -4660,7 +4657,13 @@ function DashboardPage({
 
       <section className="dashboard-grid">
         <DataPanel eyebrow="Latest activity" title="Recent collections">
-          {dashboard.recent_payments.length > 0 ? (
+          {!dashboard ? (
+            <div className="empty-state compact">
+              <CreditCard size={23} />
+              <strong>{apiState === 'loading' ? 'Loading dashboard...' : 'Dashboard unavailable'}</strong>
+              <p>{apiState === 'loading' ? 'Fetching current collection data.' : 'No collection data is being shown.'}</p>
+            </div>
+          ) : dashboard.recent_payments.length > 0 ? (
             <div className="dashboard-list">
               {dashboard.recent_payments.slice(0, 5).map((payment) => (
                 <div key={payment.id}>
@@ -4682,7 +4685,13 @@ function DashboardPage({
         </DataPanel>
 
         <DataPanel eyebrow="Attention needed" title="Outstanding accounts">
-          {dashboard.outstanding_students.length > 0 ? (
+          {!dashboard ? (
+            <div className="empty-state compact">
+              <AlertTriangle size={23} />
+              <strong>{apiState === 'loading' ? 'Loading dashboard...' : 'Dashboard unavailable'}</strong>
+              <p>{apiState === 'loading' ? 'Fetching current outstanding accounts.' : 'No outstanding data is being shown.'}</p>
+            </div>
+          ) : dashboard.outstanding_students.length > 0 ? (
             <div className="dashboard-list">
               {dashboard.outstanding_students.slice(0, 5).map((student) => (
                 <div key={student.invoice_id}>
@@ -4708,7 +4717,7 @@ function DashboardPage({
 }
 
 function App() {
-  const [dashboard, setDashboard] = useState<DashboardResponse>(fallbackDashboard)
+  const [dashboard, setDashboard] = useState<DashboardResponse | null>(null)
   const [apiState, setApiState] = useState<'live' | 'demo' | 'loading'>('loading')
   const [authState, setAuthState] = useState<'checking' | 'guest' | 'authenticated'>('checking')
   const [user, setUser] = useState<CurrentUser | null>(null)
@@ -4717,6 +4726,9 @@ function App() {
   const [classReturnContext, setClassReturnContext] = useState<SchoolClassOption | null>(null)
 
   const loadDashboard = async () => {
+    setDashboard(null)
+    setApiState('loading')
+
     try {
       const response = await apiRequest<DashboardResponse>(
         '/dashboard/school?school_id=1&invoice_month=2026-07&academic_year=2026',
@@ -4724,7 +4736,7 @@ function App() {
       setDashboard(response)
       setApiState('live')
     } catch {
-      setDashboard(fallbackDashboard)
+      setDashboard(null)
       setApiState('demo')
     }
   }
@@ -4812,7 +4824,7 @@ function App() {
     if (activePage === 'calendar') {
       return (
         <CalendarPage
-          schoolId={dashboard.school.id}
+          schoolId={dashboard?.school.id ?? user.school_id ?? 1}
           permissions={user.permissions}
           onUnauthorized={handleUnauthorized}
         />
@@ -4878,7 +4890,7 @@ function App() {
       return <PrototypePage label="Settings" title="Settings Module" />
     }
 
-    return <DashboardPage dashboard={dashboard} user={user} setActivePage={setActivePage} />
+    return <DashboardPage dashboard={dashboard} apiState={apiState} user={user} setActivePage={setActivePage} />
   }
 
   return (
@@ -4886,7 +4898,7 @@ function App() {
       brandLogo={misLogo}
       activePage={activePage}
       pageTitle={pageTitle}
-      contextText={dashboard.school.name}
+      contextText={dashboard?.school.name ?? 'School ERP'}
       navGroups={navGroups}
       apiState={apiState}
       user={user}
