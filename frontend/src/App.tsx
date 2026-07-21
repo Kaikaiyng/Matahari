@@ -16,6 +16,7 @@ import {
   ReceiptText,
   RefreshCw,
   Search,
+  School,
   ShieldCheck,
   Settings,
   UserPlus,
@@ -28,6 +29,8 @@ import type { NavigationGroup } from './components/AdminShell'
 import { DataPanel, FilterToolbar, ModalFrame, PageHeader, SessionLoader, StatCard, StatusBadge } from './components/AdminUi'
 import type { UiTone } from './components/AdminUi'
 import { CalendarPage } from './components/CalendarPage'
+import { ClassesPage } from './components/ClassesPage'
+import type { SchoolClassOption } from './components/ClassesPage'
 import misLogo from './assets/mis-logo.jpg'
 import './App.css'
 
@@ -35,6 +38,7 @@ type PageKey =
   | 'dashboard'
   | 'calendar'
   | 'students'
+  | 'classes'
   | 'parents'
   | 'fees'
   | 'fee-record'
@@ -128,12 +132,6 @@ type StudentForm = {
   registration_date: string
   status: StudentStatus
   notes: string
-}
-
-type SchoolClassOption = {
-  id: number
-  name: string
-  level_group: LevelGroup
 }
 
 type PaymentPlan = 'monthly' | 'termly' | 'yearly'
@@ -477,6 +475,7 @@ const navGroups: NavigationGroup<PageKey>[] = [
     label: 'People',
     items: [
       { key: 'students', label: 'Students', icon: GraduationCap },
+      { key: 'classes', label: 'Classes', icon: School },
       { key: 'parents', label: 'Parents', icon: Users },
     ],
   },
@@ -1034,10 +1033,15 @@ function StudentsPage({
   user,
   onUnauthorized,
   initialStudentId,
+  detailReturn,
 }: {
   user: CurrentUser
   onUnauthorized: () => void
   initialStudentId?: number | null
+  detailReturn?: {
+    label: string
+    onReturn: () => void
+  }
 }) {
   const [students, setStudents] = useState<StudentSummary[]>([])
   const [schoolClasses, setSchoolClasses] = useState<SchoolClassOption[]>([])
@@ -2538,13 +2542,18 @@ function StudentsPage({
               <button
                 className="secondary-action"
                 onClick={() => {
+                  if (detailReturn) {
+                    detailReturn.onReturn()
+                    return
+                  }
+
                   setSelectedStudent(null)
                   initialStudentIdRef.current = null
                   startedWithFocusedStudentRef.current = false
                   void loadStudentsRef.current(statusFilter)
                 }}
               >
-                Back to students
+                {detailReturn?.label ?? 'Back to students'}
               </button>
               <span className={`badge ${statusClass(selectedStudent.status)}`}>
                 {formatStatus(selectedStudent.status)}
@@ -4649,6 +4658,7 @@ function App() {
   const [user, setUser] = useState<CurrentUser | null>(null)
   const [activePage, setActivePage] = useState<PageKey>('dashboard')
   const [focusedStudentId, setFocusedStudentId] = useState<number | null>(null)
+  const [classReturnContext, setClassReturnContext] = useState<SchoolClassOption | null>(null)
 
   const loadDashboard = async () => {
     try {
@@ -4695,17 +4705,39 @@ function App() {
       setUser(null)
       setAuthState('guest')
       setActivePage('dashboard')
+      setFocusedStudentId(null)
+      setClassReturnContext(null)
     }
   }
 
   const handleUnauthorized = () => {
     setUser(null)
     setAuthState('guest')
+    setFocusedStudentId(null)
+    setClassReturnContext(null)
   }
 
   const openStudentDetail = (studentId: number) => {
+    setClassReturnContext(null)
     setFocusedStudentId(studentId)
     setActivePage('students')
+  }
+
+  const openClassStudentDetail = (studentId: number, schoolClass: SchoolClassOption) => {
+    setClassReturnContext(schoolClass)
+    setFocusedStudentId(studentId)
+    setActivePage('students')
+  }
+
+  const returnToClass = () => {
+    setFocusedStudentId(null)
+    setActivePage('classes')
+  }
+
+  const handleSelectPage = (page: PageKey) => {
+    setClassReturnContext(null)
+    setFocusedStudentId(null)
+    setActivePage(page)
   }
 
   const pageTitle = navItems.find((item) => item.key === activePage)?.label ?? 'Dashboard'
@@ -4730,7 +4762,30 @@ function App() {
     }
 
     if (activePage === 'students') {
-      return <StudentsPage key={focusedStudentId ?? 'students'} user={user} onUnauthorized={handleUnauthorized} initialStudentId={focusedStudentId} />
+      return (
+        <StudentsPage
+          key={focusedStudentId ?? 'students'}
+          user={user}
+          onUnauthorized={handleUnauthorized}
+          initialStudentId={focusedStudentId}
+          detailReturn={
+            classReturnContext
+              ? { label: `Back to ${classReturnContext.name}`, onReturn: returnToClass }
+              : undefined
+          }
+        />
+      )
+    }
+
+    if (activePage === 'classes') {
+      return (
+        <ClassesPage
+          permissions={user.permissions}
+          initialClassId={classReturnContext?.id}
+          onOpenStudent={openClassStudentDetail}
+          onUnauthorized={handleUnauthorized}
+        />
+      )
     }
 
     if (activePage === 'parents') {
@@ -4777,7 +4832,7 @@ function App() {
       navGroups={navGroups}
       apiState={apiState}
       user={user}
-      onSelectPage={setActivePage}
+      onSelectPage={handleSelectPage}
       onLogout={() => void handleLogout()}
     >
       {renderPage()}
