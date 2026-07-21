@@ -137,9 +137,18 @@ function eventDateKey(event: CalendarEvent) {
   return schoolDateKey(new Date(event.starts_at))
 }
 
+function eventEndDateKey(event: CalendarEvent) {
+  if (!event.ends_at) return eventDateKey(event)
+  if (event.is_all_day) return new Date(event.ends_at).toISOString().slice(0, 10)
+  return schoolDateKey(new Date(event.ends_at))
+}
+
+function eventOccursOnDate(event: CalendarEvent, date: string) {
+  return date >= eventDateKey(event) && date <= eventEndDateKey(event)
+}
+
 function eventIsInRange(event: CalendarEvent, rangeStart: string, rangeEnd: string) {
-  const eventKey = eventDateKey(event)
-  return eventKey >= rangeStart && eventKey <= rangeEnd
+  return eventDateKey(event) <= rangeEnd && eventEndDateKey(event) >= rangeStart
 }
 
 function eventLabel(event: CalendarEvent) {
@@ -571,7 +580,9 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
         </div>
         <div className="calendar-grid">
           {dates.map((date) => {
-            const dayEvents = visibleEvents.filter((event) => eventDateKey(event) === dateKey(date))
+            const dayEvents = visibleEvents.filter((event) =>
+              eventOccursOnDate(event, dateKey(date)),
+            )
             const isCurrentMonth = date.getUTCMonth() === displayedMonth.getUTCMonth()
             const isToday = dateKey(date) === todayKey
 

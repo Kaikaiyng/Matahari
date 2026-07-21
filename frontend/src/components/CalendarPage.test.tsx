@@ -136,6 +136,35 @@ describe('CalendarPage', () => {
     expect(screen.getByRole('button', { name: /Staff Training/ })).toHaveTextContent('Training')
   })
 
+  it('renders an all-day event on every date from its start through its end', async () => {
+    const schoolHoliday = {
+      ...training,
+      id: 62,
+      title: 'School Holiday',
+      starts_at: '2026-07-21T00:00:00.000Z',
+      ends_at: '2026-07-25T00:00:00.000Z',
+    }
+    vi.mocked(globalThis.fetch).mockImplementation(() => json({ data: [schoolHoliday] }))
+
+    renderCalendar()
+
+    await screen.findByRole('heading', { name: 'July 2026' })
+    for (const day of [21, 22, 23, 24, 25]) {
+      expect(
+        within(screen.getByRole('region', { name: `${day} July 2026` })).getByText(
+          'School Holiday',
+        ),
+      ).toBeInTheDocument()
+    }
+    for (const day of [20, 26]) {
+      expect(
+        within(screen.getByRole('region', { name: `${day} July 2026` })).queryByText(
+          'School Holiday',
+        ),
+      ).not.toBeInTheDocument()
+    }
+  })
+
   it('uses Malaysia time for timed display and day bucketing on a UTC host', async () => {
     const midnightInMalaysia = {
       ...appointment,
