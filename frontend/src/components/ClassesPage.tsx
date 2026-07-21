@@ -1,5 +1,5 @@
 import { ArrowLeft, Eye, RefreshCw, Users } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ApiError, apiRequest } from '../api'
 import { DataPanel, PageHeader, StatusBadge } from './AdminUi'
 
@@ -49,8 +49,10 @@ export function ClassesPage({
   const [selectedClassId, setSelectedClassId] = useState<number | null>(initialClassId)
   const [isLoading, setIsLoading] = useState(canView)
   const [error, setError] = useState('')
+  const onUnauthorizedRef = useRef(onUnauthorized)
+  onUnauthorizedRef.current = onUnauthorized
 
-  const loadDirectory = async () => {
+  const loadDirectory = useCallback(async () => {
     setIsLoading(true)
     setError('')
 
@@ -64,7 +66,7 @@ export function ClassesPage({
       setStudents(studentResponse.data.filter((student) => student.status === 'active'))
     } catch (loadError) {
       if (loadError instanceof ApiError && loadError.status === 401) {
-        onUnauthorized()
+        onUnauthorizedRef.current()
         return
       }
 
@@ -76,13 +78,13 @@ export function ClassesPage({
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
     if (canView) {
       void loadDirectory()
     }
-  }, [canView])
+  }, [canView, loadDirectory])
 
   const selectedClass = classes.find((schoolClass) => schoolClass.id === selectedClassId) ?? null
   const selectedLevelGroup =

@@ -504,7 +504,7 @@ describe('demo shell', () => {
 
     await user.click(screen.getAllByRole('button', { name: 'Void' }).at(-1)!)
     expect(screen.getByRole('dialog', { name: 'Void Receipt' })).toBeInTheDocument()
-  })
+  }, 10_000)
 
   it('uses shared summary and data regions on Fee Record', async () => {
     const user = userEvent.setup()

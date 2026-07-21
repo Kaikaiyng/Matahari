@@ -222,6 +222,75 @@ h2 {
   gap: 16px;
 }
 
+.class-directory-groups {
+  display: grid;
+  gap: 24px;
+  padding: 18px;
+}
+
+.class-group {
+  min-width: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.class-group > h3 {
+  margin: 0;
+  color: #3a3d44;
+  font-size: 15px;
+}
+
+.class-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 14px;
+}
+
+.class-card {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 16px;
+  border: 1px solid #e1e4ea;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.class-card > svg {
+  color: #d82730;
+}
+
+.class-card h4,
+.class-card p {
+  margin: 0;
+}
+
+.class-card h4 {
+  font-size: 17px;
+}
+
+.class-card p {
+  margin-top: 3px;
+  color: #747985;
+  font-size: 12px;
+}
+
+.class-card > strong,
+.class-card > button {
+  grid-column: 1 / -1;
+}
+
+.class-card > strong {
+  color: #167a4a;
+  font-size: 13px;
+}
+
+.class-card > button {
+  justify-self: start;
+}
+
 .contact-directory,
 .content-panel-grid,
 .data-panel .rule-list,
@@ -1898,6 +1967,14 @@ th {
 }
 
 @media screen and (max-width: 767px) {
+  .class-directory-groups {
+    padding: 14px;
+  }
+
+  .class-card-grid {
+    grid-template-columns: 1fr;
+  }
+
   .fee-record-view-switch {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
