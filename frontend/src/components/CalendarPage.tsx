@@ -399,10 +399,18 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
   const submitEvent = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (editingEvent && !canUpdate) return
+    const controls = event.currentTarget.elements
+    const submittedForm: CalendarEventForm = {
+      ...form,
+      start_date: (controls.namedItem('start_date') as HTMLInputElement | null)?.value ?? form.start_date,
+      start_time: (controls.namedItem('start_time') as HTMLInputElement | null)?.value ?? form.start_time,
+      end_date: (controls.namedItem('end_date') as HTMLInputElement | null)?.value ?? form.end_date,
+      end_time: (controls.namedItem('end_time') as HTMLInputElement | null)?.value ?? form.end_time,
+    }
     const localErrors: ApiValidationErrors = {}
-    if (!form.title.trim()) localErrors.title = ['A title is required.']
-    if (!form.start_date) localErrors.start_date = ['A start date is required.']
-    if (!form.is_all_day && !form.start_time) {
+    if (!submittedForm.title.trim()) localErrors.title = ['A title is required.']
+    if (!submittedForm.start_date) localErrors.start_date = ['A start date is required.']
+    if (!submittedForm.is_all_day && !submittedForm.start_time) {
       localErrors.start_time = ['A start time is required for timed events.']
     }
     if (Object.keys(localErrors).length) {
@@ -423,7 +431,7 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
         : `/calendar-events?school_id=${schoolId}`
       const response = await apiRequest<{ calendar_event: CalendarEvent }>(path, {
         method: eventBeingEdited ? 'PATCH' : 'POST',
-        body: eventPayload(form),
+        body: eventPayload(submittedForm),
       })
 
       if (activeScopeRef.current !== mutationScope) return
@@ -713,6 +721,7 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
                 Start date
                 <input
                   type="date"
+                  name="start_date"
                   value={form.start_date}
                   onChange={(event) => updateForm('start_date', event.target.value)}
                   aria-invalid={Boolean(fieldErrors.start_date?.length || fieldErrors.starts_at?.length)}
@@ -727,6 +736,7 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
                   Start time
                   <input
                     type="time"
+                    name="start_time"
                     value={form.start_time}
                     onChange={(event) => updateForm('start_time', event.target.value)}
                     aria-invalid={Boolean(fieldErrors.start_time?.length || fieldErrors.starts_at?.length)}
@@ -739,6 +749,7 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
                 End date
                 <input
                   type="date"
+                  name="end_date"
                   value={form.end_date}
                   onChange={(event) => updateForm('end_date', event.target.value)}
                   aria-invalid={Boolean(fieldErrors.ends_at?.length)}
@@ -751,6 +762,7 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
                   End time
                   <input
                     type="time"
+                    name="end_time"
                     value={form.end_time}
                     onChange={(event) => updateForm('end_time', event.target.value)}
                     aria-invalid={Boolean(fieldErrors.ends_at?.length)}

@@ -648,6 +648,10 @@ function formatValidationError(errors: ValidationErrors | undefined, field: stri
   return errors?.[field]?.[0]
 }
 
+function repeatsValidationError(errors: ValidationErrors | undefined, message: string) {
+  return Object.values(errors ?? {}).some((messages) => messages.includes(message))
+}
+
 function statusClass(status: string) {
   const normalized = status.toLowerCase()
   if (normalized.includes('overdue') || normalized.includes('inactive') || normalized.includes('withdraw')) {
@@ -990,7 +994,7 @@ function LoginScreen({
           <h1>Admin Login</h1>
         </div>
 
-        {error && <Message tone="error">{error}</Message>}
+        {error && !repeatsValidationError(errors, error) && <Message tone="error">{error}</Message>}
 
         <label className="form-field">
           Username

@@ -299,5 +299,9 @@ class DatabaseSeeder extends Seeder
                 );
             }
         }
+
+        if (! app()->environment('testing')) {
+            $this->call(DemoScenarioSeeder::class);
+        }
     }
 }

@@ -227,6 +227,34 @@ describe('demo shell', () => {
     ))
   })
 
+  it('shows an invalid-credentials message only once', async () => {
+    const user = userEvent.setup()
+    vi.mocked(globalThis.fetch).mockImplementation((input) => {
+      const url = new URL(String(input))
+
+      if (url.pathname.endsWith('/me')) return json({ message: 'Unauthenticated.' }, 401)
+      if (url.pathname.endsWith('/login')) {
+        return json(
+          {
+            message: 'The provided credentials are incorrect.',
+            errors: { username: ['The provided credentials are incorrect.'] },
+          },
+          422,
+        )
+      }
+
+      return json({ message: `Unhandled test endpoint: ${url.pathname}` }, 404)
+    })
+
+    render(<App />)
+
+    await user.type(await screen.findByLabelText('Username'), 'admin')
+    await user.type(screen.getByLabelText('Password'), 'wrong-password')
+    await user.click(screen.getByRole('button', { name: 'Login' }))
+
+    expect(await screen.findAllByText('The provided credentials are incorrect.')).toHaveLength(1)
+  })
+
   it('uses a compact Dashboard header and shared metric cards', async () => {
     await renderAuthenticatedApp()
 

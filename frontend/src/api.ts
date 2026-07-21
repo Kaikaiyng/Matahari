@@ -38,12 +38,17 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   const payload = await readJson(response)
 
   if (!response.ok) {
-    const message = typeof payload?.message === 'string' ? payload.message : defaultErrorMessage(response.status)
+    const message =
+      response.status >= 500
+        ? 'The service is temporarily unavailable. Please try again.'
+        : typeof payload?.message === 'string'
+          ? payload.message
+          : defaultErrorMessage(response.status)
 
     throw new ApiError(
       response.status,
       message,
-      isValidationErrors(payload?.errors) ? payload.errors : undefined,
+      response.status < 500 && isValidationErrors(payload?.errors) ? payload.errors : undefined,
     )
   }
 

@@ -2,13 +2,13 @@
 
 Status: Current local-development guide
 
-Last verified: 2026-07-12
+Last verified: 2026-07-21
 
 ## 1. Local Stack
 
 - Frontend: React 19, TypeScript 6, Vite 8, Node.js, and `npm.cmd`
 - Backend: Laravel 13 on PHP 8.4
-- Local database: SQLite for the simplest setup; MariaDB for the active demo environment
+- Local database: SQLite for the repeatable demo; MariaDB remains available for development environments
 - Test database: SQLite `:memory:` through `backend/phpunit.xml`
 
 The repository provides PHP helpers under `tools/php/`:
@@ -19,6 +19,8 @@ The repository provides PHP helpers under `tools/php/`:
 | `php-local.cmd` | Runs PHP with the project configuration |
 | `php-local.ps1` | PowerShell equivalent of the project PHP launcher |
 | `serve-backend.cmd` | Starts Laravel locally |
+| `reset-demo-sqlite.cmd` | Safely rebuilds only the ignored local demo SQLite file and seeds realistic scenarios |
+| `serve-demo-backend.cmd` | Starts the demo API with SQLite, file sessions, and debug output disabled |
 
 Plain `php` on this machine does not automatically load `tools/php/php.ini`. Prefer the provided launcher.
 
@@ -45,11 +47,23 @@ VITE_API_BASE_URL=http://127.0.0.1:8000/api
 Production verification:
 
 ```powershell
+npm.cmd test
 npm.cmd run lint
 npm.cmd run build
 ```
 
-## 3. Backend Setup
+## 3. Demo Backend Setup
+
+From the repository root:
+
+```powershell
+tools\php\reset-demo-sqlite.cmd
+tools\php\serve-demo-backend.cmd
+```
+
+`reset-demo-sqlite.cmd` hard-pins Laravel to `backend/database/database.sqlite` before running `migrate:fresh --seed`. It never resets MariaDB or changes `backend/.env`. The seeded demo includes unpaid, fully paid with receipt, partially paid, and not-yet-configured student accounts.
+
+## 4. General Backend Development
 
 From `backend/`:
 
@@ -57,8 +71,9 @@ From `backend/`:
 Copy-Item .env.example .env
 ..\tools\php\php-local.cmd artisan key:generate
 ..\tools\php\php-local.cmd artisan migrate:fresh --seed --force
-..\tools\php\php-local.cmd artisan serve --host=127.0.0.1 --port=8000
 ```
+
+Then start the API from the repository root with `tools\php\serve-backend.cmd`. This direct launcher keeps the project PHP configuration active in the long-running server process on Windows.
 
 For an existing database, use `artisan migrate --force` instead of `migrate:fresh`.
 
@@ -68,7 +83,7 @@ Run tests:
 ..\tools\php\php-local.cmd vendor\bin\phpunit
 ```
 
-## 4. Database Options
+## 5. Database Options
 
 ### SQLite
 
@@ -104,21 +119,26 @@ Do not publish database or phpMyAdmin credentials. phpMyAdmin is an optional loc
 
 Fresh MariaDB schema creation has one known migration-order caveat. Read [Database Design](DATABASE_DESIGN.md) before running a clean MariaDB migration.
 
-## 5. Seeded Local Accounts
+## 6. Seeded Local Accounts
 
 The seeder creates local `.test` users for Super Admin, School Admin, and Finance roles. Their development password is defined in `backend/database/seeders/DatabaseSeeder.php`.
 
 Seeded credentials are local-only. Do not reuse them in any deployed environment.
 
-## 6. iPad and LAN Demo
+## 7. iPad and LAN Demo
 
 Connect the computer and iPad to the same trusted network. Find the computer's IPv4 address, then start the backend and frontend with host access.
 
-Backend:
+The provided demo server binds to localhost for safety. For intentional LAN testing, run the built-in server with the same explicit demo environment from a temporary PowerShell session:
 
 ```powershell
-cd backend
-..\tools\php\php-local.cmd artisan serve --host=0.0.0.0 --port=8000
+$env:APP_ENV='local'
+$env:APP_DEBUG='false'
+$env:DB_CONNECTION='sqlite'
+$env:DB_DATABASE=(Resolve-Path 'backend\database\database.sqlite').Path
+$env:SESSION_DRIVER='file'
+cd backend\public
+php -c ..\..\tools\php\php.ini -S 0.0.0.0:8000 -t . ..\vendor\laravel\framework\src\Illuminate\Foundation\resources\server.php
 ```
 
 Frontend PowerShell session:
@@ -137,7 +157,7 @@ http://YOUR_LAN_IP:5173
 
 The backend CORS configuration must allow that exact frontend origin. Keep MariaDB port `3306` and phpMyAdmin bound to `127.0.0.1`; the iPad only needs the frontend and API ports.
 
-## 7. Responsive QA Sizes
+## 8. Responsive QA Sizes
 
 - Desktop: 1440x900
 - iPad landscape: 1180x820
@@ -146,7 +166,7 @@ The backend CORS configuration must allow that exact frontend origin. Keep Maria
 
 Follow [Demo Review Script](DEMO_REVIEW_SCRIPT.md) for the test sequence.
 
-## 8. Troubleshooting
+## 9. Troubleshooting
 
 ### PHP reports missing extensions
 
@@ -170,12 +190,13 @@ Check:
 
 Use `npm.cmd` rather than `npm`.
 
-## 9. Verified Baseline
+## 10. Verified Baseline
 
-As of 2026-07-12:
+As of 2026-07-21:
 
-- Frontend lint: zero errors and one existing hook dependency warning
+- Frontend tests: 59 passed
+- Frontend lint: zero errors and zero warnings
 - Frontend build: passed
-- Backend: 92 tests and 597 assertions
+- Backend: 112 tests and 696 assertions
 - API inventory: 30 routes
 - Active demo schema: 36 tables

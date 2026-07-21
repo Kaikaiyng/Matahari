@@ -33,7 +33,7 @@ Wide financial ledgers intentionally scroll inside their own containers. The pag
 
 - Frontend: React 19, TypeScript 6, Vite 8, Lucide React, and project CSS
 - Backend: Laravel 13 on PHP 8.4
-- Database: MariaDB for the active local demo; SQLite remains supported for isolated tests and rollback
+- Database: SQLite for the repeatable local demo and automated tests; MariaDB remains supported for development environments
 - Authentication: Laravel session cookies
 - Authorization: roles, permissions, and middleware-enforced permission slugs
 
@@ -57,13 +57,16 @@ Prerequisites:
 - Backend dependencies already installed with Composer, or Composer available to install them
 - SQLite for the simplest setup, or a local MariaDB database
 
+Prepare a clean demo database from the repository root. This command resets only the ignored `backend/database/database.sqlite` file; it does not read, modify, or reset a configured MariaDB database:
+
+```powershell
+tools\php\reset-demo-sqlite.cmd
+```
+
 Start the backend:
 
 ```powershell
-cd backend
-..\tools\php\php-local.cmd artisan config:clear
-..\tools\php\php-local.cmd artisan migrate --force
-..\tools\php\php-local.cmd artisan serve --host=127.0.0.1 --port=8000
+tools\php\serve-demo-backend.cmd
 ```
 
 Start the frontend in another terminal:
@@ -92,6 +95,7 @@ Frontend:
 
 ```powershell
 cd frontend
+npm.cmd test
 npm.cmd run lint
 npm.cmd run build
 ```
@@ -103,11 +107,12 @@ cd backend
 ..\tools\php\php-local.cmd vendor\bin\phpunit
 ```
 
-Last verified baseline on 2026-07-12:
+Last verified baseline on 2026-07-21:
 
 - Frontend build: passed
-- Frontend lint: zero errors, with one existing `react-hooks/exhaustive-deps` warning in `App.tsx`
-- Backend: 92 tests, 597 assertions
+- Frontend lint: zero errors and zero warnings
+- Frontend tests: 59 tests passed
+- Backend: 112 tests, 696 assertions
 - Laravel API: 30 application routes
 - Active local schema: 36 tables
 
@@ -152,7 +157,7 @@ The existing receipt screen supports browser printing; that is separate from PDF
 - Real-device iPad Safari testing is still recommended even though the four target viewport sizes passed browser QA.
 - Receipt print CSS was preserved, but native browser print-preview automation was unavailable during responsive QA.
 - Fresh MariaDB setup needs special handling for one historical migration that creates `payment_allocations.fee_agreement_item_id` before `fee_agreement_items` exists. See [Database Design](docs/DATABASE_DESIGN.md).
-- MariaDB and phpMyAdmin used for the current local demo are local operator tools and are not part of a production deployment.
+- MariaDB and phpMyAdmin, when used for development, are local operator tools and are not part of a production deployment.
 
 ## Security
 

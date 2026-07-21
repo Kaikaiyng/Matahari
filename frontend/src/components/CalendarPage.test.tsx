@@ -184,6 +184,27 @@ describe('CalendarPage', () => {
     )
   })
 
+  it('submits the date and time values currently shown by native controls', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    renderCalendar()
+    await user.click(screen.getByRole('button', { name: 'Add event' }))
+    await user.type(screen.getByLabelText('Title'), 'Browser-filled training')
+
+    ;(screen.getByLabelText('Start date') as HTMLInputElement).value = '2026-07-22'
+    ;(screen.getByLabelText('Start time') as HTMLInputElement).value = '10:00'
+    ;(screen.getByLabelText('End date') as HTMLInputElement).value = '2026-07-22'
+    ;(screen.getByLabelText('End time') as HTMLInputElement).value = '11:30'
+
+    await user.click(screen.getByRole('button', { name: 'Create event' }))
+
+    await waitFor(() =>
+      expect(requestBody('POST')).toMatchObject({
+        starts_at: '2026-07-22T02:00:00.000Z',
+        ends_at: '2026-07-22T03:30:00.000Z',
+      }),
+    )
+  })
+
   it('navigates months and fetches the complete visible date range', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     renderCalendar()
