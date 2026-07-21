@@ -25,7 +25,8 @@ The Dashboard API will therefore accept an optional four-digit `academic_year` (
 - The value becomes the real total, such as `RM 3,850` or `RM 0`.
 - Selecting the card opens the existing `Fee Record` page.
 - The interactive card uses native button semantics, visible focus styling, and an accessible name.
-- Users without `fee_record.view` see `No access`, and the card is not interactive.
+- All four currently defined roles (`super-admin`, `ceo`, `school-admin`, and `finance`) can see the total and open Fee Record.
+- The existing `fee_record.view` permission remains the authorization mechanism so future restricted roles can still be introduced deliberately.
 - Other Dashboard cards remain non-interactive.
 
 ## Scope and Error Handling
@@ -34,10 +35,12 @@ The Dashboard API will therefore accept an optional four-digit `academic_year` (
 - No new endpoint.
 - No changes to Fee Record charge calculation rules.
 - Existing Dashboard fallback behavior remains unchanged if the Dashboard request fails.
-- The existing `fee_record.view` permission protects both the displayed total and navigation; this change does not add or broaden permissions.
+- `super-admin`, `school-admin`, and `finance` already have `fee_record.view`; the `ceo` role will receive it so every current role has access.
+- Fresh databases receive the role permission through `DatabaseSeeder`, and the existing demo database is updated without deleting operational data.
 
 ## Testing
 
 - A backend feature test proves the Dashboard metric comes from Fee Record charge balances rather than legacy invoice balances.
+- A permission test proves all four current roles include `fee_record.view`.
 - A frontend test proves the formatted amount is visible and activating the card opens Fee Record.
 - Existing frontend and backend suites, lint, build, and the live demo are verified after implementation.
