@@ -31,11 +31,13 @@ type StatCardProps = {
   tone?: UiTone
   icon?: ReactNode
   meta?: ReactNode
+  onClick?: () => void
+  actionLabel?: string
 }
 
-export function StatCard({ label, value, tone = 'neutral', icon, meta }: StatCardProps) {
-  return (
-    <article className={`stat-card ${tone}`}>
+export function StatCard({ label, value, tone = 'neutral', icon, meta, onClick, actionLabel }: StatCardProps) {
+  const content = (
+    <>
       {icon && (
         <span className="stat-card-icon" aria-hidden="true">
           {icon}
@@ -46,8 +48,23 @@ export function StatCard({ label, value, tone = 'neutral', icon, meta }: StatCar
         <strong>{value}</strong>
         {meta && <small>{meta}</small>}
       </div>
-    </article>
+    </>
   )
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        className={`stat-card ${tone} interactive`}
+        aria-label={actionLabel ?? label}
+        onClick={onClick}
+      >
+        {content}
+      </button>
+    )
+  }
+
+  return <article className={`stat-card ${tone}`}>{content}</article>
 }
 
 export function FilterToolbar({ ariaLabel, children }: { ariaLabel: string; children: ReactNode }) {

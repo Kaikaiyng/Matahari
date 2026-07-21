@@ -38,7 +38,7 @@ const dashboard = {
   metrics: {
     today_collection: 0,
     monthly_collection: 0,
-    outstanding_fees: 0,
+    outstanding_fees: 800,
     active_students: 1,
     overdue_accounts: 0,
     invoices_this_month: 0,
@@ -263,6 +263,18 @@ describe('demo shell', () => {
     expect(screen.getByRole('region', { name: 'Dashboard metrics' })).toBeInTheDocument()
     expect(document.querySelector('.hero-strip')).not.toBeInTheDocument()
     expect(document.querySelectorAll('.stat-card')).toHaveLength(4)
+  })
+
+  it('shows the Fee Record outstanding total and opens Fee Record from the metric', async () => {
+    const user = userEvent.setup()
+    await renderAuthenticatedApp()
+
+    expect(screen.getByText('RM 800')).toBeInTheDocument()
+    expect(screen.queryByText('View Fee Record')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Open Fee Record' }))
+
+    expect(await screen.findByRole('heading', { name: 'Admin Fee Record' })).toBeInTheDocument()
   })
 
   it('shows the complete sidebar including display-only modules', async () => {

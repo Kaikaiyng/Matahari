@@ -4541,12 +4541,22 @@ function FeeRecordMonthCellView({ cell }: { cell: FeeRecordMonthCell }) {
 
 function DashboardPage({
   dashboard,
+  user,
   setActivePage,
 }: {
   dashboard: DashboardResponse
+  user: CurrentUser
   setActivePage: (page: PageKey) => void
 }) {
-  const metrics = useMemo(
+  const canViewFeeRecord = hasPermission(user, 'fee_record.view')
+  const metrics = useMemo<Array<{
+    label: string
+    value: string
+    tone: 'neutral' | 'positive' | 'warning'
+    icon: ReactNode
+    onClick?: () => void
+    actionLabel?: string
+  }>>(
     () => [
       {
         label: "Today's Collection",
@@ -4562,9 +4572,11 @@ function DashboardPage({
       },
       {
         label: 'Outstanding Fees',
-        value: 'View Fee Record',
+        value: canViewFeeRecord ? formatCurrency(dashboard.metrics.outstanding_fees) : 'No access',
         tone: 'warning',
         icon: <AlertTriangle size={20} />,
+        onClick: canViewFeeRecord ? () => setActivePage('fee-record') : undefined,
+        actionLabel: canViewFeeRecord ? 'Open Fee Record' : undefined,
       },
       {
         label: 'Active Students',
@@ -4573,7 +4585,7 @@ function DashboardPage({
         icon: <GraduationCap size={20} />,
       },
     ],
-    [dashboard],
+    [canViewFeeRecord, dashboard, setActivePage],
   )
 
   return (
@@ -4598,6 +4610,8 @@ function DashboardPage({
             value={metric.value}
             tone={metric.tone as 'neutral' | 'positive' | 'warning'}
             icon={metric.icon}
+            onClick={metric.onClick}
+            actionLabel={metric.actionLabel}
           />
         ))}
       </section>
@@ -4662,7 +4676,9 @@ function App() {
 
   const loadDashboard = async () => {
     try {
-      const response = await apiRequest<DashboardResponse>('/dashboard/school?school_id=1&invoice_month=2026-07')
+      const response = await apiRequest<DashboardResponse>(
+        '/dashboard/school?school_id=1&invoice_month=2026-07&academic_year=2026',
+      )
       setDashboard(response)
       setApiState('live')
     } catch {
@@ -4820,7 +4836,7 @@ function App() {
       return <PrototypePage label="Settings" title="Settings Module" />
     }
 
-    return <DashboardPage dashboard={dashboard} setActivePage={setActivePage} />
+    return <DashboardPage dashboard={dashboard} user={user} setActivePage={setActivePage} />
   }
 
   return (

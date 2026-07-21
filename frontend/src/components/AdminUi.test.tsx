@@ -12,6 +12,24 @@ import {
 } from './AdminUi'
 
 describe('AdminUi', () => {
+  it('exposes an interactive metric as an accessible button', async () => {
+    const user = userEvent.setup()
+    const onClick = vi.fn()
+
+    render(
+      <StatCard
+        label="Outstanding Fees"
+        value="RM 800"
+        tone="warning"
+        onClick={onClick}
+        actionLabel="Open Fee Record"
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Open Fee Record' }))
+    expect(onClick).toHaveBeenCalledOnce()
+  })
+
   it('renders page context, actions, metrics, filters, and data regions', () => {
     render(
       <>

@@ -55,6 +55,32 @@
   box-shadow: 0 1px 3px rgb(22 24 29 / 6%);
 }
 
+button.stat-card {
+  width: 100%;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+.stat-card.interactive {
+  cursor: pointer;
+  transition:
+    transform 150ms ease,
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.stat-card.interactive:hover {
+  transform: translateY(-1px);
+  border-color: #e2a5a9;
+  box-shadow: 0 5px 16px rgb(22 24 29 / 10%);
+}
+
+.stat-card.interactive:focus-visible {
+  outline: 3px solid rgb(238 47 55 / 24%);
+  outline-offset: 2px;
+}
+
 .stat-card-icon {
   width: 44px;
   height: 44px;
