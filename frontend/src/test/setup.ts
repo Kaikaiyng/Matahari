@@ -4,6 +4,11 @@ import { cleanup } from '@testing-library/react'
 
 afterEach(() => cleanup())
 
+Object.defineProperty(window, 'scrollTo', {
+  writable: true,
+  value: () => undefined,
+})
+
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
   value: (query: string) => ({

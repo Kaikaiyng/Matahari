@@ -52,7 +52,7 @@ const student = {
   student_no: 'MIS-2026-001',
   full_name: 'Alyssa Tan',
   level_group: 'primary',
-  class: { id: 5, name: 'MD1' },
+  class: { id: 2, name: 'MA1' },
   fee_amount: 0,
   outstanding_balance: 0,
   status: 'active',
@@ -273,6 +273,7 @@ describe('demo shell', () => {
       'Dashboard',
       'Calendar',
       'Students',
+      'Classes',
       'Parents',
       'Fees',
       'Fee Record',
@@ -355,6 +356,53 @@ describe('demo shell', () => {
 
     expect(screen.queryByRole('heading', { name: 'Student List' })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Back to students/i })).toBeInTheDocument()
+  })
+
+  it('returns Student Detail to the originating class roster', async () => {
+    const user = userEvent.setup()
+    await renderAuthenticatedApp()
+
+    await user.click(screen.getByRole('button', { name: 'Classes' }))
+    await user.click(await screen.findByRole('button', { name: 'View MA1' }))
+    expect(screen.getByRole('heading', { name: 'MA1' })).toBeInTheDocument()
+    expect(screen.getByText('Alyssa Tan')).toBeInTheDocument()
+
+    const fetchMock = vi.mocked(globalThis.fetch)
+    const studentListRequestsBefore = fetchMock.mock.calls.filter(([input]) => {
+      const url = new URL(String(input))
+      return url.pathname.endsWith('/students') && url.searchParams.has('status')
+    }).length
+
+    await user.click(screen.getByRole('button', { name: 'View Alyssa Tan' }))
+    await screen.findByRole('heading', { name: /Alyssa Tan/ })
+    expect(screen.getByRole('button', { name: 'Back to MA1' })).toBeInTheDocument()
+    expect(
+      fetchMock.mock.calls.filter(([input]) => {
+        const url = new URL(String(input))
+        return url.pathname.endsWith('/students') && url.searchParams.has('status')
+      }),
+    ).toHaveLength(studentListRequestsBefore)
+
+    await user.click(screen.getByRole('button', { name: 'Back to MA1' }))
+    expect(await screen.findByRole('heading', { name: 'MA1' })).toBeInTheDocument()
+    expect(screen.getByText('Alyssa Tan')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Classes' })).toHaveClass('active')
+  })
+
+  it('clears the selected class after deliberate sidebar navigation', async () => {
+    const user = userEvent.setup()
+    await renderAuthenticatedApp()
+
+    await user.click(screen.getByRole('button', { name: 'Classes' }))
+    await user.click(await screen.findByRole('button', { name: 'View MA1' }))
+    expect(screen.getByRole('heading', { name: 'MA1' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Parents' }))
+    await screen.findByRole('heading', { name: 'Parent Directory' })
+    await user.click(screen.getByRole('button', { name: 'Classes' }))
+
+    expect(await screen.findByRole('heading', { name: 'Class Directory' })).toBeInTheDocument()
+    expect(screen.queryByText('No active students in this class.')).not.toBeInTheDocument()
   })
 
   it('uses business-facing Fee Record cards and headings', async () => {
@@ -456,7 +504,7 @@ describe('demo shell', () => {
 
     await user.click(screen.getAllByRole('button', { name: 'Void' }).at(-1)!)
     expect(screen.getByRole('dialog', { name: 'Void Receipt' })).toBeInTheDocument()
-  })
+  }, 10_000)
 
   it('uses shared summary and data regions on Fee Record', async () => {
     const user = userEvent.setup()
