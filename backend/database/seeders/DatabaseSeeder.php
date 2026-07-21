@@ -108,6 +108,7 @@ class DatabaseSeeder extends Seeder
 
         $roles['super-admin']->permissions()->sync($permissions->pluck('id')->all());
         $roles['ceo']->permissions()->sync($permissions->only([
+            'fee_record.view',
             'calendar.view',
             'calendar.create',
             'calendar.update',

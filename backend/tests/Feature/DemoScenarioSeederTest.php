@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\FeeAgreement;
 use App\Models\FeeRecordCharge;
 use App\Models\Receipt;
+use App\Models\Role;
 use App\Models\Student;
 use Database\Seeders\DemoScenarioSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -13,6 +14,19 @@ use Tests\TestCase;
 class DemoScenarioSeederTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_every_initial_role_can_view_fee_record(): void
+    {
+        $this->seed();
+
+        foreach (['super-admin', 'ceo', 'school-admin', 'finance'] as $roleSlug) {
+            $this->assertTrue(
+                Role::query()->where('slug', $roleSlug)->firstOrFail()
+                    ->permissions()->where('slug', 'fee_record.view')->exists(),
+                "Expected {$roleSlug} to have fee_record.view.",
+            );
+        }
+    }
 
     public function test_default_seed_creates_clean_and_varied_demo_finance_scenarios(): void
     {

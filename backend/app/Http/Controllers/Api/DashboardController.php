@@ -7,16 +7,25 @@ use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\School;
 use App\Models\Student;
+use App\Services\Billing\FeeRecordSummaryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
-    public function school(Request $request): JsonResponse
+    public function school(Request $request, FeeRecordSummaryService $feeRecordSummaryService): JsonResponse
     {
+        $data = $request->validate([
+            'academic_year' => ['sometimes', 'string', 'regex:/^\d{4}$/'],
+        ]);
         $school = School::query()->findOrFail((int) $request->query('school_id', 1));
         $today = now()->toDateString();
         $currentMonth = (string) $request->query('invoice_month', now()->format('Y-m'));
+        $academicYear = $data['academic_year'] ?? now()->format('Y');
+        $feeRecordRows = $feeRecordSummaryService->summary($school->id, [
+            'academic_year' => $academicYear,
+            'student_status' => 'active',
+        ]);
 
         $verifiedPayments = Payment::query()
             ->where('school_id', $school->id)
@@ -29,10 +38,7 @@ class DashboardController extends Controller
             'monthly_collection' => (float) (clone $verifiedPayments)
                 ->where('payment_date', 'like', $currentMonth.'%')
                 ->sum('amount'),
-            'outstanding_fees' => (float) Invoice::query()
-                ->where('school_id', $school->id)
-                ->where('status', '!=', 'void')
-                ->sum('outstanding_amount'),
+            'outstanding_fees' => (float) collect($feeRecordRows)->sum('total_outstanding'),
             'active_students' => Student::query()
                 ->where('school_id', $school->id)
                 ->where('status', 'active')
