@@ -77,8 +77,10 @@ The default API base is `http://127.0.0.1:8000/api`.
 ## Implemented Domain Areas
 
 - Session login, logout, and current user
+- Username-based staff authentication with generic invalid/inactive credential errors
 - Roles, permissions, user-role assignments, and permission middleware
-- Student list, create, update, detail, and status changes
+- Student list, create, update, detail, status changes, and class lookup
+- School-scoped shared calendar events
 - Fee item lookup
 - Versioned Fee Agreements and superseding
 - Fee Record charge preview, activation, manual charges, and outstanding charges
@@ -89,7 +91,7 @@ The default API base is `http://127.0.0.1:8000/api`.
 
 ## API Inventory
 
-The application currently exposes 30 non-vendor API routes. Generate the authoritative list with:
+The application currently exposes 35 non-vendor API routes. Generate the authoritative list with:
 
 ```powershell
 ..\tools\php\php-local.cmd artisan route:list --path=api --except-vendor
@@ -100,13 +102,14 @@ Main route groups:
 | Group | Examples |
 | --- | --- |
 | Auth | `POST /api/login`, `POST /api/logout`, `GET /api/me` |
-| Students | list, create, detail, update, and status |
+| Calendar | visible-range list, create, update, and delete |
+| Students and classes | class lookup plus student list, create, detail, update, and status |
 | Fee Agreements | student agreement list/create, show, and supersede |
 | Fee Record | preview, activate, manual charge, outstanding, summary, and category monthly |
 | Payments | student history/create, verify, and void |
 | Receipts | student history, create from payment, show, print, and void |
 
-See [System Architecture](../docs/SYSTEM_ARCHITECTURE.md) for the complete endpoint table and finance data flow.
+See [System Architecture](../docs/SYSTEM_ARCHITECTURE.md) for the complete endpoint table and finance data flow. See [Maintenance Guide](../docs/MAINTENANCE_GUIDE.md) for where route, validation, controller, service, model, and frontend request responsibilities belong.
 
 ## Authentication and Authorization
 
@@ -132,13 +135,13 @@ See [System Architecture](../docs/SYSTEM_ARCHITECTURE.md) for the complete endpo
 ..\tools\php\php-local.cmd vendor\bin\phpunit
 ```
 
-`phpunit.xml` forces SQLite `:memory:` so the automated suite does not modify the active local MariaDB demo database.
+`phpunit.xml` forces SQLite `:memory:` so the automated suite does not modify the active local development/demo database.
 
-Last verified on 2026-07-12:
+Last verified on 2026-07-22:
 
 ```text
-92 tests
-597 assertions
+116 tests
+721 assertions
 ```
 
 ## Deferred Backend Scope
@@ -147,5 +150,5 @@ Last verified on 2026-07-12:
 - General reports and exports
 - PDF generation
 - Parent Portal
-- Production dashboard finance logic
+- Remaining production dashboard/invoice reporting beyond the implemented Fee Record outstanding total
 - Deployment and hosting automation

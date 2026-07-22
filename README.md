@@ -7,7 +7,9 @@ The application is demo-ready on desktop and responsive for iPad landscape, iPad
 ## Implemented Modules
 
 - Login, session authentication, role assignments, and permission-gated actions
-- Student list, search, filters, create/edit, detail, and status updates
+- Shared school calendar with school isolation, CRUD permissions, Malaysia-time handling, and responsive month/mobile views
+- Read-only class directory with active-student rosters and Student Detail navigation
+- Student list, search, status and fee-period filters, create, detail, and status updates
 - Versioned Fee Agreements with Charge Type, Billing Pattern, and Jan-Dec billing configuration
 - Fee Record charge preview and activation
 - Manual and one-time charges
@@ -17,6 +19,7 @@ The application is demo-ready on desktop and responsive for iPad landscape, iPad
 - Student Fee Record totals
 - Fee Record Summary
 - Category Monthly Fee Record with a horizontally scrollable Jan-Dec ledger
+- Dashboard collection metrics with Fee Record-based outstanding total and explicit unavailable states
 
 ## Responsive Demo Support
 
@@ -46,6 +49,7 @@ frontend/   React admin application
 backend/    Laravel JSON API and finance domain
 docs/       Product, architecture, database, setup, UAT, and demo documentation
 tools/php/  Project PHP configuration and Windows launch helpers
+tools/public-demo/  Temporary HTTPS demo launcher and contract tests
 ```
 
 ## Quick Start on Windows
@@ -89,6 +93,8 @@ For iPad testing on the same LAN, bind both servers to `0.0.0.0` and set `VITE_A
 
 See [Development Setup](docs/DEVELOPMENT_SETUP.md) for database options, seed data, LAN commands, and troubleshooting.
 
+For temporary internet access to seeded demo data, follow [Temporary Public Demo](docs/PUBLIC_DEMO.md). It exposes only the frontend preview through a temporary Cloudflare Quick Tunnel and keeps Laravel/database services on localhost.
+
 ## Verification
 
 Frontend:
@@ -107,25 +113,30 @@ cd backend
 ..\tools\php\php-local.cmd vendor\bin\phpunit
 ```
 
-Last verified baseline on 2026-07-21:
+Last verified baseline on 2026-07-22:
 
 - Frontend build: passed
 - Frontend lint: zero errors and zero warnings
-- Frontend tests: 59 tests passed
-- Backend: 112 tests, 696 assertions
-- Laravel API: 30 application routes
+- Frontend tests: 75 tests passed across 7 files
+- Backend: 116 tests, 721 assertions
+- Laravel API: 35 non-vendor API routes
 - Active local schema: 36 tables
 
 ## Documentation
 
 | Document | Purpose |
 | --- | --- |
+| [Documentation Index](docs/README.md) | Entry point for current references, business inputs, and historical delivery records |
+| [Maintenance Guide](docs/MAINTENANCE_GUIDE.md) | Code ownership, API layout, change map, verification, and pull-request checklist |
 | [Implementation Status](docs/IMPLEMENTATION_STATUS.md) | Implemented and deferred scope, verification, and known limitations |
 | [Development Setup](docs/DEVELOPMENT_SETUP.md) | Local frontend, backend, database, and LAN demo setup |
 | [System Architecture](docs/SYSTEM_ARCHITECTURE.md) | Runtime boundaries, authentication, RBAC, API inventory, and finance flow |
 | [Database Design](docs/DATABASE_DESIGN.md) | Active table groups, relationships, constraints, and migration caveat |
 | [UAT Checklist](docs/UAT_CHECKLIST.md) | Acceptance checks for implemented demo workflows |
 | [Demo Review Script](docs/DEMO_REVIEW_SCRIPT.md) | Desktop/iPad/mobile demonstration sequence |
+| [Project Workflow Catalog](docs/PROJECT_WORKFLOW_CATALOG.md) | Detailed current workflows and implemented/deferred boundaries |
+| [Temporary Public Demo](docs/PUBLIC_DEMO.md) | Safe temporary HTTPS demo operation and troubleshooting |
+| [Business Rules v0.1](docs/business-rules/business-rules-v0.1.md) | Draft stakeholder rules and explicit TBD items requiring approval |
 | [PRD](docs/PRD.md) | Historical product planning baseline |
 | [Decision Log](docs/DECISIONS.md) | Historical product and technical decisions |
 | [Roadmap](docs/ROADMAP.md) | Historical delivery plan and future direction |
@@ -146,7 +157,7 @@ The following are intentionally not implemented in this MVP:
 - General reports and exports
 - PDF generation
 - Parent Portal
-- Production dashboard finance logic
+- Remaining production dashboard/invoice reporting beyond the implemented Fee Record outstanding total
 - Hosting, deployment, domain, Docker, Nginx, and Cloudflare configuration
 - New major school ERP modules
 

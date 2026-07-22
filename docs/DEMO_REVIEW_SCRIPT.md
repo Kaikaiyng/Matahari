@@ -2,7 +2,7 @@
 
 Status: Current demo sequence
 
-Last updated: 2026-07-12
+Last updated: 2026-07-22
 
 ## 1. Demo Goal
 
@@ -43,9 +43,9 @@ Suggested explanation:
 ```text
 This is the current Matahari internal Admin Finance MVP.
 
-The demo focuses on student fee agreements, charge generation, payment allocation,
-payment verification, receipts, and fee-record ledgers. It is designed first for
-school admin work on desktop and iPad.
+The demo focuses on the school calendar, class/student navigation, fee agreements,
+charge generation, payment allocation, payment verification, receipts, and fee-record
+ledgers. It is designed first for school admin work on desktop and iPad.
 ```
 
 ## 4. Login and Navigation
@@ -58,6 +58,8 @@ school admin work on desktop and iPad.
 6. Select Students and confirm the drawer closes.
 7. Confirm Logout remains accessible.
 
+Use the seeded username, not an email address. The login form intentionally does not prefill credentials.
+
 Expected:
 
 - No page-level horizontal scrolling
@@ -67,13 +69,23 @@ Expected:
 
 ## 5. Student List and Detail
 
-1. Search or filter the Student List.
+1. Search or filter the Student List and switch the fee period between all-year and a month.
 2. Confirm Student Name, Student ID, Class, Status, and Open remain visible on narrow screens.
 3. Open a student with a long name or identifier.
 4. Review Student overview and Fee Record totals.
 5. Confirm the narrow layout becomes a clear single-column task flow.
 
 Explain that financial sections are kept separate so admin staff do not face one large unstructured ledger.
+
+Before or after Student Detail, open Classes, select a class, verify the active roster, open a student, and return to the same roster.
+
+## 5A. Calendar
+
+1. Open Calendar below Dashboard.
+2. Use Today and month navigation.
+3. Open an existing all-day or timed event and confirm Malaysia-local time.
+4. Create/edit/delete only dedicated demo data.
+5. On mobile, confirm the month grid becomes date-and-event rows without page-level horizontal scrolling.
 
 ## 6. Fee Agreement
 
@@ -153,8 +165,8 @@ Do not describe browser printing as PDF generation.
 
 ## 12. Fee Record Summary
 
-1. Open Fee Record Summary.
-2. Filter by academic year, student, class/status, or outstanding state as available.
+1. Open Fee Record Summary from navigation or the Dashboard Outstanding Fees card.
+2. Filter by academic year, billing month, student, class/status, or outstanding state as available.
 3. Confirm Student, Student ID, Expected, Paid, Outstanding, and Status remain present.
 4. On narrow screens, show the horizontal-scroll cue and scroll the table inside its container.
 

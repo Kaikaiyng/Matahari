@@ -1,5 +1,9 @@
 # Matahari Workflow Atlas
 
+Status: Historical workflow snapshot from 2026-07-14
+
+The Mermaid/FigJam atlas predates username authentication, Calendar, Classes, the authenticated legacy endpoints, and the current 35-route/27-permission inventory. Use [System Architecture](../SYSTEM_ARCHITECTURE.md) and [Project Workflow Catalog](../PROJECT_WORKFLOW_CATALOG.md) for current behavior until the diagrams are regenerated.
+
 Editable FigJam board: [Matahari Complete Project Workflow Atlas](https://www.figma.com/board/sGDlrRbsbHsuT5laZEzKa8?utm_source=other&utm_content=edit_in_figjam&oai_id=v1%2FwOVdpwOgFVs6eNhbOHdwC1cOfCUWewcVQHceqgjBVtixXsxAsX2TAY&request_id=5a0a7805-91cc-4e9d-8bc8-d191c5b72bb5)
 
 ## Diagram index
@@ -18,13 +22,13 @@ Editable FigJam board: [Matahari Complete Project Workflow Atlas](https://www.fi
 12. `11-school-scope.mmd` — current school isolation and future multi-school extension hook
 13. `12-conflicts-and-caveats.mmd` — documentation conflicts, incomplete surfaces, and external checks
 14. `13-core-api-map.mmd` — authentication, student, agreement, and Fee Record APIs
-15. `14-finance-api-map.mmd` — payment, receipt, and unauthenticated legacy APIs
+15. `14-finance-api-map.mmd` — payment, receipt, and the legacy API boundary as captured on 2026-07-14
 
 ## Verification record
 
 - Mermaid CLI 11.16.0 rendered all 15 sources successfully.
-- Laravel route audit covered all 30 API routes.
-- Permission audit covered all 23 current permission slugs.
+- The snapshot's Laravel route audit covered all 30 API routes that existed on 2026-07-14; the current application has 35.
+- The snapshot's permission audit covered 23 permission slugs; the current application has 27 after Calendar permissions were added.
 - FigJam root inspection found all 15 generated diagram prefixes, 339 text-bearing shapes, and 32 named sections before the Starter-plan MCP inspection limit was reached.
 - The complete canvas and ten high-risk sections were visually inspected after generation: all four role lanes, charge/payment/receipt state machines, security caveats, Fee Record APIs, and legacy APIs.
-- Backend regression suite passed 92 tests with 597 assertions on 2026-07-14.
+- Backend regression suite passed 92 tests with 597 assertions on 2026-07-14. The current baseline is maintained in [Implementation Status](../IMPLEMENTATION_STATUS.md).

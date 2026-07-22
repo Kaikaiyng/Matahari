@@ -2,7 +2,7 @@
 
 Status: Evidence-backed current-state catalog
 
-Last reviewed: 2026-07-14
+Last reviewed: 2026-07-22
 
 This catalog is the source checklist for the editable FigJam workflow board and the final Notion documentation. It distinguishes runtime behavior from approved-but-unimplemented design and historical/deferred scope.
 
@@ -10,12 +10,14 @@ Published FigJam board: [Matahari Complete Project Workflow Atlas](https://www.f
 
 The board contains 15 numbered diagrams (`00` through `14`) and 15 matching Mermaid sources under `docs/workflow-diagrams/`.
 
+The catalog text is updated through 2026-07-22. The FigJam board and Mermaid diagrams remain a 2026-07-14 workflow snapshot; use the current route inventory and sections below for later Calendar, Classes, username-authentication, and dashboard changes.
+
 ## 1. Status Legend
 
 - **Implemented**: reachable in current code, protected and tested unless a limitation is stated.
 - **Backend only**: API/domain behavior exists, but the current React navigation does not expose a complete workflow.
 - **Prototype/static**: visible frontend shell or sample content without a complete working module.
-- **Legacy/unsafe**: retained scaffold behavior that is outside the protected finance route group.
+- **Legacy/backend-only**: retained scaffold behavior that is authenticated but is not the source of truth for the current Fee Record UI.
 - **Approved design**: documented and approved, but absent from current routes/schema/frontend behavior.
 - **Deferred**: explicitly outside the current MVP.
 
@@ -34,7 +36,7 @@ Human and system actors:
 
 - Unauthenticated staff visitor
 - Super Admin, currently global (`school_id = null`)
-- CEO, seeded role but currently no seeded permissions
+- CEO, seeded with Fee Record view and shared Calendar permissions
 - School Admin, school-scoped operational role
 - Finance, school-scoped review/verification role
 - React frontend
@@ -62,27 +64,30 @@ Parent and student users are not authenticated actors. Parent Portal and Student
 | Fee item mutation API/UI | Not implemented | Not implemented | Not implemented | Not implemented |
 | Fee Agreements view | Yes | No | Yes | Yes |
 | Fee Agreements create/supersede | Yes | No | Yes | No |
-| Fee Record view | Yes | No | Yes | Yes |
+| Fee Record view | Yes | Yes | Yes | Yes |
 | Fee Record activate/manual charge | Yes | No | Yes | No |
 | Payments view | Yes | No | Yes | Yes |
 | Payments create | Yes | No | Yes | No |
 | Payments verify/void | Yes | No | No | Yes |
 | Receipts view/create/print | Yes | No | Yes | Yes |
 | Receipts void | Yes | No | No | Yes |
+| Calendar view/create/update/delete | Yes | Yes | Yes | Yes |
 | User management | Not implemented | No | No | No |
 
-Super Admin receives all 23 current business permissions. School Admin receives 19 operational permissions. Finance receives 12 read/review/control permissions. The `ceo` role is created but `DatabaseSeeder` does not currently sync any permissions to it.
+Super Admin receives all 27 current business permissions. CEO receives Fee Record view plus all four Calendar permissions. School Admin receives 23 operational permissions. Finance receives 16 read/review/control permissions.
 
 ### 3.2 Approved design, not implemented
 
-The approved username/user-management design adds five `users.*` permissions to Super Admin and gives CEO read-only permissions for students, parents, fee items, Fee Agreements, Fee Record, payments, receipts, and receipt printing. It also changes staff login from email to normalized username and adds Super Admin-only account administration. None of these routes, migrations, or frontend screens exists in the current runtime.
+The username portion of the approved design is implemented: staff login uses normalized usernames and the staff email/reset-token schema was removed. The proposed five `users.*` permissions, broader CEO read-only role, and Super Admin account-administration routes/screens are not implemented.
 
 ## 4. Frontend Navigation and Availability
 
 | Navigation item | Current behavior |
 | --- | --- |
-| Dashboard | Live legacy endpoint with demo fallback; finance widgets are labelled future phase |
+| Dashboard | Live authenticated endpoint; collection metrics are live, outstanding total comes from Fee Record, failures show unavailable values, and remaining invoice-oriented fields are legacy |
+| Calendar | Implemented school-scoped visible-range month view and create/edit/delete workflow |
 | Students | Main implemented workspace for student, agreement, charges, payments, and receipts |
+| Classes | Implemented read-only class directory and active-student roster with Student Detail handoff |
 | Parents | Static prototype contacts only |
 | Fees | Static Fee Agreement foundation table only |
 | Fee Record | Implemented read-only Summary and Category Monthly views |
@@ -108,21 +113,21 @@ Responsive shell behavior:
 1. Frontend initially calls `GET /api/me` to restore a session.
 2. If `/me` succeeds, the frontend stores the user, roles, and effective permission slugs, then loads the Dashboard.
 3. If `/me` returns 401, the frontend shows the login form.
-4. The current login form is prefilled with demo email/password values.
-5. Staff submits email and password to `POST /api/login`.
-6. Laravel validates required email format and password string.
+4. The login form starts empty and requests username and password.
+5. Staff submits username and password to `POST /api/login`.
+6. Laravel trims and lowercases the username, validates its allowed characters/length, and validates the password string.
 7. `Auth::attempt` checks the credentials.
-8. Invalid credentials return 422 on `email`.
+8. Invalid credentials return 422 on `username` with a generic message.
 9. On success, Laravel regenerates the session.
-10. If user status is not `active`, Laravel logs out, invalidates the session, regenerates the CSRF token, and returns a distinct inactive-account error.
-11. Active login updates `last_login_at` and returns id, name, email, `school_id`, roles, and sorted unique permissions.
+10. If user status is not `active`, Laravel logs out, invalidates the session, regenerates the CSRF token, and returns the same generic credential error.
+11. Active login updates `last_login_at` and returns id, name, username, `school_id`, roles, and sorted unique permissions.
 12. Frontend renders all navigation items but conditionally hides/disables finance actions using permissions.
 13. Every protected backend action independently rechecks authentication and the required permission.
 14. `POST /api/logout` logs out, invalidates the session, regenerates token, and returns the frontend to the guest state.
 
-### 5.2 Approved authentication change
+### 5.2 Remaining approved user-management change
 
-The approved design replaces email with lowercase username, removes staff email/reset-table concepts, uses a generic credential error for invalid and inactive accounts, removes demo-prefilled credentials, and preserves sessions/roles/school assignments. This is not implemented yet.
+Username authentication, generic invalid/inactive errors, and removal of staff email/reset-token concepts are implemented. Super Admin user CRUD, fixed-role assignment, status control, password reset, audit logging, and the remaining safety rules are still design-only.
 
 ## 6. Student Lifecycle and Workspace
 
@@ -132,7 +137,7 @@ The approved design replaces email with lowercase username, removes staff email/
 2. School-scoped users automatically query their `school_id`.
 3. Backend defaults status to `active`; supported values are active, withdraw, graduate, inactive, or all.
 4. Backend supports filters for level group, class, student number, and search across number/name.
-5. Current Student List UI exposes status filter and refresh; Fee Record totals are loaded separately for the selected academic year.
+5. Current Student List UI exposes status and fee-period filters; one Fee Record summary response supplies both the `Paid / Total Fees` card and per-student annual/monthly values.
 6. Results are ordered by student number and show identity, level/class, status, expected fees, and outstanding totals.
 7. Opening a student loads detail, agreement history, Fee Record summary/outstanding, payment history, and receipt history according to permissions.
 
@@ -156,6 +161,24 @@ The approved design replaces email with lowercase username, removes staff email/
 ### 6.4 Parent/guardian data
 
 Student detail returns linked parent/guardian name, phone, email, relationship, and primary-contact flag. The database supports many-to-many student-parent links. Parent permission slugs exist, but there are no protected parent CRUD routes and the Parents navigation page is only static sample content.
+
+### 6.5 Class directory
+
+1. User needs `students.view`.
+2. `GET /api/classes` returns the configured school class catalog; `GET /api/students?status=active` supplies the roster source.
+3. The frontend groups classes by Kindergarten, Primary, Secondary, and STP and calculates active-student counts.
+4. Opening a class shows only active students whose `class.id` matches the selected class.
+5. Opening Student Detail from a roster reuses the existing Student workspace; returning restores the originating roster.
+6. The directory is read-only and adds no class mutation route or permission slug.
+
+## 6A. Shared Calendar
+
+1. Every seeded role has `calendar.view/create/update/delete`.
+2. `GET /api/calendar-events?start&end&school_id` returns events overlapping the visible range and enforces school scope.
+3. POST/PATCH requests validate all-day or timed event data, event type, Malaysia-local timestamps, optional location/participants/notes, and school ownership.
+4. Create/update records preserve creator/updater audit identities; delete requires confirmation in the UI.
+5. Desktop/tablet use a seven-column month grid; mobile uses date-and-event rows.
+6. Today navigation, current-day highlighting, and explicit loading/empty/error states are implemented.
 
 ## 7. Fee Agreement Lifecycle
 
@@ -239,7 +262,7 @@ Student detail returns linked parent/guardian name, phone, email, relationship, 
 
 ### 8.5 Read-only Fee Record views
 
-Summary filters academic year, level group, class, student status, outstanding-only, and student name/number. It aggregates expected, paid, outstanding, outstanding months/categories, latest active issued receipt, and overall no_charges/unpaid/partial/paid state.
+Summary filters academic year, optional `billing_month` in the same academic year, level group, class, student status, outstanding-only, and student name/number. It aggregates expected, paid, outstanding, outstanding months/categories, latest active issued receipt, and overall no_charges/unpaid/partial/paid state.
 
 Category Monthly adds category and returns one Jan–Dec cell per student/category. Each month cell aggregates charge count, expected, paid, outstanding, raw categories, fee codes, and active issued receipt references. Both views read charge balances; pending payments, legacy invoices, and receipt issuance/voiding do not directly change charge totals.
 
@@ -333,11 +356,11 @@ Category Monthly adds category and returns one Jan–Dec cell per student/catego
 
 ## 12. Legacy Dashboard and Invoice Flow
 
-These two endpoints are outside the authenticated finance route group and must be marked legacy/unsafe.
+These two endpoints are authenticated but remain legacy/backend-only surfaces without a more specific permission slug.
 
 ### Dashboard
 
-`GET /api/dashboard/school` accepts `school_id` (default 1) and invoice month. It reports verified-payment collection, legacy invoice outstanding/overdue/count, active students, recent verified payments, and top outstanding invoice students. The frontend calls school 1/month 2026-07 and falls back to hardcoded demo metrics if the request fails. Current UI explicitly says production finance widgets are future phase and directs users to Fee Record.
+`GET /api/dashboard/school` accepts `school_id` (default 1), invoice month, and academic year. It reports verified-payment collection, a Fee Record-based outstanding total, active students, recent verified payments, and legacy invoice count/overdue/top-outstanding fields. The frontend calls school 1/month 2026-07/year 2026; if the request fails it clears the response and shows unavailable values instead of hardcoded metrics. The Outstanding Fees card opens Fee Record for users with `fee_record.view`.
 
 ### Monthly invoice generation
 
@@ -354,7 +377,7 @@ These two endpoints are outside the authenticated finance route group and must b
 
 ## 14. Approved User-Management Flow, Not Implemented
 
-Planned login uses normalized username. Super Admin would list/create/edit users, assign exactly one fixed role, activate/deactivate, and reset passwords. Safety rules would prevent self-deactivation, self-demotion, and removal/demotion of the last active Super Admin. User actions would write audit logs without password/hash data. Non-Super Admin Settings would remain self-view only. Planned routes are `/users`, `/users/{user}`, `/users/{user}/status`, `/users/{user}/reset-password`, and `/roles`; none currently exists.
+Login already uses normalized username. The remaining plan would let Super Admin list/create/edit users, assign exactly one fixed role, activate/deactivate, and reset passwords. Safety rules would prevent self-deactivation, self-demotion, and removal/demotion of the last active Super Admin. User actions would write audit logs without password/hash data. Non-Super Admin Settings would remain self-view only. Planned routes are `/users`, `/users/{user}`, `/users/{user}/status`, `/users/{user}/reset-password`, and `/roles`; none currently exists.
 
 ## 15. Explicitly Deferred Flows
 
@@ -362,7 +385,7 @@ Planned login uses normalized username. Super Admin would list/create/edit users
 - General reports and exports
 - PDF generation
 - Parent Portal / student authentication
-- Production dashboard finance logic
+- Remaining production dashboard/invoice reporting beyond the implemented Fee Record outstanding total
 - Production invoice frontend and invoice PDF
 - Refunds, credit notes, overpayments, write-offs, and advanced corrections
 - Queue-driven email/WhatsApp communication
@@ -374,13 +397,11 @@ Planned login uses normalized username. Super Admin would list/create/edit users
 
 ## 16. Current Evidence Conflicts and Caveats
 
-- Documentation/UAT says repeated receipt generation may return/reuse an active receipt; current service and tests return 422 until the issued receipt is voided.
-- Implementation status/UAT mentions student edit in the frontend; current backend update route exists, but React has no profile edit workflow.
-- CEO read-only permissions are approved in a design document but not synced in the current seeder.
-- Username authentication/user management is approved design only; runtime still uses email and exposes/prefills demo credentials.
+- Broader CEO read-only permissions are approved in a design document but only Fee Record view and Calendar permissions are currently seeded.
+- Username authentication is implemented; Super Admin user management remains design-only.
 - Parent and fee-management permissions exist without complete mutation routes/UI.
 - Payments and Receipts are implemented inside Student Detail while their top-level navigation pages remain prototypes.
-- Dashboard and invoice generation routes are unauthenticated legacy endpoints.
+- Dashboard and invoice generation routes are authenticated legacy endpoints without a more specific permission slug.
 - Historical PRD/backlog describes invoice-centric payment updates and broader modules; current implemented finance source of truth is Fee Record charges and their allocations.
 - Category mapping is explicitly temporary until final school fee codes are confirmed.
 - MariaDB fresh migration has a known foreign-key ordering workaround.
@@ -391,16 +412,16 @@ Planned login uses normalized username. Super Admin would list/create/edit users
 The final board must include all of these named areas:
 
 1. Runtime system boundary and status legend
-2. Current role/permission matrix including the current empty CEO role
-3. Implemented login/session/logout and approved username-login overlay
+2. Current role/permission matrix including the CEO's Fee Record/Calendar access
+3. Implemented username login/session/logout and planned user-management overlay
 4. Frontend navigation availability and responsive shell
-5. Student list/create/detail/update-status plus backend-only profile update and parent prototype
+5. Student list/create/detail/update-status, class directory/roster, backend-only profile update, and parent prototype
 6. Fee Agreement create/view/supersede with validations and snapshots
 7. Fee Record preview/activate/manual/outstanding/summary/category-monthly
 8. Payment create/allocation/cash/non-cash/verify/void and charge balance effects
 9. Receipt generate/view/print/void/regenerate and payment void guard
 10. Student, agreement, charge, payment, and receipt state machines
-11. Legacy dashboard and invoice-generation flows
+11. Authenticated legacy dashboard and invoice-generation flows, including the Fee Record outstanding metric boundary
 12. School scope and future multi-school hook
 13. Approved user management and CEO read-only design, clearly marked unimplemented
 14. Deferred modules and business-rule TBDs
@@ -414,8 +435,8 @@ The final board must include all of these named areas:
 - Domain behavior: API controllers, Form Requests, Fee Agreement and Billing services
 - Persistence: migrations and Eloquent models
 - UI behavior: `frontend/src/App.tsx`, `frontend/src/api.ts`, and responsive/print CSS
-- Edge cases: 92 PHPUnit feature/unit tests, especially agreement, charge, allocation, payment, receipt, summary, and category-monthly suites
+- Edge cases: 116 PHPUnit feature/unit tests as of 2026-07-22, especially auth, calendar, student/class, agreement, charge, allocation, payment, receipt, summary, and category-monthly suites
 - Current scope: `IMPLEMENTATION_STATUS.md`, `SYSTEM_ARCHITECTURE.md`, `DATABASE_DESIGN.md`, `UAT_CHECKLIST.md`, and `DEMO_REVIEW_SCRIPT.md`
-- Approved future auth/user design: `docs/superpowers/specs/2026-07-12-username-auth-user-management-design.md`
+- Partially delivered auth and future user-management design: `docs/superpowers/specs/2026-07-12-username-auth-user-management-design.md`
 - Draft business-rule caveats: `docs/business-rules/business-rules-v0.1.md`
 - Historical context only: PRD, decisions, roadmap, backlog, and business-workflow discovery documents

@@ -1,5 +1,7 @@
 # Matahari School ERP Business Rules
 
+> **Draft stakeholder input.** This file is not an implementation-status document. Some MVP workflows were implemented before every rule below was approved; use [Implementation Status](../IMPLEMENTATION_STATUS.md) and [System Architecture](../SYSTEM_ARCHITECTURE.md) for current behavior, and keep every `TBD` unresolved until stakeholder approval.
+
 Version: 0.1
 Status: Draft - Pending Approval
 Project: Matahari School ERP

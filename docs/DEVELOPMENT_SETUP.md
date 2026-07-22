@@ -2,7 +2,7 @@
 
 Status: Current local-development guide
 
-Last verified: 2026-07-21
+Last verified: 2026-07-22
 
 ## 1. Local Stack
 
@@ -21,6 +21,8 @@ The repository provides PHP helpers under `tools/php/`:
 | `serve-backend.cmd` | Starts Laravel locally |
 | `reset-demo-sqlite.cmd` | Safely rebuilds only the ignored local demo SQLite file and seeds realistic scenarios |
 | `serve-demo-backend.cmd` | Starts the demo API with SQLite, file sessions, and debug output disabled |
+
+Temporary HTTPS demo helpers and their tests live under `tools/public-demo/`. They are separate from normal local development; see [Temporary Public Demo](PUBLIC_DEMO.md).
 
 Plain `php` on this machine does not automatically load `tools/php/php.ini`. Prefer the provided launcher.
 
@@ -166,6 +168,8 @@ The backend CORS configuration must allow that exact frontend origin. Keep Maria
 
 Follow [Demo Review Script](DEMO_REVIEW_SCRIPT.md) for the test sequence.
 
+For repository ownership, API layering, files that must change together, and the publish checklist, use the [Maintenance Guide](MAINTENANCE_GUIDE.md).
+
 ## 9. Troubleshooting
 
 ### PHP reports missing extensions
@@ -192,11 +196,11 @@ Use `npm.cmd` rather than `npm`.
 
 ## 10. Verified Baseline
 
-As of 2026-07-21:
+As of 2026-07-22:
 
-- Frontend tests: 59 passed
+- Frontend tests: 75 passed across 7 files
 - Frontend lint: zero errors and zero warnings
 - Frontend build: passed
-- Backend: 112 tests and 696 assertions
-- API inventory: 30 routes
+- Backend: 116 tests and 721 assertions
+- API inventory: 35 non-vendor routes
 - Active demo schema: 36 tables
