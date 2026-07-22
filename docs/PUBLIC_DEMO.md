@@ -1,5 +1,9 @@
 # Temporary Public Demo
 
+Status: Current operator guide
+
+Last verified: 2026-07-22
+
 ## What it does
 
 The public-demo launcher creates a free temporary `https://...trycloudflare.com` address. The host PC must remain powered on and connected to the internet. The address normally changes after stopping and restarting.
@@ -41,3 +45,5 @@ The downloaded `cloudflared.exe` is kept under the ignored `.demo-public/` direc
 - Slow DNS: the launcher first uses Windows DNS, then falls back to Cloudflare's `1.1.1.1` only for its public health check. Testers continue to use their normal browser DNS.
 - Old URL: start again and share the newly displayed address.
 - End of demo: run `stop-public-demo.cmd`; closing a browser tab does not stop the tunnel.
+
+For ownership, safe change boundaries, and the verification/publish checklist, see the [Maintenance Guide](MAINTENANCE_GUIDE.md).

@@ -2,7 +2,7 @@
 
 Status: Current implementation reference
 
-Last updated: 2026-07-12
+Last updated: 2026-07-22
 
 ## 1. Runtime Topology
 
@@ -19,7 +19,7 @@ Laravel 13 application
               |
               | Eloquent / transactions
               v
-MariaDB local demo database
+SQLite repeatable demo / MariaDB development database
 ```
 
 SQLite remains available for new-contributor setup, test isolation, and rollback. `backend/phpunit.xml` uses SQLite `:memory:` so automated tests do not modify the active demo database.
@@ -42,6 +42,10 @@ Main files:
 - `frontend/src/App.css`: visual system, responsive breakpoints, receipt screen, and print styles
 - `frontend/src/index.css`: root containment and focus foundation
 - `frontend/src/api.ts`: credentialed JSON requests and normalized API errors
+- `frontend/src/components/CalendarPage.tsx`: calendar data, forms, timezone conversion, and responsive presentation
+- `frontend/src/components/ClassesPage.tsx`: class directory and active-student rosters
+- `frontend/src/components/AdminShell.tsx`: responsive application shell and navigation
+- `frontend/src/components/AdminUi.tsx`: shared admin display primitives
 
 The frontend may calculate display previews and allocation totals, but Laravel remains authoritative for validation, permissions, statuses, receipt numbers, and persisted financial effects.
 
@@ -62,7 +66,8 @@ Laravel responsibilities:
 
 - Session authentication and current-user response
 - Permission middleware and finance action authorization
-- Student validation and status changes
+- Student/class validation, lookup, and status changes
+- School-scoped calendar event validation and CRUD
 - Fee Agreement versioning
 - Charge preview, activation, manual charges, and outstanding calculation
 - Payment allocation, verification, and void reversal
@@ -77,6 +82,7 @@ Authentication flow:
 
 ```text
 POST /api/login
+  -> normalized lowercase username + password
   -> encrypted cookie + database-backed Laravel session
   -> GET /api/me restores current user
   -> frontend renders permission-aware navigation/actions
@@ -103,9 +109,11 @@ Examples:
 
 Frontend permission checks are usability controls, not the security boundary. The backend must reject unauthorized requests.
 
-### Current security limitation
+The default session lifetime is 480 minutes (8 hours) of inactivity. `SESSION_EXPIRE_ON_CLOSE=false`, so closing the browser does not itself invalidate the server-side session.
 
-The legacy `GET /api/dashboard/school` and `POST /api/invoices/generate-monthly` routes are registered outside the authenticated finance route group. They are retained from the initial scaffold and must not be treated as production-secure endpoints. Production hardening must either protect or remove them before deployment.
+### Legacy endpoint boundary
+
+`GET /api/dashboard/school` and `POST /api/invoices/generate-monthly` are retained from the initial scaffold. They now run inside the session and `auth` middleware group, but they do not have a more specific permission slug. The Dashboard outstanding-total metric uses Fee Record charges; other invoice-oriented dashboard fields and monthly invoice generation remain legacy/backend-only behavior.
 
 ## 6. Finance Data Flow
 
@@ -147,7 +155,7 @@ Student
 ### Receipts
 
 - Receipt generation starts from an eligible payment.
-- Active receipt generation is idempotent for the same payment.
+- A payment may have only one issued receipt; a repeated generation attempt is rejected until that receipt is voided.
 - Receipt numbers come from a backend sequence.
 - Receipt items snapshot the issued descriptions and amounts.
 - Voided numbers are never recycled.
@@ -162,7 +170,7 @@ cd backend
 ..\tools\php\php-local.cmd artisan route:list --path=api --except-vendor
 ```
 
-Current route count: 30.
+Current route count: 35.
 
 ### Auth and legacy dashboard
 
@@ -183,6 +191,16 @@ Current route count: 30.
 | GET | `/api/students/{student}` | Student detail |
 | PATCH | `/api/students/{student}` | Update student |
 | PATCH | `/api/students/{student}/status` | Change student status |
+| GET | `/api/classes` | List the configured school class catalog |
+
+### Calendar
+
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| GET | `/api/calendar-events` | List events overlapping a visible date range |
+| POST | `/api/calendar-events` | Create a school-scoped event |
+| PATCH | `/api/calendar-events/{calendarEvent}` | Update an event in scope |
+| DELETE | `/api/calendar-events/{calendarEvent}` | Delete an event in scope |
 
 ### Fee Agreements and items
 
@@ -219,7 +237,7 @@ Current route count: 30.
 | Method | Endpoint | Purpose |
 | --- | --- | --- |
 | GET | `/api/students/{student}/receipts` | Receipt history |
-| POST | `/api/payments/{payment}/receipts` | Generate/reuse receipt |
+| POST | `/api/payments/{payment}/receipts` | Generate receipt; reject an active duplicate |
 | GET | `/api/receipts/{receipt}` | Receipt detail |
 | GET | `/api/receipts/{receipt}/print` | Printable receipt response |
 | POST | `/api/receipts/{receipt}/void` | Void receipt |
@@ -250,10 +268,10 @@ See [Database Design](DATABASE_DESIGN.md) for table groups and relationships.
 
 ## 10. Test Architecture
 
-- Feature tests exercise auth, students, agreements, charge preview/activation, manual charges, allocations, payments, void guards, receipts, summary, and category monthly APIs.
+- Feature tests exercise auth/username migration, students/classes, calendar, agreements, charge preview/activation, manual charges, allocations, payments, void guards, receipts, dashboard, summary, and category monthly APIs.
 - Unit tests cover amount-in-words behavior.
 - PHPUnit uses SQLite `:memory:` for isolation.
-- Last verified baseline: 92 tests and 597 assertions.
+- Use the dated baseline in [Implementation Status](IMPLEMENTATION_STATUS.md); regenerate it rather than copying an older count.
 
 ## 11. Deferred Architecture
 
@@ -261,7 +279,7 @@ See [Database Design](DATABASE_DESIGN.md) for table groups and relationships.
 - General reports and export pipelines
 - PDF generation
 - Parent Portal
-- Production dashboard finance logic
+- Remaining production dashboard/invoice reporting beyond the implemented Fee Record outstanding total
 - Queue-driven communication workflows
 - Production deployment and network architecture
 

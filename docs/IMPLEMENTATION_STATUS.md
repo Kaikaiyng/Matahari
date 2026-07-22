@@ -2,18 +2,19 @@
 
 Status: `RESPONSIVE_DEMO_READY_WITH_WARNINGS`
 
-Last verified: 2026-07-19
+Last verified: 2026-07-22
 
 ## 1. Product State
 
-Matahari has moved beyond scaffold status. The current repository contains a working internal Admin Finance MVP with a Laravel API, React frontend, seeded roles and sample data, finance workflows, a shared school calendar, and an iPad-first responsive pass.
+Matahari has moved beyond scaffold status. The current repository contains a working internal Admin Finance MVP with a Laravel API, React frontend, seeded roles and sample data, finance workflows, shared school calendar, class directory, repeatable SQLite demo, temporary HTTPS demo launcher, and an iPad-first responsive pass.
 
 The status includes warnings because real-device iPad Safari and native browser print preview still need operator verification, and several planned product modules remain intentionally deferred.
 
 ## 2. Completed Modules
 
-- Login, logout, current user, session restoration, roles, and permission-gated actions
-- Student Management: list, search, filter, create, edit, detail, and status
+- Username login, logout, current user, session restoration, roles, and permission-gated actions
+- Student Management: list, search, status/fee-period filters, create, detail, and status updates
+- Read-only Classes directory with active-student counts, rosters, Student Detail handoff, and roster return
 - Fee Agreement creation, version history, current agreement, and superseding
 - Fee Agreement billing configuration: Charge Type, Billing Pattern, Jan-Dec selection, and preview confirmation
 - Fee Record charge preview and activation
@@ -22,8 +23,9 @@ The status includes warnings because real-device iPad Safari and native browser 
 - Payment history, verification, void safeguards, and allocation detail
 - Receipt generation, screen view, browser print, history, void, and regeneration
 - Student Fee Record totals
-- Fee Record Summary
+- Fee Record Summary with optional validated billing-month filtering
 - Category Monthly Fee Record Jan-Dec ledger
+- Dashboard collection metrics with Fee Record-based outstanding total, Fee Record navigation, and no hardcoded failure fallback
 - Shared Calendar: school-isolated visible-range month loading; create, edit, and confirmed delete access for every initial role; all-day and Malaysia-time timed events; Appointment, Training, Meeting, School Event, and Other types; optional location, participants/person-in-charge, and notes; creator/updater audit users; Today navigation and current-day highlighting; explicit loading/empty/error states; seven-column desktop/tablet views; and compact mobile date rows
 
 ## 3. Responsive State
@@ -64,14 +66,15 @@ Implemented behavior:
 - Non-vendor API routes: 35
 - Authentication: session cookies
 - Authorization: `auth` plus permission middleware
-- Active local demo database: MariaDB 12.3.2
+- Repeatable demo database: SQLite
+- Optional development database: MariaDB
 - Automated test database: SQLite `:memory:`
 - Active schema: 36 tables
 
 Main API groups:
 
 - Auth
-- Students and status
+- Students, classes, and status
 - Fee items and Fee Agreements
 - Fee Record preview, activation, manual charges, outstanding, summary, and category monthly
 - Payments, verification, and voiding
@@ -81,23 +84,19 @@ Main API groups:
 
 ## 5. Verification Evidence
 
-Final detached-worktree verification at commit `5ed3e26` on 2026-07-19:
+Fresh repository verification on 2026-07-22:
 
 ```text
-Frontend clean install: npm ci installed 119 packages; zero vulnerabilities
-Frontend Vitest: 4 files passed, 52 tests passed
+Frontend Vitest: 7 files passed, 75 tests passed
 Frontend lint: zero errors and zero warnings
-Frontend production build: passed; 63 modules transformed
-Backend PHPUnit: 107 tests passed, 669 assertions with an ephemeral APP_KEY
-Focused Calendar API: 10 tests passed, 56 assertions
-Laravel API routes: 35
+Frontend production build: passed; 66 modules transformed
+Backend PHPUnit: 116 tests passed, 721 assertions
+Laravel non-vendor API routes: 35
 Calendar API routes: 4, with auth and calendar.view/create/update/delete middleware
-Exact-head browser QA: School Admin login and Calendar navigation passed at 1440x900, 1024x768, 768x1024, and 390x844 with zero horizontal overflow
-Calendar runtime flow: Today navigation/current-day highlighting passed; a 9:00 Malaysia-time event round-tripped and displayed as 9:00 AM; the named delete confirmation opened and cancel preserved the event
-Browser console: zero application errors or warnings on the exact-head Calendar tab
+Public-demo launcher contract and runtime test scripts: PASS
 ```
 
-The final clean worktree verified that PHP autoload resolved Calendar source from the detached worktree itself. Backend offset-datetime regression tests cover create/update normalization and audit identity; frontend tests cover Malaysia-time display/serialization, Today highlighting, request states, validation accessibility, and events moving outside the visible range. Earlier Finance and Super Admin role checks and the broader CRUD/isolation browser evidence remain recorded in the Task 5 report; the final exact-head browser pass rechecked the changed Calendar UI with School Admin at all four delivery viewports.
+The 2026-07-19 Calendar delivery also completed exact-head browser QA at 1440x900, 1024x768, 768x1024, and 390x844 with zero horizontal overflow and zero application console errors/warnings. Real-device and native print-preview limitations remain below.
 
 ## 6. Deferred Scope
 
@@ -109,8 +108,8 @@ Not implemented in the current MVP:
 - Excel or other exports
 - PDF generation
 - Parent Portal
-- Production dashboard finance logic
-- Deployment, hosting, domain, Docker, Nginx, or Cloudflare setup
+- Remaining production dashboard/invoice reporting beyond the implemented Fee Record outstanding total
+- Stable deployment, hosting, domain, Docker, Nginx, or Cloudflare configuration (the current Quick Tunnel is temporary demo infrastructure only)
 - New major school ERP modules
 
 Some navigation entries retain demo/future-phase content. A visible navigation item does not imply its full backend module is complete.

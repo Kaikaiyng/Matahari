@@ -45,7 +45,10 @@ Requests include credentials because authentication uses Laravel session cookies
 
 - Login and session restoration
 - Permission-aware application shell and navigation
-- Student list, create/edit, detail, and status workflow
+- Dashboard collection metrics, Fee Record outstanding total, and explicit unavailable state
+- Shared Calendar CRUD with responsive month/mobile layouts
+- Read-only Classes directory and active-student rosters
+- Student list, fee-period filtering, create, detail, and status workflow
 - Fee Agreement create and supersede flows
 - Billing configuration with Charge Type, Billing Pattern, and billing months
 - Fee Record charge preview, activation, and warnings
@@ -75,8 +78,12 @@ Touch-oriented controls use 44px targets on tablet/mobile. Wide finance ledgers 
 | `src/App.css` | Product styling, breakpoints, drawer, forms, finance records, receipt, and print rules |
 | `src/index.css` | Root containment, typography, and focus-visible foundation |
 | `src/api.ts` | API base URL, credentialed JSON requests, and error normalization |
+| `src/components/CalendarPage.tsx` | Shared calendar loading, display, create/edit/delete, and time conversion |
+| `src/components/ClassesPage.tsx` | Class directory, active rosters, and Student Detail handoff |
+| `src/components/AdminShell.tsx` | Responsive application shell and navigation behavior |
+| `src/components/AdminUi.tsx` | Shared admin page, panel, status, and data-display primitives |
 
-`App.tsx` is intentionally still large. Broad routing or state-management refactors are outside the current MVP stabilization work.
+`App.tsx` remains large and still owns most finance workflows. Add focused pages under `src/components/` when they can own their data and behavior without duplicating the Student Detail finance state.
 
 ## Verification
 
@@ -85,10 +92,11 @@ npm.cmd run lint
 npm.cmd run build
 ```
 
-Last verified on 2026-07-12:
+Last verified on 2026-07-22:
 
-- Build passed
-- Lint reported zero errors and one existing `react-hooks/exhaustive-deps` warning for `loadStudents`
-- Browser QA covered 1440x900, 1180x820, 820x1180, and 390x844
+- Vitest passed 75 tests across 7 files
+- Build passed with 66 modules transformed
+- Lint reported zero errors and zero warnings
+- Earlier responsive browser QA covered 1440x900, 1180x820, 820x1180, and 390x844; real-device iPad Safari remains recommended
 
 The responsive acceptance details are in [the implemented responsive design](../docs/superpowers/specs/2026-07-11-ipad-first-responsive-demo-design.md).

@@ -2,11 +2,11 @@
 
 Status: Current implementation reference
 
-Last updated: 2026-07-12
+Last updated: 2026-07-22
 
-Primary local demo database: MariaDB 12.3.2
+Repeatable demo database: SQLite
 
-Test and fallback database: SQLite
+Optional development database: MariaDB
 
 ## 1. Current Financial Model
 
@@ -36,17 +36,18 @@ The active finance UI uses Fee Agreements and Fee Record charges. Legacy invoice
 - Receipts and receipt items snapshot the issued financial description.
 - Payments and receipts use void metadata instead of hard deletion.
 - Money is stored in decimal columns and handled as decimal/cents in application logic.
+- Staff authenticate with a globally unique normalized username; staff email and password-reset-token storage are not part of the current schema.
+- Calendar events are school-scoped and preserve creator/updater identities.
 
 ## 3. Schema Inventory
 
 The current schema contains 36 tables.
 
-### Laravel infrastructure (8)
+### Laravel infrastructure (7)
 
 | Table | Responsibility |
 | --- | --- |
 | `migrations` | Applied Laravel migrations |
-| `password_reset_tokens` | Password-reset tokens |
 | `sessions` | Database-backed sessions |
 | `cache` | Database cache values |
 | `cache_locks` | Cache locks |
@@ -65,6 +66,8 @@ The current schema contains 36 tables.
 | `user_roles` | User-to-role mapping |
 | `role_permissions` | Role-to-permission mapping |
 | `audit_logs` | Audit event structure for material actions |
+
+`users` stores `username`, not staff email. Parent/guardian contact email remains in the contacts domain.
 
 ### Students and contacts (4)
 
@@ -113,6 +116,12 @@ These tables remain useful for seeded configuration and legacy invoice behavior.
 | `receipts` | Issued receipt snapshot, sequence number, amount in words, status, and void data |
 | `receipt_items` | Receipt line snapshots derived from payment allocations |
 | `receipt_sequences` | Per-school/year/prefix receipt counter |
+
+### School operations (1)
+
+| Table | Responsibility |
+| --- | --- |
+| `calendar_events` | School-scoped all-day/timed events, event details, and creator/updater audit users |
 
 ## 4. Key Records
 
@@ -200,6 +209,8 @@ The receipt header snapshots student, payer, payment method/dates, receipt date/
 
 ```text
 schools 1 -> many users, students, fee items, agreements, charges, payments, receipts
+schools 1 -> many classes and calendar_events
+users 1 -> many created/updated calendar_events
 
 students 1 -> many fee_agreements
 fee_agreements 1 -> many fee_agreement_items
@@ -210,7 +221,7 @@ payments 1 -> receipt lifecycle
 receipts 1 -> many receipt_items
 ```
 
-The schema currently contains 66 foreign-key relationships in the migrated MariaDB database. Migration validation found zero orphan rows.
+Foreign keys enforce the documented ownership and lifecycle relationships. Re-run migration and integrity checks after changing relationship columns; do not carry an old relationship count forward by hand.
 
 ## 6. Fee Record Generation
 
@@ -263,7 +274,7 @@ Eligible Payment
 
 Rules:
 
-- Active receipt generation for a payment is idempotent.
+- A second generation attempt while an issued receipt exists is rejected with validation; generation is allowed again only after the issued receipt is voided.
 - Receipt number is unique per school.
 - Voiding records reason, user, and time.
 - Voided sequence numbers are never reused.
