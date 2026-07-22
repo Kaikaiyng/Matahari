@@ -109,6 +109,8 @@ Examples:
 
 Frontend permission checks are usability controls, not the security boundary. The backend must reject unauthorized requests.
 
+The default session lifetime is 480 minutes (8 hours) of inactivity. `SESSION_EXPIRE_ON_CLOSE=false`, so closing the browser does not itself invalidate the server-side session.
+
 ### Legacy endpoint boundary
 
 `GET /api/dashboard/school` and `POST /api/invoices/generate-monthly` are retained from the initial scaffold. They now run inside the session and `auth` middleware group, but they do not have a more specific permission slug. The Dashboard outstanding-total metric uses Fee Record charges; other invoice-oriented dashboard fields and monthly invoice generation remain legacy/backend-only behavior.

@@ -114,6 +114,7 @@ See [System Architecture](../docs/SYSTEM_ARCHITECTURE.md) for the complete endpo
 ## Authentication and Authorization
 
 - Authentication uses Laravel sessions and cookies.
+- Authenticated sessions expire after 480 minutes (8 hours) of inactivity by default.
 - API session routes apply cookie encryption and session middleware.
 - Protected routes use `auth` plus permission middleware such as `permission:payments.verify`.
 - The frontend hides actions based on the same permission slugs, but the backend remains authoritative.
