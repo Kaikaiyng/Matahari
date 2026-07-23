@@ -32,17 +32,13 @@ import { CalendarPage } from './components/CalendarPage'
 import { ClassesPage } from './components/ClassesPage'
 import type { SchoolClassOption } from './components/ClassesPage'
 import {
-  agreementTotals,
+  isFeeAgreementFormDirty,
   validateFeeAgreementBillingConfig,
 } from './features/fee-agreements/feeAgreementEditorModel'
+import { FeeAgreementEditor } from './features/fee-agreements/FeeAgreementEditor'
 import type {
-  BillingFrequency,
-  DiscountScope,
-  DiscountType,
   FeeAgreement,
-  FeeAgreementDiscountDraft,
   FeeAgreementForm,
-  FeeAgreementItemClassification,
   FeeAgreementItemDraft,
   FeeItem,
   PaymentPlan,
@@ -493,38 +489,6 @@ const monthLongLabels = [
   'December',
 ]
 
-const paymentPlanOptions: Array<{ value: PaymentPlan; label: string }> = [
-  { value: 'monthly', label: 'Monthly' },
-  { value: 'termly', label: 'Termly' },
-  { value: 'yearly', label: 'Yearly' },
-]
-
-const feeAgreementClassificationOptions: Array<{ value: FeeAgreementItemClassification; label: string }> = [
-  { value: 'recurring', label: 'Recurring' },
-  { value: 'optional_service', label: 'Optional Service' },
-  { value: 'one_time', label: 'One-time' },
-  { value: 'manual', label: 'Manual' },
-]
-
-const billingFrequencyOptions: Array<{ value: BillingFrequency; label: string }> = [
-  { value: 'monthly', label: 'Monthly' },
-  { value: 'termly', label: 'Termly' },
-  { value: 'yearly', label: 'Yearly' },
-  { value: 'custom', label: 'Custom' },
-  { value: 'one_time', label: 'One-time' },
-]
-
-const discountTypeOptions: Array<{ value: DiscountType; label: string }> = [
-  { value: 'percentage', label: 'Percentage' },
-  { value: 'fixed_amount', label: 'Fixed Amount' },
-]
-
-const discountScopeOptions: Array<{ value: DiscountScope; label: string }> = [
-  { value: 'tuition_only', label: 'Tuition Only' },
-  { value: 'total_payable', label: 'Total Payable' },
-  { value: 'selected_fee_items', label: 'Selected Fee Items' },
-]
-
 const paymentMethodOptions: Array<{ value: PaymentMethod; label: string }> = [
   { value: 'cash', label: 'Cash' },
   { value: 'bank_transfer', label: 'Bank Transfer' },
@@ -958,6 +922,9 @@ function StudentsPage({
   const [feeAgreementMode, setFeeAgreementMode] = useState<'create' | 'supersede'>('create')
   const [showFeeAgreementForm, setShowFeeAgreementForm] = useState(false)
   const [feeAgreementForm, setFeeAgreementForm] = useState<FeeAgreementForm>(defaultAgreementForm([]))
+  const [initialFeeAgreementForm, setInitialFeeAgreementForm] = useState<FeeAgreementForm>(
+    defaultAgreementForm([]),
+  )
   const [feeAgreementErrors, setFeeAgreementErrors] = useState<ValidationErrors>()
   const [isSavingFeeAgreement, setIsSavingFeeAgreement] = useState(false)
   const [payments, setPayments] = useState<StudentPayment[]>([])
@@ -1588,75 +1555,32 @@ function StudentsPage({
     }
   }
 
-  const updateFeeAgreementItem = (
-    feeItemId: number,
-    field: keyof Pick<
-      FeeAgreementItemDraft,
-      'enabled' | 'amount' | 'description' | 'classification' | 'billing_frequency' | 'requires_preview_confirmation'
-    >,
-    value: string | boolean,
+  const openFeeAgreementEditor = (
+    mode: 'create' | 'supersede',
+    nextForm: FeeAgreementForm,
   ) => {
-    setFeeAgreementForm((current) => ({
-      ...current,
-      items: current.items.map((item) =>
-        item.fee_item_id === feeItemId
-          ? {
-              ...item,
-              [field]: value,
-              ...(field === 'classification' && value === 'one_time'
-                ? { billing_frequency: 'one_time' as BillingFrequency, requires_preview_confirmation: true }
-                : {}),
-              ...(field === 'billing_frequency' && value === 'monthly' ? { billing_months: [] } : {}),
-            }
-          : item,
-      ),
-    }))
+    setFeeAgreementMode(mode)
+    setFeeAgreementForm(nextForm)
+    setInitialFeeAgreementForm(structuredClone(nextForm))
+    setFeeAgreementErrors(undefined)
+    setShowFeeAgreementForm(true)
   }
 
-  const toggleFeeAgreementItemBillingMonth = (feeItemId: number, month: number) => {
-    setFeeAgreementForm((current) => ({
-      ...current,
-      items: current.items.map((item) => {
-        if (item.fee_item_id !== feeItemId) {
-          return item
-        }
+  const closeFeeAgreementEditor = (force = false) => {
+    if (
+      !force &&
+      isFeeAgreementFormDirty(feeAgreementForm, initialFeeAgreementForm) &&
+      !window.confirm('Discard your unsaved Fee Agreement changes?')
+    ) {
+      return
+    }
 
-        const hasMonth = item.billing_months.includes(month)
-        const billing_months = hasMonth
-          ? item.billing_months.filter((selectedMonth) => selectedMonth !== month)
-          : [...item.billing_months, month].sort((left, right) => left - right)
-
-        return {
-          ...item,
-          billing_months,
-        }
-      }),
-    }))
-  }
-
-  const updateFeeAgreementDiscount = (field: keyof FeeAgreementDiscountDraft, value: string | boolean | string[]) => {
-    setFeeAgreementForm((current) => {
-      const nextDiscount = {
-        ...current.discount,
-        [field]: value,
-      }
-
-      if (field === 'discount_type') {
-        nextDiscount.scope = value === 'percentage' ? 'tuition_only' : 'total_payable'
-      }
-
-      return {
-        ...current,
-        discount: nextDiscount,
-      }
-    })
+    setShowFeeAgreementForm(false)
+    setFeeAgreementErrors(undefined)
   }
 
   const beginCreateFeeAgreement = () => {
-    setFeeAgreementMode('create')
-    setFeeAgreementForm(defaultAgreementForm(feeItems))
-    setFeeAgreementErrors(undefined)
-    setShowFeeAgreementForm(true)
+    openFeeAgreementEditor('create', defaultAgreementForm(feeItems))
   }
 
   const beginSupersedeFeeAgreement = () => {
@@ -1664,10 +1588,7 @@ function StudentsPage({
       return
     }
 
-    setFeeAgreementMode('supersede')
-    setFeeAgreementForm(agreementToForm(currentFeeAgreement, feeItems))
-    setFeeAgreementErrors(undefined)
-    setShowFeeAgreementForm(true)
+    openFeeAgreementEditor('supersede', agreementToForm(currentFeeAgreement, feeItems))
   }
 
   const submitFeeAgreement = async (event: FormEvent<HTMLFormElement>) => {
@@ -1745,7 +1666,7 @@ function StudentsPage({
       )
 
       await loadFeeAgreementData(selectedStudent.id)
-      setShowFeeAgreementForm(false)
+      closeFeeAgreementEditor(true)
       setMessage(
         feeAgreementMode === 'create'
           ? `Created Fee Agreement v${response.fee_agreement.version_no}.`
@@ -2171,8 +2092,6 @@ function StudentsPage({
       setIsVoidingReceipt(false)
     }
   }
-
-  const feeAgreementPreview = agreementTotals(feeAgreementForm)
 
   return (
     <section className="page-stack">
@@ -2630,12 +2549,16 @@ function StudentsPage({
             {showFeeAgreementForm && canEditFeeAgreement && (
               <ModalFrame
                 title={feeAgreementMode === 'create' ? 'Create Fee Agreement' : 'Supersede Fee Agreement'}
-                description="Configure billing items, timing, and any approved discount."
-                onClose={() => setShowFeeAgreementForm(false)}
+                description={
+                  feeAgreementMode === 'create'
+                    ? 'Set the agreement dates, review the core fees, and add optional fees only when needed.'
+                    : 'Create a new version and review every change before it takes effect.'
+                }
+                onClose={() => closeFeeAgreementEditor()}
                 className="financial-modal"
                 footer={
                   <>
-                    <button type="button" className="secondary-action" onClick={() => setShowFeeAgreementForm(false)}>
+                    <button type="button" className="secondary-action" onClick={() => closeFeeAgreementEditor()}>
                       Cancel
                     </button>
                     <button
@@ -2647,293 +2570,24 @@ function StudentsPage({
                       {isSavingFeeAgreement
                         ? 'Saving...'
                         : feeAgreementMode === 'create'
-                          ? 'Create Fee Agreement'
+                          ? 'Create Agreement'
                           : 'Supersede Agreement'}
                     </button>
                   </>
                 }
               >
               <form id="fee-agreement-form" className="agreement-form" onSubmit={submitFeeAgreement}>
-                <div className="form-grid">
-                  {feeAgreementMode === 'create' && (
-                    <label className="form-field">
-                      Academic Year
-                      <input
-                        value={feeAgreementForm.academic_year}
-                        onChange={(event) =>
-                          setFeeAgreementForm((current) => ({ ...current, academic_year: event.target.value }))
-                        }
-                      />
-                      {formatValidationError(feeAgreementErrors, 'academic_year') && (
-                        <small>{formatValidationError(feeAgreementErrors, 'academic_year')}</small>
-                      )}
-                    </label>
-                  )}
-
-                  <label className="form-field">
-                    Payment Plan
-                    <select
-                      value={feeAgreementForm.payment_plan}
-                      onChange={(event) =>
-                        setFeeAgreementForm((current) => ({
-                          ...current,
-                          payment_plan: event.target.value as PaymentPlan,
-                        }))
-                      }
-                    >
-                      {paymentPlanOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <label className="form-field">
-                    Effective From
-                    <input
-                      type="date"
-                      value={feeAgreementForm.effective_from}
-                      onChange={(event) =>
-                        setFeeAgreementForm((current) => ({ ...current, effective_from: event.target.value }))
-                      }
-                    />
-                    {formatValidationError(feeAgreementErrors, 'effective_from') && (
-                      <small>{formatValidationError(feeAgreementErrors, 'effective_from')}</small>
-                    )}
-                  </label>
-
-                  <label className="form-field">
-                    Effective To
-                    <input
-                      type="date"
-                      value={feeAgreementForm.effective_to}
-                      onChange={(event) =>
-                        setFeeAgreementForm((current) => ({ ...current, effective_to: event.target.value }))
-                      }
-                    />
-                  </label>
-
-                  <label className="form-field wide">
-                    Agreement Remarks
-                    <textarea
-                      value={feeAgreementForm.remarks}
-                      onChange={(event) =>
-                        setFeeAgreementForm((current) => ({ ...current, remarks: event.target.value }))
-                      }
-                    />
-                  </label>
-                </div>
-
                 {formatValidationError(feeAgreementErrors, 'items') && (
                   <Message tone="error">{formatValidationError(feeAgreementErrors, 'items')}</Message>
                 )}
 
-                <div className="agreement-items-grid">
-                  {feeAgreementForm.items.map((item) => {
-                    const isMandatory = ['TUITION', 'MISC'].includes(item.code)
-                    const enabledItemIndex = feeAgreementForm.items.filter((candidate) => candidate.enabled).findIndex((candidate) => candidate.fee_item_id === item.fee_item_id)
-                    const monthError =
-                      enabledItemIndex >= 0
-                        ? formatValidationError(feeAgreementErrors, `items.${enabledItemIndex}.billing_months`)
-                        : undefined
-
-                    return (
-                      <div className="agreement-item-row" key={item.fee_item_id}>
-                        <div className="agreement-item-main">
-                          <label>
-                            <input
-                              type="checkbox"
-                              checked={item.enabled}
-                              disabled={isMandatory}
-                              onChange={(event) => updateFeeAgreementItem(item.fee_item_id, 'enabled', event.target.checked)}
-                            />
-                            <span>
-                              {item.name}
-                              {isMandatory ? ' *' : ''}
-                            </span>
-                          </label>
-                          {item.code === 'OTHERS' && (
-                            <input
-                              placeholder="Custom description"
-                              value={item.description}
-                              onChange={(event) => updateFeeAgreementItem(item.fee_item_id, 'description', event.target.value)}
-                            />
-                          )}
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={item.amount}
-                            onChange={(event) => updateFeeAgreementItem(item.fee_item_id, 'amount', event.target.value)}
-                          />
-                        </div>
-
-                        {item.enabled && (
-                          <div className="agreement-billing-config">
-                            <label className="form-field">
-                              Charge Type
-                              <select
-                                value={item.classification}
-                                onChange={(event) =>
-                                  updateFeeAgreementItem(item.fee_item_id, 'classification', event.target.value as FeeAgreementItemClassification)
-                                }
-                              >
-                                {feeAgreementClassificationOptions.map((option) => (
-                                  <option key={option.value} value={option.value}>
-                                    {option.label}
-                                  </option>
-                                ))}
-                              </select>
-                            </label>
-                            <label className="form-field">
-                              Billing Pattern
-                              <select
-                                value={item.billing_frequency}
-                                onChange={(event) =>
-                                  updateFeeAgreementItem(item.fee_item_id, 'billing_frequency', event.target.value as BillingFrequency)
-                                }
-                              >
-                                {billingFrequencyOptions.map((option) => (
-                                  <option key={option.value} value={option.value}>
-                                    {option.label}
-                                  </option>
-                                ))}
-                              </select>
-                            </label>
-                            <label className="checkbox-line billing-confirmation-line">
-                              <input
-                                type="checkbox"
-                                checked={item.requires_preview_confirmation}
-                                onChange={(event) => updateFeeAgreementItem(item.fee_item_id, 'requires_preview_confirmation', event.target.checked)}
-                              />
-                              Preview confirmation
-                            </label>
-                            <div className="billing-month-selector">
-                              <span>{item.billing_frequency === 'monthly' ? 'Billing months override' : 'Billing months'}</span>
-                              <div className="billing-month-options">
-                                {monthShortLabels.map((label, monthIndex) => {
-                                  const month = monthIndex + 1
-
-                                  return (
-                                    <label className={item.billing_months.includes(month) ? 'selected' : ''} key={label}>
-                                      <input
-                                        type="checkbox"
-                                        checked={item.billing_months.includes(month)}
-                                        onChange={() => toggleFeeAgreementItemBillingMonth(item.fee_item_id, month)}
-                                      />
-                                      {label}
-                                    </label>
-                                  )
-                                })}
-                              </div>
-                              {monthError && <small>{monthError}</small>}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-
-                <div className="discount-editor">
-                  <label className="checkbox-line">
-                    <input
-                      type="checkbox"
-                      checked={feeAgreementForm.discount.enabled}
-                      onChange={(event) => updateFeeAgreementDiscount('enabled', event.target.checked)}
-                    />
-                    Manual discount
-                  </label>
-
-                  {feeAgreementForm.discount.enabled && (
-                    <div className="form-grid">
-                      <label className="form-field">
-                        Discount Label
-                        <input
-                          value={feeAgreementForm.discount.discount_label}
-                          onChange={(event) => updateFeeAgreementDiscount('discount_label', event.target.value)}
-                        />
-                      </label>
-                      <label className="form-field">
-                        Discount Type
-                        <select
-                          value={feeAgreementForm.discount.discount_type}
-                          onChange={(event) => updateFeeAgreementDiscount('discount_type', event.target.value as DiscountType)}
-                        >
-                          {discountTypeOptions.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label className="form-field">
-                        Scope
-                        <select
-                          value={feeAgreementForm.discount.scope}
-                          onChange={(event) => updateFeeAgreementDiscount('scope', event.target.value as DiscountScope)}
-                        >
-                          {discountScopeOptions.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label className="form-field">
-                        Value
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={feeAgreementForm.discount.value}
-                          onChange={(event) => updateFeeAgreementDiscount('value', event.target.value)}
-                        />
-                      </label>
-                      <label className="form-field wide">
-                        Discount Remark
-                        <textarea
-                          value={feeAgreementForm.discount.remark}
-                          onChange={(event) => updateFeeAgreementDiscount('remark', event.target.value)}
-                        />
-                        {formatValidationError(feeAgreementErrors, 'discounts.0.remark') && (
-                          <small>{formatValidationError(feeAgreementErrors, 'discounts.0.remark')}</small>
-                        )}
-                      </label>
-                      {feeAgreementForm.discount.scope === 'selected_fee_items' && (
-                        <div className="form-field wide">
-                          Selected Fee Items
-                          <div className="permission-list">
-                            {feeAgreementForm.items
-                              .filter((item) => item.enabled)
-                              .map((item) => (
-                                <label className="checkbox-line" key={item.code}>
-                                  <input
-                                    type="checkbox"
-                                    checked={feeAgreementForm.discount.selected_fee_codes.includes(item.code)}
-                                    onChange={(event) => {
-                                      const nextCodes = event.target.checked
-                                        ? [...feeAgreementForm.discount.selected_fee_codes, item.code]
-                                        : feeAgreementForm.discount.selected_fee_codes.filter((code) => code !== item.code)
-                                      updateFeeAgreementDiscount('selected_fee_codes', nextCodes)
-                                    }}
-                                  />
-                                  {item.name}
-                                </label>
-                              ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                <div className="agreement-preview">
-                  <span>Subtotal {formatCurrency(feeAgreementPreview.subtotal)}</span>
-                  <span>Manual Discount {formatCurrency(feeAgreementPreview.discountAmount)}</span>
-                  <strong>Preview Total {formatCurrency(feeAgreementPreview.total)}</strong>
-                </div>
+                <FeeAgreementEditor
+                  mode={feeAgreementMode}
+                  form={feeAgreementForm}
+                  errors={feeAgreementErrors}
+                  currentAgreement={currentFeeAgreement}
+                  onChange={setFeeAgreementForm}
+                />
 
               </form>
               </ModalFrame>
