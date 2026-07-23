@@ -1,0 +1,185 @@
+.fee-agreement-editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 20px;
+  align-items: start;
+}
+
+.fee-agreement-editor-main,
+.agreement-editor-section,
+.agreement-details-grid {
+  min-width: 0;
+}
+
+.fee-agreement-editor-main {
+  display: grid;
+  gap: 16px;
+}
+
+.agreement-editor-section,
+.agreement-review-panel,
+.agreement-version-context {
+  border: 1px solid #e4e7ed;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.agreement-editor-section {
+  padding: 16px;
+}
+
+.agreement-section-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.agreement-section-heading h3,
+.agreement-review-panel h3 {
+  margin: 2px 0 0;
+  font-size: 17px;
+}
+
+.agreement-section-heading > span {
+  color: #737782;
+  font-size: 13px;
+}
+
+.agreement-details-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.agreement-remarks-field {
+  grid-column: 1 / -1;
+}
+
+.agreement-remarks-field textarea {
+  min-height: 72px;
+}
+
+.agreement-version-context {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  background: #fff8e8;
+  color: #704b00;
+}
+
+.agreement-version-context span {
+  font-size: 13px;
+}
+
+.agreement-review-panel {
+  position: sticky;
+  top: 0;
+  display: grid;
+  gap: 16px;
+  padding: 16px;
+}
+
+.agreement-review-totals {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.agreement-review-totals div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.agreement-review-totals dt,
+.agreement-review-totals dd {
+  margin: 0;
+}
+
+.agreement-review-total {
+  border-top: 1px solid #e4e7ed;
+  padding-top: 12px;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.agreement-review-meta,
+.agreement-change-list {
+  display: grid;
+  gap: 8px;
+  color: #565b66;
+  font-size: 13px;
+}
+
+.agreement-change-list p,
+.agreement-review-warning {
+  margin: 0;
+}
+
+.agreement-review-warning {
+  border-radius: 8px;
+  background: #fff1d8;
+  padding: 10px;
+  color: #744500;
+  font-weight: 800;
+}
+
+.fee-item-list {
+  display: grid;
+  gap: 0;
+}
+
+.fee-row-shell {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.7fr) minmax(240px, 1.2fr) minmax(120px, 0.45fr);
+  gap: 12px;
+  align-items: center;
+  border-top: 1px solid #edf0f4;
+  padding: 12px 0;
+}
+
+.fee-row-shell:first-child {
+  border-top: 0;
+}
+
+.fee-row-summary-copy,
+.fee-row-amount span {
+  color: #737782;
+  font-size: 12px;
+}
+
+.fee-row-amount {
+  display: grid;
+  gap: 4px;
+}
+
+.fee-row-amount input {
+  min-height: 40px;
+}
+
+@media screen and (max-width: 1100px) {
+  .fee-agreement-editor {
+    grid-template-columns: 1fr;
+  }
+
+  .agreement-review-panel {
+    position: static;
+  }
+}
+
+@media screen and (max-width: 767px) {
+  .agreement-details-grid,
+  .fee-row-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .agreement-version-context,
+  .agreement-section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
