@@ -31,6 +31,23 @@ import type { UiTone } from './components/AdminUi'
 import { CalendarPage } from './components/CalendarPage'
 import { ClassesPage } from './components/ClassesPage'
 import type { SchoolClassOption } from './components/ClassesPage'
+import {
+  agreementTotals,
+  validateFeeAgreementBillingConfig,
+} from './features/fee-agreements/feeAgreementEditorModel'
+import type {
+  BillingFrequency,
+  DiscountScope,
+  DiscountType,
+  FeeAgreement,
+  FeeAgreementDiscountDraft,
+  FeeAgreementForm,
+  FeeAgreementItemClassification,
+  FeeAgreementItemDraft,
+  FeeItem,
+  PaymentPlan,
+  ValidationErrors,
+} from './features/fee-agreements/types'
 import misLogo from './assets/mis-logo.jpg'
 import './App.css'
 
@@ -132,88 +149,6 @@ type StudentForm = {
   registration_date: string
   status: StudentStatus
   notes: string
-}
-
-type PaymentPlan = 'monthly' | 'termly' | 'yearly'
-type FeeAgreementItemClassification = 'recurring' | 'optional_service' | 'one_time' | 'manual'
-type BillingFrequency = 'monthly' | 'termly' | 'yearly' | 'custom' | 'one_time'
-type DiscountType = 'percentage' | 'fixed_amount'
-type DiscountScope = 'tuition_only' | 'total_payable' | 'selected_fee_items'
-
-type FeeItem = {
-  id: number
-  code: string
-  name: string
-  category: string
-  fee_type: string
-  default_amount: number
-}
-
-type FeeAgreement = {
-  id: number
-  academic_year: string
-  version_no: number
-  payment_plan: PaymentPlan
-  effective_from: string
-  effective_to: string | null
-  is_current: boolean
-  status: string
-  remarks: string | null
-  items: Array<{
-    id: number
-    fee_item_id: number
-    fee_code: string
-    fee_category: string
-    description: string
-    amount: number
-    is_mandatory: boolean
-    classification: FeeAgreementItemClassification | null
-    billing_frequency: BillingFrequency | null
-    billing_months: number[] | null
-    requires_preview_confirmation: boolean
-  }>
-  discounts: Array<{
-    id: number
-    discount_label: string
-    discount_type: DiscountType
-    scope: DiscountScope
-    value: number
-    remark: string
-    selected_fee_codes: string[]
-  }>
-}
-
-type FeeAgreementItemDraft = {
-  fee_item_id: number
-  code: string
-  name: string
-  enabled: boolean
-  amount: string
-  description: string
-  classification: FeeAgreementItemClassification
-  billing_frequency: BillingFrequency
-  billing_months: number[]
-  requires_preview_confirmation: boolean
-}
-
-type FeeAgreementDiscountDraft = {
-  enabled: boolean
-  discount_label: string
-  discount_type: DiscountType
-  scope: DiscountScope
-  value: string
-  remark: string
-  selected_fee_codes: string[]
-}
-
-type FeeAgreementForm = {
-  academic_year: string
-  payment_plan: PaymentPlan
-  effective_from: string
-  effective_to: string
-  remarks: string
-  items: FeeAgreementItemDraft[]
-  discount: FeeAgreementDiscountDraft
 }
 
 type PaymentMethod = 'cash' | 'bank_transfer' | 'duitnow_qr' | 'cheque' | 'credit_card' | 'fpx'
@@ -446,8 +381,6 @@ type VerifyPaymentForm = {
   reference_no: string
   remark: string
 }
-
-type ValidationErrors = Record<string, string[]>
 
 const navGroups: NavigationGroup<PageKey>[] = [
   {
@@ -897,42 +830,6 @@ function agreementToForm(agreement: FeeAgreement, feeItems: FeeItem[]): FeeAgree
           remark: '',
           selected_fee_codes: [],
         },
-  }
-}
-
-function agreementPreview(form: FeeAgreementForm) {
-  const enabledItems = form.items.filter((item) => item.enabled)
-  const subtotal = enabledItems.reduce((sum, item) => sum + Number(item.amount || 0), 0)
-  const tuitionAmount = enabledItems
-    .filter((item) => item.code === 'TUITION')
-    .reduce((sum, item) => sum + Number(item.amount || 0), 0)
-  const selectedAmount = enabledItems
-    .filter((item) => form.discount.selected_fee_codes.includes(item.code))
-    .reduce((sum, item) => sum + Number(item.amount || 0), 0)
-
-  let discountAmount = 0
-
-  if (form.discount.enabled) {
-    const value = Number(form.discount.value || 0)
-
-    if (form.discount.discount_type === 'percentage') {
-      const base =
-        form.discount.scope === 'total_payable'
-          ? subtotal
-          : form.discount.scope === 'selected_fee_items'
-            ? selectedAmount
-            : tuitionAmount
-
-      discountAmount = (base * value) / 100
-    } else {
-      discountAmount = value
-    }
-  }
-
-  return {
-    subtotal,
-    discountAmount,
-    total: Math.max(subtotal - discountAmount, 0),
   }
 }
 
@@ -1737,22 +1634,6 @@ function StudentsPage({
     }))
   }
 
-  const validateFeeAgreementBillingConfig = (items: FeeAgreementItemDraft[]): ValidationErrors => {
-    return items.reduce<ValidationErrors>((errors, item, index) => {
-      const monthCount = item.billing_months.length
-
-      if ((item.billing_frequency === 'termly' || item.billing_frequency === 'custom') && monthCount === 0) {
-        errors[`items.${index}.billing_months`] = ['Billing months are required for termly and custom billing.']
-      }
-
-      if ((item.billing_frequency === 'yearly' || item.billing_frequency === 'one_time') && monthCount !== 1) {
-        errors[`items.${index}.billing_months`] = ['Yearly and one-time billing require exactly one billing month.']
-      }
-
-      return errors
-    }, {})
-  }
-
   const updateFeeAgreementDiscount = (field: keyof FeeAgreementDiscountDraft, value: string | boolean | string[]) => {
     setFeeAgreementForm((current) => {
       const nextDiscount = {
@@ -2291,7 +2172,7 @@ function StudentsPage({
     }
   }
 
-  const feeAgreementPreview = agreementPreview(feeAgreementForm)
+  const feeAgreementPreview = agreementTotals(feeAgreementForm)
 
   return (
     <section className="page-stack">
