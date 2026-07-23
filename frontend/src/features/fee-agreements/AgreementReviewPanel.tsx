@@ -29,7 +29,7 @@ export function AgreementReviewPanel({
     <aside className="agreement-review-panel" aria-label={label}>
       <div>
         <p className="eyebrow">{mode === 'create' ? 'Agreement Summary' : 'Supersede Review'}</p>
-        <h3>{label}</h3>
+        <h3>{mode === 'create' ? 'At a glance' : label}</h3>
       </div>
 
       <dl className="agreement-review-totals">

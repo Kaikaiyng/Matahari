@@ -1,4 +1,5 @@
 export type PaymentPlan = 'monthly' | 'termly' | 'yearly'
+export type AgreementPaymentPlan = PaymentPlan | 'custom'
 export type FeeAgreementItemClassification = 'recurring' | 'optional_service' | 'one_time' | 'manual'
 export type BillingFrequency = 'monthly' | 'termly' | 'yearly' | 'custom' | 'one_time'
 export type DiscountType = 'percentage' | 'fixed_amount'
@@ -42,7 +43,7 @@ export type FeeAgreement = {
   id: number
   academic_year: string
   version_no: number
-  payment_plan: PaymentPlan
+  payment_plan: AgreementPaymentPlan
   effective_from: string
   effective_to: string | null
   is_current: boolean

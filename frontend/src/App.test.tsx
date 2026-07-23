@@ -110,7 +110,7 @@ const currentFeeAgreement = {
   id: 20,
   academic_year: '2026',
   version_no: 1,
-  payment_plan: 'monthly',
+  payment_plan: 'custom',
   effective_from: '2026-01-01',
   effective_to: null,
   is_current: true,
@@ -126,8 +126,8 @@ const currentFeeAgreement = {
       amount: 800,
       is_mandatory: true,
       classification: 'recurring',
-      billing_frequency: 'monthly',
-      billing_months: null,
+      billing_frequency: 'custom',
+      billing_months: [7, 8, 9],
       requires_preview_confirmation: false,
     },
     {
@@ -139,8 +139,8 @@ const currentFeeAgreement = {
       amount: 90,
       is_mandatory: true,
       classification: 'recurring',
-      billing_frequency: 'monthly',
-      billing_months: null,
+      billing_frequency: 'custom',
+      billing_months: [7, 8, 9],
       requires_preview_confirmation: false,
     },
   ],
@@ -799,14 +799,42 @@ describe('demo shell', () => {
 
     const dialog = screen.getByRole('dialog', { name: 'Supersede Fee Agreement' })
     expect(within(dialog).queryByLabelText('Academic Year')).not.toBeInTheDocument()
+    expect(within(dialog).getByLabelText('Payment Plan')).toHaveValue('monthly')
+    expect(within(dialog).getByLabelText('Effective From')).toHaveValue('2026-01-02')
     expect(within(dialog).getByText('Creating a new version from v1')).toBeInTheDocument()
     expect(within(dialog).getByRole('complementary', { name: 'Changes from v1' })).toBeInTheDocument()
+    expect(within(dialog).getByRole('complementary', { name: 'Changes from v1' })).toHaveTextContent(
+      'Payment plan: Custom → Monthly',
+    )
 
     await user.clear(within(dialog).getByLabelText('Tuition Fee amount'))
     await user.type(within(dialog).getByLabelText('Tuition Fee amount'), '850')
     expect(within(dialog).getByRole('complementary', { name: 'Changes from v1' })).toHaveTextContent(
       /Tuition Fee: RM 800.*RM 850/,
     )
+  })
+
+  it('waits for the fee catalogue before enabling agreement actions', async () => {
+    const fetchMock = vi.mocked(globalThis.fetch)
+    const installedImplementation = fetchMock.getMockImplementation()
+    if (!installedImplementation) throw new Error('API mock is not installed')
+
+    fetchMock.mockImplementation((input, init) => {
+      const url = new URL(String(input))
+      if (url.pathname.endsWith('/fee-items')) {
+        return new Promise<Response>(() => undefined)
+      }
+      return installedImplementation(input, init)
+    })
+
+    const user = userEvent.setup()
+    await renderAuthenticatedApp()
+    await user.click(screen.getByRole('button', { name: 'Students' }))
+    await user.click(await screen.findByRole('button', { name: 'Open' }))
+    await screen.findByRole('heading', { name: /Alyssa Tan/ })
+
+    expect(screen.getByRole('button', { name: 'Create Agreement' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Supersede Current' })).toBeDisabled()
   })
 
   it('uses shared summary and data regions on Fee Record', async () => {

@@ -128,6 +128,14 @@ export function isFeeAgreementFormDirty(form: FeeAgreementForm, baseline: FeeAgr
 export function getAgreementChanges(current: FeeAgreement, draft: FeeAgreementForm): AgreementChange[] {
   const changes: AgreementChange[] = []
 
+  if (current.payment_plan !== draft.payment_plan) {
+    changes.push({
+      key: 'payment_plan',
+      kind: 'billing',
+      message: `Payment plan: ${formatLabel(current.payment_plan)} → ${formatLabel(draft.payment_plan)}`,
+    })
+  }
+
   if (current.effective_from !== draft.effective_from) {
     changes.push({
       key: 'effective_from',

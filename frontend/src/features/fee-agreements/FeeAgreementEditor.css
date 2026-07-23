@@ -49,7 +49,7 @@
 
 .agreement-details-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -162,6 +162,10 @@
   gap: 3px;
 }
 
+.fee-item-amount {
+  min-width: 0;
+}
+
 .fee-item-identity span,
 .fee-item-summary-copy,
 .fee-item-amount span,
@@ -173,6 +177,9 @@
 }
 
 .fee-item-amount input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
   min-height: 40px;
 }
 

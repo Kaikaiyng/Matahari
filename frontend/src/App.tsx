@@ -690,8 +690,9 @@ function defaultVerifyForm(payment?: StudentPayment): VerifyPaymentForm {
 }
 
 function tomorrowAfter(dateText: string) {
-  const date = new Date(`${dateText}T00:00:00`)
-  date.setDate(date.getDate() + 1)
+  const [year, month, day] = dateText.split('-').map(Number)
+  const date = new Date(Date.UTC(year, month - 1, day))
+  date.setUTCDate(date.getUTCDate() + 1)
   return date.toISOString().slice(0, 10)
 }
 
@@ -751,10 +752,14 @@ function defaultAgreementForm(feeItems: FeeItem[]): FeeAgreementForm {
 function agreementToForm(agreement: FeeAgreement, feeItems: FeeItem[]): FeeAgreementForm {
   const agreementItemsByCode = new Map(agreement.items.map((item) => [item.fee_code, item]))
   const firstDiscount = agreement.discounts[0]
+  const paymentPlan: PaymentPlan =
+    agreement.payment_plan === 'termly' || agreement.payment_plan === 'yearly'
+      ? agreement.payment_plan
+      : 'monthly'
 
   return {
     academic_year: agreement.academic_year,
-    payment_plan: agreement.payment_plan,
+    payment_plan: paymentPlan,
     effective_from: tomorrowAfter(agreement.effective_from),
     effective_to: '',
     remarks: agreement.remarks ?? '',
@@ -925,6 +930,7 @@ function StudentsPage({
   const [initialFeeAgreementForm, setInitialFeeAgreementForm] = useState<FeeAgreementForm>(
     defaultAgreementForm([]),
   )
+  const [isLoadingFeeAgreementEditorData, setIsLoadingFeeAgreementEditorData] = useState(false)
   const [feeAgreementErrors, setFeeAgreementErrors] = useState<ValidationErrors>()
   const [isSavingFeeAgreement, setIsSavingFeeAgreement] = useState(false)
   const [payments, setPayments] = useState<StudentPayment[]>([])
@@ -1169,6 +1175,9 @@ function StudentsPage({
 
   const loadStudentDetail = async (studentId: number) => {
     setError('')
+    setIsLoadingFeeAgreementEditorData(true)
+    setFeeItems([])
+    setFeeAgreements([])
 
     try {
       const response = await apiRequest<{ student: StudentDetail }>(`/students/${studentId}`)
@@ -1184,18 +1193,29 @@ function StudentsPage({
       await loadPaymentData(response.student.id)
       await loadReceiptData(response.student.id)
     } catch (detailError) {
+      setIsLoadingFeeAgreementEditorData(false)
       handleApiError(detailError)
     }
   }
 
   const loadFeeAgreementData = async (studentId: number) => {
     try {
-      const agreementsResponse = await apiRequest<{ data: FeeAgreement[] }>(`/students/${studentId}/fee-agreements`)
+      setIsLoadingFeeAgreementEditorData(true)
+      const [agreementsResponse, itemsResponse] = await Promise.all([
+        apiRequest<{ data: FeeAgreement[] }>(`/students/${studentId}/fee-agreements`),
+        canEditFeeAgreement
+          ? apiRequest<{ data: FeeItem[] }>('/fee-items')
+          : Promise.resolve({ data: [] as FeeItem[] }),
+      ])
+
+      setFeeItems(itemsResponse.data)
+      setFeeAgreementForm(defaultAgreementForm(itemsResponse.data))
       setFeeAgreements(agreementsResponse.data)
       setShowFeeAgreementForm(false)
       setFeeAgreementErrors(undefined)
       setFeeRecordPreview(null)
       setFeeRecordPreviewError('')
+      setIsLoadingFeeAgreementEditorData(false)
 
       const activeAgreement = agreementsResponse.data.find((agreement) => agreement.is_current)
 
@@ -1225,15 +1245,8 @@ function StudentsPage({
         setManualChargeErrors(undefined)
       }
 
-      if (canEditFeeAgreement) {
-        const itemsResponse = await apiRequest<{ data: FeeItem[] }>('/fee-items')
-        setFeeItems(itemsResponse.data)
-        setFeeAgreementForm(defaultAgreementForm(itemsResponse.data))
-      } else {
-        setFeeItems([])
-        setFeeAgreementForm(defaultAgreementForm([]))
-      }
     } catch (agreementError) {
+      setIsLoadingFeeAgreementEditorData(false)
       handleApiError(agreementError)
     }
   }
@@ -2499,10 +2512,18 @@ function StudentsPage({
               </div>
               {canEditFeeAgreement ? (
                 <div className="toolbar-actions">
-                  <button className="secondary-action" onClick={beginCreateFeeAgreement}>
+                  <button
+                    className="secondary-action"
+                    disabled={isLoadingFeeAgreementEditorData}
+                    onClick={beginCreateFeeAgreement}
+                  >
                     Create Agreement
                   </button>
-                  <button className="secondary-action" disabled={!currentFeeAgreement} onClick={beginSupersedeFeeAgreement}>
+                  <button
+                    className="secondary-action"
+                    disabled={isLoadingFeeAgreementEditorData || !currentFeeAgreement}
+                    onClick={beginSupersedeFeeAgreement}
+                  >
                     Supersede Current
                   </button>
                 </div>

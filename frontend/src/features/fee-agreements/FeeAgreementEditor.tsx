@@ -243,7 +243,7 @@ export function FeeAgreementEditor({
             </div>
             <button
               type="button"
-              className="secondary-button"
+              className="secondary-action"
               aria-expanded={optionalPickerOpen}
               onClick={() => setOptionalPickerOpen((open) => !open)}
             >
@@ -280,7 +280,7 @@ export function FeeAgreementEditor({
                       </div>
                       <button
                         type="button"
-                        className="secondary-button compact-button"
+                        className="secondary-action compact-button"
                         aria-label={`Add ${item.name}`}
                         onClick={() => {
                           updateItem({ ...item, enabled: true })
@@ -318,7 +318,7 @@ export function FeeAgreementEditor({
             </div>
             <button
               type="button"
-              className="secondary-button"
+              className="secondary-action"
               aria-label="Configure manual discount"
               aria-expanded={discountExpanded}
               onClick={() => setDiscountExpanded((expanded) => !expanded)}

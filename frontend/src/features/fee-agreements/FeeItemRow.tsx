@@ -196,7 +196,7 @@ export function FeeItemRow({
         <div className="fee-item-row-actions">
           <button
             type="button"
-            className="secondary-button compact-button"
+            className="secondary-action compact-button"
             aria-label={expanded ? `Close ${item.name}` : `Edit ${item.name}`}
             onClick={onToggle}
           >

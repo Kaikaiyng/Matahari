@@ -166,4 +166,15 @@ describe('feeAgreementEditorModel', () => {
   it('does not report unchanged configuration as a change', () => {
     expect(getAgreementChanges(currentAgreement, baseForm)).toEqual([])
   })
+
+  it('calls out a legacy payment plan that must be normalized', () => {
+    const legacyAgreement = {
+      ...currentAgreement,
+      payment_plan: 'custom',
+    } as FeeAgreement
+
+    expect(getAgreementChanges(legacyAgreement, baseForm).map((change) => change.message)).toContain(
+      'Payment plan: Custom → Monthly',
+    )
+  })
 })
