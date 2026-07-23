@@ -33,14 +33,14 @@ function BillingMonthSelector({
   onChange: (months: number[]) => void
 }) {
   const [isCustomizing, setIsCustomizing] = useState(
-    item.billing_frequency !== 'monthly' || item.billing_months.length > 0,
+    Boolean(error) || item.billing_frequency !== 'monthly' || item.billing_months.length > 0,
   )
 
   useEffect(() => {
-    if (item.billing_frequency !== 'monthly' || item.billing_months.length > 0) {
+    if (error || item.billing_frequency !== 'monthly' || item.billing_months.length > 0) {
       setIsCustomizing(true)
     }
-  }, [item.billing_frequency, item.billing_months.length])
+  }, [error, item.billing_frequency, item.billing_months.length])
 
   if (!isCustomizing && item.billing_frequency === 'monthly') {
     return (
@@ -118,7 +118,7 @@ function BillingMonthSelector({
           )
         })}
       </div>
-      {error && <p className="fee-item-error">{error}</p>}
+      {error && <p className="field-error">{error}</p>}
     </fieldset>
   )
 }

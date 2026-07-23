@@ -20,6 +20,8 @@ export function AgreementReviewPanel({
   const enabledItems = form.items.filter((item) => item.enabled)
   const changes =
     mode === 'supersede' && currentAgreement ? getAgreementChanges(currentAgreement, form) : []
+  const coverageChanges = changes.filter((change) => change.kind === 'date')
+  const feeChanges = changes.filter((change) => change.kind !== 'date')
   const label =
     mode === 'create' ? 'Agreement Summary' : `Changes from v${currentAgreement?.version_no ?? ''}`
 
@@ -61,11 +63,22 @@ export function AgreementReviewPanel({
 
       {mode === 'supersede' && (
         <div className="agreement-change-list">
-          {changes.length > 0 ? (
-            changes.map((change) => <p key={change.key}>{change.message}</p>)
-          ) : (
-            <p>No fee configuration changes.</p>
-          )}
+          <section>
+            <strong>Coverage</strong>
+            {coverageChanges.length > 0 ? (
+              coverageChanges.map((change) => <p key={change.key}>{change.message}</p>)
+            ) : (
+              <p>No coverage changes.</p>
+            )}
+          </section>
+          <section>
+            <strong>Fee configuration</strong>
+            {feeChanges.length > 0 ? (
+              feeChanges.map((change) => <p key={change.key}>{change.message}</p>)
+            ) : (
+              <p>No fee configuration changes.</p>
+            )}
+          </section>
         </div>
       )}
     </aside>

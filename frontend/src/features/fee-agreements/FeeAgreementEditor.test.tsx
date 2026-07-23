@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { FeeAgreementEditor } from './FeeAgreementEditor'
@@ -198,5 +198,55 @@ describe('FeeAgreementEditor', () => {
 
     await user.click(screen.getByRole('button', { name: 'Remove Transport' }))
     expect(screen.queryByText('Transport')).not.toBeInTheDocument()
+  })
+
+  it('keeps manual discount collapsed and updates the review total when enabled', async () => {
+    const user = userEvent.setup()
+    render(<EditorHarness />)
+
+    expect(screen.getByText('No manual discount')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Discount Value')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Configure manual discount' }))
+    await user.click(screen.getByLabelText('Enable manual discount'))
+    await user.type(screen.getByLabelText('Discount Value'), '40')
+
+    const review = screen.getByRole('complementary', { name: 'Agreement Summary' })
+    expect(within(review).getByText('Preview total').closest('div')).toHaveTextContent('RM 850')
+  })
+
+  it('shows plain-language Supersede changes', () => {
+    const form = structuredClone(initialForm)
+    form.items[0].amount = '850'
+
+    render(
+      <FeeAgreementEditor
+        mode="supersede"
+        form={form}
+        errors={undefined}
+        currentAgreement={currentAgreement}
+        onChange={() => undefined}
+      />,
+    )
+
+    expect(screen.getByRole('complementary', { name: 'Changes from v1' })).toHaveTextContent(
+      /Tuition Fee: RM 800.*RM 850/,
+    )
+  })
+
+  it('opens and focuses the first fee with a validation error', async () => {
+    render(
+      <FeeAgreementEditor
+        mode="create"
+        form={initialForm}
+        errors={{ 'items.0.billing_months': ['Choose at least one billing month.'] }}
+        currentAgreement={null}
+        onChange={() => undefined}
+      />,
+    )
+
+    const billingPattern = await screen.findByLabelText('Tuition Fee Billing Pattern')
+    expect(screen.getByText('Choose at least one billing month.')).toBeInTheDocument()
+    await waitFor(() => expect(billingPattern).toHaveFocus())
   })
 })

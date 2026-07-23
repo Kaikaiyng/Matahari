@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AgreementReviewPanel } from './AgreementReviewPanel'
 import { FeeItemRow } from './FeeItemRow'
 import type {
   FeeAgreement,
+  DiscountScope,
+  DiscountType,
   FeeAgreementForm,
   FeeAgreementItemDraft,
   PaymentPlan,
@@ -34,6 +36,45 @@ export function FeeAgreementEditor({
   const [expandedFeeItemId, setExpandedFeeItemId] = useState<number | null>(null)
   const [optionalPickerOpen, setOptionalPickerOpen] = useState(false)
   const [optionalSearch, setOptionalSearch] = useState('')
+  const [discountExpanded, setDiscountExpanded] = useState(
+    form.discount.enabled || Object.keys(errors ?? {}).some((key) => key.startsWith('discounts.')),
+  )
+
+  const firstErrorKey = Object.keys(errors ?? {})[0]
+
+  useEffect(() => {
+    if (!firstErrorKey) {
+      return
+    }
+
+    const itemMatch = /^items\.(\d+)\./.exec(firstErrorKey)
+    if (itemMatch) {
+      const enabledItems = form.items.filter((item) => item.enabled)
+      const item = enabledItems[Number(itemMatch[1])]
+      if (item) {
+        setExpandedFeeItemId(item.fee_item_id)
+        requestAnimationFrame(() => {
+          document
+            .querySelector<HTMLElement>(
+              `[data-fee-item-id="${item.fee_item_id}"] [aria-label$=" Billing Pattern"]`,
+            )
+            ?.focus()
+        })
+      }
+      return
+    }
+
+    if (firstErrorKey.startsWith('discounts.')) {
+      setDiscountExpanded(true)
+      requestAnimationFrame(() => {
+        document
+          .querySelector<HTMLElement>(
+            '[data-discount-editor] input, [data-discount-editor] select',
+          )
+          ?.focus()
+      })
+    }
+  }, [firstErrorKey, form.items])
 
   const update = <Key extends keyof FeeAgreementForm>(
     key: Key,
@@ -48,6 +89,19 @@ export function FeeAgreementEditor({
       items: form.items.map((item) =>
         item.fee_item_id === updatedItem.fee_item_id ? updatedItem : item,
       ),
+    })
+  }
+
+  const updateDiscount = <Key extends keyof FeeAgreementForm['discount']>(
+    key: Key,
+    value: FeeAgreementForm['discount'][Key],
+  ) => {
+    onChange({
+      ...form,
+      discount: {
+        ...form.discount,
+        [key]: value,
+      },
     })
   }
 
@@ -243,6 +297,147 @@ export function FeeAgreementEditor({
                   <p>No available fees match your search.</p>
                 )}
               </div>
+            </div>
+          )}
+        </section>
+
+        <section className="agreement-editor-section" aria-labelledby="manual-discount-title">
+          <div className="agreement-discount-summary">
+            <div>
+              <p className="eyebrow">Approval only</p>
+              <h3 id="manual-discount-title">Manual discount</h3>
+              <span>
+                {form.discount.enabled
+                  ? `${form.discount.discount_label || 'Manual discount'} · ${
+                      form.discount.discount_type === 'percentage'
+                        ? `${form.discount.value || '0'}%`
+                        : `RM ${form.discount.value || '0'}`
+                    }`
+                  : 'No manual discount'}
+              </span>
+            </div>
+            <button
+              type="button"
+              className="secondary-button"
+              aria-label="Configure manual discount"
+              aria-expanded={discountExpanded}
+              onClick={() => setDiscountExpanded((expanded) => !expanded)}
+            >
+              {discountExpanded ? 'Done' : 'Configure'}
+            </button>
+          </div>
+
+          {discountExpanded && (
+            <div className="agreement-discount-editor" data-discount-editor>
+              <label className="discount-enable-row">
+                <input
+                  type="checkbox"
+                  aria-label="Enable manual discount"
+                  checked={form.discount.enabled}
+                  onChange={(event) => updateDiscount('enabled', event.target.checked)}
+                />
+                <span>
+                  <strong>Enable manual discount</strong>
+                  <small>Use only after the discount has been approved.</small>
+                </span>
+              </label>
+
+              {form.discount.enabled && (
+                <>
+                  <label className="form-field">
+                    Discount Label
+                    <input
+                      value={form.discount.discount_label}
+                      onChange={(event) =>
+                        updateDiscount('discount_label', event.target.value)
+                      }
+                    />
+                    {errors?.['discounts.0.discount_label']?.[0] && (
+                      <small className="field-error">
+                        {errors['discounts.0.discount_label'][0]}
+                      </small>
+                    )}
+                  </label>
+
+                  <label className="form-field">
+                    Discount Type
+                    <select
+                      value={form.discount.discount_type}
+                      onChange={(event) =>
+                        updateDiscount('discount_type', event.target.value as DiscountType)
+                      }
+                    >
+                      <option value="fixed_amount">Fixed amount</option>
+                      <option value="percentage">Percentage</option>
+                    </select>
+                  </label>
+
+                  <label className="form-field">
+                    Scope
+                    <select
+                      value={form.discount.scope}
+                      onChange={(event) =>
+                        updateDiscount('scope', event.target.value as DiscountScope)
+                      }
+                    >
+                      <option value="total_payable">Total payable</option>
+                      <option value="tuition_only">Tuition only</option>
+                      <option value="selected_fee_items">Selected fee items</option>
+                    </select>
+                  </label>
+
+                  <label className="form-field">
+                    Discount Value
+                    <input
+                      aria-label="Discount Value"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={form.discount.value}
+                      onChange={(event) => updateDiscount('value', event.target.value)}
+                    />
+                    {errors?.['discounts.0.value']?.[0] && (
+                      <small className="field-error">{errors['discounts.0.value'][0]}</small>
+                    )}
+                  </label>
+
+                  {form.discount.scope === 'selected_fee_items' && (
+                    <fieldset className="discount-fee-scope wide">
+                      <legend>Apply discount to</legend>
+                      {form.items
+                        .filter((item) => item.enabled)
+                        .map((item) => (
+                          <label key={item.code}>
+                            <input
+                              type="checkbox"
+                              checked={form.discount.selected_fee_codes.includes(item.code)}
+                              onChange={(event) =>
+                                updateDiscount(
+                                  'selected_fee_codes',
+                                  event.target.checked
+                                    ? [...form.discount.selected_fee_codes, item.code]
+                                    : form.discount.selected_fee_codes.filter(
+                                        (code) => code !== item.code,
+                                      ),
+                                )
+                              }
+                            />
+                            {item.name}
+                          </label>
+                        ))}
+                    </fieldset>
+                  )}
+
+                  <label className="form-field wide">
+                    Discount Remark
+                    <textarea
+                      rows={2}
+                      value={form.discount.remark}
+                      onChange={(event) => updateDiscount('remark', event.target.value)}
+                    />
+                  </label>
+                </>
+              )}
             </div>
           )}
         </section>

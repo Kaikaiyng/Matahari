@@ -120,6 +120,11 @@
   margin: 0;
 }
 
+.agreement-change-list section {
+  display: grid;
+  gap: 5px;
+}
+
 .agreement-review-warning {
   border-radius: 8px;
   background: #fff1d8;
@@ -306,11 +311,16 @@
   outline-offset: 1px;
 }
 
-.fee-item-error {
+.field-error {
   margin: 8px 0 0;
   color: #b3262e;
   font-size: 12px;
   font-weight: 800;
+}
+
+.fee-item-row:has(.field-error) {
+  border-radius: 8px;
+  box-shadow: 0 0 0 2px rgb(208 52 61 / 12%);
 }
 
 .optional-fee-empty {
@@ -354,6 +364,81 @@
   padding: 10px 12px;
 }
 
+.agreement-discount-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.agreement-discount-summary h3 {
+  margin: 2px 0 5px;
+  font-size: 17px;
+}
+
+.agreement-discount-summary > div > span {
+  color: #737782;
+  font-size: 13px;
+}
+
+.agreement-discount-editor {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+  border-top: 1px solid #edf0f4;
+  padding-top: 14px;
+}
+
+.agreement-discount-editor .wide,
+.discount-enable-row {
+  grid-column: 1 / -1;
+}
+
+.discount-enable-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  border-radius: 8px;
+  background: #f7f8fa;
+  padding: 11px 12px;
+}
+
+.discount-enable-row input {
+  margin-top: 3px;
+}
+
+.discount-enable-row span {
+  display: grid;
+  gap: 2px;
+}
+
+.discount-enable-row small {
+  color: #737782;
+}
+
+.discount-fee-scope {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  margin: 0;
+  border: 1px solid #e1e4e9;
+  border-radius: 8px;
+  padding: 11px 12px;
+}
+
+.discount-fee-scope legend {
+  padding: 0 5px;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.discount-fee-scope label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 @media screen and (max-width: 1100px) {
   .fee-agreement-editor {
     grid-template-columns: 1fr;
@@ -367,7 +452,8 @@
 @media screen and (max-width: 767px) {
   .agreement-details-grid,
   .fee-item-row-summary,
-  .fee-item-settings-grid {
+  .fee-item-settings-grid,
+  .agreement-discount-editor {
     grid-template-columns: 1fr;
   }
 
