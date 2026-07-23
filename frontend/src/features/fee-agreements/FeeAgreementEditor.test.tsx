@@ -141,4 +141,62 @@ describe('FeeAgreementEditor', () => {
     expect(screen.getByText('Creating a new version from v1')).toBeInTheDocument()
     expect(screen.getByRole('complementary', { name: 'Changes from v1' })).toBeInTheDocument()
   })
+
+  it('keeps advanced fee controls collapsed until Edit is selected', async () => {
+    const user = userEvent.setup()
+    render(<EditorHarness />)
+
+    expect(screen.queryByLabelText('Tuition Fee Charge Type')).not.toBeInTheDocument()
+    expect(screen.getAllByText('Monthly · Every month · No preview required')).toHaveLength(2)
+
+    await user.click(screen.getByRole('button', { name: 'Edit Tuition Fee' }))
+
+    expect(screen.getByLabelText('Tuition Fee Charge Type')).toBeInTheDocument()
+    expect(screen.getByLabelText('Tuition Fee Billing Pattern')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Misc Fee Charge Type')).not.toBeInTheDocument()
+  })
+
+  it('reveals month controls only after Customize months', async () => {
+    const user = userEvent.setup()
+    render(<EditorHarness />)
+
+    await user.click(screen.getByRole('button', { name: 'Edit Tuition Fee' }))
+    expect(screen.queryByRole('checkbox', { name: 'Jan' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Customize Tuition Fee months' }))
+    expect(screen.getByRole('checkbox', { name: 'Jan' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Select all Tuition Fee months' }))
+    expect(screen.getByRole('checkbox', { name: 'Jan' })).toBeChecked()
+    expect(screen.getByRole('checkbox', { name: 'Dec' })).toBeChecked()
+
+    await user.click(screen.getByRole('button', { name: 'Use every month for Tuition Fee' }))
+    expect(screen.queryByRole('checkbox', { name: 'Jan' })).not.toBeInTheDocument()
+    expect(screen.getAllByText('Monthly · Every month · No preview required')).toHaveLength(2)
+  })
+
+  it('shows month choices immediately for Custom billing', async () => {
+    const user = userEvent.setup()
+    render(<EditorHarness />)
+
+    await user.click(screen.getByRole('button', { name: 'Edit Tuition Fee' }))
+    await user.selectOptions(screen.getByLabelText('Tuition Fee Billing Pattern'), 'custom')
+
+    expect(screen.getByRole('checkbox', { name: 'Jan' })).toBeInTheDocument()
+  })
+
+  it('adds and removes an optional fee without showing disabled fees by default', async () => {
+    const user = userEvent.setup()
+    render(<EditorHarness />)
+
+    expect(screen.queryByText('Transport')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Add optional fee' }))
+    await user.click(screen.getByRole('button', { name: 'Add Transport' }))
+
+    expect(screen.getByText('Transport')).toBeInTheDocument()
+    expect(screen.getByLabelText('Transport Charge Type')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Remove Transport' }))
+    expect(screen.queryByText('Transport')).not.toBeInTheDocument()
+  })
 })

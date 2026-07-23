@@ -133,32 +133,225 @@
   gap: 0;
 }
 
-.fee-row-shell {
-  display: grid;
-  grid-template-columns: minmax(150px, 0.7fr) minmax(240px, 1.2fr) minmax(120px, 0.45fr);
-  gap: 12px;
-  align-items: center;
+.fee-item-row {
   border-top: 1px solid #edf0f4;
-  padding: 12px 0;
 }
 
-.fee-row-shell:first-child {
+.fee-item-row:first-child {
   border-top: 0;
 }
 
-.fee-row-summary-copy,
-.fee-row-amount span {
+.fee-item-row-summary {
+  display: grid;
+  grid-template-columns: minmax(140px, 0.65fr) minmax(210px, 1.2fr) minmax(120px, 0.45fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 0;
+}
+
+.fee-item-identity,
+.fee-item-amount,
+.preview-confirmation-option span,
+.optional-fee-choice > div {
+  display: grid;
+  gap: 3px;
+}
+
+.fee-item-identity span,
+.fee-item-summary-copy,
+.fee-item-amount span,
+.fee-agreement-editor .form-field small,
+.preview-confirmation-option small,
+.optional-fee-choice span {
   color: #737782;
   font-size: 12px;
 }
 
-.fee-row-amount {
-  display: grid;
-  gap: 4px;
+.fee-item-amount input {
+  min-height: 40px;
 }
 
-.fee-row-amount input {
-  min-height: 40px;
+.fee-item-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.compact-button {
+  min-height: 38px;
+  padding: 8px 12px;
+}
+
+.text-button {
+  border: 0;
+  background: transparent;
+  color: #aa252c;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 6px;
+}
+
+.danger-text {
+  color: #b3262e;
+}
+
+.fee-item-advanced {
+  display: grid;
+  gap: 14px;
+  margin: 0 0 12px;
+  border-radius: 9px;
+  background: #f7f8fa;
+  padding: 14px;
+}
+
+.fee-item-settings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.preview-confirmation-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 10px 12px;
+}
+
+.preview-confirmation-option input {
+  margin-top: 3px;
+}
+
+.billing-month-default {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid #e1e4e9;
+  padding-top: 12px;
+}
+
+.billing-month-default > div {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.billing-month-default span {
+  color: #737782;
+  font-size: 13px;
+}
+
+.billing-month-selector {
+  min-width: 0;
+  margin: 0;
+  border: 0;
+  border-top: 1px solid #e1e4e9;
+  padding: 12px 0 0;
+}
+
+.billing-month-selector legend {
+  padding: 0;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.billing-month-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+  margin: -28px 0 9px;
+}
+
+.fee-agreement-editor .billing-month-options {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.fee-agreement-editor .billing-month-option {
+  display: block;
+  position: relative;
+  cursor: pointer;
+}
+
+.fee-agreement-editor .billing-month-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.fee-agreement-editor .billing-month-option span {
+  display: block;
+  border: 1px solid #d9dde4;
+  border-radius: 7px;
+  background: #ffffff;
+  padding: 8px 4px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.fee-agreement-editor .billing-month-option input:checked + span {
+  border-color: #aa252c;
+  background: #fff0f1;
+  color: #8e1e25;
+}
+
+.fee-agreement-editor .billing-month-option input:focus-visible + span {
+  outline: 3px solid rgba(170, 37, 44, 0.2);
+  outline-offset: 1px;
+}
+
+.fee-item-error {
+  margin: 8px 0 0;
+  color: #b3262e;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.optional-fee-empty {
+  margin: 0;
+  border: 1px dashed #d9dde4;
+  border-radius: 8px;
+  padding: 16px;
+  color: #737782;
+  text-align: center;
+  font-size: 13px;
+}
+
+.optional-fee-picker {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+  border: 1px solid #dde1e7;
+  border-radius: 9px;
+  background: #f7f8fa;
+  padding: 14px;
+}
+
+.optional-fee-picker-list {
+  display: grid;
+  gap: 8px;
+}
+
+.optional-fee-picker-list > p {
+  margin: 0;
+  color: #737782;
+  font-size: 13px;
+}
+
+.optional-fee-choice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 10px 12px;
 }
 
 @media screen and (max-width: 1100px) {
@@ -173,8 +366,23 @@
 
 @media screen and (max-width: 767px) {
   .agreement-details-grid,
-  .fee-row-shell {
+  .fee-item-row-summary,
+  .fee-item-settings-grid {
     grid-template-columns: 1fr;
+  }
+
+  .fee-item-row-actions {
+    justify-content: flex-end;
+  }
+
+  .fee-agreement-editor .billing-month-options {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .billing-month-toolbar {
+    justify-content: flex-start;
+    margin: 8px 0;
+    flex-wrap: wrap;
   }
 
   .agreement-version-context,
