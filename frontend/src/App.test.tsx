@@ -171,6 +171,26 @@ const julyFeeRecordSummary = {
   outstanding_months: ['2026-07'],
 }
 
+const outstandingUniformCharge = {
+  id: 41,
+  student_id: 1,
+  fee_agreement_id: 20,
+  fee_agreement_item_id: null,
+  fee_item_id: null,
+  academic_year: '2026',
+  billing_month: '2026-07',
+  fee_record_category: 'OTHERS',
+  fee_code: null,
+  description: 'Uniform – Sports T-shirt',
+  expected_amount: 80,
+  paid_amount: 0,
+  outstanding_amount: 80,
+  billing_status: 'billable',
+  collection_status: 'unpaid',
+  charge_origin: 'manual',
+  source_type: 'manual_charge',
+}
+
 const pendingPayment = {
   id: 11,
   student_id: 1,
@@ -715,6 +735,146 @@ describe('demo shell', () => {
     await user.click(screen.getAllByRole('button', { name: 'Void' }).at(-1)!)
     expect(screen.getByRole('dialog', { name: 'Void Receipt' })).toBeInTheDocument()
   }, 10_000)
+
+  it('creates a one-time charge inside Record Payment and selects it after confirmation', async () => {
+    const user = userEvent.setup()
+    const fetchMock = vi.mocked(globalThis.fetch)
+    const installedImplementation = fetchMock.getMockImplementation()
+
+    if (!installedImplementation) throw new Error('API mock is not installed')
+
+    fetchMock.mockImplementation((input, init) => {
+      const url = new URL(String(input))
+
+      if (url.pathname.endsWith('/students/1/fee-record/manual-charges') && init?.method === 'POST') {
+        return json({ data: outstandingUniformCharge })
+      }
+
+      if (url.pathname.endsWith('/students/1/fee-record/outstanding')) {
+        return json({ data: [outstandingUniformCharge] })
+      }
+
+      return installedImplementation(input, init)
+    })
+
+    await renderAuthenticatedApp()
+    await user.click(screen.getByRole('button', { name: 'Students' }))
+    await user.click(await screen.findByRole('button', { name: 'Open' }))
+    await user.click(screen.getByRole('button', { name: 'Create Payment' }))
+
+    const dialog = screen.getByRole('dialog', { name: 'Record Payment' })
+    await user.click(within(dialog).getByRole('button', { name: 'Add one-time charge' }))
+    await user.type(within(dialog).getByLabelText('One-time charge description'), 'Uniform – Sports T-shirt')
+    await user.type(within(dialog).getByLabelText('One-time charge amount'), '80')
+    await user.click(within(dialog).getByRole('button', { name: 'Add and select charge' }))
+
+    await waitFor(() => {
+      const request = fetchMock.mock.calls.find(
+        ([input, init]) =>
+          String(input).endsWith('/students/1/fee-record/manual-charges') && init?.method === 'POST',
+      )
+      expect(request).toBeDefined()
+      expect(JSON.parse(String(request?.[1]?.body))).toMatchObject({
+        academic_year: '2026',
+        billing_month: expect.stringMatching(/^2026-\d{2}$/),
+        fee_record_category: 'OTHERS',
+        description: 'Uniform – Sports T-shirt',
+        expected_amount: 80,
+        remark: null,
+      })
+    })
+
+    expect(await within(dialog).findByText('Charge added and selected for this payment.')).toBeInTheDocument()
+    expect(within(dialog).getByLabelText('Uniform – Sports T-shirt amount')).toHaveValue(80)
+    expect(within(dialog).getByText(/Allocated RM\s*80 of RM\s*80/)).toBeInTheDocument()
+  })
+
+  it('keeps one-time charge validation inside Record Payment and adds no allocation', async () => {
+    const user = userEvent.setup()
+    const fetchMock = vi.mocked(globalThis.fetch)
+    const installedImplementation = fetchMock.getMockImplementation()
+
+    if (!installedImplementation) throw new Error('API mock is not installed')
+
+    fetchMock.mockImplementation((input, init) => {
+      const url = new URL(String(input))
+
+      if (url.pathname.endsWith('/students/1/fee-record/manual-charges') && init?.method === 'POST') {
+        return json(
+          {
+            message: 'The description field is required.',
+            errors: { description: ['Description is required.'] },
+          },
+          422,
+        )
+      }
+
+      return installedImplementation(input, init)
+    })
+
+    await renderAuthenticatedApp()
+    await user.click(screen.getByRole('button', { name: 'Students' }))
+    await user.click(await screen.findByRole('button', { name: 'Open' }))
+    await user.click(screen.getByRole('button', { name: 'Create Payment' }))
+
+    const dialog = screen.getByRole('dialog', { name: 'Record Payment' })
+    await user.click(within(dialog).getByRole('button', { name: 'Add one-time charge' }))
+    await user.type(within(dialog).getByLabelText('One-time charge amount'), '80')
+    await user.click(within(dialog).getByRole('button', { name: 'Add and select charge' }))
+
+    expect(await within(dialog).findByText('Description is required.')).toBeInTheDocument()
+    expect(within(dialog).queryByText('Charge added and selected for this payment.')).not.toBeInTheDocument()
+    expect(within(dialog).getByText(/Allocated RM\s*0 of RM\s*0/)).toBeInTheDocument()
+  })
+
+  it('hides one-time charge creation without Fee Record management permission', async () => {
+    const user = userEvent.setup()
+    const fetchMock = vi.mocked(globalThis.fetch)
+    const installedImplementation = fetchMock.getMockImplementation()
+
+    if (!installedImplementation) throw new Error('API mock is not installed')
+
+    fetchMock.mockImplementation((input, init) => {
+      const url = new URL(String(input))
+
+      if (url.pathname.endsWith('/me')) {
+        return json({
+          user: {
+            ...currentUser,
+            permissions: currentUser.permissions.filter((permission) => permission !== 'fee_record.manage'),
+          },
+        })
+      }
+
+      return installedImplementation(input, init)
+    })
+
+    await renderAuthenticatedApp()
+    await user.click(screen.getByRole('button', { name: 'Students' }))
+    await user.click(await screen.findByRole('button', { name: 'Open' }))
+    await user.click(screen.getByRole('button', { name: 'Create Payment' }))
+
+    const dialog = screen.getByRole('dialog', { name: 'Record Payment' })
+    expect(within(dialog).queryByRole('button', { name: 'Add one-time charge' })).not.toBeInTheDocument()
+  })
+
+  it('allows only one incomplete unclassified payment row', async () => {
+    const user = userEvent.setup()
+    await renderAuthenticatedApp()
+    await user.click(screen.getByRole('button', { name: 'Students' }))
+    await user.click(await screen.findByRole('button', { name: 'Open' }))
+    await user.click(screen.getByRole('button', { name: 'Create Payment' }))
+
+    const dialog = screen.getByRole('dialog', { name: 'Record Payment' })
+    await user.click(within(dialog).getByText('Advanced options'))
+    const addButton = within(dialog).getByRole('button', { name: 'Record unclassified payment' })
+    await user.click(addButton)
+
+    expect(within(dialog).getAllByLabelText(/Unclassified payment \d+ description/)).toHaveLength(1)
+    expect(addButton).toBeDisabled()
+    await user.click(addButton)
+    expect(within(dialog).getAllByLabelText(/Unclassified payment \d+ description/)).toHaveLength(1)
+  })
 
   it('uses the compact editor for Create and preserves the request payload', async () => {
     const user = userEvent.setup()

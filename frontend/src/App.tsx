@@ -36,6 +36,7 @@ import {
   validateFeeAgreementBillingConfig,
 } from './features/fee-agreements/feeAgreementEditorModel'
 import { FeeAgreementEditor } from './features/fee-agreements/FeeAgreementEditor'
+import { PaymentAllocationEditor } from './features/payments/PaymentAllocationEditor'
 import type {
   FeeAgreement,
   FeeAgreementForm,
@@ -49,6 +50,7 @@ import {
   createOneTimeChargeDraft,
   createUnclassifiedAllocation,
   feeRecordCategoryOptions,
+  hasIncompleteUnclassifiedAllocation,
   type FeeRecordCategory,
   type OneTimeChargeDraft,
   type OutstandingChargeCell,
@@ -861,6 +863,13 @@ function StudentsPage({
   const [paymentForm, setPaymentForm] = useState<PaymentForm>(defaultPaymentForm(null))
   const [paymentErrors, setPaymentErrors] = useState<ValidationErrors>()
   const [isSavingPayment, setIsSavingPayment] = useState(false)
+  const [showPaymentOneTimeCharge, setShowPaymentOneTimeCharge] = useState(false)
+  const [paymentOneTimeCharge, setPaymentOneTimeCharge] = useState<OneTimeChargeDraft>(
+    createOneTimeChargeDraft('2026'),
+  )
+  const [paymentOneTimeChargeErrors, setPaymentOneTimeChargeErrors] = useState<ValidationErrors>()
+  const [paymentOneTimeChargeNotice, setPaymentOneTimeChargeNotice] = useState('')
+  const [isSavingPaymentOneTimeCharge, setIsSavingPaymentOneTimeCharge] = useState(false)
   const [outstandingCharges, setOutstandingCharges] = useState<OutstandingChargeCell[]>([])
   const [outstandingChargesYear, setOutstandingChargesYear] = useState('')
   const [isLoadingOutstandingCharges, setIsLoadingOutstandingCharges] = useState(false)
@@ -925,36 +934,6 @@ function StudentsPage({
   const paymentAllocationTotal = allocationTotal(paymentForm.allocations)
   const paymentAmountCents = moneyToCents(paymentForm.amount)
   const allocationTotalCents = moneyToCents(paymentAllocationTotal)
-  const selectedChargeIds = new Set(
-    paymentForm.allocations
-      .map((allocation) => allocation.fee_record_charge_id)
-      .filter((id): id is number => id !== null),
-  )
-  const groupedOutstandingCharges = useMemo(() => {
-    const groups = new Map<string, Map<string, OutstandingChargeCell[]>>()
-
-    outstandingCharges.forEach((charge) => {
-      if (!groups.has(charge.billing_month)) {
-        groups.set(charge.billing_month, new Map())
-      }
-
-      const monthGroup = groups.get(charge.billing_month)!
-
-      if (!monthGroup.has(charge.fee_record_category)) {
-        monthGroup.set(charge.fee_record_category, [])
-      }
-
-      monthGroup.get(charge.fee_record_category)!.push(charge)
-    })
-
-    return Array.from(groups.entries()).map(([billingMonth, categories]) => ({
-      billingMonth,
-      categories: Array.from(categories.entries()).map(([category, charges]) => ({
-        category,
-        charges,
-      })),
-    }))
-  }, [outstandingCharges])
   const previewBlockedByWarnings = Boolean(feeRecordPreview?.needs_confirmation || feeRecordPreview?.warnings.length)
   const canActivateCurrentPreview = Boolean(
     canActivateFeeRecord &&
@@ -1621,6 +1600,10 @@ function StudentsPage({
     const nextForm = defaultPaymentForm(currentFeeAgreement)
     setPaymentForm(nextForm)
     setPaymentErrors(undefined)
+    setShowPaymentOneTimeCharge(false)
+    setPaymentOneTimeCharge(createOneTimeChargeDraft(nextForm.academic_year))
+    setPaymentOneTimeChargeErrors(undefined)
+    setPaymentOneTimeChargeNotice('')
     setOutstandingCharges([])
     setOutstandingChargeError('')
     setShowPaymentForm(true)
@@ -1638,6 +1621,10 @@ function StudentsPage({
     }))
 
     if (field === 'academic_year' && selectedStudent) {
+      setShowPaymentOneTimeCharge(false)
+      setPaymentOneTimeCharge(createOneTimeChargeDraft(value))
+      setPaymentOneTimeChargeErrors(undefined)
+      setPaymentOneTimeChargeNotice('')
       void loadOutstandingCharges(selectedStudent.id, value)
     }
   }
@@ -1684,11 +1671,17 @@ function StudentsPage({
     }))
   }
 
-  const addPaymentAllocation = () => {
-    setPaymentForm((current) => ({
-      ...current,
-      allocations: [...current.allocations, createUnclassifiedAllocation()],
-    }))
+  const addUnclassifiedPaymentAllocation = () => {
+    setPaymentForm((current) => {
+      if (hasIncompleteUnclassifiedAllocation(current.allocations)) {
+        return current
+      }
+
+      return {
+        ...current,
+        allocations: [...current.allocations, createUnclassifiedAllocation()],
+      }
+    })
   }
 
   const removePaymentAllocation = (key: string) => {
@@ -1697,6 +1690,59 @@ function StudentsPage({
       allocations: current.allocations.filter((allocation) => allocation.key !== key),
       amount: String(allocationTotal(current.allocations.filter((allocation) => allocation.key !== key)) || ''),
     }))
+  }
+
+  const updatePaymentOneTimeCharge = (field: keyof OneTimeChargeDraft, value: string) => {
+    setPaymentOneTimeCharge((current) => ({
+      ...current,
+      [field]: value,
+    }))
+  }
+
+  const submitPaymentOneTimeCharge = async () => {
+    if (!selectedStudent || !canManageFeeRecord) {
+      return
+    }
+
+    setIsSavingPaymentOneTimeCharge(true)
+    setPaymentOneTimeChargeErrors(undefined)
+    setPaymentOneTimeChargeNotice('')
+    setError('')
+
+    try {
+      const response = await apiRequest<{ data: OutstandingChargeCell }>(
+        `/students/${selectedStudent.id}/fee-record/manual-charges`,
+        {
+          method: 'POST',
+          body: {
+            academic_year: paymentForm.academic_year,
+            billing_month: paymentOneTimeCharge.billing_month,
+            fee_record_category: paymentOneTimeCharge.fee_record_category,
+            description: paymentOneTimeCharge.description,
+            expected_amount: Number(paymentOneTimeCharge.expected_amount || 0),
+            remark: paymentOneTimeCharge.remark || null,
+          },
+        },
+      )
+
+      setPaymentForm((current) => ({
+        ...current,
+        allocations: [...current.allocations, createChargeAllocation(response.data)],
+        amount: String(allocationTotal(current.allocations) + response.data.outstanding_amount),
+      }))
+      setShowPaymentOneTimeCharge(false)
+      setPaymentOneTimeCharge(createOneTimeChargeDraft(paymentForm.academic_year))
+      setPaymentOneTimeChargeNotice('Charge added and selected for this payment.')
+      await loadOutstandingCharges(selectedStudent.id, paymentForm.academic_year)
+    } catch (chargeError) {
+      if (chargeError instanceof ApiError && chargeError.status === 422) {
+        setPaymentOneTimeChargeErrors(chargeError.errors)
+      } else {
+        handleApiError(chargeError)
+      }
+    } finally {
+      setIsSavingPaymentOneTimeCharge(false)
+    }
   }
 
   const validatePaymentForm = () => {
@@ -2962,143 +3008,49 @@ function StudentsPage({
                   </label>
                 </div>
 
-                <div className="payment-allocation-block">
-                  <div className="payment-subheader">
-                    <div>
-                      <h3>Outstanding Charge Cells</h3>
-                      <p>
-                        Select the exact month/category cells this payment clears.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      className="table-action"
-                      onClick={() => selectedStudent && void loadOutstandingCharges(selectedStudent.id, paymentForm.academic_year)}
-                    >
-                      Refresh
-                    </button>
-                  </div>
-
-                  {formatValidationError(paymentErrors, 'allocations') && (
-                    <Message tone="error">{formatValidationError(paymentErrors, 'allocations')}</Message>
-                  )}
-                  {outstandingChargeError && <Message tone="error">{outstandingChargeError}</Message>}
-                  {isLoadingOutstandingCharges && <div className="empty-state">Loading outstanding charge cells...</div>}
-
-                  {!isLoadingOutstandingCharges && groupedOutstandingCharges.length === 0 && (
-                    <div className="empty-state">No outstanding charge cells found for {paymentForm.academic_year}.</div>
-                  )}
-
-                  <div className="charge-picker">
-                    {groupedOutstandingCharges.map((monthGroup) => (
-                      <section className="charge-month-group" key={monthGroup.billingMonth}>
-                        <h4>{formatBillingMonth(monthGroup.billingMonth)}</h4>
-                        {monthGroup.categories.map((categoryGroup) => (
-                          <div className="charge-category-group" key={`${monthGroup.billingMonth}-${categoryGroup.category}`}>
-                            <span>{categoryGroup.category}</span>
-                            {categoryGroup.charges.map((charge) => {
-                              const selected = selectedChargeIds.has(charge.id)
-
-                              return (
-                                <label className="charge-cell-row" key={charge.id}>
-                                  <input
-                                    type="checkbox"
-                                    checked={selected}
-                                    onChange={(event) =>
-                                      event.target.checked
-                                        ? selectChargeAllocation(charge)
-                                        : removePaymentAllocation(
-                                            paymentForm.allocations.find((allocation) => allocation.fee_record_charge_id === charge.id)?.key ?? '',
-                                          )
-                                    }
-                                  />
-                                  <span>
-                                    <strong>{charge.description}</strong>
-                                    <small>
-                                      {charge.fee_code ?? 'Manual'} / Outstanding {formatCurrency(charge.outstanding_amount)}
-                                    </small>
-                                  </span>
-                                </label>
-                              )
-                            })}
-                          </div>
-                        ))}
-                      </section>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="payment-allocation-block">
-                  <div className="payment-subheader">
-                    <div>
-                      <h3>Selected Allocations</h3>
-                      <p>
-                        Allocated {formatCurrency(paymentAllocationTotal)} of {formatCurrency(Number(paymentForm.amount || 0))}
-                      </p>
-                    </div>
-                    <button type="button" className="table-action" onClick={addPaymentAllocation}>
-                      Add manual allocation (does not clear Fee Record outstanding)
-                    </button>
-                  </div>
-
-                  <div className="allocation-rows">
-                    {paymentForm.allocations.length === 0 && (
-                      <div className="empty-state">
-                        Select charge cells, or add a manual allocation only for legacy/unclassified payments.
-                      </div>
-                    )}
-
-                    {paymentForm.allocations.map((allocation, index) => (
-                      <div className={`allocation-row ${allocation.allocation_type}`} key={allocation.key}>
-                        <div className="allocation-source-summary">
-                          <span className={`badge ${allocation.allocation_type === 'charge' ? 'paid' : 'neutral'}`}>
-                            {allocation.allocation_type === 'charge' ? 'Charge cell' : 'Manual allocation'}
-                          </span>
-                          <strong>{allocation.description || 'Manual allocation (does not clear Fee Record outstanding)'}</strong>
-                          <small>
-                            {allocation.allocation_type === 'charge'
-                              ? `${allocation.billing_month} / ${allocation.fee_record_category} / Outstanding ${formatCurrency(
-                                  allocation.outstanding_amount,
-                                )}`
-                              : 'Use only for legacy/unclassified payments. This will not reduce Fee Record charge cells.'}
-                          </small>
-                        </div>
-
-                        {allocation.allocation_type === 'manual' && (
-                          <label className="form-field">
-                            Description
-                            <input
-                              value={allocation.description}
-                              onChange={(event) => updatePaymentAllocation(allocation.key, 'description', event.target.value)}
-                            />
-                            {formatValidationError(paymentErrors, `allocations.${index}.description`) && (
-                              <small>{formatValidationError(paymentErrors, `allocations.${index}.description`)}</small>
-                            )}
-                          </label>
-                        )}
-
-                        <label className="form-field">
-                          Amount
-                          <input
-                            type="number"
-                            min="0"
-                            max={allocation.outstanding_amount ?? undefined}
-                            step="0.01"
-                            value={allocation.amount}
-                            onChange={(event) => updatePaymentAllocation(allocation.key, 'amount', event.target.value)}
-                          />
-                          {formatValidationError(paymentErrors, `allocations.${index}.amount`) && (
-                            <small>{formatValidationError(paymentErrors, `allocations.${index}.amount`)}</small>
-                          )}
-                        </label>
-
-                        <button type="button" className="table-action danger-action" onClick={() => removePaymentAllocation(allocation.key)}>
-                          Remove
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <PaymentAllocationEditor
+                  academicYear={paymentForm.academic_year}
+                  paymentAmount={Number(paymentForm.amount || 0)}
+                  allocationTotal={paymentAllocationTotal}
+                  allocations={paymentForm.allocations}
+                  outstandingCharges={outstandingCharges}
+                  isLoadingOutstandingCharges={isLoadingOutstandingCharges}
+                  outstandingChargeError={outstandingChargeError}
+                  allocationErrors={paymentErrors}
+                  canAddOneTimeCharge={canManageFeeRecord}
+                  isOneTimeChargeOpen={showPaymentOneTimeCharge}
+                  oneTimeCharge={paymentOneTimeCharge}
+                  oneTimeChargeErrors={paymentOneTimeChargeErrors}
+                  oneTimeChargeNotice={paymentOneTimeChargeNotice}
+                  isSavingOneTimeCharge={isSavingPaymentOneTimeCharge}
+                  onRefresh={() =>
+                    selectedStudent && void loadOutstandingCharges(selectedStudent.id, paymentForm.academic_year)
+                  }
+                  onToggleCharge={(charge, selected) =>
+                    selected
+                      ? selectChargeAllocation(charge)
+                      : removePaymentAllocation(
+                          paymentForm.allocations.find(
+                            (allocation) => allocation.fee_record_charge_id === charge.id,
+                          )?.key ?? '',
+                        )
+                  }
+                  onUpdateAllocation={updatePaymentAllocation}
+                  onRemoveAllocation={removePaymentAllocation}
+                  onOpenOneTimeCharge={() => {
+                    setShowPaymentOneTimeCharge(true)
+                    setPaymentOneTimeChargeErrors(undefined)
+                    setPaymentOneTimeChargeNotice('')
+                  }}
+                  onCancelOneTimeCharge={() => {
+                    setShowPaymentOneTimeCharge(false)
+                    setPaymentOneTimeCharge(createOneTimeChargeDraft(paymentForm.academic_year))
+                    setPaymentOneTimeChargeErrors(undefined)
+                  }}
+                  onUpdateOneTimeCharge={updatePaymentOneTimeCharge}
+                  onCreateOneTimeCharge={() => void submitPaymentOneTimeCharge()}
+                  onAddUnclassified={addUnclassifiedPaymentAllocation}
+                />
 
                 <div className="payment-submit-area">
                   <div className={`agreement-preview ${paymentAmountCents === allocationTotalCents ? '' : 'warning'}`}>
