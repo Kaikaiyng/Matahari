@@ -31,6 +31,31 @@ import type { UiTone } from './components/AdminUi'
 import { CalendarPage } from './components/CalendarPage'
 import { ClassesPage } from './components/ClassesPage'
 import type { SchoolClassOption } from './components/ClassesPage'
+import {
+  isFeeAgreementFormDirty,
+  validateFeeAgreementBillingConfig,
+} from './features/fee-agreements/feeAgreementEditorModel'
+import { FeeAgreementEditor } from './features/fee-agreements/FeeAgreementEditor'
+import { PaymentAllocationEditor } from './features/payments/PaymentAllocationEditor'
+import type {
+  FeeAgreement,
+  FeeAgreementForm,
+  FeeAgreementItemDraft,
+  FeeItem,
+  PaymentPlan,
+  ValidationErrors,
+} from './features/fee-agreements/types'
+import {
+  createChargeAllocation,
+  createOneTimeChargeDraft,
+  createUnclassifiedAllocation,
+  feeRecordCategoryOptions,
+  hasIncompleteUnclassifiedAllocation,
+  type FeeRecordCategory,
+  type OneTimeChargeDraft,
+  type OutstandingChargeCell,
+  type PaymentAllocationDraft,
+} from './features/payments/paymentAllocationModel'
 import misLogo from './assets/mis-logo.jpg'
 import './App.css'
 
@@ -134,88 +159,6 @@ type StudentForm = {
   notes: string
 }
 
-type PaymentPlan = 'monthly' | 'termly' | 'yearly'
-type FeeAgreementItemClassification = 'recurring' | 'optional_service' | 'one_time' | 'manual'
-type BillingFrequency = 'monthly' | 'termly' | 'yearly' | 'custom' | 'one_time'
-type DiscountType = 'percentage' | 'fixed_amount'
-type DiscountScope = 'tuition_only' | 'total_payable' | 'selected_fee_items'
-
-type FeeItem = {
-  id: number
-  code: string
-  name: string
-  category: string
-  fee_type: string
-  default_amount: number
-}
-
-type FeeAgreement = {
-  id: number
-  academic_year: string
-  version_no: number
-  payment_plan: PaymentPlan
-  effective_from: string
-  effective_to: string | null
-  is_current: boolean
-  status: string
-  remarks: string | null
-  items: Array<{
-    id: number
-    fee_item_id: number
-    fee_code: string
-    fee_category: string
-    description: string
-    amount: number
-    is_mandatory: boolean
-    classification: FeeAgreementItemClassification | null
-    billing_frequency: BillingFrequency | null
-    billing_months: number[] | null
-    requires_preview_confirmation: boolean
-  }>
-  discounts: Array<{
-    id: number
-    discount_label: string
-    discount_type: DiscountType
-    scope: DiscountScope
-    value: number
-    remark: string
-    selected_fee_codes: string[]
-  }>
-}
-
-type FeeAgreementItemDraft = {
-  fee_item_id: number
-  code: string
-  name: string
-  enabled: boolean
-  amount: string
-  description: string
-  classification: FeeAgreementItemClassification
-  billing_frequency: BillingFrequency
-  billing_months: number[]
-  requires_preview_confirmation: boolean
-}
-
-type FeeAgreementDiscountDraft = {
-  enabled: boolean
-  discount_label: string
-  discount_type: DiscountType
-  scope: DiscountScope
-  value: string
-  remark: string
-  selected_fee_codes: string[]
-}
-
-type FeeAgreementForm = {
-  academic_year: string
-  payment_plan: PaymentPlan
-  effective_from: string
-  effective_to: string
-  remarks: string
-  items: FeeAgreementItemDraft[]
-  discount: FeeAgreementDiscountDraft
-}
-
 type PaymentMethod = 'cash' | 'bank_transfer' | 'duitnow_qr' | 'cheque' | 'credit_card' | 'fpx'
 type PaymentStatus = 'pending_verification' | 'verified' | 'voided'
 
@@ -255,26 +198,6 @@ type StudentPayment = {
     amount: number
     sort_order: number
   }>
-}
-
-type OutstandingChargeCell = {
-  id: number
-  student_id: number
-  fee_agreement_id: number
-  fee_agreement_item_id: number | null
-  fee_item_id: number | null
-  academic_year: string
-  billing_month: string
-  fee_record_category: string
-  fee_code: string | null
-  description: string
-  expected_amount: number
-  paid_amount: number
-  outstanding_amount: number
-  billing_status: string
-  collection_status: string
-  charge_origin: string
-  source_type: string | null
 }
 
 type FeeRecordPreviewCharge = {
@@ -333,8 +256,6 @@ type FeeRecordSummaryRow = {
   latest_receipt_date: string | null
   collection_status_summary: 'paid' | 'partial' | 'unpaid' | 'no_charges'
 }
-
-type FeeRecordCategory = 'SF+MF' | 'TR' | 'MP' | 'HS' | 'HT' | 'PAYMENT' | 'OTHERS'
 
 type FeeRecordModuleView = 'summary' | 'category-monthly'
 
@@ -403,20 +324,6 @@ type StudentReceipt = ReceiptSummary & {
   }>
 }
 
-type PaymentAllocationDraft = {
-  key: string
-  allocation_type: 'charge' | 'manual'
-  fee_record_charge_id: number | null
-  fee_item_id: number | null
-  fee_agreement_item_id: number | null
-  fee_code: string | null
-  billing_month: string | null
-  fee_record_category: string | null
-  outstanding_amount: number | null
-  description: string
-  amount: string
-}
-
 type PaymentForm = {
   academic_year: string
   payment_method: PaymentMethod
@@ -431,23 +338,12 @@ type PaymentForm = {
   allocations: PaymentAllocationDraft[]
 }
 
-type ManualFeeRecordChargeForm = {
-  academic_year: string
-  billing_month: string
-  fee_record_category: FeeRecordCategory
-  description: string
-  expected_amount: string
-  remark: string
-}
-
 type VerifyPaymentForm = {
   received_date: string
   bank_account: string
   reference_no: string
   remark: string
 }
-
-type ValidationErrors = Record<string, string[]>
 
 const navGroups: NavigationGroup<PageKey>[] = [
   {
@@ -534,16 +430,6 @@ const levelGroupOptions: Array<{ value: LevelGroup; label: string }> = [
   { value: 'stp', label: 'STP' },
 ]
 
-const feeRecordCategories: Array<{ value: FeeRecordCategory; label: string }> = [
-  { value: 'SF+MF', label: 'SF+MF' },
-  { value: 'TR', label: 'TR' },
-  { value: 'MP', label: 'MP' },
-  { value: 'HS', label: 'HS' },
-  { value: 'HT', label: 'HT' },
-  { value: 'PAYMENT', label: 'Payment' },
-  { value: 'OTHERS', label: 'Others' },
-]
-
 const monthShortLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const monthLongLabels = [
   'January',
@@ -558,38 +444,6 @@ const monthLongLabels = [
   'October',
   'November',
   'December',
-]
-
-const paymentPlanOptions: Array<{ value: PaymentPlan; label: string }> = [
-  { value: 'monthly', label: 'Monthly' },
-  { value: 'termly', label: 'Termly' },
-  { value: 'yearly', label: 'Yearly' },
-]
-
-const feeAgreementClassificationOptions: Array<{ value: FeeAgreementItemClassification; label: string }> = [
-  { value: 'recurring', label: 'Recurring' },
-  { value: 'optional_service', label: 'Optional Service' },
-  { value: 'one_time', label: 'One-time' },
-  { value: 'manual', label: 'Manual' },
-]
-
-const billingFrequencyOptions: Array<{ value: BillingFrequency; label: string }> = [
-  { value: 'monthly', label: 'Monthly' },
-  { value: 'termly', label: 'Termly' },
-  { value: 'yearly', label: 'Yearly' },
-  { value: 'custom', label: 'Custom' },
-  { value: 'one_time', label: 'One-time' },
-]
-
-const discountTypeOptions: Array<{ value: DiscountType; label: string }> = [
-  { value: 'percentage', label: 'Percentage' },
-  { value: 'fixed_amount', label: 'Fixed Amount' },
-]
-
-const discountScopeOptions: Array<{ value: DiscountScope; label: string }> = [
-  { value: 'tuition_only', label: 'Tuition Only' },
-  { value: 'total_payable', label: 'Total Payable' },
-  { value: 'selected_fee_items', label: 'Selected Fee Items' },
 ]
 
 const paymentMethodOptions: Array<{ value: PaymentMethod; label: string }> = [
@@ -724,10 +578,6 @@ function todayDate() {
   return new Date().toISOString().slice(0, 10)
 }
 
-function draftKey() {
-  return Math.random().toString(36).slice(2)
-}
-
 function moneyToCents(value: string | number) {
   const amount = typeof value === 'number' ? value : Number(value || 0)
 
@@ -736,22 +586,6 @@ function moneyToCents(value: string | number) {
 
 function allocationTotal(allocations: PaymentAllocationDraft[]) {
   return allocations.reduce((sum, allocation) => sum + Number(allocation.amount || 0), 0)
-}
-
-function defaultManualAllocation(): PaymentAllocationDraft {
-  return {
-    key: draftKey(),
-    allocation_type: 'manual',
-    fee_record_charge_id: null,
-    fee_item_id: null,
-    fee_agreement_item_id: null,
-    fee_code: null,
-    billing_month: null,
-    fee_record_category: null,
-    outstanding_amount: null,
-    description: '',
-    amount: '',
-  }
 }
 
 function defaultPaymentForm(currentFeeAgreement: FeeAgreement | null): PaymentForm {
@@ -770,19 +604,6 @@ function defaultPaymentForm(currentFeeAgreement: FeeAgreement | null): PaymentFo
   }
 }
 
-function defaultManualFeeRecordChargeForm(academicYear = '2026'): ManualFeeRecordChargeForm {
-  const currentMonth = String(new Date().getMonth() + 1).padStart(2, '0')
-
-  return {
-    academic_year: academicYear,
-    billing_month: `${academicYear}-${currentMonth}`,
-    fee_record_category: 'OTHERS',
-    description: '',
-    expected_amount: '',
-    remark: '',
-  }
-}
-
 function defaultVerifyForm(payment?: StudentPayment): VerifyPaymentForm {
   return {
     received_date: todayDate(),
@@ -793,8 +614,9 @@ function defaultVerifyForm(payment?: StudentPayment): VerifyPaymentForm {
 }
 
 function tomorrowAfter(dateText: string) {
-  const date = new Date(`${dateText}T00:00:00`)
-  date.setDate(date.getDate() + 1)
+  const [year, month, day] = dateText.split('-').map(Number)
+  const date = new Date(Date.UTC(year, month - 1, day))
+  date.setUTCDate(date.getUTCDate() + 1)
   return date.toISOString().slice(0, 10)
 }
 
@@ -854,10 +676,14 @@ function defaultAgreementForm(feeItems: FeeItem[]): FeeAgreementForm {
 function agreementToForm(agreement: FeeAgreement, feeItems: FeeItem[]): FeeAgreementForm {
   const agreementItemsByCode = new Map(agreement.items.map((item) => [item.fee_code, item]))
   const firstDiscount = agreement.discounts[0]
+  const paymentPlan: PaymentPlan =
+    agreement.payment_plan === 'termly' || agreement.payment_plan === 'yearly'
+      ? agreement.payment_plan
+      : 'monthly'
 
   return {
     academic_year: agreement.academic_year,
-    payment_plan: agreement.payment_plan,
+    payment_plan: paymentPlan,
     effective_from: tomorrowAfter(agreement.effective_from),
     effective_to: '',
     remarks: agreement.remarks ?? '',
@@ -897,42 +723,6 @@ function agreementToForm(agreement: FeeAgreement, feeItems: FeeItem[]): FeeAgree
           remark: '',
           selected_fee_codes: [],
         },
-  }
-}
-
-function agreementPreview(form: FeeAgreementForm) {
-  const enabledItems = form.items.filter((item) => item.enabled)
-  const subtotal = enabledItems.reduce((sum, item) => sum + Number(item.amount || 0), 0)
-  const tuitionAmount = enabledItems
-    .filter((item) => item.code === 'TUITION')
-    .reduce((sum, item) => sum + Number(item.amount || 0), 0)
-  const selectedAmount = enabledItems
-    .filter((item) => form.discount.selected_fee_codes.includes(item.code))
-    .reduce((sum, item) => sum + Number(item.amount || 0), 0)
-
-  let discountAmount = 0
-
-  if (form.discount.enabled) {
-    const value = Number(form.discount.value || 0)
-
-    if (form.discount.discount_type === 'percentage') {
-      const base =
-        form.discount.scope === 'total_payable'
-          ? subtotal
-          : form.discount.scope === 'selected_fee_items'
-            ? selectedAmount
-            : tuitionAmount
-
-      discountAmount = (base * value) / 100
-    } else {
-      discountAmount = value
-    }
-  }
-
-  return {
-    subtotal,
-    discountAmount,
-    total: Math.max(subtotal - discountAmount, 0),
   }
 }
 
@@ -1061,6 +851,10 @@ function StudentsPage({
   const [feeAgreementMode, setFeeAgreementMode] = useState<'create' | 'supersede'>('create')
   const [showFeeAgreementForm, setShowFeeAgreementForm] = useState(false)
   const [feeAgreementForm, setFeeAgreementForm] = useState<FeeAgreementForm>(defaultAgreementForm([]))
+  const [initialFeeAgreementForm, setInitialFeeAgreementForm] = useState<FeeAgreementForm>(
+    defaultAgreementForm([]),
+  )
+  const [isLoadingFeeAgreementEditorData, setIsLoadingFeeAgreementEditorData] = useState(false)
   const [feeAgreementErrors, setFeeAgreementErrors] = useState<ValidationErrors>()
   const [isSavingFeeAgreement, setIsSavingFeeAgreement] = useState(false)
   const [payments, setPayments] = useState<StudentPayment[]>([])
@@ -1069,6 +863,13 @@ function StudentsPage({
   const [paymentForm, setPaymentForm] = useState<PaymentForm>(defaultPaymentForm(null))
   const [paymentErrors, setPaymentErrors] = useState<ValidationErrors>()
   const [isSavingPayment, setIsSavingPayment] = useState(false)
+  const [showPaymentOneTimeCharge, setShowPaymentOneTimeCharge] = useState(false)
+  const [paymentOneTimeCharge, setPaymentOneTimeCharge] = useState<OneTimeChargeDraft>(
+    createOneTimeChargeDraft('2026'),
+  )
+  const [paymentOneTimeChargeErrors, setPaymentOneTimeChargeErrors] = useState<ValidationErrors>()
+  const [paymentOneTimeChargeNotice, setPaymentOneTimeChargeNotice] = useState('')
+  const [isSavingPaymentOneTimeCharge, setIsSavingPaymentOneTimeCharge] = useState(false)
   const [outstandingCharges, setOutstandingCharges] = useState<OutstandingChargeCell[]>([])
   const [outstandingChargesYear, setOutstandingChargesYear] = useState('')
   const [isLoadingOutstandingCharges, setIsLoadingOutstandingCharges] = useState(false)
@@ -1087,7 +888,7 @@ function StudentsPage({
   const [isPreviewingFeeRecord, setIsPreviewingFeeRecord] = useState(false)
   const [isActivatingFeeRecord, setIsActivatingFeeRecord] = useState(false)
   const [showManualChargeForm, setShowManualChargeForm] = useState(false)
-  const [manualChargeForm, setManualChargeForm] = useState<ManualFeeRecordChargeForm>(defaultManualFeeRecordChargeForm())
+  const [manualChargeForm, setManualChargeForm] = useState<OneTimeChargeDraft>(createOneTimeChargeDraft('2026'))
   const [manualChargeErrors, setManualChargeErrors] = useState<ValidationErrors>()
   const [isSavingManualCharge, setIsSavingManualCharge] = useState(false)
   const [verifyingPaymentId, setVerifyingPaymentId] = useState<number | null>(null)
@@ -1133,36 +934,6 @@ function StudentsPage({
   const paymentAllocationTotal = allocationTotal(paymentForm.allocations)
   const paymentAmountCents = moneyToCents(paymentForm.amount)
   const allocationTotalCents = moneyToCents(paymentAllocationTotal)
-  const selectedChargeIds = new Set(
-    paymentForm.allocations
-      .map((allocation) => allocation.fee_record_charge_id)
-      .filter((id): id is number => id !== null),
-  )
-  const groupedOutstandingCharges = useMemo(() => {
-    const groups = new Map<string, Map<string, OutstandingChargeCell[]>>()
-
-    outstandingCharges.forEach((charge) => {
-      if (!groups.has(charge.billing_month)) {
-        groups.set(charge.billing_month, new Map())
-      }
-
-      const monthGroup = groups.get(charge.billing_month)!
-
-      if (!monthGroup.has(charge.fee_record_category)) {
-        monthGroup.set(charge.fee_record_category, [])
-      }
-
-      monthGroup.get(charge.fee_record_category)!.push(charge)
-    })
-
-    return Array.from(groups.entries()).map(([billingMonth, categories]) => ({
-      billingMonth,
-      categories: Array.from(categories.entries()).map(([category, charges]) => ({
-        category,
-        charges,
-      })),
-    }))
-  }, [outstandingCharges])
   const previewBlockedByWarnings = Boolean(feeRecordPreview?.needs_confirmation || feeRecordPreview?.warnings.length)
   const canActivateCurrentPreview = Boolean(
     canActivateFeeRecord &&
@@ -1305,6 +1076,9 @@ function StudentsPage({
 
   const loadStudentDetail = async (studentId: number) => {
     setError('')
+    setIsLoadingFeeAgreementEditorData(true)
+    setFeeItems([])
+    setFeeAgreements([])
 
     try {
       const response = await apiRequest<{ student: StudentDetail }>(`/students/${studentId}`)
@@ -1320,24 +1094,35 @@ function StudentsPage({
       await loadPaymentData(response.student.id)
       await loadReceiptData(response.student.id)
     } catch (detailError) {
+      setIsLoadingFeeAgreementEditorData(false)
       handleApiError(detailError)
     }
   }
 
   const loadFeeAgreementData = async (studentId: number) => {
     try {
-      const agreementsResponse = await apiRequest<{ data: FeeAgreement[] }>(`/students/${studentId}/fee-agreements`)
+      setIsLoadingFeeAgreementEditorData(true)
+      const [agreementsResponse, itemsResponse] = await Promise.all([
+        apiRequest<{ data: FeeAgreement[] }>(`/students/${studentId}/fee-agreements`),
+        canEditFeeAgreement
+          ? apiRequest<{ data: FeeItem[] }>('/fee-items')
+          : Promise.resolve({ data: [] as FeeItem[] }),
+      ])
+
+      setFeeItems(itemsResponse.data)
+      setFeeAgreementForm(defaultAgreementForm(itemsResponse.data))
       setFeeAgreements(agreementsResponse.data)
       setShowFeeAgreementForm(false)
       setFeeAgreementErrors(undefined)
       setFeeRecordPreview(null)
       setFeeRecordPreviewError('')
+      setIsLoadingFeeAgreementEditorData(false)
 
       const activeAgreement = agreementsResponse.data.find((agreement) => agreement.is_current)
 
       if (activeAgreement) {
         setFeeRecordAcademicYear(activeAgreement.academic_year)
-        setManualChargeForm(defaultManualFeeRecordChargeForm(activeAgreement.academic_year))
+        setManualChargeForm(createOneTimeChargeDraft(activeAgreement.academic_year))
         setShowManualChargeForm(false)
         setManualChargeErrors(undefined)
 
@@ -1356,20 +1141,13 @@ function StudentsPage({
         setStudentFeeRecordSummary(null)
         setStudentFeeRecordSummaryYear('')
         setStudentFeeRecordSummaryError('')
-        setManualChargeForm(defaultManualFeeRecordChargeForm())
+        setManualChargeForm(createOneTimeChargeDraft('2026'))
         setShowManualChargeForm(false)
         setManualChargeErrors(undefined)
       }
 
-      if (canEditFeeAgreement) {
-        const itemsResponse = await apiRequest<{ data: FeeItem[] }>('/fee-items')
-        setFeeItems(itemsResponse.data)
-        setFeeAgreementForm(defaultAgreementForm(itemsResponse.data))
-      } else {
-        setFeeItems([])
-        setFeeAgreementForm(defaultAgreementForm([]))
-      }
     } catch (agreementError) {
+      setIsLoadingFeeAgreementEditorData(false)
       handleApiError(agreementError)
     }
   }
@@ -1512,7 +1290,7 @@ function StudentsPage({
     }
   }
 
-  const updateManualChargeForm = (field: keyof ManualFeeRecordChargeForm, value: string) => {
+  const updateManualChargeForm = (field: keyof OneTimeChargeDraft, value: string) => {
     setManualChargeForm((current) => ({
       ...current,
       [field]: value,
@@ -1552,7 +1330,7 @@ function StudentsPage({
       )
 
       setShowManualChargeForm(false)
-      setManualChargeForm(defaultManualFeeRecordChargeForm(manualChargeForm.academic_year))
+      setManualChargeForm(createOneTimeChargeDraft(manualChargeForm.academic_year))
       await loadOutstandingCharges(selectedStudent.id, response.data.academic_year)
       setMessage(`Added manual charge ${response.data.description} for ${formatCurrency(response.data.expected_amount)}.`)
     } catch (manualChargeError) {
@@ -1691,91 +1469,32 @@ function StudentsPage({
     }
   }
 
-  const updateFeeAgreementItem = (
-    feeItemId: number,
-    field: keyof Pick<
-      FeeAgreementItemDraft,
-      'enabled' | 'amount' | 'description' | 'classification' | 'billing_frequency' | 'requires_preview_confirmation'
-    >,
-    value: string | boolean,
+  const openFeeAgreementEditor = (
+    mode: 'create' | 'supersede',
+    nextForm: FeeAgreementForm,
   ) => {
-    setFeeAgreementForm((current) => ({
-      ...current,
-      items: current.items.map((item) =>
-        item.fee_item_id === feeItemId
-          ? {
-              ...item,
-              [field]: value,
-              ...(field === 'classification' && value === 'one_time'
-                ? { billing_frequency: 'one_time' as BillingFrequency, requires_preview_confirmation: true }
-                : {}),
-              ...(field === 'billing_frequency' && value === 'monthly' ? { billing_months: [] } : {}),
-            }
-          : item,
-      ),
-    }))
+    setFeeAgreementMode(mode)
+    setFeeAgreementForm(nextForm)
+    setInitialFeeAgreementForm(structuredClone(nextForm))
+    setFeeAgreementErrors(undefined)
+    setShowFeeAgreementForm(true)
   }
 
-  const toggleFeeAgreementItemBillingMonth = (feeItemId: number, month: number) => {
-    setFeeAgreementForm((current) => ({
-      ...current,
-      items: current.items.map((item) => {
-        if (item.fee_item_id !== feeItemId) {
-          return item
-        }
+  const closeFeeAgreementEditor = (force = false) => {
+    if (
+      !force &&
+      isFeeAgreementFormDirty(feeAgreementForm, initialFeeAgreementForm) &&
+      !window.confirm('Discard your unsaved Fee Agreement changes?')
+    ) {
+      return
+    }
 
-        const hasMonth = item.billing_months.includes(month)
-        const billing_months = hasMonth
-          ? item.billing_months.filter((selectedMonth) => selectedMonth !== month)
-          : [...item.billing_months, month].sort((left, right) => left - right)
-
-        return {
-          ...item,
-          billing_months,
-        }
-      }),
-    }))
-  }
-
-  const validateFeeAgreementBillingConfig = (items: FeeAgreementItemDraft[]): ValidationErrors => {
-    return items.reduce<ValidationErrors>((errors, item, index) => {
-      const monthCount = item.billing_months.length
-
-      if ((item.billing_frequency === 'termly' || item.billing_frequency === 'custom') && monthCount === 0) {
-        errors[`items.${index}.billing_months`] = ['Billing months are required for termly and custom billing.']
-      }
-
-      if ((item.billing_frequency === 'yearly' || item.billing_frequency === 'one_time') && monthCount !== 1) {
-        errors[`items.${index}.billing_months`] = ['Yearly and one-time billing require exactly one billing month.']
-      }
-
-      return errors
-    }, {})
-  }
-
-  const updateFeeAgreementDiscount = (field: keyof FeeAgreementDiscountDraft, value: string | boolean | string[]) => {
-    setFeeAgreementForm((current) => {
-      const nextDiscount = {
-        ...current.discount,
-        [field]: value,
-      }
-
-      if (field === 'discount_type') {
-        nextDiscount.scope = value === 'percentage' ? 'tuition_only' : 'total_payable'
-      }
-
-      return {
-        ...current,
-        discount: nextDiscount,
-      }
-    })
+    setShowFeeAgreementForm(false)
+    setFeeAgreementErrors(undefined)
   }
 
   const beginCreateFeeAgreement = () => {
-    setFeeAgreementMode('create')
-    setFeeAgreementForm(defaultAgreementForm(feeItems))
-    setFeeAgreementErrors(undefined)
-    setShowFeeAgreementForm(true)
+    openFeeAgreementEditor('create', defaultAgreementForm(feeItems))
   }
 
   const beginSupersedeFeeAgreement = () => {
@@ -1783,10 +1502,7 @@ function StudentsPage({
       return
     }
 
-    setFeeAgreementMode('supersede')
-    setFeeAgreementForm(agreementToForm(currentFeeAgreement, feeItems))
-    setFeeAgreementErrors(undefined)
-    setShowFeeAgreementForm(true)
+    openFeeAgreementEditor('supersede', agreementToForm(currentFeeAgreement, feeItems))
   }
 
   const submitFeeAgreement = async (event: FormEvent<HTMLFormElement>) => {
@@ -1864,7 +1580,7 @@ function StudentsPage({
       )
 
       await loadFeeAgreementData(selectedStudent.id)
-      setShowFeeAgreementForm(false)
+      closeFeeAgreementEditor(true)
       setMessage(
         feeAgreementMode === 'create'
           ? `Created Fee Agreement v${response.fee_agreement.version_no}.`
@@ -1884,6 +1600,10 @@ function StudentsPage({
     const nextForm = defaultPaymentForm(currentFeeAgreement)
     setPaymentForm(nextForm)
     setPaymentErrors(undefined)
+    setShowPaymentOneTimeCharge(false)
+    setPaymentOneTimeCharge(createOneTimeChargeDraft(nextForm.academic_year))
+    setPaymentOneTimeChargeErrors(undefined)
+    setPaymentOneTimeChargeNotice('')
     setOutstandingCharges([])
     setOutstandingChargeError('')
     setShowPaymentForm(true)
@@ -1901,6 +1621,10 @@ function StudentsPage({
     }))
 
     if (field === 'academic_year' && selectedStudent) {
+      setShowPaymentOneTimeCharge(false)
+      setPaymentOneTimeCharge(createOneTimeChargeDraft(value))
+      setPaymentOneTimeChargeErrors(undefined)
+      setPaymentOneTimeChargeNotice('')
       void loadOutstandingCharges(selectedStudent.id, value)
     }
   }
@@ -1942,31 +1666,22 @@ function StudentsPage({
   const selectChargeAllocation = (charge: OutstandingChargeCell) => {
     setPaymentForm((current) => ({
       ...current,
-      allocations: [
-        ...current.allocations,
-        {
-          key: draftKey(),
-          allocation_type: 'charge' as const,
-          fee_record_charge_id: charge.id,
-          fee_item_id: charge.fee_item_id,
-          fee_agreement_item_id: charge.fee_agreement_item_id,
-          fee_code: charge.fee_code,
-          billing_month: charge.billing_month,
-          fee_record_category: charge.fee_record_category,
-          outstanding_amount: charge.outstanding_amount,
-          description: charge.description,
-          amount: String(charge.outstanding_amount),
-        },
-      ],
+      allocations: [...current.allocations, createChargeAllocation(charge)],
       amount: String(allocationTotal(current.allocations) + charge.outstanding_amount),
     }))
   }
 
-  const addPaymentAllocation = () => {
-    setPaymentForm((current) => ({
-      ...current,
-      allocations: [...current.allocations, defaultManualAllocation()],
-    }))
+  const addUnclassifiedPaymentAllocation = () => {
+    setPaymentForm((current) => {
+      if (hasIncompleteUnclassifiedAllocation(current.allocations)) {
+        return current
+      }
+
+      return {
+        ...current,
+        allocations: [...current.allocations, createUnclassifiedAllocation()],
+      }
+    })
   }
 
   const removePaymentAllocation = (key: string) => {
@@ -1975,6 +1690,59 @@ function StudentsPage({
       allocations: current.allocations.filter((allocation) => allocation.key !== key),
       amount: String(allocationTotal(current.allocations.filter((allocation) => allocation.key !== key)) || ''),
     }))
+  }
+
+  const updatePaymentOneTimeCharge = (field: keyof OneTimeChargeDraft, value: string) => {
+    setPaymentOneTimeCharge((current) => ({
+      ...current,
+      [field]: value,
+    }))
+  }
+
+  const submitPaymentOneTimeCharge = async () => {
+    if (!selectedStudent || !canManageFeeRecord) {
+      return
+    }
+
+    setIsSavingPaymentOneTimeCharge(true)
+    setPaymentOneTimeChargeErrors(undefined)
+    setPaymentOneTimeChargeNotice('')
+    setError('')
+
+    try {
+      const response = await apiRequest<{ data: OutstandingChargeCell }>(
+        `/students/${selectedStudent.id}/fee-record/manual-charges`,
+        {
+          method: 'POST',
+          body: {
+            academic_year: paymentForm.academic_year,
+            billing_month: paymentOneTimeCharge.billing_month,
+            fee_record_category: paymentOneTimeCharge.fee_record_category,
+            description: paymentOneTimeCharge.description,
+            expected_amount: Number(paymentOneTimeCharge.expected_amount || 0),
+            remark: paymentOneTimeCharge.remark || null,
+          },
+        },
+      )
+
+      setPaymentForm((current) => ({
+        ...current,
+        allocations: [...current.allocations, createChargeAllocation(response.data)],
+        amount: String(allocationTotal(current.allocations) + response.data.outstanding_amount),
+      }))
+      setShowPaymentOneTimeCharge(false)
+      setPaymentOneTimeCharge(createOneTimeChargeDraft(paymentForm.academic_year))
+      setPaymentOneTimeChargeNotice('Charge added and selected for this payment.')
+      await loadOutstandingCharges(selectedStudent.id, paymentForm.academic_year)
+    } catch (chargeError) {
+      if (chargeError instanceof ApiError && chargeError.status === 422) {
+        setPaymentOneTimeChargeErrors(chargeError.errors)
+      } else {
+        handleApiError(chargeError)
+      }
+    } finally {
+      setIsSavingPaymentOneTimeCharge(false)
+    }
   }
 
   const validatePaymentForm = () => {
@@ -2290,8 +2058,6 @@ function StudentsPage({
       setIsVoidingReceipt(false)
     }
   }
-
-  const feeAgreementPreview = agreementPreview(feeAgreementForm)
 
   return (
     <section className="page-stack">
@@ -2699,10 +2465,18 @@ function StudentsPage({
               </div>
               {canEditFeeAgreement ? (
                 <div className="toolbar-actions">
-                  <button className="secondary-action" onClick={beginCreateFeeAgreement}>
+                  <button
+                    className="secondary-action"
+                    disabled={isLoadingFeeAgreementEditorData}
+                    onClick={beginCreateFeeAgreement}
+                  >
                     Create Agreement
                   </button>
-                  <button className="secondary-action" disabled={!currentFeeAgreement} onClick={beginSupersedeFeeAgreement}>
+                  <button
+                    className="secondary-action"
+                    disabled={isLoadingFeeAgreementEditorData || !currentFeeAgreement}
+                    onClick={beginSupersedeFeeAgreement}
+                  >
                     Supersede Current
                   </button>
                 </div>
@@ -2749,12 +2523,16 @@ function StudentsPage({
             {showFeeAgreementForm && canEditFeeAgreement && (
               <ModalFrame
                 title={feeAgreementMode === 'create' ? 'Create Fee Agreement' : 'Supersede Fee Agreement'}
-                description="Configure billing items, timing, and any approved discount."
-                onClose={() => setShowFeeAgreementForm(false)}
+                description={
+                  feeAgreementMode === 'create'
+                    ? 'Set the agreement dates, review the core fees, and add optional fees only when needed.'
+                    : 'Create a new version and review every change before it takes effect.'
+                }
+                onClose={() => closeFeeAgreementEditor()}
                 className="financial-modal"
                 footer={
                   <>
-                    <button type="button" className="secondary-action" onClick={() => setShowFeeAgreementForm(false)}>
+                    <button type="button" className="secondary-action" onClick={() => closeFeeAgreementEditor()}>
                       Cancel
                     </button>
                     <button
@@ -2766,293 +2544,24 @@ function StudentsPage({
                       {isSavingFeeAgreement
                         ? 'Saving...'
                         : feeAgreementMode === 'create'
-                          ? 'Create Fee Agreement'
+                          ? 'Create Agreement'
                           : 'Supersede Agreement'}
                     </button>
                   </>
                 }
               >
               <form id="fee-agreement-form" className="agreement-form" onSubmit={submitFeeAgreement}>
-                <div className="form-grid">
-                  {feeAgreementMode === 'create' && (
-                    <label className="form-field">
-                      Academic Year
-                      <input
-                        value={feeAgreementForm.academic_year}
-                        onChange={(event) =>
-                          setFeeAgreementForm((current) => ({ ...current, academic_year: event.target.value }))
-                        }
-                      />
-                      {formatValidationError(feeAgreementErrors, 'academic_year') && (
-                        <small>{formatValidationError(feeAgreementErrors, 'academic_year')}</small>
-                      )}
-                    </label>
-                  )}
-
-                  <label className="form-field">
-                    Payment Plan
-                    <select
-                      value={feeAgreementForm.payment_plan}
-                      onChange={(event) =>
-                        setFeeAgreementForm((current) => ({
-                          ...current,
-                          payment_plan: event.target.value as PaymentPlan,
-                        }))
-                      }
-                    >
-                      {paymentPlanOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <label className="form-field">
-                    Effective From
-                    <input
-                      type="date"
-                      value={feeAgreementForm.effective_from}
-                      onChange={(event) =>
-                        setFeeAgreementForm((current) => ({ ...current, effective_from: event.target.value }))
-                      }
-                    />
-                    {formatValidationError(feeAgreementErrors, 'effective_from') && (
-                      <small>{formatValidationError(feeAgreementErrors, 'effective_from')}</small>
-                    )}
-                  </label>
-
-                  <label className="form-field">
-                    Effective To
-                    <input
-                      type="date"
-                      value={feeAgreementForm.effective_to}
-                      onChange={(event) =>
-                        setFeeAgreementForm((current) => ({ ...current, effective_to: event.target.value }))
-                      }
-                    />
-                  </label>
-
-                  <label className="form-field wide">
-                    Agreement Remarks
-                    <textarea
-                      value={feeAgreementForm.remarks}
-                      onChange={(event) =>
-                        setFeeAgreementForm((current) => ({ ...current, remarks: event.target.value }))
-                      }
-                    />
-                  </label>
-                </div>
-
                 {formatValidationError(feeAgreementErrors, 'items') && (
                   <Message tone="error">{formatValidationError(feeAgreementErrors, 'items')}</Message>
                 )}
 
-                <div className="agreement-items-grid">
-                  {feeAgreementForm.items.map((item) => {
-                    const isMandatory = ['TUITION', 'MISC'].includes(item.code)
-                    const enabledItemIndex = feeAgreementForm.items.filter((candidate) => candidate.enabled).findIndex((candidate) => candidate.fee_item_id === item.fee_item_id)
-                    const monthError =
-                      enabledItemIndex >= 0
-                        ? formatValidationError(feeAgreementErrors, `items.${enabledItemIndex}.billing_months`)
-                        : undefined
-
-                    return (
-                      <div className="agreement-item-row" key={item.fee_item_id}>
-                        <div className="agreement-item-main">
-                          <label>
-                            <input
-                              type="checkbox"
-                              checked={item.enabled}
-                              disabled={isMandatory}
-                              onChange={(event) => updateFeeAgreementItem(item.fee_item_id, 'enabled', event.target.checked)}
-                            />
-                            <span>
-                              {item.name}
-                              {isMandatory ? ' *' : ''}
-                            </span>
-                          </label>
-                          {item.code === 'OTHERS' && (
-                            <input
-                              placeholder="Custom description"
-                              value={item.description}
-                              onChange={(event) => updateFeeAgreementItem(item.fee_item_id, 'description', event.target.value)}
-                            />
-                          )}
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={item.amount}
-                            onChange={(event) => updateFeeAgreementItem(item.fee_item_id, 'amount', event.target.value)}
-                          />
-                        </div>
-
-                        {item.enabled && (
-                          <div className="agreement-billing-config">
-                            <label className="form-field">
-                              Charge Type
-                              <select
-                                value={item.classification}
-                                onChange={(event) =>
-                                  updateFeeAgreementItem(item.fee_item_id, 'classification', event.target.value as FeeAgreementItemClassification)
-                                }
-                              >
-                                {feeAgreementClassificationOptions.map((option) => (
-                                  <option key={option.value} value={option.value}>
-                                    {option.label}
-                                  </option>
-                                ))}
-                              </select>
-                            </label>
-                            <label className="form-field">
-                              Billing Pattern
-                              <select
-                                value={item.billing_frequency}
-                                onChange={(event) =>
-                                  updateFeeAgreementItem(item.fee_item_id, 'billing_frequency', event.target.value as BillingFrequency)
-                                }
-                              >
-                                {billingFrequencyOptions.map((option) => (
-                                  <option key={option.value} value={option.value}>
-                                    {option.label}
-                                  </option>
-                                ))}
-                              </select>
-                            </label>
-                            <label className="checkbox-line billing-confirmation-line">
-                              <input
-                                type="checkbox"
-                                checked={item.requires_preview_confirmation}
-                                onChange={(event) => updateFeeAgreementItem(item.fee_item_id, 'requires_preview_confirmation', event.target.checked)}
-                              />
-                              Preview confirmation
-                            </label>
-                            <div className="billing-month-selector">
-                              <span>{item.billing_frequency === 'monthly' ? 'Billing months override' : 'Billing months'}</span>
-                              <div className="billing-month-options">
-                                {monthShortLabels.map((label, monthIndex) => {
-                                  const month = monthIndex + 1
-
-                                  return (
-                                    <label className={item.billing_months.includes(month) ? 'selected' : ''} key={label}>
-                                      <input
-                                        type="checkbox"
-                                        checked={item.billing_months.includes(month)}
-                                        onChange={() => toggleFeeAgreementItemBillingMonth(item.fee_item_id, month)}
-                                      />
-                                      {label}
-                                    </label>
-                                  )
-                                })}
-                              </div>
-                              {monthError && <small>{monthError}</small>}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-
-                <div className="discount-editor">
-                  <label className="checkbox-line">
-                    <input
-                      type="checkbox"
-                      checked={feeAgreementForm.discount.enabled}
-                      onChange={(event) => updateFeeAgreementDiscount('enabled', event.target.checked)}
-                    />
-                    Manual discount
-                  </label>
-
-                  {feeAgreementForm.discount.enabled && (
-                    <div className="form-grid">
-                      <label className="form-field">
-                        Discount Label
-                        <input
-                          value={feeAgreementForm.discount.discount_label}
-                          onChange={(event) => updateFeeAgreementDiscount('discount_label', event.target.value)}
-                        />
-                      </label>
-                      <label className="form-field">
-                        Discount Type
-                        <select
-                          value={feeAgreementForm.discount.discount_type}
-                          onChange={(event) => updateFeeAgreementDiscount('discount_type', event.target.value as DiscountType)}
-                        >
-                          {discountTypeOptions.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label className="form-field">
-                        Scope
-                        <select
-                          value={feeAgreementForm.discount.scope}
-                          onChange={(event) => updateFeeAgreementDiscount('scope', event.target.value as DiscountScope)}
-                        >
-                          {discountScopeOptions.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label className="form-field">
-                        Value
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={feeAgreementForm.discount.value}
-                          onChange={(event) => updateFeeAgreementDiscount('value', event.target.value)}
-                        />
-                      </label>
-                      <label className="form-field wide">
-                        Discount Remark
-                        <textarea
-                          value={feeAgreementForm.discount.remark}
-                          onChange={(event) => updateFeeAgreementDiscount('remark', event.target.value)}
-                        />
-                        {formatValidationError(feeAgreementErrors, 'discounts.0.remark') && (
-                          <small>{formatValidationError(feeAgreementErrors, 'discounts.0.remark')}</small>
-                        )}
-                      </label>
-                      {feeAgreementForm.discount.scope === 'selected_fee_items' && (
-                        <div className="form-field wide">
-                          Selected Fee Items
-                          <div className="permission-list">
-                            {feeAgreementForm.items
-                              .filter((item) => item.enabled)
-                              .map((item) => (
-                                <label className="checkbox-line" key={item.code}>
-                                  <input
-                                    type="checkbox"
-                                    checked={feeAgreementForm.discount.selected_fee_codes.includes(item.code)}
-                                    onChange={(event) => {
-                                      const nextCodes = event.target.checked
-                                        ? [...feeAgreementForm.discount.selected_fee_codes, item.code]
-                                        : feeAgreementForm.discount.selected_fee_codes.filter((code) => code !== item.code)
-                                      updateFeeAgreementDiscount('selected_fee_codes', nextCodes)
-                                    }}
-                                  />
-                                  {item.name}
-                                </label>
-                              ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                <div className="agreement-preview">
-                  <span>Subtotal {formatCurrency(feeAgreementPreview.subtotal)}</span>
-                  <span>Manual Discount {formatCurrency(feeAgreementPreview.discountAmount)}</span>
-                  <strong>Preview Total {formatCurrency(feeAgreementPreview.total)}</strong>
-                </div>
+                <FeeAgreementEditor
+                  mode={feeAgreementMode}
+                  form={feeAgreementForm}
+                  errors={feeAgreementErrors}
+                  currentAgreement={currentFeeAgreement}
+                  onChange={setFeeAgreementForm}
+                />
 
               </form>
               </ModalFrame>
@@ -3208,7 +2717,7 @@ function StudentsPage({
                           value={manualChargeForm.fee_record_category}
                           onChange={(event) => updateManualChargeForm('fee_record_category', event.target.value as FeeRecordCategory)}
                         >
-                          {feeRecordCategories.map((option) => (
+                          {feeRecordCategoryOptions.map((option) => (
                             <option key={option.value} value={option.value}>
                               {option.label}
                             </option>
@@ -3371,7 +2880,7 @@ function StudentsPage({
             {showPaymentForm && canCreatePayments && (
               <ModalFrame
                 title="Record Payment"
-                description="Record the payment details and allocate the amount to outstanding charge cells."
+                description="Record the payment details and choose which outstanding fees this payment should clear."
                 onClose={() => setShowPaymentForm(false)}
                 className="financial-modal"
                 footer={
@@ -3499,143 +3008,49 @@ function StudentsPage({
                   </label>
                 </div>
 
-                <div className="payment-allocation-block">
-                  <div className="payment-subheader">
-                    <div>
-                      <h3>Outstanding Charge Cells</h3>
-                      <p>
-                        Select the exact month/category cells this payment clears.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      className="table-action"
-                      onClick={() => selectedStudent && void loadOutstandingCharges(selectedStudent.id, paymentForm.academic_year)}
-                    >
-                      Refresh
-                    </button>
-                  </div>
-
-                  {formatValidationError(paymentErrors, 'allocations') && (
-                    <Message tone="error">{formatValidationError(paymentErrors, 'allocations')}</Message>
-                  )}
-                  {outstandingChargeError && <Message tone="error">{outstandingChargeError}</Message>}
-                  {isLoadingOutstandingCharges && <div className="empty-state">Loading outstanding charge cells...</div>}
-
-                  {!isLoadingOutstandingCharges && groupedOutstandingCharges.length === 0 && (
-                    <div className="empty-state">No outstanding charge cells found for {paymentForm.academic_year}.</div>
-                  )}
-
-                  <div className="charge-picker">
-                    {groupedOutstandingCharges.map((monthGroup) => (
-                      <section className="charge-month-group" key={monthGroup.billingMonth}>
-                        <h4>{formatBillingMonth(monthGroup.billingMonth)}</h4>
-                        {monthGroup.categories.map((categoryGroup) => (
-                          <div className="charge-category-group" key={`${monthGroup.billingMonth}-${categoryGroup.category}`}>
-                            <span>{categoryGroup.category}</span>
-                            {categoryGroup.charges.map((charge) => {
-                              const selected = selectedChargeIds.has(charge.id)
-
-                              return (
-                                <label className="charge-cell-row" key={charge.id}>
-                                  <input
-                                    type="checkbox"
-                                    checked={selected}
-                                    onChange={(event) =>
-                                      event.target.checked
-                                        ? selectChargeAllocation(charge)
-                                        : removePaymentAllocation(
-                                            paymentForm.allocations.find((allocation) => allocation.fee_record_charge_id === charge.id)?.key ?? '',
-                                          )
-                                    }
-                                  />
-                                  <span>
-                                    <strong>{charge.description}</strong>
-                                    <small>
-                                      {charge.fee_code ?? 'Manual'} / Outstanding {formatCurrency(charge.outstanding_amount)}
-                                    </small>
-                                  </span>
-                                </label>
-                              )
-                            })}
-                          </div>
-                        ))}
-                      </section>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="payment-allocation-block">
-                  <div className="payment-subheader">
-                    <div>
-                      <h3>Selected Allocations</h3>
-                      <p>
-                        Allocated {formatCurrency(paymentAllocationTotal)} of {formatCurrency(Number(paymentForm.amount || 0))}
-                      </p>
-                    </div>
-                    <button type="button" className="table-action" onClick={addPaymentAllocation}>
-                      Add manual allocation (does not clear Fee Record outstanding)
-                    </button>
-                  </div>
-
-                  <div className="allocation-rows">
-                    {paymentForm.allocations.length === 0 && (
-                      <div className="empty-state">
-                        Select charge cells, or add a manual allocation only for legacy/unclassified payments.
-                      </div>
-                    )}
-
-                    {paymentForm.allocations.map((allocation, index) => (
-                      <div className={`allocation-row ${allocation.allocation_type}`} key={allocation.key}>
-                        <div className="allocation-source-summary">
-                          <span className={`badge ${allocation.allocation_type === 'charge' ? 'paid' : 'neutral'}`}>
-                            {allocation.allocation_type === 'charge' ? 'Charge cell' : 'Manual allocation'}
-                          </span>
-                          <strong>{allocation.description || 'Manual allocation (does not clear Fee Record outstanding)'}</strong>
-                          <small>
-                            {allocation.allocation_type === 'charge'
-                              ? `${allocation.billing_month} / ${allocation.fee_record_category} / Outstanding ${formatCurrency(
-                                  allocation.outstanding_amount,
-                                )}`
-                              : 'Use only for legacy/unclassified payments. This will not reduce Fee Record charge cells.'}
-                          </small>
-                        </div>
-
-                        {allocation.allocation_type === 'manual' && (
-                          <label className="form-field">
-                            Description
-                            <input
-                              value={allocation.description}
-                              onChange={(event) => updatePaymentAllocation(allocation.key, 'description', event.target.value)}
-                            />
-                            {formatValidationError(paymentErrors, `allocations.${index}.description`) && (
-                              <small>{formatValidationError(paymentErrors, `allocations.${index}.description`)}</small>
-                            )}
-                          </label>
-                        )}
-
-                        <label className="form-field">
-                          Amount
-                          <input
-                            type="number"
-                            min="0"
-                            max={allocation.outstanding_amount ?? undefined}
-                            step="0.01"
-                            value={allocation.amount}
-                            onChange={(event) => updatePaymentAllocation(allocation.key, 'amount', event.target.value)}
-                          />
-                          {formatValidationError(paymentErrors, `allocations.${index}.amount`) && (
-                            <small>{formatValidationError(paymentErrors, `allocations.${index}.amount`)}</small>
-                          )}
-                        </label>
-
-                        <button type="button" className="table-action danger-action" onClick={() => removePaymentAllocation(allocation.key)}>
-                          Remove
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <PaymentAllocationEditor
+                  academicYear={paymentForm.academic_year}
+                  paymentAmount={Number(paymentForm.amount || 0)}
+                  allocationTotal={paymentAllocationTotal}
+                  allocations={paymentForm.allocations}
+                  outstandingCharges={outstandingCharges}
+                  isLoadingOutstandingCharges={isLoadingOutstandingCharges}
+                  outstandingChargeError={outstandingChargeError}
+                  allocationErrors={paymentErrors}
+                  canAddOneTimeCharge={canManageFeeRecord}
+                  isOneTimeChargeOpen={showPaymentOneTimeCharge}
+                  oneTimeCharge={paymentOneTimeCharge}
+                  oneTimeChargeErrors={paymentOneTimeChargeErrors}
+                  oneTimeChargeNotice={paymentOneTimeChargeNotice}
+                  isSavingOneTimeCharge={isSavingPaymentOneTimeCharge}
+                  onRefresh={() =>
+                    selectedStudent && void loadOutstandingCharges(selectedStudent.id, paymentForm.academic_year)
+                  }
+                  onToggleCharge={(charge, selected) =>
+                    selected
+                      ? selectChargeAllocation(charge)
+                      : removePaymentAllocation(
+                          paymentForm.allocations.find(
+                            (allocation) => allocation.fee_record_charge_id === charge.id,
+                          )?.key ?? '',
+                        )
+                  }
+                  onUpdateAllocation={updatePaymentAllocation}
+                  onRemoveAllocation={removePaymentAllocation}
+                  onOpenOneTimeCharge={() => {
+                    setShowPaymentOneTimeCharge(true)
+                    setPaymentOneTimeChargeErrors(undefined)
+                    setPaymentOneTimeChargeNotice('')
+                  }}
+                  onCancelOneTimeCharge={() => {
+                    setShowPaymentOneTimeCharge(false)
+                    setPaymentOneTimeCharge(createOneTimeChargeDraft(paymentForm.academic_year))
+                    setPaymentOneTimeChargeErrors(undefined)
+                  }}
+                  onUpdateOneTimeCharge={updatePaymentOneTimeCharge}
+                  onCreateOneTimeCharge={() => void submitPaymentOneTimeCharge()}
+                  onAddUnclassified={addUnclassifiedPaymentAllocation}
+                />
 
                 <div className="payment-submit-area">
                   <div className={`agreement-preview ${paymentAmountCents === allocationTotalCents ? '' : 'warning'}`}>
@@ -4358,7 +3773,7 @@ function FeeRecordSummaryPage({
               <label className="form-field">
                 Category
                 <select value={category} onChange={(event) => setCategory(event.target.value as FeeRecordCategory)}>
-                  {feeRecordCategories.map((option) => (
+                  {feeRecordCategoryOptions.map((option) => (
                     <option key={option.value} value={option.value}>
                       {option.label}
                     </option>
@@ -4484,7 +3899,7 @@ function FeeRecordSummaryPage({
               action={isLoading ? <span className="permission-note">Loading...</span> : undefined}
             >
               <p className="ledger-note">
-                {feeRecordCategories.find((option) => option.value === category)?.label} by month. Review expected,
+                {feeRecordCategoryOptions.find((option) => option.value === category)?.label} by month. Review expected,
                 paid, and outstanding amounts for each student.
               </p>
 

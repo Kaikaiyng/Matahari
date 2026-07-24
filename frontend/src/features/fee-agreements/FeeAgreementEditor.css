@@ -1,0 +1,486 @@
+.fee-agreement-editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 20px;
+  align-items: start;
+}
+
+.fee-agreement-editor-main,
+.agreement-editor-section,
+.agreement-details-grid {
+  min-width: 0;
+}
+
+.fee-agreement-editor-main {
+  display: grid;
+  gap: 16px;
+}
+
+.agreement-editor-section,
+.agreement-review-panel,
+.agreement-version-context {
+  border: 1px solid #e4e7ed;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.agreement-editor-section {
+  padding: 16px;
+}
+
+.agreement-section-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.agreement-section-heading h3,
+.agreement-review-panel h3 {
+  margin: 2px 0 0;
+  font-size: 17px;
+}
+
+.agreement-section-heading > span {
+  color: #737782;
+  font-size: 13px;
+}
+
+.agreement-details-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.agreement-remarks-field {
+  grid-column: 1 / -1;
+}
+
+.agreement-remarks-field textarea {
+  min-height: 72px;
+}
+
+.agreement-version-context {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  background: #fff8e8;
+  color: #704b00;
+}
+
+.agreement-version-context span {
+  font-size: 13px;
+}
+
+.agreement-review-panel {
+  position: sticky;
+  top: 0;
+  display: grid;
+  gap: 16px;
+  padding: 16px;
+}
+
+.agreement-review-totals {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.agreement-review-totals div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.agreement-review-totals dt,
+.agreement-review-totals dd {
+  margin: 0;
+}
+
+.agreement-review-total {
+  border-top: 1px solid #e4e7ed;
+  padding-top: 12px;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.agreement-review-meta,
+.agreement-change-list {
+  display: grid;
+  gap: 8px;
+  color: #565b66;
+  font-size: 13px;
+}
+
+.agreement-change-list p,
+.agreement-review-warning {
+  margin: 0;
+}
+
+.agreement-change-list section {
+  display: grid;
+  gap: 5px;
+}
+
+.agreement-review-warning {
+  border-radius: 8px;
+  background: #fff1d8;
+  padding: 10px;
+  color: #744500;
+  font-weight: 800;
+}
+
+.fee-item-list {
+  display: grid;
+  gap: 0;
+}
+
+.fee-item-row {
+  border-top: 1px solid #edf0f4;
+}
+
+.fee-item-row:first-child {
+  border-top: 0;
+}
+
+.fee-item-row-summary {
+  display: grid;
+  grid-template-columns: minmax(140px, 0.65fr) minmax(210px, 1.2fr) minmax(120px, 0.45fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 0;
+}
+
+.fee-item-identity,
+.fee-item-amount,
+.preview-confirmation-option span,
+.optional-fee-choice > div {
+  display: grid;
+  gap: 3px;
+}
+
+.fee-item-amount {
+  min-width: 0;
+}
+
+.fee-item-identity span,
+.fee-item-summary-copy,
+.fee-item-amount span,
+.fee-agreement-editor .form-field small,
+.preview-confirmation-option small,
+.optional-fee-choice span {
+  color: #737782;
+  font-size: 12px;
+}
+
+.fee-item-amount input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+}
+
+.fee-item-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.compact-button {
+  min-height: 38px;
+  padding: 8px 12px;
+}
+
+.text-button {
+  border: 0;
+  background: transparent;
+  color: #aa252c;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 6px;
+}
+
+.danger-text {
+  color: #b3262e;
+}
+
+.fee-item-advanced {
+  display: grid;
+  gap: 14px;
+  margin: 0 0 12px;
+  border-radius: 9px;
+  background: #f7f8fa;
+  padding: 14px;
+}
+
+.fee-item-settings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.preview-confirmation-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 10px 12px;
+}
+
+.preview-confirmation-option input {
+  margin-top: 3px;
+}
+
+.billing-month-default {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid #e1e4e9;
+  padding-top: 12px;
+}
+
+.billing-month-default > div {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.billing-month-default span {
+  color: #737782;
+  font-size: 13px;
+}
+
+.billing-month-selector {
+  min-width: 0;
+  margin: 0;
+  border: 0;
+  border-top: 1px solid #e1e4e9;
+  padding: 12px 0 0;
+}
+
+.billing-month-selector legend {
+  padding: 0;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.billing-month-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+  margin: -28px 0 9px;
+}
+
+.fee-agreement-editor .billing-month-options {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.fee-agreement-editor .billing-month-option {
+  display: block;
+  position: relative;
+  cursor: pointer;
+}
+
+.fee-agreement-editor .billing-month-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.fee-agreement-editor .billing-month-option span {
+  display: block;
+  border: 1px solid #d9dde4;
+  border-radius: 7px;
+  background: #ffffff;
+  padding: 8px 4px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.fee-agreement-editor .billing-month-option input:checked + span {
+  border-color: #aa252c;
+  background: #fff0f1;
+  color: #8e1e25;
+}
+
+.fee-agreement-editor .billing-month-option input:focus-visible + span {
+  outline: 3px solid rgba(170, 37, 44, 0.2);
+  outline-offset: 1px;
+}
+
+.field-error {
+  margin: 8px 0 0;
+  color: #b3262e;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.fee-item-row:has(.field-error) {
+  border-radius: 8px;
+  box-shadow: 0 0 0 2px rgb(208 52 61 / 12%);
+}
+
+.optional-fee-empty {
+  margin: 0;
+  border: 1px dashed #d9dde4;
+  border-radius: 8px;
+  padding: 16px;
+  color: #737782;
+  text-align: center;
+  font-size: 13px;
+}
+
+.optional-fee-picker {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+  border: 1px solid #dde1e7;
+  border-radius: 9px;
+  background: #f7f8fa;
+  padding: 14px;
+}
+
+.optional-fee-picker-list {
+  display: grid;
+  gap: 8px;
+}
+
+.optional-fee-picker-list > p {
+  margin: 0;
+  color: #737782;
+  font-size: 13px;
+}
+
+.optional-fee-choice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 10px 12px;
+}
+
+.agreement-discount-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.agreement-discount-summary h3 {
+  margin: 2px 0 5px;
+  font-size: 17px;
+}
+
+.agreement-discount-summary > div > span {
+  color: #737782;
+  font-size: 13px;
+}
+
+.agreement-discount-editor {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+  border-top: 1px solid #edf0f4;
+  padding-top: 14px;
+}
+
+.agreement-discount-editor .wide,
+.discount-enable-row {
+  grid-column: 1 / -1;
+}
+
+.discount-enable-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  border-radius: 8px;
+  background: #f7f8fa;
+  padding: 11px 12px;
+}
+
+.discount-enable-row input {
+  margin-top: 3px;
+}
+
+.discount-enable-row span {
+  display: grid;
+  gap: 2px;
+}
+
+.discount-enable-row small {
+  color: #737782;
+}
+
+.discount-fee-scope {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  margin: 0;
+  border: 1px solid #e1e4e9;
+  border-radius: 8px;
+  padding: 11px 12px;
+}
+
+.discount-fee-scope legend {
+  padding: 0 5px;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.discount-fee-scope label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+@media screen and (max-width: 1100px) {
+  .fee-agreement-editor {
+    grid-template-columns: 1fr;
+  }
+
+  .agreement-review-panel {
+    position: static;
+  }
+}
+
+@media screen and (max-width: 767px) {
+  .agreement-details-grid,
+  .fee-item-row-summary,
+  .fee-item-settings-grid,
+  .agreement-discount-editor {
+    grid-template-columns: 1fr;
+  }
+
+  .fee-item-row-actions {
+    justify-content: flex-end;
+  }
+
+  .fee-agreement-editor .billing-month-options {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .billing-month-toolbar {
+    justify-content: flex-start;
+    margin: 8px 0;
+    flex-wrap: wrap;
+  }
+
+  .agreement-version-context,
+  .agreement-section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

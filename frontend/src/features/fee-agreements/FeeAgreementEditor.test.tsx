@@ -1,0 +1,252 @@
+import { useState } from 'react'
+import { render, screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { describe, expect, it } from 'vitest'
+import { FeeAgreementEditor } from './FeeAgreementEditor'
+import type { FeeAgreement, FeeAgreementForm } from './types'
+
+const initialForm: FeeAgreementForm = {
+  academic_year: '2026',
+  payment_plan: 'monthly',
+  effective_from: '2026-01-01',
+  effective_to: '',
+  remarks: '',
+  items: [
+    {
+      fee_item_id: 1,
+      code: 'TUITION',
+      name: 'Tuition Fee',
+      enabled: true,
+      amount: '800',
+      description: '',
+      classification: 'recurring',
+      billing_frequency: 'monthly',
+      billing_months: [],
+      requires_preview_confirmation: false,
+    },
+    {
+      fee_item_id: 2,
+      code: 'MISC',
+      name: 'Misc Fee',
+      enabled: true,
+      amount: '90',
+      description: '',
+      classification: 'recurring',
+      billing_frequency: 'monthly',
+      billing_months: [],
+      requires_preview_confirmation: false,
+    },
+    {
+      fee_item_id: 3,
+      code: 'TRANSPORT',
+      name: 'Transport',
+      enabled: false,
+      amount: '120',
+      description: '',
+      classification: 'optional_service',
+      billing_frequency: 'monthly',
+      billing_months: [],
+      requires_preview_confirmation: false,
+    },
+  ],
+  discount: {
+    enabled: false,
+    discount_label: '',
+    discount_type: 'fixed_amount',
+    scope: 'total_payable',
+    value: '',
+    remark: '',
+    selected_fee_codes: [],
+  },
+}
+
+const currentAgreement: FeeAgreement = {
+  id: 10,
+  academic_year: '2026',
+  version_no: 1,
+  payment_plan: 'monthly',
+  effective_from: '2026-01-01',
+  effective_to: null,
+  is_current: true,
+  status: 'active',
+  remarks: null,
+  items: initialForm.items
+    .filter((item) => item.enabled)
+    .map((item, index) => ({
+      id: index + 1,
+      fee_item_id: item.fee_item_id,
+      fee_code: item.code,
+      fee_category: 'mandatory',
+      description: item.name,
+      amount: Number(item.amount),
+      is_mandatory: true,
+      classification: item.classification,
+      billing_frequency: item.billing_frequency,
+      billing_months: item.billing_months,
+      requires_preview_confirmation: item.requires_preview_confirmation,
+    })),
+  discounts: [],
+}
+
+function EditorHarness({
+  mode = 'create',
+  form: suppliedForm = initialForm,
+  agreement = null,
+}: {
+  mode?: 'create' | 'supersede'
+  form?: FeeAgreementForm
+  agreement?: FeeAgreement | null
+}) {
+  const [form, setForm] = useState(() => structuredClone(suppliedForm))
+
+  return (
+    <FeeAgreementEditor
+      mode={mode}
+      form={form}
+      errors={undefined}
+      currentAgreement={agreement}
+      onChange={setForm}
+    />
+  )
+}
+
+describe('FeeAgreementEditor', () => {
+  it('shows agreement details, compact core fees, and a persistent summary', () => {
+    render(<EditorHarness />)
+
+    expect(screen.getByLabelText('Academic Year')).toHaveValue('2026')
+    expect(screen.getByRole('heading', { name: 'Core fees' })).toBeInTheDocument()
+    expect(screen.getByText('Tuition Fee')).toBeInTheDocument()
+    expect(screen.getByText('Misc Fee')).toBeInTheDocument()
+    const review = screen.getByRole('complementary', { name: 'Agreement Summary' })
+    expect(review).toBeInTheDocument()
+    expect(within(review).getByText('Preview total').closest('div')).toHaveTextContent('RM 890')
+  })
+
+  it('updates the summary total when a common amount changes', async () => {
+    const user = userEvent.setup()
+    render(<EditorHarness />)
+
+    await user.clear(screen.getByLabelText('Tuition Fee amount'))
+    await user.type(screen.getByLabelText('Tuition Fee amount'), '850')
+
+    const review = screen.getByRole('complementary', { name: 'Agreement Summary' })
+    expect(within(review).getByText('Preview total').closest('div')).toHaveTextContent('RM 940')
+  })
+
+  it('uses Supersede context and omits Academic Year editing', () => {
+    render(<EditorHarness mode="supersede" agreement={currentAgreement} />)
+
+    expect(screen.queryByLabelText('Academic Year')).not.toBeInTheDocument()
+    expect(screen.getByText('Creating a new version from v1')).toBeInTheDocument()
+    expect(screen.getByRole('complementary', { name: 'Changes from v1' })).toBeInTheDocument()
+  })
+
+  it('keeps advanced fee controls collapsed until Edit is selected', async () => {
+    const user = userEvent.setup()
+    render(<EditorHarness />)
+
+    expect(screen.queryByLabelText('Tuition Fee Charge Type')).not.toBeInTheDocument()
+    expect(screen.getAllByText('Monthly · Every month · No preview required')).toHaveLength(2)
+
+    await user.click(screen.getByRole('button', { name: 'Edit Tuition Fee' }))
+
+    expect(screen.getByLabelText('Tuition Fee Charge Type')).toBeInTheDocument()
+    expect(screen.getByLabelText('Tuition Fee Billing Pattern')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Misc Fee Charge Type')).not.toBeInTheDocument()
+  })
+
+  it('reveals month controls only after Customize months', async () => {
+    const user = userEvent.setup()
+    render(<EditorHarness />)
+
+    await user.click(screen.getByRole('button', { name: 'Edit Tuition Fee' }))
+    expect(screen.queryByRole('checkbox', { name: 'Jan' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Customize Tuition Fee months' }))
+    expect(screen.getByRole('checkbox', { name: 'Jan' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Select all Tuition Fee months' }))
+    expect(screen.getByRole('checkbox', { name: 'Jan' })).toBeChecked()
+    expect(screen.getByRole('checkbox', { name: 'Dec' })).toBeChecked()
+
+    await user.click(screen.getByRole('button', { name: 'Use every month for Tuition Fee' }))
+    expect(screen.queryByRole('checkbox', { name: 'Jan' })).not.toBeInTheDocument()
+    expect(screen.getAllByText('Monthly · Every month · No preview required')).toHaveLength(2)
+  })
+
+  it('shows month choices immediately for Custom billing', async () => {
+    const user = userEvent.setup()
+    render(<EditorHarness />)
+
+    await user.click(screen.getByRole('button', { name: 'Edit Tuition Fee' }))
+    await user.selectOptions(screen.getByLabelText('Tuition Fee Billing Pattern'), 'custom')
+
+    expect(screen.getByRole('checkbox', { name: 'Jan' })).toBeInTheDocument()
+  })
+
+  it('adds and removes an optional fee without showing disabled fees by default', async () => {
+    const user = userEvent.setup()
+    render(<EditorHarness />)
+
+    expect(screen.queryByText('Transport')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Add optional fee' }))
+    await user.click(screen.getByRole('button', { name: 'Add Transport' }))
+
+    expect(screen.getByText('Transport')).toBeInTheDocument()
+    expect(screen.getByLabelText('Transport Charge Type')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Remove Transport' }))
+    expect(screen.queryByText('Transport')).not.toBeInTheDocument()
+  })
+
+  it('keeps manual discount collapsed and updates the review total when enabled', async () => {
+    const user = userEvent.setup()
+    render(<EditorHarness />)
+
+    expect(screen.getByText('No manual discount')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Discount Value')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Configure manual discount' }))
+    await user.click(screen.getByLabelText('Enable manual discount'))
+    await user.type(screen.getByLabelText('Discount Value'), '40')
+
+    const review = screen.getByRole('complementary', { name: 'Agreement Summary' })
+    expect(within(review).getByText('Preview total').closest('div')).toHaveTextContent('RM 850')
+  })
+
+  it('shows plain-language Supersede changes', () => {
+    const form = structuredClone(initialForm)
+    form.items[0].amount = '850'
+
+    render(
+      <FeeAgreementEditor
+        mode="supersede"
+        form={form}
+        errors={undefined}
+        currentAgreement={currentAgreement}
+        onChange={() => undefined}
+      />,
+    )
+
+    expect(screen.getByRole('complementary', { name: 'Changes from v1' })).toHaveTextContent(
+      /Tuition Fee: RM 800.*RM 850/,
+    )
+  })
+
+  it('opens and focuses the first fee with a validation error', async () => {
+    render(
+      <FeeAgreementEditor
+        mode="create"
+        form={initialForm}
+        errors={{ 'items.0.billing_months': ['Choose at least one billing month.'] }}
+        currentAgreement={null}
+        onChange={() => undefined}
+      />,
+    )
+
+    const billingPattern = await screen.findByLabelText('Tuition Fee Billing Pattern')
+    expect(screen.getByText('Choose at least one billing month.')).toBeInTheDocument()
+    await waitFor(() => expect(billingPattern).toHaveFocus())
+  })
+})
