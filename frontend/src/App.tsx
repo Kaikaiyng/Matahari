@@ -2880,7 +2880,7 @@ function StudentsPage({
             {showPaymentForm && canCreatePayments && (
               <ModalFrame
                 title="Record Payment"
-                description="Record the payment details and allocate the amount to outstanding charge cells."
+                description="Record the payment details and choose which outstanding fees this payment should clear."
                 onClose={() => setShowPaymentForm(false)}
                 className="financial-modal"
                 footer={
