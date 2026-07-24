@@ -44,6 +44,16 @@ import type {
   PaymentPlan,
   ValidationErrors,
 } from './features/fee-agreements/types'
+import {
+  createChargeAllocation,
+  createOneTimeChargeDraft,
+  createUnclassifiedAllocation,
+  feeRecordCategoryOptions,
+  type FeeRecordCategory,
+  type OneTimeChargeDraft,
+  type OutstandingChargeCell,
+  type PaymentAllocationDraft,
+} from './features/payments/paymentAllocationModel'
 import misLogo from './assets/mis-logo.jpg'
 import './App.css'
 
@@ -188,26 +198,6 @@ type StudentPayment = {
   }>
 }
 
-type OutstandingChargeCell = {
-  id: number
-  student_id: number
-  fee_agreement_id: number
-  fee_agreement_item_id: number | null
-  fee_item_id: number | null
-  academic_year: string
-  billing_month: string
-  fee_record_category: string
-  fee_code: string | null
-  description: string
-  expected_amount: number
-  paid_amount: number
-  outstanding_amount: number
-  billing_status: string
-  collection_status: string
-  charge_origin: string
-  source_type: string | null
-}
-
 type FeeRecordPreviewCharge = {
   fee_agreement_id: number
   fee_agreement_item_id: number | null
@@ -264,8 +254,6 @@ type FeeRecordSummaryRow = {
   latest_receipt_date: string | null
   collection_status_summary: 'paid' | 'partial' | 'unpaid' | 'no_charges'
 }
-
-type FeeRecordCategory = 'SF+MF' | 'TR' | 'MP' | 'HS' | 'HT' | 'PAYMENT' | 'OTHERS'
 
 type FeeRecordModuleView = 'summary' | 'category-monthly'
 
@@ -334,20 +322,6 @@ type StudentReceipt = ReceiptSummary & {
   }>
 }
 
-type PaymentAllocationDraft = {
-  key: string
-  allocation_type: 'charge' | 'manual'
-  fee_record_charge_id: number | null
-  fee_item_id: number | null
-  fee_agreement_item_id: number | null
-  fee_code: string | null
-  billing_month: string | null
-  fee_record_category: string | null
-  outstanding_amount: number | null
-  description: string
-  amount: string
-}
-
 type PaymentForm = {
   academic_year: string
   payment_method: PaymentMethod
@@ -360,15 +334,6 @@ type PaymentForm = {
   payment_proof: string
   remark: string
   allocations: PaymentAllocationDraft[]
-}
-
-type ManualFeeRecordChargeForm = {
-  academic_year: string
-  billing_month: string
-  fee_record_category: FeeRecordCategory
-  description: string
-  expected_amount: string
-  remark: string
 }
 
 type VerifyPaymentForm = {
@@ -461,16 +426,6 @@ const levelGroupOptions: Array<{ value: LevelGroup; label: string }> = [
   { value: 'primary', label: 'Primary' },
   { value: 'secondary', label: 'Secondary' },
   { value: 'stp', label: 'STP' },
-]
-
-const feeRecordCategories: Array<{ value: FeeRecordCategory; label: string }> = [
-  { value: 'SF+MF', label: 'SF+MF' },
-  { value: 'TR', label: 'TR' },
-  { value: 'MP', label: 'MP' },
-  { value: 'HS', label: 'HS' },
-  { value: 'HT', label: 'HT' },
-  { value: 'PAYMENT', label: 'Payment' },
-  { value: 'OTHERS', label: 'Others' },
 ]
 
 const monthShortLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -621,10 +576,6 @@ function todayDate() {
   return new Date().toISOString().slice(0, 10)
 }
 
-function draftKey() {
-  return Math.random().toString(36).slice(2)
-}
-
 function moneyToCents(value: string | number) {
   const amount = typeof value === 'number' ? value : Number(value || 0)
 
@@ -633,22 +584,6 @@ function moneyToCents(value: string | number) {
 
 function allocationTotal(allocations: PaymentAllocationDraft[]) {
   return allocations.reduce((sum, allocation) => sum + Number(allocation.amount || 0), 0)
-}
-
-function defaultManualAllocation(): PaymentAllocationDraft {
-  return {
-    key: draftKey(),
-    allocation_type: 'manual',
-    fee_record_charge_id: null,
-    fee_item_id: null,
-    fee_agreement_item_id: null,
-    fee_code: null,
-    billing_month: null,
-    fee_record_category: null,
-    outstanding_amount: null,
-    description: '',
-    amount: '',
-  }
 }
 
 function defaultPaymentForm(currentFeeAgreement: FeeAgreement | null): PaymentForm {
@@ -664,19 +599,6 @@ function defaultPaymentForm(currentFeeAgreement: FeeAgreement | null): PaymentFo
     payment_proof: '',
     remark: '',
     allocations: [],
-  }
-}
-
-function defaultManualFeeRecordChargeForm(academicYear = '2026'): ManualFeeRecordChargeForm {
-  const currentMonth = String(new Date().getMonth() + 1).padStart(2, '0')
-
-  return {
-    academic_year: academicYear,
-    billing_month: `${academicYear}-${currentMonth}`,
-    fee_record_category: 'OTHERS',
-    description: '',
-    expected_amount: '',
-    remark: '',
   }
 }
 
@@ -957,7 +879,7 @@ function StudentsPage({
   const [isPreviewingFeeRecord, setIsPreviewingFeeRecord] = useState(false)
   const [isActivatingFeeRecord, setIsActivatingFeeRecord] = useState(false)
   const [showManualChargeForm, setShowManualChargeForm] = useState(false)
-  const [manualChargeForm, setManualChargeForm] = useState<ManualFeeRecordChargeForm>(defaultManualFeeRecordChargeForm())
+  const [manualChargeForm, setManualChargeForm] = useState<OneTimeChargeDraft>(createOneTimeChargeDraft('2026'))
   const [manualChargeErrors, setManualChargeErrors] = useState<ValidationErrors>()
   const [isSavingManualCharge, setIsSavingManualCharge] = useState(false)
   const [verifyingPaymentId, setVerifyingPaymentId] = useState<number | null>(null)
@@ -1221,7 +1143,7 @@ function StudentsPage({
 
       if (activeAgreement) {
         setFeeRecordAcademicYear(activeAgreement.academic_year)
-        setManualChargeForm(defaultManualFeeRecordChargeForm(activeAgreement.academic_year))
+        setManualChargeForm(createOneTimeChargeDraft(activeAgreement.academic_year))
         setShowManualChargeForm(false)
         setManualChargeErrors(undefined)
 
@@ -1240,7 +1162,7 @@ function StudentsPage({
         setStudentFeeRecordSummary(null)
         setStudentFeeRecordSummaryYear('')
         setStudentFeeRecordSummaryError('')
-        setManualChargeForm(defaultManualFeeRecordChargeForm())
+        setManualChargeForm(createOneTimeChargeDraft('2026'))
         setShowManualChargeForm(false)
         setManualChargeErrors(undefined)
       }
@@ -1389,7 +1311,7 @@ function StudentsPage({
     }
   }
 
-  const updateManualChargeForm = (field: keyof ManualFeeRecordChargeForm, value: string) => {
+  const updateManualChargeForm = (field: keyof OneTimeChargeDraft, value: string) => {
     setManualChargeForm((current) => ({
       ...current,
       [field]: value,
@@ -1429,7 +1351,7 @@ function StudentsPage({
       )
 
       setShowManualChargeForm(false)
-      setManualChargeForm(defaultManualFeeRecordChargeForm(manualChargeForm.academic_year))
+      setManualChargeForm(createOneTimeChargeDraft(manualChargeForm.academic_year))
       await loadOutstandingCharges(selectedStudent.id, response.data.academic_year)
       setMessage(`Added manual charge ${response.data.description} for ${formatCurrency(response.data.expected_amount)}.`)
     } catch (manualChargeError) {
@@ -1757,22 +1679,7 @@ function StudentsPage({
   const selectChargeAllocation = (charge: OutstandingChargeCell) => {
     setPaymentForm((current) => ({
       ...current,
-      allocations: [
-        ...current.allocations,
-        {
-          key: draftKey(),
-          allocation_type: 'charge' as const,
-          fee_record_charge_id: charge.id,
-          fee_item_id: charge.fee_item_id,
-          fee_agreement_item_id: charge.fee_agreement_item_id,
-          fee_code: charge.fee_code,
-          billing_month: charge.billing_month,
-          fee_record_category: charge.fee_record_category,
-          outstanding_amount: charge.outstanding_amount,
-          description: charge.description,
-          amount: String(charge.outstanding_amount),
-        },
-      ],
+      allocations: [...current.allocations, createChargeAllocation(charge)],
       amount: String(allocationTotal(current.allocations) + charge.outstanding_amount),
     }))
   }
@@ -1780,7 +1687,7 @@ function StudentsPage({
   const addPaymentAllocation = () => {
     setPaymentForm((current) => ({
       ...current,
-      allocations: [...current.allocations, defaultManualAllocation()],
+      allocations: [...current.allocations, createUnclassifiedAllocation()],
     }))
   }
 
@@ -2764,7 +2671,7 @@ function StudentsPage({
                           value={manualChargeForm.fee_record_category}
                           onChange={(event) => updateManualChargeForm('fee_record_category', event.target.value as FeeRecordCategory)}
                         >
-                          {feeRecordCategories.map((option) => (
+                          {feeRecordCategoryOptions.map((option) => (
                             <option key={option.value} value={option.value}>
                               {option.label}
                             </option>
@@ -3914,7 +3821,7 @@ function FeeRecordSummaryPage({
               <label className="form-field">
                 Category
                 <select value={category} onChange={(event) => setCategory(event.target.value as FeeRecordCategory)}>
-                  {feeRecordCategories.map((option) => (
+                  {feeRecordCategoryOptions.map((option) => (
                     <option key={option.value} value={option.value}>
                       {option.label}
                     </option>
@@ -4040,7 +3947,7 @@ function FeeRecordSummaryPage({
               action={isLoading ? <span className="permission-note">Loading...</span> : undefined}
             >
               <p className="ledger-note">
-                {feeRecordCategories.find((option) => option.value === category)?.label} by month. Review expected,
+                {feeRecordCategoryOptions.find((option) => option.value === category)?.label} by month. Review expected,
                 paid, and outstanding amounts for each student.
               </p>
 
