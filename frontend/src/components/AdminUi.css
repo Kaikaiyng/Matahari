@@ -388,6 +388,73 @@ button.stat-card {
   box-shadow: 0 -8px 18px rgb(25 28 34 / 8%);
 }
 
+.modal-context-summary {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  border: 1px solid var(--border, #e1e4ea);
+  border-radius: 10px;
+  background: #f8f9fb;
+  padding: 14px 16px;
+}
+
+.modal-context-summary dl {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.modal-context-summary dl > div {
+  min-width: 0;
+}
+
+.modal-context-summary dt,
+.modal-context-summary dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.modal-context-summary dt {
+  color: var(--muted, #737782);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.modal-context-summary dd {
+  margin-top: 3px;
+  color: var(--text, #25272d);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.modal-context-summary--danger {
+  border-color: #efb8bd;
+  background: #fff3f4;
+}
+
+.modal-context-consequence {
+  margin: 0;
+  border-top: 1px solid currentColor;
+  padding-top: 10px;
+  color: var(--text, #25272d);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.modal-context-summary--danger .modal-context-consequence {
+  color: var(--brand-red-dark, #b31923);
+}
+
+.field-error {
+  display: block;
+  margin-top: 4px;
+  color: var(--brand-red-dark, #b31923);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
 .session-screen {
   min-height: 100vh;
   display: grid;

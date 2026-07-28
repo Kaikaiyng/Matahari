@@ -4,12 +4,15 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import {
   DataPanel,
+  FieldError,
   FilterToolbar,
   ModalFrame,
+  ModalContextSummary,
   PageHeader,
   SessionLoader,
   StatCard,
   StatusBadge,
+  fieldErrorProps,
 } from './AdminUi'
 
 function DialogHarness({
@@ -242,6 +245,56 @@ describe('AdminUi', () => {
     fireEvent.scroll(body)
     expect(header).toHaveClass('is-scrolled')
     expect(footer).not.toHaveClass('has-more')
+  })
+
+  it('renders modal context as a labelled definition list with a written consequence', () => {
+    render(
+      <ModalContextSummary
+        ariaLabel="Payment context"
+        tone="danger"
+        items={[
+          { label: 'Student', value: 'Alyssa Tan / MIS-2026-001' },
+          { label: 'Amount', value: 'RM 400' },
+        ]}
+        consequence="Applied charges will reopen."
+      />,
+    )
+
+    const summary = screen.getByRole('region', { name: 'Payment context' })
+    expect(summary).toHaveClass('modal-context-summary--danger')
+    expect(within(summary).getByText('Student').closest('div')).toHaveTextContent(
+      'Alyssa Tan / MIS-2026-001',
+    )
+    expect(within(summary).getByText('Applied charges will reopen.')).toBeInTheDocument()
+  })
+
+  it('associates an invalid control with its field error', () => {
+    const message = 'Amount is required.'
+    render(
+      <label>
+        Amount
+        <input aria-label="Amount" {...fieldErrorProps('amount-error', message)} />
+        <FieldError id="amount-error" message={message} />
+      </label>,
+    )
+
+    expect(screen.getByLabelText('Amount')).toHaveAttribute('aria-invalid', 'true')
+    expect(screen.getByLabelText('Amount')).toHaveAttribute('aria-describedby', 'amount-error')
+    expect(screen.getByText(message)).toHaveAttribute('id', 'amount-error')
+  })
+
+  it('omits invalid attributes and error markup when a field has no error', () => {
+    render(
+      <label>
+        Amount
+        <input aria-label="Amount" {...fieldErrorProps('amount-error')} />
+        <FieldError id="amount-error" />
+      </label>,
+    )
+
+    expect(screen.getByLabelText('Amount')).not.toHaveAttribute('aria-invalid')
+    expect(screen.getByLabelText('Amount')).not.toHaveAttribute('aria-describedby')
+    expect(document.getElementById('amount-error')).toBeNull()
   })
 
   it('explains the session bootstrap state', () => {

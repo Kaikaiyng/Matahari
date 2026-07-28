@@ -292,6 +292,56 @@ export function ModalFrame({
   )
 }
 
+export type ModalContextItem = {
+  label: string
+  value: ReactNode
+}
+
+export function ModalContextSummary({
+  ariaLabel,
+  tone = 'default',
+  items,
+  consequence,
+}: {
+  ariaLabel: string
+  tone?: ModalTone
+  items: ModalContextItem[]
+  consequence?: ReactNode
+}) {
+  return (
+    <section
+      className={`modal-context-summary modal-context-summary--${tone}`}
+      aria-label={ariaLabel}
+    >
+      <dl>
+        {items.map((item) => (
+          <div key={item.label}>
+            <dt>{item.label}</dt>
+            <dd>{item.value}</dd>
+          </div>
+        ))}
+      </dl>
+      {consequence && <p className="modal-context-consequence">{consequence}</p>}
+    </section>
+  )
+}
+
+// oxlint-disable-next-line react/only-export-components
+export function fieldErrorProps(errorId: string, message?: string) {
+  return {
+    'aria-invalid': message ? true : undefined,
+    'aria-describedby': message ? errorId : undefined,
+  } as const
+}
+
+export function FieldError({ id, message }: { id: string; message?: string }) {
+  return message ? (
+    <small className="field-error" id={id}>
+      {message}
+    </small>
+  ) : null
+}
+
 export function StatusBadge({
   tone = 'neutral',
   children,
