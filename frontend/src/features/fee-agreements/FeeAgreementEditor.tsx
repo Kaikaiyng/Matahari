@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { RefObject } from 'react'
+import { FieldError, fieldErrorProps } from '../../components/AdminUi'
 import { AgreementReviewPanel } from './AgreementReviewPanel'
 import { FeeItemRow } from './FeeItemRow'
 import type {
@@ -175,10 +176,18 @@ export function FeeAgreementEditor({
               <label className="form-field">
                 Academic Year
                 <input
+                  aria-label="Academic Year"
                   value={form.academic_year}
                   onChange={(event) => update('academic_year', event.target.value)}
+                  {...fieldErrorProps(
+                    'fee-agreement-academic-year-error',
+                    errors?.academic_year?.[0],
+                  )}
                 />
-                {errors?.academic_year?.[0] && <small>{errors.academic_year[0]}</small>}
+                <FieldError
+                  id="fee-agreement-academic-year-error"
+                  message={errors?.academic_year?.[0]}
+                />
               </label>
             )}
 
@@ -200,11 +209,19 @@ export function FeeAgreementEditor({
             <label className="form-field">
               Effective From
               <input
+                aria-label="Effective From"
                 type="date"
                 value={form.effective_from}
                 onChange={(event) => update('effective_from', event.target.value)}
+                {...fieldErrorProps(
+                  'fee-agreement-effective-from-error',
+                  errors?.effective_from?.[0],
+                )}
               />
-              {errors?.effective_from?.[0] && <small>{errors.effective_from[0]}</small>}
+              <FieldError
+                id="fee-agreement-effective-from-error"
+                message={errors?.effective_from?.[0]}
+              />
             </label>
 
             <label className="form-field">
@@ -351,16 +368,20 @@ export function FeeAgreementEditor({
                   <label className="form-field">
                     Discount Label
                     <input
+                      aria-label="Discount Label"
                       value={form.discount.discount_label}
                       onChange={(event) =>
                         updateDiscount('discount_label', event.target.value)
                       }
+                      {...fieldErrorProps(
+                        'fee-agreement-discount-label-error',
+                        errors?.['discounts.0.discount_label']?.[0],
+                      )}
                     />
-                    {errors?.['discounts.0.discount_label']?.[0] && (
-                      <small className="field-error">
-                        {errors['discounts.0.discount_label'][0]}
-                      </small>
-                    )}
+                    <FieldError
+                      id="fee-agreement-discount-label-error"
+                      message={errors?.['discounts.0.discount_label']?.[0]}
+                    />
                   </label>
 
                   <label className="form-field">
@@ -399,10 +420,15 @@ export function FeeAgreementEditor({
                       step="0.01"
                       value={form.discount.value}
                       onChange={(event) => updateDiscount('value', event.target.value)}
+                      {...fieldErrorProps(
+                        'fee-agreement-discount-value-error',
+                        errors?.['discounts.0.value']?.[0],
+                      )}
                     />
-                    {errors?.['discounts.0.value']?.[0] && (
-                      <small className="field-error">{errors['discounts.0.value'][0]}</small>
-                    )}
+                    <FieldError
+                      id="fee-agreement-discount-value-error"
+                      message={errors?.['discounts.0.value']?.[0]}
+                    />
                   </label>
 
                   {form.discount.scope === 'selected_fee_items' && (

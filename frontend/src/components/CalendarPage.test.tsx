@@ -596,8 +596,13 @@ describe('CalendarPage', () => {
     expect(String(mutationRequest('PATCH')?.[0])).toContain('/calendar-events/1?school_id=7')
     expect(screen.getByRole('dialog', { name: 'Edit Calendar Event' })).toBeInTheDocument()
     expect(screen.getByLabelText('Title')).toHaveValue('Updated Parent Appointment')
+    expect(screen.getByLabelText('Title')).toHaveAttribute(
+      'aria-describedby',
+      'calendar-title-error',
+    )
     expect(screen.getByRole('alert')).toHaveTextContent('Please check the event details.')
     expect(screen.getByText('The title has already been taken.')).toBeInTheDocument()
+    await waitFor(() => expect(screen.getByLabelText('Title')).toHaveFocus())
   })
 
   it('gates create, update, and delete controls by their matching permissions', async () => {

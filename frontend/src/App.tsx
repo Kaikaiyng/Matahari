@@ -1412,6 +1412,7 @@ function StudentsPage({
     } catch (manualChargeError) {
       if (manualChargeError instanceof ApiError && manualChargeError.status === 422) {
         setManualChargeErrors(manualChargeError.errors)
+        focusFirstDialogError()
       } else if (manualChargeError instanceof ApiError && manualChargeError.status === 403) {
         setFeeRecordPreviewError('You do not have permission to add manual Fee Record charges.')
       }
@@ -1508,6 +1509,7 @@ function StudentsPage({
     } catch (createError) {
       if (createError instanceof ApiError && createError.status === 422) {
         setFormErrors(createError.errors)
+        focusFirstDialogError()
       }
       handleApiError(createError)
     } finally {
@@ -1665,6 +1667,10 @@ function StudentsPage({
     } catch (agreementError) {
       if (agreementError instanceof ApiError && agreementError.status === 422) {
         setFeeAgreementErrors(agreementError.errors)
+        const firstErrorKey = Object.keys(agreementError.errors ?? {})[0] ?? ''
+        if (!/^items\.\d+\./.test(firstErrorKey) && !firstErrorKey.startsWith('discounts.')) {
+          focusFirstDialogError()
+        }
       }
       handleApiError(agreementError)
     } finally {
@@ -1814,6 +1820,7 @@ function StudentsPage({
     } catch (chargeError) {
       if (chargeError instanceof ApiError && chargeError.status === 422) {
         setPaymentOneTimeChargeErrors(chargeError.errors)
+        focusFirstDialogError()
       } else {
         handleApiError(chargeError)
       }
@@ -1862,6 +1869,9 @@ function StudentsPage({
     })
 
     setPaymentErrors(Object.keys(nextErrors).length > 0 ? nextErrors : undefined)
+    if (Object.keys(nextErrors).length > 0) {
+      focusFirstDialogError()
+    }
 
     return Object.keys(nextErrors).length === 0
   }
@@ -1913,6 +1923,7 @@ function StudentsPage({
     } catch (paymentError) {
       if (paymentError instanceof ApiError && paymentError.status === 422) {
         setPaymentErrors(paymentError.errors)
+        focusFirstDialogError()
       }
       handleApiError(paymentError)
     } finally {
@@ -1956,6 +1967,7 @@ function StudentsPage({
     } catch (verifyError) {
       if (verifyError instanceof ApiError && verifyError.status === 422) {
         setVerifyErrors(verifyError.errors)
+        focusFirstDialogError()
       }
       handleApiError(verifyError)
     } finally {
@@ -1997,6 +2009,7 @@ function StudentsPage({
     } catch (voidError) {
       if (voidError instanceof ApiError && voidError.status === 422) {
         setVoidErrors(voidError.errors)
+        focusFirstDialogError()
         setError(formatValidationError(voidError.errors, 'payment') ?? voidError.message)
         return
       }
@@ -2129,6 +2142,7 @@ function StudentsPage({
     } catch (voidReceiptError) {
       if (voidReceiptError instanceof ApiError && voidReceiptError.status === 422) {
         setReceiptVoidErrors(voidReceiptError.errors)
+        focusFirstDialogError()
       }
       handleApiError(voidReceiptError)
     } finally {
@@ -2168,12 +2182,12 @@ function StudentsPage({
                 value={paymentForm.received_date}
                 onChange={(event) => updatePaymentForm('received_date', event.target.value)}
                 {...fieldErrorProps(
-                  'payment-received-date-error',
+                  'record-payment-received-date-error',
                   formatValidationError(paymentErrors, 'received_date'),
                 )}
               />
               <FieldError
-                id="payment-received-date-error"
+                id="record-payment-received-date-error"
                 message={formatValidationError(paymentErrors, 'received_date')}
               />
             </label>
@@ -2184,12 +2198,12 @@ function StudentsPage({
               value={paymentForm.paid_by}
               onChange={(event) => updatePaymentForm('paid_by', event.target.value)}
               {...fieldErrorProps(
-                'payment-paid-by-error',
+                'record-payment-paid-by-error',
                 formatValidationError(paymentErrors, 'paid_by'),
               )}
             />
             <FieldError
-              id="payment-paid-by-error"
+              id="record-payment-paid-by-error"
               message={formatValidationError(paymentErrors, 'paid_by')}
             />
           </label>
@@ -2199,12 +2213,12 @@ function StudentsPage({
               value={paymentForm.bank_account}
               onChange={(event) => updatePaymentForm('bank_account', event.target.value)}
               {...fieldErrorProps(
-                'payment-bank-account-error',
+                'record-payment-bank-account-error',
                 formatValidationError(paymentErrors, 'bank_account'),
               )}
             />
             <FieldError
-              id="payment-bank-account-error"
+              id="record-payment-bank-account-error"
               message={formatValidationError(paymentErrors, 'bank_account')}
             />
           </label>
@@ -2215,12 +2229,12 @@ function StudentsPage({
               value={paymentForm.reference_no}
               onChange={(event) => updatePaymentForm('reference_no', event.target.value)}
               {...fieldErrorProps(
-                'payment-reference-no-error',
+                'record-payment-reference-no-error',
                 formatValidationError(paymentErrors, 'reference_no'),
               )}
             />
             <FieldError
-              id="payment-reference-no-error"
+              id="record-payment-reference-no-error"
               message={formatValidationError(paymentErrors, 'reference_no')}
             />
           </label>
@@ -2230,12 +2244,12 @@ function StudentsPage({
               value={paymentForm.payment_proof}
               onChange={(event) => updatePaymentForm('payment_proof', event.target.value)}
               {...fieldErrorProps(
-                'payment-proof-error',
+                'record-payment-proof-error',
                 formatValidationError(paymentErrors, 'payment_proof'),
               )}
             />
             <FieldError
-              id="payment-proof-error"
+              id="record-payment-proof-error"
               message={formatValidationError(paymentErrors, 'payment_proof')}
             />
           </label>
@@ -2245,12 +2259,12 @@ function StudentsPage({
               value={paymentForm.remark}
               onChange={(event) => updatePaymentForm('remark', event.target.value)}
               {...fieldErrorProps(
-                'payment-remark-error',
+                'record-payment-remark-error',
                 formatValidationError(paymentErrors, 'remark'),
               )}
             />
             <FieldError
-              id="payment-remark-error"
+              id="record-payment-remark-error"
               message={formatValidationError(paymentErrors, 'remark')}
             />
           </label>
@@ -2331,27 +2345,47 @@ function StudentsPage({
               Student ID
               <input
                 ref={createStudentIdRef}
+                aria-label="Student ID"
                 value={form.student_no}
                 onChange={(event) => updateForm('student_no', event.target.value)}
+                {...fieldErrorProps(
+                  'create-student-student-no-error',
+                  formatValidationError(formErrors, 'student_no'),
+                )}
               />
-              {formatValidationError(formErrors, 'student_no') && (
-                <small>{formatValidationError(formErrors, 'student_no')}</small>
-              )}
+              <FieldError
+                id="create-student-student-no-error"
+                message={formatValidationError(formErrors, 'student_no')}
+              />
             </label>
 
             <label className="form-field">
               Student Name
-              <input value={form.full_name} onChange={(event) => updateForm('full_name', event.target.value)} />
-              {formatValidationError(formErrors, 'full_name') && (
-                <small>{formatValidationError(formErrors, 'full_name')}</small>
-              )}
+              <input
+                aria-label="Student Name"
+                value={form.full_name}
+                onChange={(event) => updateForm('full_name', event.target.value)}
+                {...fieldErrorProps(
+                  'create-student-full-name-error',
+                  formatValidationError(formErrors, 'full_name'),
+                )}
+              />
+              <FieldError
+                id="create-student-full-name-error"
+                message={formatValidationError(formErrors, 'full_name')}
+              />
             </label>
 
             <label className="form-field">
               Level Group
               <select
+                aria-label="Level Group"
                 value={form.level_group}
                 onChange={(event) => updateStudentLevelGroup(event.target.value as LevelGroup)}
+                {...fieldErrorProps(
+                  'create-student-level-group-error',
+                  formatValidationError(formErrors, 'level_group'),
+                )}
               >
                 {levelGroupOptions.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -2359,14 +2393,24 @@ function StudentsPage({
                   </option>
                 ))}
               </select>
-              {formatValidationError(formErrors, 'level_group') && (
-                <small>{formatValidationError(formErrors, 'level_group')}</small>
-              )}
+              <FieldError
+                id="create-student-level-group-error"
+                message={formatValidationError(formErrors, 'level_group')}
+              />
             </label>
 
             <label className="form-field">
               Class
-              <select value={form.class_id} onChange={(event) => updateForm('class_id', event.target.value)} required>
+              <select
+                aria-label="Class"
+                value={form.class_id}
+                onChange={(event) => updateForm('class_id', event.target.value)}
+                required
+                {...fieldErrorProps(
+                  'create-student-class-id-error',
+                  formatValidationError(formErrors, 'class_id'),
+                )}
+              >
                 <option value="">Select class</option>
                 {schoolClasses
                   .filter((schoolClass) => schoolClass.level_group === form.level_group)
@@ -2376,9 +2420,10 @@ function StudentsPage({
                     </option>
                   ))}
               </select>
-              {formatValidationError(formErrors, 'class_id') && (
-                <small>{formatValidationError(formErrors, 'class_id')}</small>
-              )}
+              <FieldError
+                id="create-student-class-id-error"
+                message={formatValidationError(formErrors, 'class_id')}
+              />
             </label>
 
             <label className="form-field">
@@ -2766,7 +2811,9 @@ function StudentsPage({
                   ]}
                 />
                 {formatValidationError(feeAgreementErrors, 'items') && (
-                  <Message tone="error">{formatValidationError(feeAgreementErrors, 'items')}</Message>
+                  <div className="inline-error" role="alert" tabIndex={-1}>
+                    {formatValidationError(feeAgreementErrors, 'items')}
+                  </div>
                 )}
 
                 <FeeAgreementEditor
@@ -2924,27 +2971,48 @@ function StudentsPage({
                         Academic Year
                         <input
                           ref={oneTimeChargeYearRef}
+                          aria-label="Academic Year"
                           value={manualChargeForm.academic_year}
                           onChange={(event) => updateManualChargeForm('academic_year', event.target.value)}
+                          {...fieldErrorProps(
+                            'one-time-charge-academic-year-error',
+                            formatValidationError(manualChargeErrors, 'academic_year'),
+                          )}
                         />
-                        {formatValidationError(manualChargeErrors, 'academic_year') && (
-                          <small>{formatValidationError(manualChargeErrors, 'academic_year')}</small>
-                        )}
+                        <FieldError
+                          id="one-time-charge-academic-year-error"
+                          message={formatValidationError(manualChargeErrors, 'academic_year')}
+                        />
                       </label>
 
                       <label className="form-field">
                         Billing Month
-                        <input type="month" value={manualChargeForm.billing_month} onChange={(event) => updateManualChargeForm('billing_month', event.target.value)} />
-                        {formatValidationError(manualChargeErrors, 'billing_month') && (
-                          <small>{formatValidationError(manualChargeErrors, 'billing_month')}</small>
-                        )}
+                        <input
+                          aria-label="Billing Month"
+                          type="month"
+                          value={manualChargeForm.billing_month}
+                          onChange={(event) => updateManualChargeForm('billing_month', event.target.value)}
+                          {...fieldErrorProps(
+                            'one-time-charge-billing-month-error',
+                            formatValidationError(manualChargeErrors, 'billing_month'),
+                          )}
+                        />
+                        <FieldError
+                          id="one-time-charge-billing-month-error"
+                          message={formatValidationError(manualChargeErrors, 'billing_month')}
+                        />
                       </label>
 
                       <label className="form-field">
                         Category
                         <select
+                          aria-label="Category"
                           value={manualChargeForm.fee_record_category}
                           onChange={(event) => updateManualChargeForm('fee_record_category', event.target.value as FeeRecordCategory)}
+                          {...fieldErrorProps(
+                            'one-time-charge-fee-record-category-error',
+                            formatValidationError(manualChargeErrors, 'fee_record_category'),
+                          )}
                         >
                           {feeRecordCategoryOptions.map((option) => (
                             <option key={option.value} value={option.value}>
@@ -2952,35 +3020,48 @@ function StudentsPage({
                             </option>
                           ))}
                         </select>
-                        {formatValidationError(manualChargeErrors, 'fee_record_category') && (
-                          <small>{formatValidationError(manualChargeErrors, 'fee_record_category')}</small>
-                        )}
+                        <FieldError
+                          id="one-time-charge-fee-record-category-error"
+                          message={formatValidationError(manualChargeErrors, 'fee_record_category')}
+                        />
                       </label>
 
                       <label className="form-field">
                         Amount
                         <input
+                          aria-label="Amount"
                           type="number"
                           min="0.01"
                           step="0.01"
                           value={manualChargeForm.expected_amount}
                           onChange={(event) => updateManualChargeForm('expected_amount', event.target.value)}
+                          {...fieldErrorProps(
+                            'one-time-charge-expected-amount-error',
+                            formatValidationError(manualChargeErrors, 'expected_amount'),
+                          )}
                         />
-                        {formatValidationError(manualChargeErrors, 'expected_amount') && (
-                          <small>{formatValidationError(manualChargeErrors, 'expected_amount')}</small>
-                        )}
+                        <FieldError
+                          id="one-time-charge-expected-amount-error"
+                          message={formatValidationError(manualChargeErrors, 'expected_amount')}
+                        />
                       </label>
 
                       <label className="form-field wide">
                         Description
                         <input
+                          aria-label="Description"
                           value={manualChargeForm.description}
                           onChange={(event) => updateManualChargeForm('description', event.target.value)}
                           placeholder="Uniform, Books, Worksheet, PE, Application, Deposit, Enrolment, Old Balance"
+                          {...fieldErrorProps(
+                            'one-time-charge-description-error',
+                            formatValidationError(manualChargeErrors, 'description'),
+                          )}
                         />
-                        {formatValidationError(manualChargeErrors, 'description') && (
-                          <small>{formatValidationError(manualChargeErrors, 'description')}</small>
-                        )}
+                        <FieldError
+                          id="one-time-charge-description-error"
+                          message={formatValidationError(manualChargeErrors, 'description')}
+                        />
                       </label>
 
                       <label className="form-field wide">
@@ -3180,33 +3261,50 @@ function StudentsPage({
                         step="0.01"
                         value={paymentForm.amount}
                         onChange={(event) => updatePaymentForm('amount', event.target.value)}
+                        {...fieldErrorProps(
+                          'record-payment-amount-error',
+                          formatValidationError(paymentErrors, 'amount'),
+                        )}
                       />
-                      {formatValidationError(paymentErrors, 'amount') && (
-                        <small>{formatValidationError(paymentErrors, 'amount')}</small>
-                      )}
+                      <FieldError
+                        id="record-payment-amount-error"
+                        message={formatValidationError(paymentErrors, 'amount')}
+                      />
                     </label>
                     <label className="form-field">
                       Payment Date
                       <input
+                        aria-label="Payment Date"
                         type="date"
                         value={paymentForm.payment_date}
                         onChange={(event) => updatePaymentForm('payment_date', event.target.value)}
+                        {...fieldErrorProps(
+                          'record-payment-payment-date-error',
+                          formatValidationError(paymentErrors, 'payment_date'),
+                        )}
                       />
-                      {formatValidationError(paymentErrors, 'payment_date') && (
-                        <small>{formatValidationError(paymentErrors, 'payment_date')}</small>
-                      )}
+                      <FieldError
+                        id="record-payment-payment-date-error"
+                        message={formatValidationError(paymentErrors, 'payment_date')}
+                      />
                     </label>
                     {paymentForm.payment_method === 'cash' && (
                       <label className="form-field">
                         Received Date
                         <input
+                          aria-label="Received Date"
                           type="date"
                           value={paymentForm.received_date}
                           onChange={(event) => updatePaymentForm('received_date', event.target.value)}
+                          {...fieldErrorProps(
+                            'record-payment-received-date-error',
+                            formatValidationError(paymentErrors, 'received_date'),
+                          )}
                         />
-                        {formatValidationError(paymentErrors, 'received_date') && (
-                          <small>{formatValidationError(paymentErrors, 'received_date')}</small>
-                        )}
+                        <FieldError
+                          id="record-payment-received-date-error"
+                          message={formatValidationError(paymentErrors, 'received_date')}
+                        />
                       </label>
                     )}
                   </div>
@@ -3444,13 +3542,19 @@ function StudentsPage({
                     Received Date
                     <input
                       ref={verifyReceivedDateRef}
+                      aria-label="Received Date"
                       type="date"
                       value={verifyForm.received_date}
                       onChange={(event) => setVerifyForm((current) => ({ ...current, received_date: event.target.value }))}
+                      {...fieldErrorProps(
+                        'verify-payment-received-date-error',
+                        formatValidationError(verifyErrors, 'received_date'),
+                      )}
                     />
-                    {formatValidationError(verifyErrors, 'received_date') && (
-                      <small>{formatValidationError(verifyErrors, 'received_date')}</small>
-                    )}
+                    <FieldError
+                      id="verify-payment-received-date-error"
+                      message={formatValidationError(verifyErrors, 'received_date')}
+                    />
                   </label>
                   <label className="form-field">
                     Bank Account
@@ -3472,10 +3576,12 @@ function StudentsPage({
                       value={verifyForm.remark}
                       onChange={(event) => setVerifyForm((current) => ({ ...current, remark: event.target.value }))}
                     />
-                    {formatValidationError(verifyErrors, 'payment') && (
-                      <small>{formatValidationError(verifyErrors, 'payment')}</small>
-                    )}
                   </label>
+                  {formatValidationError(verifyErrors, 'payment') && (
+                    <div className="inline-error wide" role="alert" tabIndex={-1}>
+                      {formatValidationError(verifyErrors, 'payment')}
+                    </div>
+                  )}
                 </form>
               </ModalFrame>
             )}
@@ -3558,16 +3664,24 @@ function StudentsPage({
                     <label className="form-field wide">
                       Void Reason
                       <textarea
+                        aria-label="Void Reason"
                         value={voidReason}
                         onChange={(event) => setVoidReason(event.target.value)}
+                        {...fieldErrorProps(
+                          'void-payment-void-reason-error',
+                          formatValidationError(voidErrors, 'void_reason'),
+                        )}
                       />
-                      {formatValidationError(voidErrors, 'void_reason') && (
-                        <small>{formatValidationError(voidErrors, 'void_reason')}</small>
-                      )}
-                      {formatValidationError(voidErrors, 'payment') && (
-                        <small>{formatValidationError(voidErrors, 'payment')}</small>
-                      )}
+                      <FieldError
+                        id="void-payment-void-reason-error"
+                        message={formatValidationError(voidErrors, 'void_reason')}
+                      />
                     </label>
+                    {formatValidationError(voidErrors, 'payment') && (
+                      <div className="inline-error wide" role="alert" tabIndex={-1}>
+                        {formatValidationError(voidErrors, 'payment')}
+                      </div>
+                    )}
                   </form>
                 )}
               </ModalFrame>
@@ -3710,14 +3824,25 @@ function StudentsPage({
                 >
                   <label className="form-field wide">
                     Void Reason
-                    <textarea value={receiptVoidReason} onChange={(event) => setReceiptVoidReason(event.target.value)} />
-                    {formatValidationError(receiptVoidErrors, 'void_reason') && (
-                      <small>{formatValidationError(receiptVoidErrors, 'void_reason')}</small>
-                    )}
-                    {formatValidationError(receiptVoidErrors, 'receipt') && (
-                      <small>{formatValidationError(receiptVoidErrors, 'receipt')}</small>
-                    )}
+                    <textarea
+                      aria-label="Void Reason"
+                      value={receiptVoidReason}
+                      onChange={(event) => setReceiptVoidReason(event.target.value)}
+                      {...fieldErrorProps(
+                        'void-receipt-void-reason-error',
+                        formatValidationError(receiptVoidErrors, 'void_reason'),
+                      )}
+                    />
+                    <FieldError
+                      id="void-receipt-void-reason-error"
+                      message={formatValidationError(receiptVoidErrors, 'void_reason')}
+                    />
                   </label>
+                  {formatValidationError(receiptVoidErrors, 'receipt') && (
+                    <div className="inline-error wide" role="alert" tabIndex={-1}>
+                      {formatValidationError(receiptVoidErrors, 'receipt')}
+                    </div>
+                  )}
                 </form>
               </ModalFrame>
             )}

@@ -3,7 +3,15 @@ import type { FormEvent } from 'react'
 import { CalendarDays, ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import { ApiError, apiRequest } from '../api'
 import type { ApiValidationErrors } from '../api'
-import { InlineMessage, ModalContextSummary, ModalFrame, PageHeader } from './AdminUi'
+import {
+  FieldError,
+  InlineMessage,
+  ModalContextSummary,
+  ModalFrame,
+  PageHeader,
+  fieldErrorProps,
+  focusFirstDialogError,
+} from './AdminUi'
 import './CalendarPage.css'
 
 export type CalendarEvent = {
@@ -82,6 +90,11 @@ const eventTypeLabels: Record<CalendarEvent['event_type'], string> = {
 }
 const EVENT_TYPE_ERROR_ID = 'calendar-event-type-errors'
 const IS_ALL_DAY_ERROR_ID = 'calendar-is-all-day-errors'
+
+function validationMessage(errors: ApiValidationErrors, ...keys: string[]) {
+  const messages = keys.flatMap((key) => errors[key] ?? [])
+  return messages.length ? messages.join(' ') : undefined
+}
 
 function dateKey(date: Date) {
   const year = date.getUTCFullYear()
@@ -450,6 +463,7 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
     if (Object.keys(localErrors).length) {
       setFieldErrors(localErrors)
       setFormError('Please check the event details.')
+      focusFirstDialogError()
       return
     }
 
@@ -488,7 +502,10 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
       } else {
         if (activeScopeRef.current !== mutationScope) return
         setFormError(error instanceof Error ? error.message : 'Unable to save the event.')
-        if (error instanceof ApiError && error.errors) setFieldErrors(error.errors)
+        if (error instanceof ApiError && error.errors) {
+          setFieldErrors(error.errors)
+          focusFirstDialogError()
+        }
       }
     } finally {
       setIsSaving(false)
@@ -694,7 +711,11 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
           }
         >
           <form id="calendar-event-form" className="calendar-event-form" onSubmit={submitEvent}>
-            {formError && <InlineMessage tone="error">{formError}</InlineMessage>}
+            {formError && (
+              <div className="inline-error" role="alert" tabIndex={-1}>
+                {formError}
+              </div>
+            )}
             <fieldset className="calendar-form-grid" disabled={Boolean(editingEvent) && !canUpdate}>
               <label className="calendar-form-field wide">
                 Title
@@ -703,9 +724,15 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
                   aria-label="Title"
                   value={form.title}
                   onChange={(event) => updateForm('title', event.target.value)}
-                  aria-invalid={Boolean(fieldErrors.title?.length)}
+                  {...fieldErrorProps(
+                    'calendar-title-error',
+                    validationMessage(fieldErrors, 'title'),
+                  )}
                 />
-                {fieldErrors.title?.map((message) => <small key={message}>{message}</small>)}
+                <FieldError
+                  id="calendar-title-error"
+                  message={validationMessage(fieldErrors, 'title')}
+                />
               </label>
 
               <div className="calendar-form-field">
@@ -717,10 +744,11 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
                   onChange={(event) =>
                     updateForm('event_type', event.target.value as CalendarEvent['event_type'])
                   }
+                  {...fieldErrorProps(
+                    EVENT_TYPE_ERROR_ID,
+                    validationMessage(fieldErrors, 'event_type'),
+                  )}
                   aria-invalid={Boolean(fieldErrors.event_type?.length)}
-                  aria-describedby={
-                    fieldErrors.event_type?.length ? EVENT_TYPE_ERROR_ID : undefined
-                  }
                 >
                   <option value="appointment">Appointment</option>
                   <option value="training">Training</option>
@@ -728,11 +756,10 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
                   <option value="school_event">School event</option>
                   <option value="other">Other</option>
                 </select>
-                {fieldErrors.event_type?.length ? (
-                  <div className="calendar-field-errors" id={EVENT_TYPE_ERROR_ID}>
-                    {fieldErrors.event_type.map((message) => <small key={message}>{message}</small>)}
-                  </div>
-                ) : null}
+                <FieldError
+                  id={EVENT_TYPE_ERROR_ID}
+                  message={validationMessage(fieldErrors, 'event_type')}
+                />
               </div>
 
               <div className="calendar-checkbox-group">
@@ -742,92 +769,149 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
                     aria-label="All-day event"
                     checked={form.is_all_day}
                     onChange={(event) => updateForm('is_all_day', event.target.checked)}
+                    {...fieldErrorProps(
+                      IS_ALL_DAY_ERROR_ID,
+                      validationMessage(fieldErrors, 'is_all_day'),
+                    )}
                     aria-invalid={Boolean(fieldErrors.is_all_day?.length)}
-                    aria-describedby={
-                      fieldErrors.is_all_day?.length ? IS_ALL_DAY_ERROR_ID : undefined
-                    }
                   />
                   All-day event
                 </label>
-                {fieldErrors.is_all_day?.length ? (
-                  <div className="calendar-field-errors" id={IS_ALL_DAY_ERROR_ID}>
-                    {fieldErrors.is_all_day.map((message) => <small key={message}>{message}</small>)}
-                  </div>
-                ) : null}
+                <FieldError
+                  id={IS_ALL_DAY_ERROR_ID}
+                  message={validationMessage(fieldErrors, 'is_all_day')}
+                />
               </div>
 
               <label className="calendar-form-field">
                 Start date
                 <input
+                  aria-label="Start date"
                   type="date"
                   name="start_date"
                   value={form.start_date}
                   onChange={(event) => updateForm('start_date', event.target.value)}
-                  aria-invalid={Boolean(fieldErrors.start_date?.length || fieldErrors.starts_at?.length)}
+                  {...fieldErrorProps(
+                    'calendar-start-date-error',
+                    validationMessage(fieldErrors, 'start_date', 'starts_at'),
+                  )}
                 />
-                {[...(fieldErrors.start_date ?? []), ...(fieldErrors.starts_at ?? [])].map((message) => (
-                  <small key={message}>{message}</small>
-                ))}
+                <FieldError
+                  id="calendar-start-date-error"
+                  message={validationMessage(fieldErrors, 'start_date', 'starts_at')}
+                />
               </label>
 
               {!form.is_all_day && (
                 <label className="calendar-form-field">
                   Start time
                   <input
+                    aria-label="Start time"
                     type="time"
                     name="start_time"
                     value={form.start_time}
                     onChange={(event) => updateForm('start_time', event.target.value)}
-                    aria-invalid={Boolean(fieldErrors.start_time?.length || fieldErrors.starts_at?.length)}
+                    {...fieldErrorProps(
+                      'calendar-start-time-error',
+                      validationMessage(fieldErrors, 'start_time'),
+                    )}
                   />
-                  {fieldErrors.start_time?.map((message) => <small key={message}>{message}</small>)}
+                  <FieldError
+                    id="calendar-start-time-error"
+                    message={validationMessage(fieldErrors, 'start_time')}
+                  />
                 </label>
               )}
 
               <label className="calendar-form-field">
                 End date
                 <input
+                  aria-label="End date"
                   type="date"
                   name="end_date"
                   value={form.end_date}
                   onChange={(event) => updateForm('end_date', event.target.value)}
-                  aria-invalid={Boolean(fieldErrors.ends_at?.length)}
+                  {...fieldErrorProps(
+                    'calendar-end-date-error',
+                    validationMessage(fieldErrors, 'end_date', 'ends_at'),
+                  )}
                 />
-                {fieldErrors.ends_at?.map((message) => <small key={message}>{message}</small>)}
+                <FieldError
+                  id="calendar-end-date-error"
+                  message={validationMessage(fieldErrors, 'end_date', 'ends_at')}
+                />
               </label>
 
               {!form.is_all_day && (
                 <label className="calendar-form-field">
                   End time
                   <input
+                    aria-label="End time"
                     type="time"
                     name="end_time"
                     value={form.end_time}
                     onChange={(event) => updateForm('end_time', event.target.value)}
-                    aria-invalid={Boolean(fieldErrors.ends_at?.length)}
+                    {...fieldErrorProps(
+                      'calendar-end-time-error',
+                      validationMessage(fieldErrors, 'end_time'),
+                    )}
+                  />
+                  <FieldError
+                    id="calendar-end-time-error"
+                    message={validationMessage(fieldErrors, 'end_time')}
                   />
                 </label>
               )}
 
               <label className="calendar-form-field wide">
                 Location
-                <input value={form.location} onChange={(event) => updateForm('location', event.target.value)} />
-                {fieldErrors.location?.map((message) => <small key={message}>{message}</small>)}
+                <input
+                  aria-label="Location"
+                  value={form.location}
+                  onChange={(event) => updateForm('location', event.target.value)}
+                  {...fieldErrorProps(
+                    'calendar-location-error',
+                    validationMessage(fieldErrors, 'location'),
+                  )}
+                />
+                <FieldError
+                  id="calendar-location-error"
+                  message={validationMessage(fieldErrors, 'location')}
+                />
               </label>
 
               <label className="calendar-form-field wide">
                 Participants
                 <textarea
+                  aria-label="Participants"
                   value={form.participants}
                   onChange={(event) => updateForm('participants', event.target.value)}
+                  {...fieldErrorProps(
+                    'calendar-participants-error',
+                    validationMessage(fieldErrors, 'participants'),
+                  )}
                 />
-                {fieldErrors.participants?.map((message) => <small key={message}>{message}</small>)}
+                <FieldError
+                  id="calendar-participants-error"
+                  message={validationMessage(fieldErrors, 'participants')}
+                />
               </label>
 
               <label className="calendar-form-field wide">
                 Notes
-                <textarea value={form.notes} onChange={(event) => updateForm('notes', event.target.value)} />
-                {fieldErrors.notes?.map((message) => <small key={message}>{message}</small>)}
+                <textarea
+                  aria-label="Notes"
+                  value={form.notes}
+                  onChange={(event) => updateForm('notes', event.target.value)}
+                  {...fieldErrorProps(
+                    'calendar-notes-error',
+                    validationMessage(fieldErrors, 'notes'),
+                  )}
+                />
+                <FieldError
+                  id="calendar-notes-error"
+                  message={validationMessage(fieldErrors, 'notes')}
+                />
               </label>
             </fieldset>
           </form>

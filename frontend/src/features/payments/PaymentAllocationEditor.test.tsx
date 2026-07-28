@@ -165,4 +165,24 @@ describe('PaymentAllocationEditor', () => {
     await user.click(addButton)
     expect(onAddUnclassified).not.toHaveBeenCalled()
   })
+
+  it('associates an allocation amount error with its field', () => {
+    const allocation = createUnclassifiedAllocation()
+    render(
+      <PaymentAllocationEditor
+        {...editorProps({
+          allocations: [allocation],
+          allocationErrors: {
+            'allocations.0.amount': ['Allocation amount is required.'],
+          },
+        })}
+      />,
+    )
+
+    const amount = screen.getByLabelText('Unclassified payment 1 amount')
+    expect(amount).toHaveAttribute(
+      'aria-describedby',
+      'record-payment-allocation-0-amount-error',
+    )
+  })
 })

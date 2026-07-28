@@ -279,6 +279,11 @@ describe('FeeAgreementEditor', () => {
 
     const billingPattern = await screen.findByLabelText('Tuition Fee Billing Pattern')
     expect(screen.getByText('Choose at least one billing month.')).toBeInTheDocument()
+    expect(billingPattern).toHaveAttribute('aria-invalid', 'true')
+    expect(screen.getByText('Choose at least one billing month.')).toHaveAttribute(
+      'id',
+      'fee-agreement-item-1-billing-months-error',
+    )
     await waitFor(() => expect(billingPattern).toHaveFocus())
   })
 })

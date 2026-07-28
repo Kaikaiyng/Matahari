@@ -680,6 +680,47 @@ describe('demo shell', () => {
     await waitFor(() => expect(within(dialog).getByLabelText('Student ID')).toHaveFocus())
   })
 
+  it('associates and focuses the first Create Student server error', async () => {
+    const user = userEvent.setup()
+    installApiUser(schoolAdminDialogUser)
+    const fetchMock = vi.mocked(globalThis.fetch)
+    const installedImplementation = fetchMock.getMockImplementation()
+    if (!installedImplementation) throw new Error('API mock is not installed')
+
+    fetchMock.mockImplementation((input, init) => {
+      const url = new URL(String(input))
+      if (url.pathname.endsWith('/students') && init?.method === 'POST') {
+        return json(
+          {
+            message: 'Please check the student.',
+            errors: { student_no: ['Student ID is required.'] },
+          },
+          422,
+        )
+      }
+      return installedImplementation(input, init)
+    })
+
+    await renderAuthenticatedApp()
+    await user.click(screen.getByRole('button', { name: 'Students' }))
+    await user.click(await screen.findByRole('button', { name: 'Add Student' }))
+    await user.type(screen.getByLabelText('Student ID'), 'TEMP-001')
+    await user.type(screen.getByLabelText('Student Name'), 'Alyssa Tan')
+    await user.selectOptions(screen.getByLabelText('Class'), '2')
+    await user.click(screen.getByRole('button', { name: 'Create Student' }))
+
+    const studentId = await screen.findByLabelText('Student ID')
+    expect(studentId).toHaveAttribute('aria-invalid', 'true')
+    expect(studentId).toHaveAttribute(
+      'aria-describedby',
+      'create-student-student-no-error',
+    )
+    expect(document.getElementById('create-student-student-no-error')).toHaveTextContent(
+      'Student ID is required.',
+    )
+    await waitFor(() => expect(studentId).toHaveFocus())
+  })
+
   it('uses One-time Charge language and identifies the selected student', async () => {
     const user = userEvent.setup()
     installApiUser(schoolAdminDialogUser)
@@ -1128,6 +1169,10 @@ describe('demo shell', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Add and select charge' }))
 
     expect(await within(dialog).findByText('Description is required.')).toBeInTheDocument()
+    expect(within(dialog).getByRole('heading', { name: 'Add one-time charge' })).toBeInTheDocument()
+    await waitFor(() =>
+      expect(within(dialog).getByLabelText('One-time charge description')).toHaveFocus(),
+    )
     expect(within(dialog).queryByText('Charge added and selected for this payment.')).not.toBeInTheDocument()
     expect(within(dialog).getByText(/Allocated RM\s*0 of RM\s*0/)).toBeInTheDocument()
   })
@@ -1249,6 +1294,10 @@ describe('demo shell', () => {
     const details = within(dialog).getByText('Additional payment details').closest('details')
     expect(await within(dialog).findByText('Reference is invalid.')).toBeInTheDocument()
     expect(details).toHaveAttribute('open')
+    expect(within(dialog).getByLabelText('Reference No')).toHaveAttribute(
+      'aria-describedby',
+      'record-payment-reference-no-error',
+    )
     await waitFor(() => expect(within(dialog).getByLabelText('Reference No')).toHaveFocus())
   })
 

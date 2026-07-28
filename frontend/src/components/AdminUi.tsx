@@ -135,9 +135,9 @@ function modalFocusableElements(dialog: HTMLElement | null) {
 export function focusFirstDialogError() {
   requestAnimationFrame(() => {
     const dialog = document.querySelector<HTMLElement>('[role="dialog"][aria-modal="true"]')
-    const target = dialog?.querySelector<HTMLElement>(
-      '[aria-invalid="true"], [role="alert"][tabindex="-1"]',
-    )
+    const target =
+      dialog?.querySelector<HTMLElement>('[aria-invalid="true"]') ??
+      dialog?.querySelector<HTMLElement>('[role="alert"][tabindex="-1"]')
     target?.focus({ preventScroll: true })
     target?.scrollIntoView?.({ block: 'nearest' })
   })

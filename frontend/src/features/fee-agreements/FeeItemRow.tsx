@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { FieldError, fieldErrorProps } from '../../components/AdminUi'
 import { feeItemSummary, monthShortLabels } from './feeAgreementEditorModel'
 import type {
   BillingFrequency,
@@ -26,10 +27,12 @@ const everyMonth = monthShortLabels.map((_, index) => index + 1)
 function BillingMonthSelector({
   item,
   error,
+  errorId,
   onChange,
 }: {
   item: FeeAgreementItemDraft
   error?: string
+  errorId: string
   onChange: (months: number[]) => void
 }) {
   const [isCustomizing, setIsCustomizing] = useState(
@@ -118,7 +121,7 @@ function BillingMonthSelector({
           )
         })}
       </div>
-      {error && <p className="field-error">{error}</p>}
+      <FieldError id={errorId} message={error} />
     </fieldset>
   )
 }
@@ -167,6 +170,7 @@ export function FeeItemRow({
       billing_months: billingFrequency === 'monthly' ? [] : item.billing_months,
     })
   }
+  const billingMonthErrorId = `fee-agreement-item-${item.fee_item_id}-billing-months-error`
 
   return (
     <article
@@ -244,6 +248,7 @@ export function FeeItemRow({
                 onChange={(event) =>
                   updateBillingPattern(event.target.value as BillingFrequency)
                 }
+                {...fieldErrorProps(billingMonthErrorId, monthError)}
               >
                 {billingPatterns.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -272,6 +277,7 @@ export function FeeItemRow({
           <BillingMonthSelector
             item={item}
             error={monthError}
+            errorId={billingMonthErrorId}
             onChange={(months) => update('billing_months', months)}
           />
         </div>
