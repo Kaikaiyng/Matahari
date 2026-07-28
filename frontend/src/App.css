@@ -1447,6 +1447,16 @@ th {
   color: #b31923;
 }
 
+.modal-danger-action {
+  background: var(--brand-red-dark, #b31923);
+  color: #ffffff;
+  box-shadow: none;
+}
+
+.modal-danger-action:focus-visible {
+  outline-color: #7f1119;
+}
+
 .payment-allocation-summary td {
   background: #fbfbfc;
   color: #747985;

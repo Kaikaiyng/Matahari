@@ -909,10 +909,12 @@ function StudentsPage({
   const [manualChargeErrors, setManualChargeErrors] = useState<ValidationErrors>()
   const [isSavingManualCharge, setIsSavingManualCharge] = useState(false)
   const [verifyingPaymentId, setVerifyingPaymentId] = useState<number | null>(null)
+  const verifyReceivedDateRef = useRef<HTMLInputElement>(null)
   const [verifyForm, setVerifyForm] = useState<VerifyPaymentForm>(defaultVerifyForm())
   const [verifyErrors, setVerifyErrors] = useState<ValidationErrors>()
   const [isVerifyingPayment, setIsVerifyingPayment] = useState(false)
   const [voidingPaymentId, setVoidingPaymentId] = useState<number | null>(null)
+  const voidPaymentCancelRef = useRef<HTMLButtonElement>(null)
   const [voidReason, setVoidReason] = useState('')
   const [voidErrors, setVoidErrors] = useState<ValidationErrors>()
   const [isVoidingPayment, setIsVoidingPayment] = useState(false)
@@ -925,6 +927,7 @@ function StudentsPage({
   const [generateErrors, setGenerateErrors] = useState<ValidationErrors>()
   const [isGeneratingReceipt, setIsGeneratingReceipt] = useState(false)
   const [voidingReceiptId, setVoidingReceiptId] = useState<number | null>(null)
+  const voidReceiptCancelRef = useRef<HTMLButtonElement>(null)
   const [receiptVoidReason, setReceiptVoidReason] = useState('')
   const [receiptVoidErrors, setReceiptVoidErrors] = useState<ValidationErrors>()
   const [isVoidingReceipt, setIsVoidingReceipt] = useState(false)
@@ -984,6 +987,19 @@ function StudentsPage({
     paymentForm.allocations.length > 0 &&
     paymentDifferenceCents === 0 &&
     !hasIncompleteUnclassifiedAllocation(paymentForm.allocations)
+  const paymentToVerify =
+    verifyingPaymentId === null
+      ? null
+      : payments.find((payment) => payment.id === verifyingPaymentId) ?? null
+  const paymentToVoid =
+    voidingPaymentId === null
+      ? null
+      : payments.find((payment) => payment.id === voidingPaymentId) ?? null
+  const receiptToVoid =
+    voidingReceiptId === null
+      ? null
+      : receipts.find((receipt) => receipt.id === voidingReceiptId) ?? null
+  const paymentVoidBlocked = paymentToVoid?.issued_receipt?.status === 'issued'
   const previewBlockedByWarnings = Boolean(feeRecordPreview?.needs_confirmation || feeRecordPreview?.warnings.length)
   const canActivateCurrentPreview = Boolean(
     canActivateFeeRecord &&
@@ -3379,10 +3395,12 @@ function StudentsPage({
               </div>
             )}
 
-            {verifyingPaymentId !== null && (
+            {paymentToVerify && (
               <ModalFrame
                 title="Verify Payment"
-                description="Confirm the received date and bank reference before verification."
+                description="Confirm the received details before verification."
+                size="standard"
+                initialFocusRef={verifyReceivedDateRef}
                 onClose={() => setVerifyingPaymentId(null)}
                 footer={
                   <>
@@ -3395,19 +3413,37 @@ function StudentsPage({
                       form="verify-payment-form"
                       disabled={isVerifyingPayment}
                     >
-                      {isVerifyingPayment ? 'Verifying...' : 'Confirm Verify'}
+                      {isVerifyingPayment ? 'Verifying...' : 'Verify Payment'}
                     </button>
                   </>
                 }
               >
+                <ModalContextSummary
+                  ariaLabel="Payment to verify"
+                  items={[
+                    {
+                      label: 'Student',
+                      value: `${selectedStudent?.full_name} / ${selectedStudent?.student_no}`,
+                    },
+                    { label: 'Amount', value: formatCurrency(paymentToVerify.amount) },
+                    { label: 'Method', value: formatStatus(paymentToVerify.payment_method) },
+                    { label: 'Payment date', value: paymentToVerify.payment_date },
+                    {
+                      label: 'Reference',
+                      value: paymentToVerify.reference_no ?? 'Not recorded',
+                    },
+                    { label: 'Status', value: formatStatus(paymentToVerify.status) },
+                  ]}
+                />
                 <form
                   id="verify-payment-form"
                   className="form-grid inline-payment-form"
-                  onSubmit={(event) => submitVerifyPayment(event, verifyingPaymentId)}
+                  onSubmit={(event) => submitVerifyPayment(event, paymentToVerify.id)}
                 >
                   <label className="form-field">
                     Received Date
                     <input
+                      ref={verifyReceivedDateRef}
                       type="date"
                       value={verifyForm.received_date}
                       onChange={(event) => setVerifyForm((current) => ({ ...current, received_date: event.target.value }))}
@@ -3444,43 +3480,96 @@ function StudentsPage({
               </ModalFrame>
             )}
 
-            {voidingPaymentId !== null && (
+            {paymentToVoid && (
               <ModalFrame
                 title="Void Payment"
-                description="Record the reason for voiding this payment."
+                description={
+                  paymentVoidBlocked
+                    ? 'This payment cannot be voided while its receipt is issued.'
+                    : 'Review the consequence and record a reason.'
+                }
+                size="compact"
+                tone="danger"
+                initialFocusRef={voidPaymentCancelRef}
                 onClose={() => setVoidingPaymentId(null)}
                 footer={
-                  <>
-                    <button type="button" className="secondary-action" onClick={() => setVoidingPaymentId(null)}>
-                      Cancel
-                    </button>
+                  paymentVoidBlocked ? (
                     <button
-                      className="primary-action compact"
-                      type="submit"
-                      form="void-payment-form"
-                      disabled={isVoidingPayment}
+                      ref={voidPaymentCancelRef}
+                      type="button"
+                      className="secondary-action"
+                      onClick={() => setVoidingPaymentId(null)}
                     >
-                      {isVoidingPayment ? 'Voiding...' : 'Confirm Void'}
+                      Close
                     </button>
-                  </>
+                  ) : (
+                    <>
+                      <button
+                        ref={voidPaymentCancelRef}
+                        type="button"
+                        className="secondary-action"
+                        onClick={() => setVoidingPaymentId(null)}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        className="primary-action compact modal-danger-action"
+                        type="submit"
+                        form="void-payment-form"
+                        disabled={isVoidingPayment}
+                      >
+                        {isVoidingPayment ? 'Voiding...' : 'Confirm Void Payment'}
+                      </button>
+                    </>
+                  )
                 }
               >
-                <form
-                  id="void-payment-form"
-                  className="inline-payment-form"
-                  onSubmit={(event) => submitVoidPayment(event, voidingPaymentId)}
-                >
-                  <label className="form-field wide">
-                    Void Reason
-                    <textarea value={voidReason} onChange={(event) => setVoidReason(event.target.value)} />
-                    {formatValidationError(voidErrors, 'void_reason') && (
-                      <small>{formatValidationError(voidErrors, 'void_reason')}</small>
-                    )}
-                    {formatValidationError(voidErrors, 'payment') && (
-                      <small>{formatValidationError(voidErrors, 'payment')}</small>
-                    )}
-                  </label>
-                </form>
+                <ModalContextSummary
+                  ariaLabel="Payment to void"
+                  tone="danger"
+                  items={[
+                    {
+                      label: 'Student',
+                      value: `${selectedStudent?.full_name} / ${selectedStudent?.student_no}`,
+                    },
+                    { label: 'Amount', value: formatCurrency(paymentToVoid.amount) },
+                    { label: 'Method', value: formatStatus(paymentToVoid.payment_method) },
+                    { label: 'Payment date', value: paymentToVoid.payment_date },
+                    { label: 'Status', value: formatStatus(paymentToVoid.status) },
+                    {
+                      label: 'Receipt',
+                      value: paymentToVoid.issued_receipt?.receipt_no ?? 'No issued receipt',
+                    },
+                  ]}
+                  consequence={
+                    paymentVoidBlocked
+                      ? 'Void the issued receipt before voiding this payment.'
+                      : paymentToVoid.status === 'verified'
+                        ? 'Each applied charge will reopen by the amount allocated from this payment.'
+                        : 'This pending payment will become void; charge balances have not yet changed.'
+                  }
+                />
+                {!paymentVoidBlocked && (
+                  <form
+                    id="void-payment-form"
+                    className="inline-payment-form"
+                    onSubmit={(event) => submitVoidPayment(event, paymentToVoid.id)}
+                  >
+                    <label className="form-field wide">
+                      Void Reason
+                      <textarea
+                        value={voidReason}
+                        onChange={(event) => setVoidReason(event.target.value)}
+                      />
+                      {formatValidationError(voidErrors, 'void_reason') && (
+                        <small>{formatValidationError(voidErrors, 'void_reason')}</small>
+                      )}
+                      {formatValidationError(voidErrors, 'payment') && (
+                        <small>{formatValidationError(voidErrors, 'payment')}</small>
+                      )}
+                    </label>
+                  </form>
+                )}
               </ModalFrame>
             )}
           </section>
@@ -3565,18 +3654,26 @@ function StudentsPage({
               </div>
             )}
 
-            {voidingReceiptId !== null && (
+            {receiptToVoid && (
               <ModalFrame
                 title="Void Receipt"
-                description="Record the reason for voiding this issued receipt."
+                description="Review the receipt and record a reason."
+                size="compact"
+                tone="danger"
+                initialFocusRef={voidReceiptCancelRef}
                 onClose={() => setVoidingReceiptId(null)}
                 footer={
                   <>
-                    <button type="button" className="secondary-action" onClick={() => setVoidingReceiptId(null)}>
+                    <button
+                      ref={voidReceiptCancelRef}
+                      type="button"
+                      className="secondary-action"
+                      onClick={() => setVoidingReceiptId(null)}
+                    >
                       Cancel
                     </button>
                     <button
-                      className="primary-action compact"
+                      className="primary-action compact modal-danger-action"
                       type="submit"
                       form="void-receipt-form"
                       disabled={isVoidingReceipt}
@@ -3586,10 +3683,30 @@ function StudentsPage({
                   </>
                 }
               >
+                <ModalContextSummary
+                  ariaLabel="Receipt to void"
+                  tone="danger"
+                  items={[
+                    { label: 'Receipt', value: receiptToVoid.receipt_no },
+                    {
+                      label: 'Student',
+                      value: `${receiptToVoid.student_name} / ${receiptToVoid.student_no}`,
+                    },
+                    { label: 'Receipt date', value: receiptToVoid.receipt_date },
+                    { label: 'Amount', value: formatCurrency(receiptToVoid.amount) },
+                    {
+                      label: 'Payment reference',
+                      value:
+                        payments.find((payment) => payment.id === receiptToVoid.payment_id)
+                          ?.reference_no ?? 'Not recorded',
+                    },
+                  ]}
+                  consequence="The receipt number will not be reused. The linked payment remains verified and balances do not change until the payment is separately voided."
+                />
                 <form
                   id="void-receipt-form"
                   className="inline-payment-form"
-                  onSubmit={(event) => submitVoidReceipt(event, voidingReceiptId)}
+                  onSubmit={(event) => submitVoidReceipt(event, receiptToVoid.id)}
                 >
                   <label className="form-field wide">
                     Void Reason
