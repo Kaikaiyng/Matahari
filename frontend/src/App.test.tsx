@@ -33,6 +33,36 @@ const currentUser = {
   ],
 }
 
+const schoolAdminDialogUser = {
+  ...currentUser,
+  roles: ['school-admin'],
+  permissions: [
+    'students.view',
+    'students.create',
+    'fee_agreements.create',
+    'fee_agreements.update',
+    'fee_record.view',
+    'fee_record.manage',
+    'payments.view',
+    'payments.create',
+    'receipts.view',
+  ],
+}
+
+const financeDialogUser = {
+  ...currentUser,
+  roles: ['finance'],
+  permissions: [
+    'students.view',
+    'fee_record.view',
+    'payments.view',
+    'payments.verify',
+    'payments.void',
+    'receipts.view',
+    'receipts.void',
+  ],
+}
+
 const dashboard = {
   school: { id: 1, code: 'MIS', name: 'Matahari International School' },
   metrics: {
@@ -290,6 +320,19 @@ function installApiMock() {
   })
 }
 
+function installApiUser(user: typeof currentUser) {
+  const fetchMock = vi.mocked(globalThis.fetch)
+  const installedImplementation = fetchMock.getMockImplementation()
+
+  if (!installedImplementation) throw new Error('API mock is not installed')
+
+  fetchMock.mockImplementation((input, init) => {
+    const url = new URL(String(input))
+    if (url.pathname.endsWith('/me')) return json({ user })
+    return installedImplementation(input, init)
+  })
+}
+
 async function renderAuthenticatedApp() {
   render(
     <StrictMode>
@@ -297,6 +340,12 @@ async function renderAuthenticatedApp() {
     </StrictMode>,
   )
   await screen.findByRole('heading', { name: 'Dashboard' })
+}
+
+async function openSelectedStudentPayments(user: ReturnType<typeof userEvent.setup>) {
+  await renderAuthenticatedApp()
+  await user.click(screen.getByRole('button', { name: 'Students' }))
+  await user.click(await screen.findByRole('button', { name: 'Open' }))
 }
 
 describe('demo shell', () => {
@@ -619,6 +668,81 @@ describe('demo shell', () => {
     expect(screen.queryByRole('dialog', { name: 'Create Student Profile' })).not.toBeInTheDocument()
   })
 
+  it('opens Create Student at Student ID with the standard modal contract', async () => {
+    const user = userEvent.setup()
+    installApiUser(schoolAdminDialogUser)
+    await renderAuthenticatedApp()
+    await user.click(screen.getByRole('button', { name: 'Students' }))
+    await user.click(await screen.findByRole('button', { name: 'Add Student' }))
+
+    const dialog = screen.getByRole('dialog', { name: 'Create Student Profile' })
+    expect(dialog).toHaveClass('modal-frame--standard')
+    await waitFor(() => expect(within(dialog).getByLabelText('Student ID')).toHaveFocus())
+  })
+
+  it('associates and focuses the first Create Student server error', async () => {
+    const user = userEvent.setup()
+    installApiUser(schoolAdminDialogUser)
+    const fetchMock = vi.mocked(globalThis.fetch)
+    const installedImplementation = fetchMock.getMockImplementation()
+    if (!installedImplementation) throw new Error('API mock is not installed')
+
+    fetchMock.mockImplementation((input, init) => {
+      const url = new URL(String(input))
+      if (url.pathname.endsWith('/students') && init?.method === 'POST') {
+        return json(
+          {
+            message: 'Please check the student.',
+            errors: { student_no: ['Student ID is required.'] },
+          },
+          422,
+        )
+      }
+      return installedImplementation(input, init)
+    })
+
+    await renderAuthenticatedApp()
+    await user.click(screen.getByRole('button', { name: 'Students' }))
+    await user.click(await screen.findByRole('button', { name: 'Add Student' }))
+    await user.type(screen.getByLabelText('Student ID'), 'TEMP-001')
+    await user.type(screen.getByLabelText('Student Name'), 'Alyssa Tan')
+    await user.selectOptions(screen.getByLabelText('Class'), '2')
+    await user.click(screen.getByRole('button', { name: 'Create Student' }))
+
+    const studentId = await screen.findByLabelText('Student ID')
+    expect(studentId).toHaveAttribute('aria-invalid', 'true')
+    expect(studentId).toHaveAttribute(
+      'aria-describedby',
+      'create-student-student-no-error',
+    )
+    expect(document.getElementById('create-student-student-no-error')).toHaveTextContent(
+      'Student ID is required.',
+    )
+    await waitFor(() => expect(studentId).toHaveFocus())
+  })
+
+  it('uses One-time Charge language and identifies the selected student', async () => {
+    const user = userEvent.setup()
+    installApiUser(schoolAdminDialogUser)
+    await renderAuthenticatedApp()
+    await user.click(screen.getByRole('button', { name: 'Students' }))
+    await user.click(await screen.findByRole('button', { name: 'Open' }))
+    await user.click(screen.getByRole('button', { name: 'Add One-time Charge' }))
+
+    const dialog = screen.getByRole('dialog', { name: 'One-time Charge' })
+    expect(dialog).toHaveClass('modal-frame--standard')
+    expect(within(dialog).getByRole('region', { name: 'Student context' })).toHaveTextContent(
+      'Alyssa Tan',
+    )
+    expect(within(dialog).getByRole('region', { name: 'Student context' })).toHaveTextContent(
+      'MIS-2026-001',
+    )
+    await waitFor(() => expect(within(dialog).getByLabelText('Academic Year')).toHaveFocus())
+    expect(
+      within(dialog).getByRole('button', { name: 'Add One-time Charge' }),
+    ).toBeInTheDocument()
+  })
+
   it('shows annual paid progress by default and synchronizes a selected month with student rows', async () => {
     const user = userEvent.setup()
     await renderAuthenticatedApp()
@@ -715,8 +839,8 @@ describe('demo shell', () => {
     expect(screen.getByRole('dialog', { name: 'Create Fee Agreement' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Cancel' }))
 
-    await user.click(screen.getByRole('button', { name: 'Add Manual Charge' }))
-    expect(screen.getByRole('dialog', { name: 'Add Manual Charge' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Add One-time Charge' }))
+    expect(screen.getByRole('dialog', { name: 'One-time Charge' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Cancel' }))
 
     await user.click(screen.getByRole('button', { name: 'Create Payment' }))
@@ -735,6 +859,228 @@ describe('demo shell', () => {
     await user.click(screen.getAllByRole('button', { name: 'Void' }).at(-1)!)
     expect(screen.getByRole('dialog', { name: 'Void Receipt' })).toBeInTheDocument()
   }, 10_000)
+
+  it('shows the selected payment before verification', async () => {
+    const user = userEvent.setup()
+    installApiUser(financeDialogUser)
+    await openSelectedStudentPayments(user)
+    await user.click(await screen.findByRole('button', { name: 'Verify' }))
+
+    const dialog = screen.getByRole('dialog', { name: 'Verify Payment' })
+    expect(dialog).toHaveClass('modal-frame--standard')
+    const summary = within(dialog).getByRole('region', { name: 'Payment to verify' })
+    expect(summary).toHaveTextContent('Alyssa Tan')
+    expect(summary).toHaveTextContent('RM 400')
+    expect(summary).toHaveTextContent('PAY-11')
+    await waitFor(() => expect(within(dialog).getByLabelText('Received Date')).toHaveFocus())
+  })
+
+  it.each([
+    [
+      'pending_verification',
+      'This pending payment will become void; charge balances have not yet changed.',
+    ],
+    [
+      'verified',
+      'Each applied charge will reopen by the amount allocated from this payment.',
+    ],
+  ] as const)('explains the %s payment void consequence', async (status, consequence) => {
+    const user = userEvent.setup()
+    installApiUser(financeDialogUser)
+    const fetchMock = vi.mocked(globalThis.fetch)
+    const installedImplementation = fetchMock.getMockImplementation()
+
+    if (!installedImplementation) throw new Error('API mock is not installed')
+
+    fetchMock.mockImplementation((input, init) => {
+      const url = new URL(String(input))
+
+      if (url.pathname.endsWith('/students/1/payments') && init?.method !== 'POST') {
+        return json({ data: [{ ...pendingPayment, status }] })
+      }
+
+      return installedImplementation(input, init)
+    })
+
+    await openSelectedStudentPayments(user)
+    await user.click((await screen.findAllByRole('button', { name: 'Void' }))[0])
+
+    const dialog = screen.getByRole('dialog', { name: 'Void Payment' })
+    expect(
+      within(dialog).getByRole('region', { name: 'Payment to void' }),
+    ).toHaveTextContent(consequence)
+    expect(
+      within(dialog).getByRole('button', { name: 'Confirm Void Payment' }),
+    ).toBeEnabled()
+    await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Cancel' })).toHaveFocus())
+  })
+
+  it('blocks payment void while an issued receipt exists', async () => {
+    const user = userEvent.setup()
+    installApiUser(financeDialogUser)
+    const fetchMock = vi.mocked(globalThis.fetch)
+    const installedImplementation = fetchMock.getMockImplementation()
+
+    if (!installedImplementation) throw new Error('API mock is not installed')
+
+    fetchMock.mockImplementation((input, init) => {
+      const url = new URL(String(input))
+
+      if (url.pathname.endsWith('/students/1/payments') && init?.method !== 'POST') {
+        return json({
+          data: [
+            {
+              ...pendingPayment,
+              issued_receipt: {
+                id: 21,
+                receipt_no: 'RCP-21',
+                receipt_date: '2026-07-17',
+                status: 'issued',
+              },
+            },
+          ],
+        })
+      }
+
+      return installedImplementation(input, init)
+    })
+
+    await openSelectedStudentPayments(user)
+    await user.click((await screen.findAllByRole('button', { name: 'Void' }))[0])
+
+    const dialog = screen.getByRole('dialog', { name: 'Void Payment' })
+    expect(dialog).toHaveClass('modal-frame--compact', 'modal-frame--danger')
+    expect(
+      within(dialog).getByText('Void the issued receipt before voiding this payment.'),
+    ).toBeInTheDocument()
+    expect(
+      within(dialog).queryByRole('button', { name: 'Confirm Void Payment' }),
+    ).not.toBeInTheDocument()
+    expect(within(dialog).queryByLabelText('Void Reason')).not.toBeInTheDocument()
+    await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Close' })).toHaveFocus())
+  })
+
+  it('explains that voiding a receipt leaves payment and balances unchanged', async () => {
+    const user = userEvent.setup()
+    installApiUser(financeDialogUser)
+    await openSelectedStudentPayments(user)
+    await user.click(screen.getAllByRole('button', { name: 'Void' }).at(-1)!)
+
+    const dialog = screen.getByRole('dialog', { name: 'Void Receipt' })
+    const summary = within(dialog).getByRole('region', { name: 'Receipt to void' })
+    expect(summary).toHaveTextContent('RCP-21')
+    expect(summary).toHaveTextContent('Alyssa Tan')
+    expect(summary).toHaveTextContent('The linked payment remains verified')
+    await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Cancel' })).toHaveFocus())
+  })
+
+  it('preserves Verify Payment submission and success refresh behavior', async () => {
+    const user = userEvent.setup()
+    installApiUser(financeDialogUser)
+    const fetchMock = vi.mocked(globalThis.fetch)
+    const installedImplementation = fetchMock.getMockImplementation()
+    if (!installedImplementation) throw new Error('API mock is not installed')
+
+    fetchMock.mockImplementation((input, init) => {
+      const url = new URL(String(input))
+      if (url.pathname.endsWith('/payments/11/verify') && init?.method === 'POST') {
+        return json({ payment: { ...pendingPayment, status: 'verified' } })
+      }
+      return installedImplementation(input, init)
+    })
+
+    await openSelectedStudentPayments(user)
+    await user.click(await screen.findByRole('button', { name: 'Verify' }))
+    const dialog = screen.getByRole('dialog', { name: 'Verify Payment' })
+    const receivedDate = within(dialog).getByLabelText('Received Date')
+    await user.clear(receivedDate)
+    await user.type(receivedDate, '2026-07-18')
+    await user.type(within(dialog).getByLabelText('Bank Account'), 'Maybank')
+    await user.click(within(dialog).getByRole('button', { name: 'Verify Payment' }))
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringMatching(/\/payments\/11\/verify$/),
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({
+            received_date: '2026-07-18',
+            bank_account: 'Maybank',
+            reference_no: 'PAY-11',
+            remark: null,
+          }),
+        }),
+      ),
+    )
+    expect(screen.queryByRole('dialog', { name: 'Verify Payment' })).not.toBeInTheDocument()
+    expect(screen.getByText('Payment verified.')).toBeInTheDocument()
+  })
+
+  it('preserves eligible Void Payment submission and reason', async () => {
+    const user = userEvent.setup()
+    installApiUser(financeDialogUser)
+    const fetchMock = vi.mocked(globalThis.fetch)
+    const installedImplementation = fetchMock.getMockImplementation()
+    if (!installedImplementation) throw new Error('API mock is not installed')
+
+    fetchMock.mockImplementation((input, init) => {
+      const url = new URL(String(input))
+      if (url.pathname.endsWith('/payments/11/void') && init?.method === 'POST') {
+        return json({ payment: { ...pendingPayment, status: 'voided' } })
+      }
+      return installedImplementation(input, init)
+    })
+
+    await openSelectedStudentPayments(user)
+    await user.click((await screen.findAllByRole('button', { name: 'Void' }))[0])
+    const dialog = screen.getByRole('dialog', { name: 'Void Payment' })
+    await user.type(within(dialog).getByLabelText('Void Reason'), 'Duplicate entry')
+    await user.click(within(dialog).getByRole('button', { name: 'Confirm Void Payment' }))
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringMatching(/\/payments\/11\/void$/),
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ void_reason: 'Duplicate entry' }),
+        }),
+      ),
+    )
+    expect(screen.getByText('Payment voided.')).toBeInTheDocument()
+  })
+
+  it('preserves Void Receipt submission while leaving payment handling separate', async () => {
+    const user = userEvent.setup()
+    installApiUser(financeDialogUser)
+    const fetchMock = vi.mocked(globalThis.fetch)
+    const installedImplementation = fetchMock.getMockImplementation()
+    if (!installedImplementation) throw new Error('API mock is not installed')
+
+    fetchMock.mockImplementation((input, init) => {
+      const url = new URL(String(input))
+      if (url.pathname.endsWith('/receipts/21/void') && init?.method === 'POST') {
+        return json({ receipt: { ...issuedReceipt, status: 'voided' } })
+      }
+      return installedImplementation(input, init)
+    })
+
+    await openSelectedStudentPayments(user)
+    await user.click(screen.getAllByRole('button', { name: 'Void' }).at(-1)!)
+    const dialog = screen.getByRole('dialog', { name: 'Void Receipt' })
+    await user.type(within(dialog).getByLabelText('Void Reason'), 'Receipt reissued')
+    await user.click(within(dialog).getByRole('button', { name: 'Confirm Void Receipt' }))
+
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringMatching(/\/receipts\/21\/void$/),
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ void_reason: 'Receipt reissued' }),
+        }),
+      ),
+    )
+    expect(screen.getByText('Receipt RCP-21 voided.')).toBeInTheDocument()
+  })
 
   it('creates a one-time charge inside Record Payment and selects it after confirmation', async () => {
     const user = userEvent.setup()
@@ -823,6 +1169,10 @@ describe('demo shell', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Add and select charge' }))
 
     expect(await within(dialog).findByText('Description is required.')).toBeInTheDocument()
+    expect(within(dialog).getByRole('heading', { name: 'Add one-time charge' })).toBeInTheDocument()
+    await waitFor(() =>
+      expect(within(dialog).getByLabelText('One-time charge description')).toHaveFocus(),
+    )
     expect(within(dialog).queryByText('Charge added and selected for this payment.')).not.toBeInTheDocument()
     expect(within(dialog).getByText(/Allocated RM\s*0 of RM\s*0/)).toBeInTheDocument()
   })
@@ -876,6 +1226,136 @@ describe('demo shell', () => {
     expect(within(dialog).getAllByLabelText(/Unclassified payment \d+ description/)).toHaveLength(1)
   })
 
+  it('shows payment basics, fees, allocation, balance, then supporting details', async () => {
+    const user = userEvent.setup()
+    installApiUser(schoolAdminDialogUser)
+    await renderAuthenticatedApp()
+    await user.click(screen.getByRole('button', { name: 'Students' }))
+    await user.click(await screen.findByRole('button', { name: 'Open' }))
+    await user.click(screen.getByRole('button', { name: 'Create Payment' }))
+
+    const dialog = screen.getByRole('dialog', { name: 'Record Payment' })
+    expect(dialog).toHaveClass('modal-frame--workflow')
+    expect(
+      within(dialog).getByRole('region', { name: 'Student context' }),
+    ).toHaveTextContent('Alyssa Tan')
+    expect(within(dialog).getByRole('heading', { name: 'Payment basics' })).toBeInTheDocument()
+    expect(within(dialog).getByRole('heading', { name: 'Outstanding fees' })).toBeInTheDocument()
+    expect(within(dialog).getByRole('heading', { name: 'Payment allocation' })).toBeInTheDocument()
+    expect(within(dialog).getByText('Amount remaining')).toBeInTheDocument()
+    expect(
+      within(dialog).getByText('Additional payment details').closest('details'),
+    ).not.toHaveAttribute('open')
+    expect(within(dialog).getByRole('button', { name: 'Record Payment' })).toBeDisabled()
+    await waitFor(() => expect(within(dialog).getByLabelText('Amount')).toHaveFocus())
+  })
+
+  it('opens Additional payment details when a contained field has an error', async () => {
+    const user = userEvent.setup()
+    installApiUser(schoolAdminDialogUser)
+    const fetchMock = vi.mocked(globalThis.fetch)
+    const installedImplementation = fetchMock.getMockImplementation()
+
+    if (!installedImplementation) throw new Error('API mock is not installed')
+
+    fetchMock.mockImplementation((input, init) => {
+      const url = new URL(String(input))
+
+      if (url.pathname.endsWith('/students/1/fee-record/outstanding')) {
+        return json({ data: [outstandingUniformCharge] })
+      }
+
+      if (url.pathname.endsWith('/students/1/payments') && init?.method === 'POST') {
+        return json(
+          {
+            message: 'Please check the payment.',
+            errors: { reference_no: ['Reference is invalid.'] },
+          },
+          422,
+        )
+      }
+
+      return installedImplementation(input, init)
+    })
+
+    await renderAuthenticatedApp()
+    await user.click(screen.getByRole('button', { name: 'Students' }))
+    await user.click(await screen.findByRole('button', { name: 'Open' }))
+    await user.click(screen.getByRole('button', { name: 'Create Payment' }))
+
+    const dialog = screen.getByRole('dialog', { name: 'Record Payment' })
+    await user.click(await within(dialog).findByRole('checkbox', { name: /Uniform – Sports T-shirt/ }))
+    await user.click(within(dialog).getByText('Additional payment details'))
+    await user.type(within(dialog).getByLabelText('Reference No'), 'INVALID')
+    const recordButton = within(dialog).getByRole('button', { name: 'Record Payment' })
+    expect(recordButton).toBeEnabled()
+    await user.click(recordButton)
+
+    const details = within(dialog).getByText('Additional payment details').closest('details')
+    expect(await within(dialog).findByText('Reference is invalid.')).toBeInTheDocument()
+    expect(details).toHaveAttribute('open')
+    expect(within(dialog).getByLabelText('Reference No')).toHaveAttribute(
+      'aria-describedby',
+      'record-payment-reference-no-error',
+    )
+    await waitFor(() => expect(within(dialog).getByLabelText('Reference No')).toHaveFocus())
+  })
+
+  it('preserves the Record Payment endpoint and allocation payload', async () => {
+    const user = userEvent.setup()
+    installApiUser(schoolAdminDialogUser)
+    const fetchMock = vi.mocked(globalThis.fetch)
+    const installedImplementation = fetchMock.getMockImplementation()
+
+    if (!installedImplementation) throw new Error('API mock is not installed')
+
+    fetchMock.mockImplementation((input, init) => {
+      const url = new URL(String(input))
+
+      if (url.pathname.endsWith('/students/1/fee-record/outstanding')) {
+        return json({ data: [outstandingUniformCharge] })
+      }
+
+      if (url.pathname.endsWith('/students/1/payments') && init?.method === 'POST') {
+        return json({ payment: { ...pendingPayment, amount: 80 } })
+      }
+
+      return installedImplementation(input, init)
+    })
+
+    await renderAuthenticatedApp()
+    await user.click(screen.getByRole('button', { name: 'Students' }))
+    await user.click(await screen.findByRole('button', { name: 'Open' }))
+    await user.click(screen.getByRole('button', { name: 'Create Payment' }))
+
+    const dialog = screen.getByRole('dialog', { name: 'Record Payment' })
+    await user.click(await within(dialog).findByRole('checkbox', { name: /Uniform – Sports T-shirt/ }))
+    await user.click(within(dialog).getByRole('button', { name: 'Record Payment' }))
+
+    await waitFor(() => {
+      const request = fetchMock.mock.calls.find(
+        ([input, init]) =>
+          String(input).endsWith('/students/1/payments') && init?.method === 'POST',
+      )
+      expect(JSON.parse(String(request?.[1]?.body))).toMatchObject({
+        payment_method: 'bank_transfer',
+        amount: 80,
+        allocations: [
+          {
+            allocation_type: 'charge',
+            fee_record_charge_id: 41,
+            description: 'Uniform – Sports T-shirt',
+            amount: 80,
+          },
+        ],
+      })
+    })
+    expect(screen.queryByRole('dialog', { name: 'Record Payment' })).not.toBeInTheDocument()
+    expect(
+      screen.getByText('Payment recorded and pending finance verification.'),
+    ).toBeInTheDocument()
+  })
+
   it('uses the compact editor for Create and preserves the request payload', async () => {
     const user = userEvent.setup()
     await renderAuthenticatedApp()
@@ -907,6 +1387,22 @@ describe('demo shell', () => {
         discounts: [],
       })
     })
+  })
+
+  it('identifies the student and focuses Payment Plan in Fee Agreement', async () => {
+    const user = userEvent.setup()
+    installApiUser(schoolAdminDialogUser)
+    await renderAuthenticatedApp()
+    await user.click(screen.getByRole('button', { name: 'Students' }))
+    await user.click(await screen.findByRole('button', { name: 'Open' }))
+    await user.click(screen.getByRole('button', { name: 'Create Agreement' }))
+
+    const dialog = screen.getByRole('dialog', { name: 'Create Fee Agreement' })
+    expect(dialog).toHaveClass('modal-frame--workflow')
+    expect(
+      within(dialog).getByRole('region', { name: 'Student context' }),
+    ).toHaveTextContent('Alyssa Tan')
+    await waitFor(() => expect(within(dialog).getByLabelText('Payment Plan')).toHaveFocus())
   })
 
   it('asks before closing a dirty agreement but closes a clean agreement immediately', async () => {

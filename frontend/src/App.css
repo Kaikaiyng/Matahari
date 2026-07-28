@@ -1435,11 +1435,6 @@ th {
   color: #744500;
 }
 
-.payment-submit-area {
-  display: grid;
-  gap: 10px;
-}
-
 .payment-actions {
   display: flex;
   align-items: center;
@@ -1450,6 +1445,16 @@ th {
 .danger-action {
   border-color: #ffd0d4;
   color: #b31923;
+}
+
+.modal-danger-action {
+  background: var(--brand-red-dark, #b31923);
+  color: #ffffff;
+  box-shadow: none;
+}
+
+.modal-danger-action:focus-visible {
+  outline-color: #7f1119;
 }
 
 .payment-allocation-summary td {
@@ -1682,10 +1687,6 @@ th {
 
 }
 
-.financial-modal {
-  width: min(1180px, 100%);
-}
-
 .modal-body > .agreement-form,
 .modal-body > .manual-charge-form,
 .modal-body > .payment-form,
@@ -1700,12 +1701,129 @@ th {
   gap: 14px;
 }
 
-.payment-form-state {
+.modal-body > .manual-charge-form .form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.payment-form,
+.payment-basics,
+.payment-post-allocation {
+  display: grid;
+  gap: 16px;
+}
+
+.payment-basics,
+.payment-balance-summary,
+.payment-additional-details {
+  border: 1px solid #e4e7ee;
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 14px;
+}
+
+.payment-basics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.payment-allocation-editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  grid-template-areas:
+    "outstanding post"
+    "allocation post"
+    "advanced post";
+  gap: 16px 20px;
+  align-items: start;
+}
+
+.payment-outstanding-region {
+  grid-area: outstanding;
+}
+
+.payment-allocation-region {
+  grid-area: allocation;
+}
+
+.payment-post-allocation-region {
+  grid-area: post;
+  position: sticky;
+  top: 0;
+}
+
+.payment-advanced-options {
+  grid-area: advanced;
+}
+
+.payment-balance-summary {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px 12px;
+  background: #f7f8fa;
+}
+
+.payment-balance-summary span,
+.payment-balance-summary small {
+  color: #626773;
+  font-size: 13px;
+}
+
+.payment-balance-summary strong,
+.payment-balance-summary small {
+  text-align: right;
+}
+
+.payment-balance-summary--balanced {
+  border-color: #b8dfca;
+  background: #effaf4;
+  color: #176c43;
+}
+
+.payment-balance-summary--amount-remaining,
+.payment-balance-summary--over-allocated {
+  border-color: #efd4a1;
+  background: #fff9ed;
+  color: #744500;
+}
+
+.payment-additional-details {
+  padding-block: 4px;
+}
+
+.payment-additional-details > summary {
+  min-height: 44px;
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.payment-additional-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 8px 0 12px;
 }
 
 @media screen and (max-width: 1023px) {
+  .payment-basics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .payment-allocation-editor {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "outstanding"
+      "allocation"
+      "post"
+      "advanced";
+  }
+
+  .payment-post-allocation-region {
+    position: static;
+  }
+
   .charge-cell-row {
     min-height: 56px;
     align-items: flex-start;
@@ -1927,6 +2045,7 @@ th {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .modal-body .student-form,
   .manual-charge-form .form-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -2021,6 +2140,8 @@ th {
   }
 
   .payment-form > .form-grid,
+  .payment-basics-grid,
+  .payment-additional-grid,
   .one-time-charge-grid,
   .advanced-option-content,
   .allocation-row,
@@ -2047,14 +2168,6 @@ th {
   .advanced-option-content .table-action {
     grid-column: 1;
     grid-row: auto;
-  }
-
-  .payment-submit-area {
-    position: static;
-    margin-inline: 0;
-    border-top: 1px solid #edf0f4;
-    background: #ffffff;
-    padding: 10px 0 0;
   }
 
   .payment-history-table,
@@ -2158,7 +2271,8 @@ th {
   }
 
   .fee-record-activation-bar,
-  .manual-charge-form .form-grid {
+  .modal-body .student-form,
+  .modal-body .manual-charge-form .form-grid {
     grid-template-columns: 1fr;
   }
 

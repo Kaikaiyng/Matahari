@@ -142,6 +142,38 @@ describe('FeeAgreementEditor', () => {
     expect(screen.getByRole('complementary', { name: 'Changes from v1' })).toBeInTheDocument()
   })
 
+  it('exposes version, review, and main regions in responsive source order', () => {
+    render(<EditorHarness mode="supersede" agreement={currentAgreement} />)
+
+    const editor = screen.getByTestId('fee-agreement-editor')
+    const version = within(editor)
+      .getByText('Creating a new version from v1')
+      .closest('.agreement-version-context')
+    const review = within(editor).getByRole('complementary', { name: 'Changes from v1' })
+    const main = within(editor).getByRole('main')
+
+    expect(version).toHaveClass('agreement-version-context')
+    expect(review).toHaveClass('agreement-review-panel')
+    expect(main).toHaveClass('fee-agreement-editor-main')
+    expect(editor.children[0]).toBe(version)
+    expect(editor.children[1]).toBe(main)
+    expect(editor.children[2]).toBe(review)
+  })
+
+  it('shows the compact review facts before expandable detail', () => {
+    render(<EditorHarness mode="supersede" agreement={currentAgreement} />)
+    const review = screen.getByRole('complementary', { name: 'Changes from v1' })
+
+    expect(within(review).getByText('Preview total').closest('div')).toHaveTextContent('RM 890')
+    expect(within(review).getByText('Core fees').closest('div')).toHaveTextContent('2')
+    expect(within(review).getByText('Coverage').closest('div')).toHaveTextContent(
+      '2026-01-01 onward',
+    )
+    expect(within(review).getByText('Review details').closest('details')).not.toHaveAttribute(
+      'open',
+    )
+  })
+
   it('keeps advanced fee controls collapsed until Edit is selected', async () => {
     const user = userEvent.setup()
     render(<EditorHarness />)
@@ -247,6 +279,11 @@ describe('FeeAgreementEditor', () => {
 
     const billingPattern = await screen.findByLabelText('Tuition Fee Billing Pattern')
     expect(screen.getByText('Choose at least one billing month.')).toBeInTheDocument()
+    expect(billingPattern).toHaveAttribute('aria-invalid', 'true')
+    expect(screen.getByText('Choose at least one billing month.')).toHaveAttribute(
+      'id',
+      'fee-agreement-item-1-billing-months-error',
+    )
     await waitFor(() => expect(billingPattern).toHaveFocus())
   })
 })

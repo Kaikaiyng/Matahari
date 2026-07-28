@@ -1,4 +1,6 @@
 import { useMemo } from 'react'
+import type { ReactNode } from 'react'
+import { FieldError, fieldErrorProps } from '../../components/AdminUi'
 import type { ValidationErrors } from '../fee-agreements/types'
 import {
   feeRecordCategoryOptions,
@@ -36,6 +38,7 @@ export type PaymentAllocationEditorProps = {
   onUpdateOneTimeCharge: (field: keyof OneTimeChargeDraft, value: string) => void
   onCreateOneTimeCharge: () => void
   onAddUnclassified: () => void
+  afterAllocation: ReactNode
 }
 
 function formatCurrency(amount: number | null) {
@@ -93,6 +96,7 @@ export function PaymentAllocationEditor({
   onUpdateOneTimeCharge,
   onCreateOneTimeCharge,
   onAddUnclassified,
+  afterAllocation,
 }: PaymentAllocationEditorProps) {
   const selectedChargeIds = new Set(
     allocations
@@ -128,8 +132,11 @@ export function PaymentAllocationEditor({
   const incompleteUnclassified = hasIncompleteUnclassifiedAllocation(allocations)
 
   return (
-    <>
-      <section className="payment-allocation-block" aria-labelledby="outstanding-fees-heading">
+    <div className="payment-allocation-editor" data-testid="payment-allocation-editor">
+      <section
+        className="payment-allocation-block payment-outstanding-region"
+        aria-labelledby="outstanding-fees-heading"
+      >
         <div className="payment-subheader">
           <div>
             <h3 id="outstanding-fees-heading">Outstanding fees</h3>
@@ -168,10 +175,15 @@ export function PaymentAllocationEditor({
                   type="month"
                   value={oneTimeCharge.billing_month}
                   onChange={(event) => onUpdateOneTimeCharge('billing_month', event.target.value)}
+                  {...fieldErrorProps(
+                    'payment-one-time-billing-month-error',
+                    validationMessage(oneTimeChargeErrors, 'billing_month'),
+                  )}
                 />
-                {validationMessage(oneTimeChargeErrors, 'billing_month') && (
-                  <small>{validationMessage(oneTimeChargeErrors, 'billing_month')}</small>
-                )}
+                <FieldError
+                  id="payment-one-time-billing-month-error"
+                  message={validationMessage(oneTimeChargeErrors, 'billing_month')}
+                />
               </label>
 
               <label className="form-field">
@@ -180,6 +192,10 @@ export function PaymentAllocationEditor({
                   aria-label="One-time charge category"
                   value={oneTimeCharge.fee_record_category}
                   onChange={(event) => onUpdateOneTimeCharge('fee_record_category', event.target.value)}
+                  {...fieldErrorProps(
+                    'payment-one-time-fee-record-category-error',
+                    validationMessage(oneTimeChargeErrors, 'fee_record_category'),
+                  )}
                 >
                   {feeRecordCategoryOptions.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -187,9 +203,10 @@ export function PaymentAllocationEditor({
                     </option>
                   ))}
                 </select>
-                {validationMessage(oneTimeChargeErrors, 'fee_record_category') && (
-                  <small>{validationMessage(oneTimeChargeErrors, 'fee_record_category')}</small>
-                )}
+                <FieldError
+                  id="payment-one-time-fee-record-category-error"
+                  message={validationMessage(oneTimeChargeErrors, 'fee_record_category')}
+                />
               </label>
 
               <label className="form-field">
@@ -199,10 +216,15 @@ export function PaymentAllocationEditor({
                   value={oneTimeCharge.description}
                   placeholder="Uniform, CCA, Books, or another fee"
                   onChange={(event) => onUpdateOneTimeCharge('description', event.target.value)}
+                  {...fieldErrorProps(
+                    'payment-one-time-description-error',
+                    validationMessage(oneTimeChargeErrors, 'description'),
+                  )}
                 />
-                {validationMessage(oneTimeChargeErrors, 'description') && (
-                  <small>{validationMessage(oneTimeChargeErrors, 'description')}</small>
-                )}
+                <FieldError
+                  id="payment-one-time-description-error"
+                  message={validationMessage(oneTimeChargeErrors, 'description')}
+                />
               </label>
 
               <label className="form-field">
@@ -214,10 +236,15 @@ export function PaymentAllocationEditor({
                   step="0.01"
                   value={oneTimeCharge.expected_amount}
                   onChange={(event) => onUpdateOneTimeCharge('expected_amount', event.target.value)}
+                  {...fieldErrorProps(
+                    'payment-one-time-expected-amount-error',
+                    validationMessage(oneTimeChargeErrors, 'expected_amount'),
+                  )}
                 />
-                {validationMessage(oneTimeChargeErrors, 'expected_amount') && (
-                  <small>{validationMessage(oneTimeChargeErrors, 'expected_amount')}</small>
-                )}
+                <FieldError
+                  id="payment-one-time-expected-amount-error"
+                  message={validationMessage(oneTimeChargeErrors, 'expected_amount')}
+                />
               </label>
 
               <label className="form-field wide">
@@ -290,7 +317,10 @@ export function PaymentAllocationEditor({
         </div>
       </section>
 
-      <section className="payment-allocation-block" aria-labelledby="payment-allocation-heading">
+      <section
+        className="payment-allocation-block payment-allocation-region"
+        aria-labelledby="payment-allocation-heading"
+      >
         <div className="payment-subheader">
           <div>
             <h3 id="payment-allocation-heading">Payment allocation</h3>
@@ -326,10 +356,15 @@ export function PaymentAllocationEditor({
                     aria-label={`Unclassified payment ${index + 1} description`}
                     value={allocation.description}
                     onChange={(event) => onUpdateAllocation(allocation.key, 'description', event.target.value)}
+                    {...fieldErrorProps(
+                      `record-payment-allocation-${index}-description-error`,
+                      validationMessage(allocationErrors, `allocations.${index}.description`),
+                    )}
                   />
-                  {validationMessage(allocationErrors, `allocations.${index}.description`) && (
-                    <small>{validationMessage(allocationErrors, `allocations.${index}.description`)}</small>
-                  )}
+                  <FieldError
+                    id={`record-payment-allocation-${index}-description-error`}
+                    message={validationMessage(allocationErrors, `allocations.${index}.description`)}
+                  />
                 </label>
               )}
 
@@ -343,10 +378,15 @@ export function PaymentAllocationEditor({
                   step="0.01"
                   value={allocation.amount}
                   onChange={(event) => onUpdateAllocation(allocation.key, 'amount', event.target.value)}
+                  {...fieldErrorProps(
+                    `record-payment-allocation-${index}-amount-error`,
+                    validationMessage(allocationErrors, `allocations.${index}.amount`),
+                  )}
                 />
-                {validationMessage(allocationErrors, `allocations.${index}.amount`) && (
-                  <small>{validationMessage(allocationErrors, `allocations.${index}.amount`)}</small>
-                )}
+                <FieldError
+                  id={`record-payment-allocation-${index}-amount-error`}
+                  message={validationMessage(allocationErrors, `allocations.${index}.amount`)}
+                />
               </label>
 
               <button
@@ -360,6 +400,8 @@ export function PaymentAllocationEditor({
           ))}
         </div>
       </section>
+
+      <div className="payment-post-allocation-region">{afterAllocation}</div>
 
       <details className="payment-advanced-options">
         <summary>Advanced options</summary>
@@ -379,6 +421,6 @@ export function PaymentAllocationEditor({
           </button>
         </div>
       </details>
-    </>
+    </div>
   )
 }

@@ -26,7 +26,19 @@ import {
 import { ApiError, apiRequest } from './api'
 import { AdminShell } from './components/AdminShell'
 import type { NavigationGroup } from './components/AdminShell'
-import { DataPanel, FilterToolbar, ModalFrame, PageHeader, SessionLoader, StatCard, StatusBadge } from './components/AdminUi'
+import {
+  DataPanel,
+  FieldError,
+  FilterToolbar,
+  ModalContextSummary,
+  ModalFrame,
+  PageHeader,
+  SessionLoader,
+  StatCard,
+  StatusBadge,
+  fieldErrorProps,
+  focusFirstDialogError,
+} from './components/AdminUi'
 import type { UiTone } from './components/AdminUi'
 import { CalendarPage } from './components/CalendarPage'
 import { ClassesPage } from './components/ClassesPage'
@@ -843,6 +855,7 @@ function StudentsPage({
   const [isLoading, setIsLoading] = useState(true)
   const [isCreating, setIsCreating] = useState(false)
   const [showCreateForm, setShowCreateForm] = useState(false)
+  const createStudentIdRef = useRef<HTMLInputElement>(null)
   const [form, setForm] = useState<StudentForm>(emptyStudentForm)
   const [formErrors, setFormErrors] = useState<ValidationErrors>()
   const [statusDraft, setStatusDraft] = useState<StudentStatus>('active')
@@ -850,6 +863,7 @@ function StudentsPage({
   const [feeAgreements, setFeeAgreements] = useState<FeeAgreement[]>([])
   const [feeAgreementMode, setFeeAgreementMode] = useState<'create' | 'supersede'>('create')
   const [showFeeAgreementForm, setShowFeeAgreementForm] = useState(false)
+  const feeAgreementPaymentPlanRef = useRef<HTMLSelectElement>(null)
   const [feeAgreementForm, setFeeAgreementForm] = useState<FeeAgreementForm>(defaultAgreementForm([]))
   const [initialFeeAgreementForm, setInitialFeeAgreementForm] = useState<FeeAgreementForm>(
     defaultAgreementForm([]),
@@ -860,6 +874,8 @@ function StudentsPage({
   const [payments, setPayments] = useState<StudentPayment[]>([])
   const [isLoadingPayments, setIsLoadingPayments] = useState(false)
   const [showPaymentForm, setShowPaymentForm] = useState(false)
+  const paymentAmountRef = useRef<HTMLInputElement>(null)
+  const [paymentDetailsOpen, setPaymentDetailsOpen] = useState(false)
   const [paymentForm, setPaymentForm] = useState<PaymentForm>(defaultPaymentForm(null))
   const [paymentErrors, setPaymentErrors] = useState<ValidationErrors>()
   const [isSavingPayment, setIsSavingPayment] = useState(false)
@@ -888,14 +904,17 @@ function StudentsPage({
   const [isPreviewingFeeRecord, setIsPreviewingFeeRecord] = useState(false)
   const [isActivatingFeeRecord, setIsActivatingFeeRecord] = useState(false)
   const [showManualChargeForm, setShowManualChargeForm] = useState(false)
+  const oneTimeChargeYearRef = useRef<HTMLInputElement>(null)
   const [manualChargeForm, setManualChargeForm] = useState<OneTimeChargeDraft>(createOneTimeChargeDraft('2026'))
   const [manualChargeErrors, setManualChargeErrors] = useState<ValidationErrors>()
   const [isSavingManualCharge, setIsSavingManualCharge] = useState(false)
   const [verifyingPaymentId, setVerifyingPaymentId] = useState<number | null>(null)
+  const verifyReceivedDateRef = useRef<HTMLInputElement>(null)
   const [verifyForm, setVerifyForm] = useState<VerifyPaymentForm>(defaultVerifyForm())
   const [verifyErrors, setVerifyErrors] = useState<ValidationErrors>()
   const [isVerifyingPayment, setIsVerifyingPayment] = useState(false)
   const [voidingPaymentId, setVoidingPaymentId] = useState<number | null>(null)
+  const voidPaymentCancelRef = useRef<HTMLButtonElement>(null)
   const [voidReason, setVoidReason] = useState('')
   const [voidErrors, setVoidErrors] = useState<ValidationErrors>()
   const [isVoidingPayment, setIsVoidingPayment] = useState(false)
@@ -908,6 +927,7 @@ function StudentsPage({
   const [generateErrors, setGenerateErrors] = useState<ValidationErrors>()
   const [isGeneratingReceipt, setIsGeneratingReceipt] = useState(false)
   const [voidingReceiptId, setVoidingReceiptId] = useState<number | null>(null)
+  const voidReceiptCancelRef = useRef<HTMLButtonElement>(null)
   const [receiptVoidReason, setReceiptVoidReason] = useState('')
   const [receiptVoidErrors, setReceiptVoidErrors] = useState<ValidationErrors>()
   const [isVoidingReceipt, setIsVoidingReceipt] = useState(false)
@@ -934,6 +954,52 @@ function StudentsPage({
   const paymentAllocationTotal = allocationTotal(paymentForm.allocations)
   const paymentAmountCents = moneyToCents(paymentForm.amount)
   const allocationTotalCents = moneyToCents(paymentAllocationTotal)
+  const paymentAdditionalErrorKeys = [
+    'received_date',
+    'paid_by',
+    'bank_account',
+    'reference_no',
+    'payment_proof',
+    'remark',
+  ] as const
+  const paymentAdditionalHasError = paymentAdditionalErrorKeys.some(
+    (key) => Boolean(paymentErrors?.[key]?.length),
+  )
+  const paymentAdditionalHasValue = [
+    paymentForm.received_date,
+    paymentForm.paid_by,
+    paymentForm.bank_account,
+    paymentForm.reference_no,
+    paymentForm.payment_proof,
+    paymentForm.remark,
+  ].some((value) => value.trim() !== '')
+  const paymentDifferenceCents = paymentAmountCents - allocationTotalCents
+  const paymentBalanceLabel =
+    paymentAmountCents <= 0
+      ? 'Amount remaining'
+      : paymentDifferenceCents === 0
+        ? 'Balanced'
+        : paymentDifferenceCents > 0
+          ? 'Amount remaining'
+          : 'Over-allocated'
+  const paymentCanSubmit =
+    paymentAmountCents > 0 &&
+    paymentForm.allocations.length > 0 &&
+    paymentDifferenceCents === 0 &&
+    !hasIncompleteUnclassifiedAllocation(paymentForm.allocations)
+  const paymentToVerify =
+    verifyingPaymentId === null
+      ? null
+      : payments.find((payment) => payment.id === verifyingPaymentId) ?? null
+  const paymentToVoid =
+    voidingPaymentId === null
+      ? null
+      : payments.find((payment) => payment.id === voidingPaymentId) ?? null
+  const receiptToVoid =
+    voidingReceiptId === null
+      ? null
+      : receipts.find((receipt) => receipt.id === voidingReceiptId) ?? null
+  const paymentVoidBlocked = paymentToVoid?.issued_receipt?.status === 'issued'
   const previewBlockedByWarnings = Boolean(feeRecordPreview?.needs_confirmation || feeRecordPreview?.warnings.length)
   const canActivateCurrentPreview = Boolean(
     canActivateFeeRecord &&
@@ -970,6 +1036,16 @@ function StudentsPage({
       ),
     [studentListFeeRecordSummaryByStudentId, students],
   )
+
+  useEffect(() => {
+    if (paymentAdditionalHasError || paymentAdditionalHasValue) {
+      setPaymentDetailsOpen(true)
+    }
+
+    if (paymentAdditionalHasError) {
+      focusFirstDialogError()
+    }
+  }, [paymentAdditionalHasError, paymentAdditionalHasValue])
   const visibleStudents = useMemo(() => {
     const needle = studentSearch.trim().toLowerCase()
 
@@ -1336,6 +1412,7 @@ function StudentsPage({
     } catch (manualChargeError) {
       if (manualChargeError instanceof ApiError && manualChargeError.status === 422) {
         setManualChargeErrors(manualChargeError.errors)
+        focusFirstDialogError()
       } else if (manualChargeError instanceof ApiError && manualChargeError.status === 403) {
         setFeeRecordPreviewError('You do not have permission to add manual Fee Record charges.')
       }
@@ -1432,6 +1509,7 @@ function StudentsPage({
     } catch (createError) {
       if (createError instanceof ApiError && createError.status === 422) {
         setFormErrors(createError.errors)
+        focusFirstDialogError()
       }
       handleApiError(createError)
     } finally {
@@ -1589,6 +1667,10 @@ function StudentsPage({
     } catch (agreementError) {
       if (agreementError instanceof ApiError && agreementError.status === 422) {
         setFeeAgreementErrors(agreementError.errors)
+        const firstErrorKey = Object.keys(agreementError.errors ?? {})[0] ?? ''
+        if (!/^items\.\d+\./.test(firstErrorKey) && !firstErrorKey.startsWith('discounts.')) {
+          focusFirstDialogError()
+        }
       }
       handleApiError(agreementError)
     } finally {
@@ -1600,6 +1682,7 @@ function StudentsPage({
     const nextForm = defaultPaymentForm(currentFeeAgreement)
     setPaymentForm(nextForm)
     setPaymentErrors(undefined)
+    setPaymentDetailsOpen(false)
     setShowPaymentOneTimeCharge(false)
     setPaymentOneTimeCharge(createOneTimeChargeDraft(nextForm.academic_year))
     setPaymentOneTimeChargeErrors(undefined)
@@ -1737,6 +1820,7 @@ function StudentsPage({
     } catch (chargeError) {
       if (chargeError instanceof ApiError && chargeError.status === 422) {
         setPaymentOneTimeChargeErrors(chargeError.errors)
+        focusFirstDialogError()
       } else {
         handleApiError(chargeError)
       }
@@ -1785,6 +1869,9 @@ function StudentsPage({
     })
 
     setPaymentErrors(Object.keys(nextErrors).length > 0 ? nextErrors : undefined)
+    if (Object.keys(nextErrors).length > 0) {
+      focusFirstDialogError()
+    }
 
     return Object.keys(nextErrors).length === 0
   }
@@ -1836,6 +1923,7 @@ function StudentsPage({
     } catch (paymentError) {
       if (paymentError instanceof ApiError && paymentError.status === 422) {
         setPaymentErrors(paymentError.errors)
+        focusFirstDialogError()
       }
       handleApiError(paymentError)
     } finally {
@@ -1879,6 +1967,7 @@ function StudentsPage({
     } catch (verifyError) {
       if (verifyError instanceof ApiError && verifyError.status === 422) {
         setVerifyErrors(verifyError.errors)
+        focusFirstDialogError()
       }
       handleApiError(verifyError)
     } finally {
@@ -1920,6 +2009,7 @@ function StudentsPage({
     } catch (voidError) {
       if (voidError instanceof ApiError && voidError.status === 422) {
         setVoidErrors(voidError.errors)
+        focusFirstDialogError()
         setError(formatValidationError(voidError.errors, 'payment') ?? voidError.message)
         return
       }
@@ -2052,12 +2142,136 @@ function StudentsPage({
     } catch (voidReceiptError) {
       if (voidReceiptError instanceof ApiError && voidReceiptError.status === 422) {
         setReceiptVoidErrors(voidReceiptError.errors)
+        focusFirstDialogError()
       }
       handleApiError(voidReceiptError)
     } finally {
       setIsVoidingReceipt(false)
     }
   }
+
+  const paymentPostAllocation = (
+    <div className="payment-post-allocation">
+      <section
+        className={`payment-balance-summary payment-balance-summary--${paymentBalanceLabel
+          .toLowerCase()
+          .replace(/\s+/g, '-')}`}
+        aria-live="polite"
+        aria-label="Payment balance"
+      >
+        <span>Payment {formatCurrency(Number(paymentForm.amount || 0))}</span>
+        <span>Allocation {formatCurrency(paymentAllocationTotal)}</span>
+        <strong>{paymentBalanceLabel}</strong>
+        {paymentDifferenceCents !== 0 && (
+          <small>{formatCurrency(Math.abs(paymentDifferenceCents) / 100)}</small>
+        )}
+      </section>
+
+      <details
+        className="payment-additional-details"
+        open={paymentDetailsOpen}
+        onToggle={(event) => setPaymentDetailsOpen(event.currentTarget.open)}
+      >
+        <summary>Additional payment details</summary>
+        <div className="payment-additional-grid">
+          {paymentForm.payment_method !== 'cash' && (
+            <label className="form-field">
+              Received Date
+              <input
+                type="date"
+                value={paymentForm.received_date}
+                onChange={(event) => updatePaymentForm('received_date', event.target.value)}
+                {...fieldErrorProps(
+                  'record-payment-received-date-error',
+                  formatValidationError(paymentErrors, 'received_date'),
+                )}
+              />
+              <FieldError
+                id="record-payment-received-date-error"
+                message={formatValidationError(paymentErrors, 'received_date')}
+              />
+            </label>
+          )}
+          <label className="form-field">
+            Paid By
+            <input
+              value={paymentForm.paid_by}
+              onChange={(event) => updatePaymentForm('paid_by', event.target.value)}
+              {...fieldErrorProps(
+                'record-payment-paid-by-error',
+                formatValidationError(paymentErrors, 'paid_by'),
+              )}
+            />
+            <FieldError
+              id="record-payment-paid-by-error"
+              message={formatValidationError(paymentErrors, 'paid_by')}
+            />
+          </label>
+          <label className="form-field">
+            Bank Account
+            <input
+              value={paymentForm.bank_account}
+              onChange={(event) => updatePaymentForm('bank_account', event.target.value)}
+              {...fieldErrorProps(
+                'record-payment-bank-account-error',
+                formatValidationError(paymentErrors, 'bank_account'),
+              )}
+            />
+            <FieldError
+              id="record-payment-bank-account-error"
+              message={formatValidationError(paymentErrors, 'bank_account')}
+            />
+          </label>
+          <label className="form-field">
+            Reference No
+            <input
+              aria-label="Reference No"
+              value={paymentForm.reference_no}
+              onChange={(event) => updatePaymentForm('reference_no', event.target.value)}
+              {...fieldErrorProps(
+                'record-payment-reference-no-error',
+                formatValidationError(paymentErrors, 'reference_no'),
+              )}
+            />
+            <FieldError
+              id="record-payment-reference-no-error"
+              message={formatValidationError(paymentErrors, 'reference_no')}
+            />
+          </label>
+          <label className="form-field wide">
+            Payment Proof Text / Reference
+            <textarea
+              value={paymentForm.payment_proof}
+              onChange={(event) => updatePaymentForm('payment_proof', event.target.value)}
+              {...fieldErrorProps(
+                'record-payment-proof-error',
+                formatValidationError(paymentErrors, 'payment_proof'),
+              )}
+            />
+            <FieldError
+              id="record-payment-proof-error"
+              message={formatValidationError(paymentErrors, 'payment_proof')}
+            />
+          </label>
+          <label className="form-field wide">
+            Remark
+            <textarea
+              value={paymentForm.remark}
+              onChange={(event) => updatePaymentForm('remark', event.target.value)}
+              {...fieldErrorProps(
+                'record-payment-remark-error',
+                formatValidationError(paymentErrors, 'remark'),
+              )}
+            />
+            <FieldError
+              id="record-payment-remark-error"
+              message={formatValidationError(paymentErrors, 'remark')}
+            />
+          </label>
+        </div>
+      </details>
+    </div>
+  )
 
   return (
     <section className="page-stack">
@@ -2106,6 +2320,8 @@ function StudentsPage({
         <ModalFrame
           title="Create Student Profile"
           description="Add enrolment and profile details."
+          size="standard"
+          initialFocusRef={createStudentIdRef}
           onClose={() => setShowCreateForm(false)}
           footer={
             <>
@@ -2127,25 +2343,49 @@ function StudentsPage({
           <form id="create-student-form" className="form-grid student-form" onSubmit={submitStudent}>
             <label className="form-field">
               Student ID
-              <input value={form.student_no} onChange={(event) => updateForm('student_no', event.target.value)} />
-              {formatValidationError(formErrors, 'student_no') && (
-                <small>{formatValidationError(formErrors, 'student_no')}</small>
-              )}
+              <input
+                ref={createStudentIdRef}
+                aria-label="Student ID"
+                value={form.student_no}
+                onChange={(event) => updateForm('student_no', event.target.value)}
+                {...fieldErrorProps(
+                  'create-student-student-no-error',
+                  formatValidationError(formErrors, 'student_no'),
+                )}
+              />
+              <FieldError
+                id="create-student-student-no-error"
+                message={formatValidationError(formErrors, 'student_no')}
+              />
             </label>
 
             <label className="form-field">
               Student Name
-              <input value={form.full_name} onChange={(event) => updateForm('full_name', event.target.value)} />
-              {formatValidationError(formErrors, 'full_name') && (
-                <small>{formatValidationError(formErrors, 'full_name')}</small>
-              )}
+              <input
+                aria-label="Student Name"
+                value={form.full_name}
+                onChange={(event) => updateForm('full_name', event.target.value)}
+                {...fieldErrorProps(
+                  'create-student-full-name-error',
+                  formatValidationError(formErrors, 'full_name'),
+                )}
+              />
+              <FieldError
+                id="create-student-full-name-error"
+                message={formatValidationError(formErrors, 'full_name')}
+              />
             </label>
 
             <label className="form-field">
               Level Group
               <select
+                aria-label="Level Group"
                 value={form.level_group}
                 onChange={(event) => updateStudentLevelGroup(event.target.value as LevelGroup)}
+                {...fieldErrorProps(
+                  'create-student-level-group-error',
+                  formatValidationError(formErrors, 'level_group'),
+                )}
               >
                 {levelGroupOptions.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -2153,14 +2393,24 @@ function StudentsPage({
                   </option>
                 ))}
               </select>
-              {formatValidationError(formErrors, 'level_group') && (
-                <small>{formatValidationError(formErrors, 'level_group')}</small>
-              )}
+              <FieldError
+                id="create-student-level-group-error"
+                message={formatValidationError(formErrors, 'level_group')}
+              />
             </label>
 
             <label className="form-field">
               Class
-              <select value={form.class_id} onChange={(event) => updateForm('class_id', event.target.value)} required>
+              <select
+                aria-label="Class"
+                value={form.class_id}
+                onChange={(event) => updateForm('class_id', event.target.value)}
+                required
+                {...fieldErrorProps(
+                  'create-student-class-id-error',
+                  formatValidationError(formErrors, 'class_id'),
+                )}
+              >
                 <option value="">Select class</option>
                 {schoolClasses
                   .filter((schoolClass) => schoolClass.level_group === form.level_group)
@@ -2170,9 +2420,10 @@ function StudentsPage({
                     </option>
                   ))}
               </select>
-              {formatValidationError(formErrors, 'class_id') && (
-                <small>{formatValidationError(formErrors, 'class_id')}</small>
-              )}
+              <FieldError
+                id="create-student-class-id-error"
+                message={formatValidationError(formErrors, 'class_id')}
+              />
             </label>
 
             <label className="form-field">
@@ -2528,8 +2779,9 @@ function StudentsPage({
                     ? 'Set the agreement dates, review the core fees, and add optional fees only when needed.'
                     : 'Create a new version and review every change before it takes effect.'
                 }
+                size="workflow"
+                initialFocusRef={feeAgreementPaymentPlanRef}
                 onClose={() => closeFeeAgreementEditor()}
-                className="financial-modal"
                 footer={
                   <>
                     <button type="button" className="secondary-action" onClick={() => closeFeeAgreementEditor()}>
@@ -2551,8 +2803,17 @@ function StudentsPage({
                 }
               >
               <form id="fee-agreement-form" className="agreement-form" onSubmit={submitFeeAgreement}>
+                <ModalContextSummary
+                  ariaLabel="Student context"
+                  items={[
+                    { label: 'Student', value: selectedStudent?.full_name ?? 'Not selected' },
+                    { label: 'Student ID', value: selectedStudent?.student_no ?? 'Not recorded' },
+                  ]}
+                />
                 {formatValidationError(feeAgreementErrors, 'items') && (
-                  <Message tone="error">{formatValidationError(feeAgreementErrors, 'items')}</Message>
+                  <div className="inline-error" role="alert" tabIndex={-1}>
+                    {formatValidationError(feeAgreementErrors, 'items')}
+                  </div>
                 )}
 
                 <FeeAgreementEditor
@@ -2561,6 +2822,7 @@ function StudentsPage({
                   errors={feeAgreementErrors}
                   currentAgreement={currentFeeAgreement}
                   onChange={setFeeAgreementForm}
+                  paymentPlanRef={feeAgreementPaymentPlanRef}
                 />
 
               </form>
@@ -2662,7 +2924,7 @@ function StudentsPage({
                           setManualChargeErrors(undefined)
                         }}
                       >
-                        {showManualChargeForm ? 'Close Manual Charge' : 'Add Manual Charge'}
+                        {showManualChargeForm ? 'Close One-time Charge' : 'Add One-time Charge'}
                       </button>
                     )}
                   </div>
@@ -2674,8 +2936,10 @@ function StudentsPage({
 
                 {showManualChargeForm && canManageFeeRecord && (
                   <ModalFrame
-                    title="Add Manual Charge"
-                    description="Add a one-time or ad-hoc charge cell to this student account."
+                    title="One-time Charge"
+                    description="Add a one-time charge to this student account."
+                    size="standard"
+                    initialFocusRef={oneTimeChargeYearRef}
                     onClose={() => setShowManualChargeForm(false)}
                     footer={
                       <>
@@ -2688,34 +2952,67 @@ function StudentsPage({
                           form="manual-charge-form"
                           disabled={isSavingManualCharge}
                         >
-                          {isSavingManualCharge ? 'Adding...' : 'Add Manual Charge'}
+                          {isSavingManualCharge ? 'Adding...' : 'Add One-time Charge'}
                         </button>
                       </>
                     }
                   >
+                  <ModalContextSummary
+                    ariaLabel="Student context"
+                    items={[
+                      { label: 'Student', value: selectedStudent.full_name },
+                      { label: 'Student ID', value: selectedStudent.student_no },
+                      { label: 'Charge year', value: manualChargeForm.academic_year },
+                    ]}
+                  />
                   <form id="manual-charge-form" className="manual-charge-form" onSubmit={submitManualCharge} noValidate>
                     <div className="form-grid">
                       <label className="form-field">
                         Academic Year
-                        <input value={manualChargeForm.academic_year} onChange={(event) => updateManualChargeForm('academic_year', event.target.value)} />
-                        {formatValidationError(manualChargeErrors, 'academic_year') && (
-                          <small>{formatValidationError(manualChargeErrors, 'academic_year')}</small>
-                        )}
+                        <input
+                          ref={oneTimeChargeYearRef}
+                          aria-label="Academic Year"
+                          value={manualChargeForm.academic_year}
+                          onChange={(event) => updateManualChargeForm('academic_year', event.target.value)}
+                          {...fieldErrorProps(
+                            'one-time-charge-academic-year-error',
+                            formatValidationError(manualChargeErrors, 'academic_year'),
+                          )}
+                        />
+                        <FieldError
+                          id="one-time-charge-academic-year-error"
+                          message={formatValidationError(manualChargeErrors, 'academic_year')}
+                        />
                       </label>
 
                       <label className="form-field">
                         Billing Month
-                        <input type="month" value={manualChargeForm.billing_month} onChange={(event) => updateManualChargeForm('billing_month', event.target.value)} />
-                        {formatValidationError(manualChargeErrors, 'billing_month') && (
-                          <small>{formatValidationError(manualChargeErrors, 'billing_month')}</small>
-                        )}
+                        <input
+                          aria-label="Billing Month"
+                          type="month"
+                          value={manualChargeForm.billing_month}
+                          onChange={(event) => updateManualChargeForm('billing_month', event.target.value)}
+                          {...fieldErrorProps(
+                            'one-time-charge-billing-month-error',
+                            formatValidationError(manualChargeErrors, 'billing_month'),
+                          )}
+                        />
+                        <FieldError
+                          id="one-time-charge-billing-month-error"
+                          message={formatValidationError(manualChargeErrors, 'billing_month')}
+                        />
                       </label>
 
                       <label className="form-field">
                         Category
                         <select
+                          aria-label="Category"
                           value={manualChargeForm.fee_record_category}
                           onChange={(event) => updateManualChargeForm('fee_record_category', event.target.value as FeeRecordCategory)}
+                          {...fieldErrorProps(
+                            'one-time-charge-fee-record-category-error',
+                            formatValidationError(manualChargeErrors, 'fee_record_category'),
+                          )}
                         >
                           {feeRecordCategoryOptions.map((option) => (
                             <option key={option.value} value={option.value}>
@@ -2723,35 +3020,48 @@ function StudentsPage({
                             </option>
                           ))}
                         </select>
-                        {formatValidationError(manualChargeErrors, 'fee_record_category') && (
-                          <small>{formatValidationError(manualChargeErrors, 'fee_record_category')}</small>
-                        )}
+                        <FieldError
+                          id="one-time-charge-fee-record-category-error"
+                          message={formatValidationError(manualChargeErrors, 'fee_record_category')}
+                        />
                       </label>
 
                       <label className="form-field">
                         Amount
                         <input
+                          aria-label="Amount"
                           type="number"
                           min="0.01"
                           step="0.01"
                           value={manualChargeForm.expected_amount}
                           onChange={(event) => updateManualChargeForm('expected_amount', event.target.value)}
+                          {...fieldErrorProps(
+                            'one-time-charge-expected-amount-error',
+                            formatValidationError(manualChargeErrors, 'expected_amount'),
+                          )}
                         />
-                        {formatValidationError(manualChargeErrors, 'expected_amount') && (
-                          <small>{formatValidationError(manualChargeErrors, 'expected_amount')}</small>
-                        )}
+                        <FieldError
+                          id="one-time-charge-expected-amount-error"
+                          message={formatValidationError(manualChargeErrors, 'expected_amount')}
+                        />
                       </label>
 
                       <label className="form-field wide">
                         Description
                         <input
+                          aria-label="Description"
                           value={manualChargeForm.description}
                           onChange={(event) => updateManualChargeForm('description', event.target.value)}
                           placeholder="Uniform, Books, Worksheet, PE, Application, Deposit, Enrolment, Old Balance"
+                          {...fieldErrorProps(
+                            'one-time-charge-description-error',
+                            formatValidationError(manualChargeErrors, 'description'),
+                          )}
                         />
-                        {formatValidationError(manualChargeErrors, 'description') && (
-                          <small>{formatValidationError(manualChargeErrors, 'description')}</small>
-                        )}
+                        <FieldError
+                          id="one-time-charge-description-error"
+                          message={formatValidationError(manualChargeErrors, 'description')}
+                        />
                       </label>
 
                       <label className="form-field wide">
@@ -2880,9 +3190,10 @@ function StudentsPage({
             {showPaymentForm && canCreatePayments && (
               <ModalFrame
                 title="Record Payment"
-                description="Record the payment details and choose which outstanding fees this payment should clear."
+                description="Record the amount, choose the fees it clears, and confirm the balance."
+                size="workflow"
+                initialFocusRef={paymentAmountRef}
                 onClose={() => setShowPaymentForm(false)}
-                className="financial-modal"
                 footer={
                   <>
                     <button type="button" className="secondary-action" onClick={() => setShowPaymentForm(false)}>
@@ -2892,7 +3203,7 @@ function StudentsPage({
                       className="primary-action compact"
                       type="submit"
                       form="payment-record-form"
-                      disabled={isSavingPayment}
+                      disabled={isSavingPayment || !paymentCanSubmit}
                     >
                       {isSavingPayment ? 'Saving...' : 'Record Payment'}
                     </button>
@@ -2900,113 +3211,104 @@ function StudentsPage({
                 }
               >
               <form id="payment-record-form" className="payment-form" onSubmit={submitPayment} noValidate>
-                <div className="payment-form-state">
-                  <span className={`badge ${paymentForm.payment_method === 'cash' ? 'paid' : 'partial'}`}>
-                    {paymentForm.payment_method === 'cash' ? 'Cash verifies on save' : 'Pending verification'}
-                  </span>
-                </div>
+                <ModalContextSummary
+                  ariaLabel="Student context"
+                  items={[
+                    { label: 'Student', value: selectedStudent?.full_name ?? 'Not selected' },
+                    { label: 'Student ID', value: selectedStudent?.student_no ?? 'Not recorded' },
+                    {
+                      label: 'Status on save',
+                      value: paymentForm.payment_method === 'cash' ? 'Verified' : 'Pending verification',
+                    },
+                  ]}
+                />
 
-                <div className="form-grid">
-                  <label className="form-field">
-                    Academic Year
-                    <input
-                      value={paymentForm.academic_year}
-                      onChange={(event) => updatePaymentForm('academic_year', event.target.value)}
-                    />
-                  </label>
-
-                  <label className="form-field">
-                    Payment Method
-                    <select
-                      value={paymentForm.payment_method}
-                      onChange={(event) => updatePaymentForm('payment_method', event.target.value)}
-                    >
-                      {paymentMethodOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <label className="form-field">
-                    Payment Date
-                    <input
-                      type="date"
-                      value={paymentForm.payment_date}
-                      onChange={(event) => updatePaymentForm('payment_date', event.target.value)}
-                    />
-                    {formatValidationError(paymentErrors, 'payment_date') && (
-                      <small>{formatValidationError(paymentErrors, 'payment_date')}</small>
+                <section className="payment-basics" aria-labelledby="payment-basics-heading">
+                  <div className="payment-subheader">
+                    <div>
+                      <p className="eyebrow">Step 1</p>
+                      <h3 id="payment-basics-heading">Payment basics</h3>
+                    </div>
+                  </div>
+                  <div className="payment-basics-grid">
+                    <label className="form-field">
+                      Academic Year
+                      <input
+                        value={paymentForm.academic_year}
+                        onChange={(event) => updatePaymentForm('academic_year', event.target.value)}
+                      />
+                    </label>
+                    <label className="form-field">
+                      Payment Method
+                      <select
+                        value={paymentForm.payment_method}
+                        onChange={(event) => updatePaymentForm('payment_method', event.target.value)}
+                      >
+                        {paymentMethodOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="form-field">
+                      Amount
+                      <input
+                        ref={paymentAmountRef}
+                        aria-label="Amount"
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        value={paymentForm.amount}
+                        onChange={(event) => updatePaymentForm('amount', event.target.value)}
+                        {...fieldErrorProps(
+                          'record-payment-amount-error',
+                          formatValidationError(paymentErrors, 'amount'),
+                        )}
+                      />
+                      <FieldError
+                        id="record-payment-amount-error"
+                        message={formatValidationError(paymentErrors, 'amount')}
+                      />
+                    </label>
+                    <label className="form-field">
+                      Payment Date
+                      <input
+                        aria-label="Payment Date"
+                        type="date"
+                        value={paymentForm.payment_date}
+                        onChange={(event) => updatePaymentForm('payment_date', event.target.value)}
+                        {...fieldErrorProps(
+                          'record-payment-payment-date-error',
+                          formatValidationError(paymentErrors, 'payment_date'),
+                        )}
+                      />
+                      <FieldError
+                        id="record-payment-payment-date-error"
+                        message={formatValidationError(paymentErrors, 'payment_date')}
+                      />
+                    </label>
+                    {paymentForm.payment_method === 'cash' && (
+                      <label className="form-field">
+                        Received Date
+                        <input
+                          aria-label="Received Date"
+                          type="date"
+                          value={paymentForm.received_date}
+                          onChange={(event) => updatePaymentForm('received_date', event.target.value)}
+                          {...fieldErrorProps(
+                            'record-payment-received-date-error',
+                            formatValidationError(paymentErrors, 'received_date'),
+                          )}
+                        />
+                        <FieldError
+                          id="record-payment-received-date-error"
+                          message={formatValidationError(paymentErrors, 'received_date')}
+                        />
+                      </label>
                     )}
-                  </label>
-
-                  <label className="form-field">
-                    Received Date
-                    <input
-                      type="date"
-                      value={paymentForm.received_date}
-                      onChange={(event) => updatePaymentForm('received_date', event.target.value)}
-                    />
-                    {formatValidationError(paymentErrors, 'received_date') && (
-                      <small>{formatValidationError(paymentErrors, 'received_date')}</small>
-                    )}
-                  </label>
-
-                  <label className="form-field">
-                    Amount
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={paymentForm.amount}
-                      onChange={(event) => updatePaymentForm('amount', event.target.value)}
-                    />
-                    {formatValidationError(paymentErrors, 'amount') && (
-                      <small>{formatValidationError(paymentErrors, 'amount')}</small>
-                    )}
-                  </label>
-
-                  <label className="form-field">
-                    Paid By
-                    <input
-                      value={paymentForm.paid_by}
-                      onChange={(event) => updatePaymentForm('paid_by', event.target.value)}
-                    />
-                  </label>
-
-                  <label className="form-field">
-                    Bank Account
-                    <input
-                      value={paymentForm.bank_account}
-                      onChange={(event) => updatePaymentForm('bank_account', event.target.value)}
-                    />
-                  </label>
-
-                  <label className="form-field">
-                    Reference No
-                    <input
-                      value={paymentForm.reference_no}
-                      onChange={(event) => updatePaymentForm('reference_no', event.target.value)}
-                    />
-                  </label>
-
-                  <label className="form-field wide">
-                    Payment Proof Text / Reference
-                    <textarea
-                      value={paymentForm.payment_proof}
-                      onChange={(event) => updatePaymentForm('payment_proof', event.target.value)}
-                    />
-                  </label>
-
-                  <label className="form-field wide">
-                    Remark
-                    <textarea
-                      value={paymentForm.remark}
-                      onChange={(event) => updatePaymentForm('remark', event.target.value)}
-                    />
-                  </label>
-                </div>
+                  </div>
+                </section>
 
                 <PaymentAllocationEditor
                   academicYear={paymentForm.academic_year}
@@ -3050,15 +3352,8 @@ function StudentsPage({
                   onUpdateOneTimeCharge={updatePaymentOneTimeCharge}
                   onCreateOneTimeCharge={() => void submitPaymentOneTimeCharge()}
                   onAddUnclassified={addUnclassifiedPaymentAllocation}
+                  afterAllocation={paymentPostAllocation}
                 />
-
-                <div className="payment-submit-area">
-                  <div className={`agreement-preview ${paymentAmountCents === allocationTotalCents ? '' : 'warning'}`}>
-                    <span>Payment {formatCurrency(Number(paymentForm.amount || 0))}</span>
-                    <span>Allocation {formatCurrency(paymentAllocationTotal)}</span>
-                    <strong>{paymentAmountCents === allocationTotalCents ? 'Balanced' : 'Mismatch'}</strong>
-                  </div>
-                </div>
               </form>
               </ModalFrame>
             )}
@@ -3198,10 +3493,12 @@ function StudentsPage({
               </div>
             )}
 
-            {verifyingPaymentId !== null && (
+            {paymentToVerify && (
               <ModalFrame
                 title="Verify Payment"
-                description="Confirm the received date and bank reference before verification."
+                description="Confirm the received details before verification."
+                size="standard"
+                initialFocusRef={verifyReceivedDateRef}
                 onClose={() => setVerifyingPaymentId(null)}
                 footer={
                   <>
@@ -3214,26 +3511,50 @@ function StudentsPage({
                       form="verify-payment-form"
                       disabled={isVerifyingPayment}
                     >
-                      {isVerifyingPayment ? 'Verifying...' : 'Confirm Verify'}
+                      {isVerifyingPayment ? 'Verifying...' : 'Verify Payment'}
                     </button>
                   </>
                 }
               >
+                <ModalContextSummary
+                  ariaLabel="Payment to verify"
+                  items={[
+                    {
+                      label: 'Student',
+                      value: `${selectedStudent?.full_name} / ${selectedStudent?.student_no}`,
+                    },
+                    { label: 'Amount', value: formatCurrency(paymentToVerify.amount) },
+                    { label: 'Method', value: formatStatus(paymentToVerify.payment_method) },
+                    { label: 'Payment date', value: paymentToVerify.payment_date },
+                    {
+                      label: 'Reference',
+                      value: paymentToVerify.reference_no ?? 'Not recorded',
+                    },
+                    { label: 'Status', value: formatStatus(paymentToVerify.status) },
+                  ]}
+                />
                 <form
                   id="verify-payment-form"
                   className="form-grid inline-payment-form"
-                  onSubmit={(event) => submitVerifyPayment(event, verifyingPaymentId)}
+                  onSubmit={(event) => submitVerifyPayment(event, paymentToVerify.id)}
                 >
                   <label className="form-field">
                     Received Date
                     <input
+                      ref={verifyReceivedDateRef}
+                      aria-label="Received Date"
                       type="date"
                       value={verifyForm.received_date}
                       onChange={(event) => setVerifyForm((current) => ({ ...current, received_date: event.target.value }))}
+                      {...fieldErrorProps(
+                        'verify-payment-received-date-error',
+                        formatValidationError(verifyErrors, 'received_date'),
+                      )}
                     />
-                    {formatValidationError(verifyErrors, 'received_date') && (
-                      <small>{formatValidationError(verifyErrors, 'received_date')}</small>
-                    )}
+                    <FieldError
+                      id="verify-payment-received-date-error"
+                      message={formatValidationError(verifyErrors, 'received_date')}
+                    />
                   </label>
                   <label className="form-field">
                     Bank Account
@@ -3255,51 +3576,114 @@ function StudentsPage({
                       value={verifyForm.remark}
                       onChange={(event) => setVerifyForm((current) => ({ ...current, remark: event.target.value }))}
                     />
-                    {formatValidationError(verifyErrors, 'payment') && (
-                      <small>{formatValidationError(verifyErrors, 'payment')}</small>
-                    )}
                   </label>
+                  {formatValidationError(verifyErrors, 'payment') && (
+                    <div className="inline-error wide" role="alert" tabIndex={-1}>
+                      {formatValidationError(verifyErrors, 'payment')}
+                    </div>
+                  )}
                 </form>
               </ModalFrame>
             )}
 
-            {voidingPaymentId !== null && (
+            {paymentToVoid && (
               <ModalFrame
                 title="Void Payment"
-                description="Record the reason for voiding this payment."
+                description={
+                  paymentVoidBlocked
+                    ? 'This payment cannot be voided while its receipt is issued.'
+                    : 'Review the consequence and record a reason.'
+                }
+                size="compact"
+                tone="danger"
+                initialFocusRef={voidPaymentCancelRef}
                 onClose={() => setVoidingPaymentId(null)}
                 footer={
-                  <>
-                    <button type="button" className="secondary-action" onClick={() => setVoidingPaymentId(null)}>
-                      Cancel
-                    </button>
+                  paymentVoidBlocked ? (
                     <button
-                      className="primary-action compact"
-                      type="submit"
-                      form="void-payment-form"
-                      disabled={isVoidingPayment}
+                      ref={voidPaymentCancelRef}
+                      type="button"
+                      className="secondary-action"
+                      onClick={() => setVoidingPaymentId(null)}
                     >
-                      {isVoidingPayment ? 'Voiding...' : 'Confirm Void'}
+                      Close
                     </button>
-                  </>
+                  ) : (
+                    <>
+                      <button
+                        ref={voidPaymentCancelRef}
+                        type="button"
+                        className="secondary-action"
+                        onClick={() => setVoidingPaymentId(null)}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        className="primary-action compact modal-danger-action"
+                        type="submit"
+                        form="void-payment-form"
+                        disabled={isVoidingPayment}
+                      >
+                        {isVoidingPayment ? 'Voiding...' : 'Confirm Void Payment'}
+                      </button>
+                    </>
+                  )
                 }
               >
-                <form
-                  id="void-payment-form"
-                  className="inline-payment-form"
-                  onSubmit={(event) => submitVoidPayment(event, voidingPaymentId)}
-                >
-                  <label className="form-field wide">
-                    Void Reason
-                    <textarea value={voidReason} onChange={(event) => setVoidReason(event.target.value)} />
-                    {formatValidationError(voidErrors, 'void_reason') && (
-                      <small>{formatValidationError(voidErrors, 'void_reason')}</small>
-                    )}
+                <ModalContextSummary
+                  ariaLabel="Payment to void"
+                  tone="danger"
+                  items={[
+                    {
+                      label: 'Student',
+                      value: `${selectedStudent?.full_name} / ${selectedStudent?.student_no}`,
+                    },
+                    { label: 'Amount', value: formatCurrency(paymentToVoid.amount) },
+                    { label: 'Method', value: formatStatus(paymentToVoid.payment_method) },
+                    { label: 'Payment date', value: paymentToVoid.payment_date },
+                    { label: 'Status', value: formatStatus(paymentToVoid.status) },
+                    {
+                      label: 'Receipt',
+                      value: paymentToVoid.issued_receipt?.receipt_no ?? 'No issued receipt',
+                    },
+                  ]}
+                  consequence={
+                    paymentVoidBlocked
+                      ? 'Void the issued receipt before voiding this payment.'
+                      : paymentToVoid.status === 'verified'
+                        ? 'Each applied charge will reopen by the amount allocated from this payment.'
+                        : 'This pending payment will become void; charge balances have not yet changed.'
+                  }
+                />
+                {!paymentVoidBlocked && (
+                  <form
+                    id="void-payment-form"
+                    className="inline-payment-form"
+                    onSubmit={(event) => submitVoidPayment(event, paymentToVoid.id)}
+                  >
+                    <label className="form-field wide">
+                      Void Reason
+                      <textarea
+                        aria-label="Void Reason"
+                        value={voidReason}
+                        onChange={(event) => setVoidReason(event.target.value)}
+                        {...fieldErrorProps(
+                          'void-payment-void-reason-error',
+                          formatValidationError(voidErrors, 'void_reason'),
+                        )}
+                      />
+                      <FieldError
+                        id="void-payment-void-reason-error"
+                        message={formatValidationError(voidErrors, 'void_reason')}
+                      />
+                    </label>
                     {formatValidationError(voidErrors, 'payment') && (
-                      <small>{formatValidationError(voidErrors, 'payment')}</small>
+                      <div className="inline-error wide" role="alert" tabIndex={-1}>
+                        {formatValidationError(voidErrors, 'payment')}
+                      </div>
                     )}
-                  </label>
-                </form>
+                  </form>
+                )}
               </ModalFrame>
             )}
           </section>
@@ -3384,18 +3768,26 @@ function StudentsPage({
               </div>
             )}
 
-            {voidingReceiptId !== null && (
+            {receiptToVoid && (
               <ModalFrame
                 title="Void Receipt"
-                description="Record the reason for voiding this issued receipt."
+                description="Review the receipt and record a reason."
+                size="compact"
+                tone="danger"
+                initialFocusRef={voidReceiptCancelRef}
                 onClose={() => setVoidingReceiptId(null)}
                 footer={
                   <>
-                    <button type="button" className="secondary-action" onClick={() => setVoidingReceiptId(null)}>
+                    <button
+                      ref={voidReceiptCancelRef}
+                      type="button"
+                      className="secondary-action"
+                      onClick={() => setVoidingReceiptId(null)}
+                    >
                       Cancel
                     </button>
                     <button
-                      className="primary-action compact"
+                      className="primary-action compact modal-danger-action"
                       type="submit"
                       form="void-receipt-form"
                       disabled={isVoidingReceipt}
@@ -3405,21 +3797,52 @@ function StudentsPage({
                   </>
                 }
               >
+                <ModalContextSummary
+                  ariaLabel="Receipt to void"
+                  tone="danger"
+                  items={[
+                    { label: 'Receipt', value: receiptToVoid.receipt_no },
+                    {
+                      label: 'Student',
+                      value: `${receiptToVoid.student_name} / ${receiptToVoid.student_no}`,
+                    },
+                    { label: 'Receipt date', value: receiptToVoid.receipt_date },
+                    { label: 'Amount', value: formatCurrency(receiptToVoid.amount) },
+                    {
+                      label: 'Payment reference',
+                      value:
+                        payments.find((payment) => payment.id === receiptToVoid.payment_id)
+                          ?.reference_no ?? 'Not recorded',
+                    },
+                  ]}
+                  consequence="The receipt number will not be reused. The linked payment remains verified and balances do not change until the payment is separately voided."
+                />
                 <form
                   id="void-receipt-form"
                   className="inline-payment-form"
-                  onSubmit={(event) => submitVoidReceipt(event, voidingReceiptId)}
+                  onSubmit={(event) => submitVoidReceipt(event, receiptToVoid.id)}
                 >
                   <label className="form-field wide">
                     Void Reason
-                    <textarea value={receiptVoidReason} onChange={(event) => setReceiptVoidReason(event.target.value)} />
-                    {formatValidationError(receiptVoidErrors, 'void_reason') && (
-                      <small>{formatValidationError(receiptVoidErrors, 'void_reason')}</small>
-                    )}
-                    {formatValidationError(receiptVoidErrors, 'receipt') && (
-                      <small>{formatValidationError(receiptVoidErrors, 'receipt')}</small>
-                    )}
+                    <textarea
+                      aria-label="Void Reason"
+                      value={receiptVoidReason}
+                      onChange={(event) => setReceiptVoidReason(event.target.value)}
+                      {...fieldErrorProps(
+                        'void-receipt-void-reason-error',
+                        formatValidationError(receiptVoidErrors, 'void_reason'),
+                      )}
+                    />
+                    <FieldError
+                      id="void-receipt-void-reason-error"
+                      message={formatValidationError(receiptVoidErrors, 'void_reason')}
+                    />
                   </label>
+                  {formatValidationError(receiptVoidErrors, 'receipt') && (
+                    <div className="inline-error wide" role="alert" tabIndex={-1}>
+                      {formatValidationError(receiptVoidErrors, 'receipt')}
+                    </div>
+                  )}
                 </form>
               </ModalFrame>
             )}
