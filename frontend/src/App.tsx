@@ -26,7 +26,16 @@ import {
 import { ApiError, apiRequest } from './api'
 import { AdminShell } from './components/AdminShell'
 import type { NavigationGroup } from './components/AdminShell'
-import { DataPanel, FilterToolbar, ModalFrame, PageHeader, SessionLoader, StatCard, StatusBadge } from './components/AdminUi'
+import {
+  DataPanel,
+  FilterToolbar,
+  ModalContextSummary,
+  ModalFrame,
+  PageHeader,
+  SessionLoader,
+  StatCard,
+  StatusBadge,
+} from './components/AdminUi'
 import type { UiTone } from './components/AdminUi'
 import { CalendarPage } from './components/CalendarPage'
 import { ClassesPage } from './components/ClassesPage'
@@ -843,6 +852,7 @@ function StudentsPage({
   const [isLoading, setIsLoading] = useState(true)
   const [isCreating, setIsCreating] = useState(false)
   const [showCreateForm, setShowCreateForm] = useState(false)
+  const createStudentIdRef = useRef<HTMLInputElement>(null)
   const [form, setForm] = useState<StudentForm>(emptyStudentForm)
   const [formErrors, setFormErrors] = useState<ValidationErrors>()
   const [statusDraft, setStatusDraft] = useState<StudentStatus>('active')
@@ -888,6 +898,7 @@ function StudentsPage({
   const [isPreviewingFeeRecord, setIsPreviewingFeeRecord] = useState(false)
   const [isActivatingFeeRecord, setIsActivatingFeeRecord] = useState(false)
   const [showManualChargeForm, setShowManualChargeForm] = useState(false)
+  const oneTimeChargeYearRef = useRef<HTMLInputElement>(null)
   const [manualChargeForm, setManualChargeForm] = useState<OneTimeChargeDraft>(createOneTimeChargeDraft('2026'))
   const [manualChargeErrors, setManualChargeErrors] = useState<ValidationErrors>()
   const [isSavingManualCharge, setIsSavingManualCharge] = useState(false)
@@ -2106,6 +2117,8 @@ function StudentsPage({
         <ModalFrame
           title="Create Student Profile"
           description="Add enrolment and profile details."
+          size="standard"
+          initialFocusRef={createStudentIdRef}
           onClose={() => setShowCreateForm(false)}
           footer={
             <>
@@ -2127,7 +2140,11 @@ function StudentsPage({
           <form id="create-student-form" className="form-grid student-form" onSubmit={submitStudent}>
             <label className="form-field">
               Student ID
-              <input value={form.student_no} onChange={(event) => updateForm('student_no', event.target.value)} />
+              <input
+                ref={createStudentIdRef}
+                value={form.student_no}
+                onChange={(event) => updateForm('student_no', event.target.value)}
+              />
               {formatValidationError(formErrors, 'student_no') && (
                 <small>{formatValidationError(formErrors, 'student_no')}</small>
               )}
@@ -2662,7 +2679,7 @@ function StudentsPage({
                           setManualChargeErrors(undefined)
                         }}
                       >
-                        {showManualChargeForm ? 'Close Manual Charge' : 'Add Manual Charge'}
+                        {showManualChargeForm ? 'Close One-time Charge' : 'Add One-time Charge'}
                       </button>
                     )}
                   </div>
@@ -2674,8 +2691,10 @@ function StudentsPage({
 
                 {showManualChargeForm && canManageFeeRecord && (
                   <ModalFrame
-                    title="Add Manual Charge"
-                    description="Add a one-time or ad-hoc charge cell to this student account."
+                    title="One-time Charge"
+                    description="Add a one-time charge to this student account."
+                    size="standard"
+                    initialFocusRef={oneTimeChargeYearRef}
                     onClose={() => setShowManualChargeForm(false)}
                     footer={
                       <>
@@ -2688,16 +2707,28 @@ function StudentsPage({
                           form="manual-charge-form"
                           disabled={isSavingManualCharge}
                         >
-                          {isSavingManualCharge ? 'Adding...' : 'Add Manual Charge'}
+                          {isSavingManualCharge ? 'Adding...' : 'Add One-time Charge'}
                         </button>
                       </>
                     }
                   >
+                  <ModalContextSummary
+                    ariaLabel="Student context"
+                    items={[
+                      { label: 'Student', value: selectedStudent.full_name },
+                      { label: 'Student ID', value: selectedStudent.student_no },
+                      { label: 'Charge year', value: manualChargeForm.academic_year },
+                    ]}
+                  />
                   <form id="manual-charge-form" className="manual-charge-form" onSubmit={submitManualCharge} noValidate>
                     <div className="form-grid">
                       <label className="form-field">
                         Academic Year
-                        <input value={manualChargeForm.academic_year} onChange={(event) => updateManualChargeForm('academic_year', event.target.value)} />
+                        <input
+                          ref={oneTimeChargeYearRef}
+                          value={manualChargeForm.academic_year}
+                          onChange={(event) => updateManualChargeForm('academic_year', event.target.value)}
+                        />
                         {formatValidationError(manualChargeErrors, 'academic_year') && (
                           <small>{formatValidationError(manualChargeErrors, 'academic_year')}</small>
                         )}

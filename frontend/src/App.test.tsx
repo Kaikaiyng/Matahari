@@ -33,6 +33,22 @@ const currentUser = {
   ],
 }
 
+const schoolAdminDialogUser = {
+  ...currentUser,
+  roles: ['school-admin'],
+  permissions: [
+    'students.view',
+    'students.create',
+    'fee_agreements.create',
+    'fee_agreements.update',
+    'fee_record.view',
+    'fee_record.manage',
+    'payments.view',
+    'payments.create',
+    'receipts.view',
+  ],
+}
+
 const dashboard = {
   school: { id: 1, code: 'MIS', name: 'Matahari International School' },
   metrics: {
@@ -287,6 +303,19 @@ function installApiMock() {
     }
 
     return json({ message: `Unhandled test endpoint: ${url.pathname}` }, 404)
+  })
+}
+
+function installApiUser(user: typeof currentUser) {
+  const fetchMock = vi.mocked(globalThis.fetch)
+  const installedImplementation = fetchMock.getMockImplementation()
+
+  if (!installedImplementation) throw new Error('API mock is not installed')
+
+  fetchMock.mockImplementation((input, init) => {
+    const url = new URL(String(input))
+    if (url.pathname.endsWith('/me')) return json({ user })
+    return installedImplementation(input, init)
   })
 }
 
@@ -619,6 +648,40 @@ describe('demo shell', () => {
     expect(screen.queryByRole('dialog', { name: 'Create Student Profile' })).not.toBeInTheDocument()
   })
 
+  it('opens Create Student at Student ID with the standard modal contract', async () => {
+    const user = userEvent.setup()
+    installApiUser(schoolAdminDialogUser)
+    await renderAuthenticatedApp()
+    await user.click(screen.getByRole('button', { name: 'Students' }))
+    await user.click(await screen.findByRole('button', { name: 'Add Student' }))
+
+    const dialog = screen.getByRole('dialog', { name: 'Create Student Profile' })
+    expect(dialog).toHaveClass('modal-frame--standard')
+    await waitFor(() => expect(within(dialog).getByLabelText('Student ID')).toHaveFocus())
+  })
+
+  it('uses One-time Charge language and identifies the selected student', async () => {
+    const user = userEvent.setup()
+    installApiUser(schoolAdminDialogUser)
+    await renderAuthenticatedApp()
+    await user.click(screen.getByRole('button', { name: 'Students' }))
+    await user.click(await screen.findByRole('button', { name: 'Open' }))
+    await user.click(screen.getByRole('button', { name: 'Add One-time Charge' }))
+
+    const dialog = screen.getByRole('dialog', { name: 'One-time Charge' })
+    expect(dialog).toHaveClass('modal-frame--standard')
+    expect(within(dialog).getByRole('region', { name: 'Student context' })).toHaveTextContent(
+      'Alyssa Tan',
+    )
+    expect(within(dialog).getByRole('region', { name: 'Student context' })).toHaveTextContent(
+      'MIS-2026-001',
+    )
+    await waitFor(() => expect(within(dialog).getByLabelText('Academic Year')).toHaveFocus())
+    expect(
+      within(dialog).getByRole('button', { name: 'Add One-time Charge' }),
+    ).toBeInTheDocument()
+  })
+
   it('shows annual paid progress by default and synchronizes a selected month with student rows', async () => {
     const user = userEvent.setup()
     await renderAuthenticatedApp()
@@ -715,8 +778,8 @@ describe('demo shell', () => {
     expect(screen.getByRole('dialog', { name: 'Create Fee Agreement' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Cancel' }))
 
-    await user.click(screen.getByRole('button', { name: 'Add Manual Charge' }))
-    expect(screen.getByRole('dialog', { name: 'Add Manual Charge' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Add One-time Charge' }))
+    expect(screen.getByRole('dialog', { name: 'One-time Charge' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Cancel' }))
 
     await user.click(screen.getByRole('button', { name: 'Create Payment' }))

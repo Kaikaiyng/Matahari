@@ -1700,6 +1700,10 @@ th {
   gap: 14px;
 }
 
+.modal-body > .manual-charge-form .form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .payment-form-state {
   display: flex;
   justify-content: flex-end;
@@ -1927,6 +1931,7 @@ th {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .modal-body .student-form,
   .manual-charge-form .form-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -2158,7 +2163,8 @@ th {
   }
 
   .fee-record-activation-bar,
-  .manual-charge-form .form-grid {
+  .modal-body .student-form,
+  .modal-body .manual-charge-form .form-grid {
     grid-template-columns: 1fr;
   }
 
