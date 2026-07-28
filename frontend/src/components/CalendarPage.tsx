@@ -3,7 +3,7 @@ import type { FormEvent } from 'react'
 import { CalendarDays, ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import { ApiError, apiRequest } from '../api'
 import type { ApiValidationErrors } from '../api'
-import { InlineMessage, ModalFrame, PageHeader } from './AdminUi'
+import { InlineMessage, ModalContextSummary, ModalFrame, PageHeader } from './AdminUi'
 import './CalendarPage.css'
 
 export type CalendarEvent = {
@@ -165,6 +165,23 @@ function eventLabel(event: CalendarEvent) {
   )
 }
 
+function eventScheduleLabel(event: CalendarEvent) {
+  const startDateKey = eventDateKey(event)
+  const endDateKey = eventEndDateKey(event)
+  const formatDateKey = (value: string) =>
+    calendarDateFormatter.format(new Date(`${value}T12:00:00.000Z`))
+  const dateRange =
+    startDateKey === endDateKey
+      ? formatDateKey(startDateKey)
+      : `${formatDateKey(startDateKey)} – ${formatDateKey(endDateKey)}`
+
+  if (event.is_all_day) return `${dateRange}, all day`
+
+  const startTime = timeFormatter.format(new Date(event.starts_at))
+  const endTime = event.ends_at ? timeFormatter.format(new Date(event.ends_at)) : ''
+  return `${dateRange}, ${startTime}${endTime ? ` – ${endTime}` : ''}`
+}
+
 function emptyForm(): CalendarEventForm {
   return {
     title: '',
@@ -288,6 +305,9 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
   const previousScopeRef = useRef(scopeKey)
   const requestGenerationRef = useRef(0)
   const onUnauthorizedRef = useRef(onUnauthorized)
+  const titleInputRef = useRef<HTMLInputElement>(null)
+  const viewCloseRef = useRef<HTMLButtonElement>(null)
+  const deleteCancelRef = useRef<HTMLButtonElement>(null)
   const visibleEvents = loadedScope === scopeKey ? events : []
   const visibleLoadState =
     loadState.scope === scopeKey
@@ -295,6 +315,11 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
       : { scope: scopeKey, status: canView ? ('loading' as const) : ('idle' as const), error: '' }
   activeScopeRef.current = scopeKey
   onUnauthorizedRef.current = onUnauthorized
+  const calendarDialogTitle = editingEvent
+    ? canUpdate
+      ? 'Edit Calendar Event'
+      : 'View Calendar Event'
+    : 'Add Calendar Event'
 
   useEffect(() => {
     const scopeChanged = previousScopeRef.current !== scopeKey
@@ -623,20 +648,16 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
 
       {editingEvent !== undefined && !eventToDelete && (
         <ModalFrame
-          title={
-            editingEvent
-              ? canUpdate
-                ? `Edit ${editingEvent.title}`
-                : `${editingEvent.title} details`
-              : 'Add event'
-          }
+          title={calendarDialogTitle}
           description={
             editingEvent
               ? canUpdate
                 ? 'Update this calendar event.'
-                : 'Review this calendar event before deleting it.'
+                : 'Review this calendar event.'
               : 'Add an event to the school calendar.'
           }
+          size="standard"
+          initialFocusRef={editingEvent && !canUpdate ? viewCloseRef : titleInputRef}
           onClose={closeForm}
           footer={
             <>
@@ -650,8 +671,14 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
                   Delete event
                 </button>
               )}
-              <button className="secondary-action" type="button" onClick={closeForm} disabled={isSaving}>
-                Cancel
+              <button
+                ref={editingEvent && !canUpdate ? viewCloseRef : undefined}
+                className="secondary-action"
+                type="button"
+                onClick={closeForm}
+                disabled={isSaving}
+              >
+                {editingEvent && !canUpdate ? 'Close' : 'Cancel'}
               </button>
               {(!editingEvent || canUpdate) && (
                 <button
@@ -672,6 +699,7 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
               <label className="calendar-form-field wide">
                 Title
                 <input
+                  ref={titleInputRef}
                   aria-label="Title"
                   value={form.title}
                   onChange={(event) => updateForm('title', event.target.value)}
@@ -808,12 +836,16 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
 
       {eventToDelete && (
         <ModalFrame
-          title={`Delete ${eventToDelete.title}?`}
+          title="Delete Calendar Event?"
           description="This event will be permanently removed and cannot be recovered."
+          size="compact"
+          tone="danger"
+          initialFocusRef={deleteCancelRef}
           onClose={closeDeleteConfirmation}
           footer={
             <>
               <button
+                ref={deleteCancelRef}
                 className="secondary-action"
                 type="button"
                 onClick={closeDeleteConfirmation}
@@ -827,15 +859,22 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
                 onClick={confirmDelete}
                 disabled={isDeleting}
               >
-                {isDeleting ? 'Deleting…' : 'Confirm delete'}
+                {isDeleting ? 'Deleting…' : 'Delete event'}
               </button>
             </>
           }
         >
+          <ModalContextSummary
+            ariaLabel="Event to delete"
+            tone="danger"
+            items={[
+              { label: 'Event', value: eventToDelete.title },
+              { label: 'Date and time', value: eventScheduleLabel(eventToDelete) },
+              { label: 'Location', value: eventToDelete.location || 'Not recorded' },
+            ]}
+            consequence="This event cannot be recovered after deletion."
+          />
           {deleteError && <InlineMessage tone="error">{deleteError}</InlineMessage>}
-          <p className="calendar-delete-copy">
-            Delete this event only if it is no longer needed on the school calendar.
-          </p>
         </ModalFrame>
       )}
     </section>

@@ -594,7 +594,7 @@ describe('CalendarPage', () => {
 
     await waitFor(() => expect(requestBody('PATCH')?.title).toBe('Updated Parent Appointment'))
     expect(String(mutationRequest('PATCH')?.[0])).toContain('/calendar-events/1?school_id=7')
-    expect(screen.getByRole('dialog', { name: 'Edit Parent Appointment' })).toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'Edit Calendar Event' })).toBeInTheDocument()
     expect(screen.getByLabelText('Title')).toHaveValue('Updated Parent Appointment')
     expect(screen.getByRole('alert')).toHaveTextContent('Please check the event details.')
     expect(screen.getByText('The title has already been taken.')).toBeInTheDocument()
@@ -616,13 +616,13 @@ describe('CalendarPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Delete event' }))
 
-    expect(screen.getByRole('dialog', { name: 'Delete Parent Appointment?' })).toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'Delete Calendar Event?' })).toBeInTheDocument()
     expect(
       screen.getByText('This event will be permanently removed and cannot be recovered.'),
     ).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Cancel deletion' }))
     expect(mutationRequest('DELETE')).toBeUndefined()
-    expect(screen.getByRole('dialog', { name: 'Edit Parent Appointment' })).toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'Edit Calendar Event' })).toBeInTheDocument()
   })
 
   it('waits for one successful delete before removing the event', async () => {
@@ -641,7 +641,7 @@ describe('CalendarPage', () => {
     await user.click(await screen.findByRole('button', { name: /Parent Appointment/ }))
     await user.click(screen.getByRole('button', { name: 'Delete event' }))
 
-    const confirm = screen.getByRole('button', { name: 'Confirm delete' })
+    const confirm = screen.getByRole('button', { name: 'Delete event' })
     await user.click(confirm)
 
     expect(confirm).toBeDisabled()
@@ -649,7 +649,9 @@ describe('CalendarPage', () => {
     expect(
       vi.mocked(globalThis.fetch).mock.calls.filter(([, init]) => init?.method === 'DELETE'),
     ).toHaveLength(1)
-    expect(screen.getByText('Parent Appointment').closest('button')).toHaveClass('calendar-event')
+    expect(
+      screen.getByRole('button', { name: /Parent Appointment Appointment/ }),
+    ).toHaveClass('calendar-event')
     expect(String(mutationRequest('DELETE')?.[0])).toContain('/calendar-events/1?school_id=7')
 
     resolveDelete(new Response(null, { status: 204 }))
@@ -669,11 +671,13 @@ describe('CalendarPage', () => {
     renderCalendar()
     await user.click(await screen.findByRole('button', { name: /Parent Appointment/ }))
     await user.click(screen.getByRole('button', { name: 'Delete event' }))
-    await user.click(screen.getByRole('button', { name: 'Confirm delete' }))
+    await user.click(screen.getByRole('button', { name: 'Delete event' }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent('You cannot delete this event.')
-    expect(screen.getByRole('dialog', { name: 'Delete Parent Appointment?' })).toBeInTheDocument()
-    expect(screen.getByText('Parent Appointment').closest('button')).toHaveClass('calendar-event')
+    expect(screen.getByRole('dialog', { name: 'Delete Calendar Event?' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Parent Appointment Appointment/ }),
+    ).toHaveClass('calendar-event')
   })
 
   it('hides delete when update is allowed without delete permission', async () => {
@@ -689,11 +693,13 @@ describe('CalendarPage', () => {
     renderCalendar(['calendar.view', 'calendar.delete'])
     await user.click(await screen.findByRole('button', { name: /Parent Appointment/ }))
 
-    expect(screen.getByRole('dialog', { name: 'Parent Appointment details' })).toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'View Calendar Event' })).toBeInTheDocument()
     expect(screen.getByLabelText('Title')).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Close' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Save changes' })).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Delete event' }))
-    await user.click(screen.getByRole('button', { name: 'Confirm delete' }))
+    await user.click(screen.getByRole('button', { name: 'Delete event' }))
 
     await waitFor(() => expect(screen.queryByText('Parent Appointment')).not.toBeInTheDocument())
   })
@@ -707,12 +713,35 @@ describe('CalendarPage', () => {
     await user.click(screen.getByRole('button', { name: 'Delete event' }))
 
     expect(screen.getAllByRole('dialog')).toHaveLength(1)
-    expect(screen.getByRole('dialog', { name: 'Delete Parent Appointment?' })).toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'Delete Calendar Event?' })).toBeInTheDocument()
     await user.keyboard('{Escape}')
 
     expect(screen.getAllByRole('dialog')).toHaveLength(1)
-    expect(screen.getByRole('dialog', { name: 'Edit Parent Appointment' })).toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'Edit Calendar Event' })).toBeInTheDocument()
     expect(screen.getByLabelText('Title')).toHaveValue('Unsaved Parent Appointment')
+  })
+
+  it('uses stable edit and delete titles while keeping the full event context', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    renderCalendar()
+    await user.click(await screen.findByRole('button', { name: /Parent Appointment/ }))
+
+    const editDialog = screen.getByRole('dialog', { name: 'Edit Calendar Event' })
+    expect(editDialog).toHaveClass('modal-frame--standard')
+    expect(within(editDialog).getByLabelText('Title')).toHaveValue('Parent Appointment')
+    await waitFor(() => expect(within(editDialog).getByLabelText('Title')).toHaveFocus())
+
+    await user.click(within(editDialog).getByRole('button', { name: 'Delete event' }))
+    const deleteDialog = screen.getByRole('dialog', { name: 'Delete Calendar Event?' })
+    expect(deleteDialog).toHaveClass('modal-frame--compact', 'modal-frame--danger')
+    expect(
+      within(deleteDialog).getByRole('region', { name: 'Event to delete' }),
+    ).toHaveTextContent('Parent Appointment')
+    await waitFor(() =>
+      expect(
+        within(deleteDialog).getByRole('button', { name: 'Cancel deletion' }),
+      ).toHaveFocus(),
+    )
   })
 
   it('clears mapped timestamp errors when either source field changes', async () => {
