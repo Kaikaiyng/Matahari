@@ -28,6 +28,7 @@ import { AdminShell } from './components/AdminShell'
 import type { NavigationGroup } from './components/AdminShell'
 import {
   DataPanel,
+  FieldError,
   FilterToolbar,
   ModalContextSummary,
   ModalFrame,
@@ -35,6 +36,8 @@ import {
   SessionLoader,
   StatCard,
   StatusBadge,
+  fieldErrorProps,
+  focusFirstDialogError,
 } from './components/AdminUi'
 import type { UiTone } from './components/AdminUi'
 import { CalendarPage } from './components/CalendarPage'
@@ -871,6 +874,8 @@ function StudentsPage({
   const [payments, setPayments] = useState<StudentPayment[]>([])
   const [isLoadingPayments, setIsLoadingPayments] = useState(false)
   const [showPaymentForm, setShowPaymentForm] = useState(false)
+  const paymentAmountRef = useRef<HTMLInputElement>(null)
+  const [paymentDetailsOpen, setPaymentDetailsOpen] = useState(false)
   const [paymentForm, setPaymentForm] = useState<PaymentForm>(defaultPaymentForm(null))
   const [paymentErrors, setPaymentErrors] = useState<ValidationErrors>()
   const [isSavingPayment, setIsSavingPayment] = useState(false)
@@ -946,6 +951,39 @@ function StudentsPage({
   const paymentAllocationTotal = allocationTotal(paymentForm.allocations)
   const paymentAmountCents = moneyToCents(paymentForm.amount)
   const allocationTotalCents = moneyToCents(paymentAllocationTotal)
+  const paymentAdditionalErrorKeys = [
+    'received_date',
+    'paid_by',
+    'bank_account',
+    'reference_no',
+    'payment_proof',
+    'remark',
+  ] as const
+  const paymentAdditionalHasError = paymentAdditionalErrorKeys.some(
+    (key) => Boolean(paymentErrors?.[key]?.length),
+  )
+  const paymentAdditionalHasValue = [
+    paymentForm.received_date,
+    paymentForm.paid_by,
+    paymentForm.bank_account,
+    paymentForm.reference_no,
+    paymentForm.payment_proof,
+    paymentForm.remark,
+  ].some((value) => value.trim() !== '')
+  const paymentDifferenceCents = paymentAmountCents - allocationTotalCents
+  const paymentBalanceLabel =
+    paymentAmountCents <= 0
+      ? 'Amount remaining'
+      : paymentDifferenceCents === 0
+        ? 'Balanced'
+        : paymentDifferenceCents > 0
+          ? 'Amount remaining'
+          : 'Over-allocated'
+  const paymentCanSubmit =
+    paymentAmountCents > 0 &&
+    paymentForm.allocations.length > 0 &&
+    paymentDifferenceCents === 0 &&
+    !hasIncompleteUnclassifiedAllocation(paymentForm.allocations)
   const previewBlockedByWarnings = Boolean(feeRecordPreview?.needs_confirmation || feeRecordPreview?.warnings.length)
   const canActivateCurrentPreview = Boolean(
     canActivateFeeRecord &&
@@ -982,6 +1020,16 @@ function StudentsPage({
       ),
     [studentListFeeRecordSummaryByStudentId, students],
   )
+
+  useEffect(() => {
+    if (paymentAdditionalHasError || paymentAdditionalHasValue) {
+      setPaymentDetailsOpen(true)
+    }
+
+    if (paymentAdditionalHasError) {
+      focusFirstDialogError()
+    }
+  }, [paymentAdditionalHasError, paymentAdditionalHasValue])
   const visibleStudents = useMemo(() => {
     const needle = studentSearch.trim().toLowerCase()
 
@@ -1612,6 +1660,7 @@ function StudentsPage({
     const nextForm = defaultPaymentForm(currentFeeAgreement)
     setPaymentForm(nextForm)
     setPaymentErrors(undefined)
+    setPaymentDetailsOpen(false)
     setShowPaymentOneTimeCharge(false)
     setPaymentOneTimeCharge(createOneTimeChargeDraft(nextForm.academic_year))
     setPaymentOneTimeChargeErrors(undefined)
@@ -2070,6 +2119,129 @@ function StudentsPage({
       setIsVoidingReceipt(false)
     }
   }
+
+  const paymentPostAllocation = (
+    <div className="payment-post-allocation">
+      <section
+        className={`payment-balance-summary payment-balance-summary--${paymentBalanceLabel
+          .toLowerCase()
+          .replace(/\s+/g, '-')}`}
+        aria-live="polite"
+        aria-label="Payment balance"
+      >
+        <span>Payment {formatCurrency(Number(paymentForm.amount || 0))}</span>
+        <span>Allocation {formatCurrency(paymentAllocationTotal)}</span>
+        <strong>{paymentBalanceLabel}</strong>
+        {paymentDifferenceCents !== 0 && (
+          <small>{formatCurrency(Math.abs(paymentDifferenceCents) / 100)}</small>
+        )}
+      </section>
+
+      <details
+        className="payment-additional-details"
+        open={paymentDetailsOpen}
+        onToggle={(event) => setPaymentDetailsOpen(event.currentTarget.open)}
+      >
+        <summary>Additional payment details</summary>
+        <div className="payment-additional-grid">
+          {paymentForm.payment_method !== 'cash' && (
+            <label className="form-field">
+              Received Date
+              <input
+                type="date"
+                value={paymentForm.received_date}
+                onChange={(event) => updatePaymentForm('received_date', event.target.value)}
+                {...fieldErrorProps(
+                  'payment-received-date-error',
+                  formatValidationError(paymentErrors, 'received_date'),
+                )}
+              />
+              <FieldError
+                id="payment-received-date-error"
+                message={formatValidationError(paymentErrors, 'received_date')}
+              />
+            </label>
+          )}
+          <label className="form-field">
+            Paid By
+            <input
+              value={paymentForm.paid_by}
+              onChange={(event) => updatePaymentForm('paid_by', event.target.value)}
+              {...fieldErrorProps(
+                'payment-paid-by-error',
+                formatValidationError(paymentErrors, 'paid_by'),
+              )}
+            />
+            <FieldError
+              id="payment-paid-by-error"
+              message={formatValidationError(paymentErrors, 'paid_by')}
+            />
+          </label>
+          <label className="form-field">
+            Bank Account
+            <input
+              value={paymentForm.bank_account}
+              onChange={(event) => updatePaymentForm('bank_account', event.target.value)}
+              {...fieldErrorProps(
+                'payment-bank-account-error',
+                formatValidationError(paymentErrors, 'bank_account'),
+              )}
+            />
+            <FieldError
+              id="payment-bank-account-error"
+              message={formatValidationError(paymentErrors, 'bank_account')}
+            />
+          </label>
+          <label className="form-field">
+            Reference No
+            <input
+              aria-label="Reference No"
+              value={paymentForm.reference_no}
+              onChange={(event) => updatePaymentForm('reference_no', event.target.value)}
+              {...fieldErrorProps(
+                'payment-reference-no-error',
+                formatValidationError(paymentErrors, 'reference_no'),
+              )}
+            />
+            <FieldError
+              id="payment-reference-no-error"
+              message={formatValidationError(paymentErrors, 'reference_no')}
+            />
+          </label>
+          <label className="form-field wide">
+            Payment Proof Text / Reference
+            <textarea
+              value={paymentForm.payment_proof}
+              onChange={(event) => updatePaymentForm('payment_proof', event.target.value)}
+              {...fieldErrorProps(
+                'payment-proof-error',
+                formatValidationError(paymentErrors, 'payment_proof'),
+              )}
+            />
+            <FieldError
+              id="payment-proof-error"
+              message={formatValidationError(paymentErrors, 'payment_proof')}
+            />
+          </label>
+          <label className="form-field wide">
+            Remark
+            <textarea
+              value={paymentForm.remark}
+              onChange={(event) => updatePaymentForm('remark', event.target.value)}
+              {...fieldErrorProps(
+                'payment-remark-error',
+                formatValidationError(paymentErrors, 'remark'),
+              )}
+            />
+            <FieldError
+              id="payment-remark-error"
+              message={formatValidationError(paymentErrors, 'remark')}
+            />
+          </label>
+        </div>
+      </details>
+    </div>
+  )
 
   return (
     <section className="page-stack">
@@ -2921,9 +3093,10 @@ function StudentsPage({
             {showPaymentForm && canCreatePayments && (
               <ModalFrame
                 title="Record Payment"
-                description="Record the payment details and choose which outstanding fees this payment should clear."
+                description="Record the amount, choose the fees it clears, and confirm the balance."
+                size="workflow"
+                initialFocusRef={paymentAmountRef}
                 onClose={() => setShowPaymentForm(false)}
-                className="financial-modal"
                 footer={
                   <>
                     <button type="button" className="secondary-action" onClick={() => setShowPaymentForm(false)}>
@@ -2933,7 +3106,7 @@ function StudentsPage({
                       className="primary-action compact"
                       type="submit"
                       form="payment-record-form"
-                      disabled={isSavingPayment}
+                      disabled={isSavingPayment || !paymentCanSubmit}
                     >
                       {isSavingPayment ? 'Saving...' : 'Record Payment'}
                     </button>
@@ -2941,113 +3114,87 @@ function StudentsPage({
                 }
               >
               <form id="payment-record-form" className="payment-form" onSubmit={submitPayment} noValidate>
-                <div className="payment-form-state">
-                  <span className={`badge ${paymentForm.payment_method === 'cash' ? 'paid' : 'partial'}`}>
-                    {paymentForm.payment_method === 'cash' ? 'Cash verifies on save' : 'Pending verification'}
-                  </span>
-                </div>
+                <ModalContextSummary
+                  ariaLabel="Student context"
+                  items={[
+                    { label: 'Student', value: selectedStudent?.full_name ?? 'Not selected' },
+                    { label: 'Student ID', value: selectedStudent?.student_no ?? 'Not recorded' },
+                    {
+                      label: 'Status on save',
+                      value: paymentForm.payment_method === 'cash' ? 'Verified' : 'Pending verification',
+                    },
+                  ]}
+                />
 
-                <div className="form-grid">
-                  <label className="form-field">
-                    Academic Year
-                    <input
-                      value={paymentForm.academic_year}
-                      onChange={(event) => updatePaymentForm('academic_year', event.target.value)}
-                    />
-                  </label>
-
-                  <label className="form-field">
-                    Payment Method
-                    <select
-                      value={paymentForm.payment_method}
-                      onChange={(event) => updatePaymentForm('payment_method', event.target.value)}
-                    >
-                      {paymentMethodOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <label className="form-field">
-                    Payment Date
-                    <input
-                      type="date"
-                      value={paymentForm.payment_date}
-                      onChange={(event) => updatePaymentForm('payment_date', event.target.value)}
-                    />
-                    {formatValidationError(paymentErrors, 'payment_date') && (
-                      <small>{formatValidationError(paymentErrors, 'payment_date')}</small>
+                <section className="payment-basics" aria-labelledby="payment-basics-heading">
+                  <div className="payment-subheader">
+                    <div>
+                      <p className="eyebrow">Step 1</p>
+                      <h3 id="payment-basics-heading">Payment basics</h3>
+                    </div>
+                  </div>
+                  <div className="payment-basics-grid">
+                    <label className="form-field">
+                      Academic Year
+                      <input
+                        value={paymentForm.academic_year}
+                        onChange={(event) => updatePaymentForm('academic_year', event.target.value)}
+                      />
+                    </label>
+                    <label className="form-field">
+                      Payment Method
+                      <select
+                        value={paymentForm.payment_method}
+                        onChange={(event) => updatePaymentForm('payment_method', event.target.value)}
+                      >
+                        {paymentMethodOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="form-field">
+                      Amount
+                      <input
+                        ref={paymentAmountRef}
+                        aria-label="Amount"
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        value={paymentForm.amount}
+                        onChange={(event) => updatePaymentForm('amount', event.target.value)}
+                      />
+                      {formatValidationError(paymentErrors, 'amount') && (
+                        <small>{formatValidationError(paymentErrors, 'amount')}</small>
+                      )}
+                    </label>
+                    <label className="form-field">
+                      Payment Date
+                      <input
+                        type="date"
+                        value={paymentForm.payment_date}
+                        onChange={(event) => updatePaymentForm('payment_date', event.target.value)}
+                      />
+                      {formatValidationError(paymentErrors, 'payment_date') && (
+                        <small>{formatValidationError(paymentErrors, 'payment_date')}</small>
+                      )}
+                    </label>
+                    {paymentForm.payment_method === 'cash' && (
+                      <label className="form-field">
+                        Received Date
+                        <input
+                          type="date"
+                          value={paymentForm.received_date}
+                          onChange={(event) => updatePaymentForm('received_date', event.target.value)}
+                        />
+                        {formatValidationError(paymentErrors, 'received_date') && (
+                          <small>{formatValidationError(paymentErrors, 'received_date')}</small>
+                        )}
+                      </label>
                     )}
-                  </label>
-
-                  <label className="form-field">
-                    Received Date
-                    <input
-                      type="date"
-                      value={paymentForm.received_date}
-                      onChange={(event) => updatePaymentForm('received_date', event.target.value)}
-                    />
-                    {formatValidationError(paymentErrors, 'received_date') && (
-                      <small>{formatValidationError(paymentErrors, 'received_date')}</small>
-                    )}
-                  </label>
-
-                  <label className="form-field">
-                    Amount
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={paymentForm.amount}
-                      onChange={(event) => updatePaymentForm('amount', event.target.value)}
-                    />
-                    {formatValidationError(paymentErrors, 'amount') && (
-                      <small>{formatValidationError(paymentErrors, 'amount')}</small>
-                    )}
-                  </label>
-
-                  <label className="form-field">
-                    Paid By
-                    <input
-                      value={paymentForm.paid_by}
-                      onChange={(event) => updatePaymentForm('paid_by', event.target.value)}
-                    />
-                  </label>
-
-                  <label className="form-field">
-                    Bank Account
-                    <input
-                      value={paymentForm.bank_account}
-                      onChange={(event) => updatePaymentForm('bank_account', event.target.value)}
-                    />
-                  </label>
-
-                  <label className="form-field">
-                    Reference No
-                    <input
-                      value={paymentForm.reference_no}
-                      onChange={(event) => updatePaymentForm('reference_no', event.target.value)}
-                    />
-                  </label>
-
-                  <label className="form-field wide">
-                    Payment Proof Text / Reference
-                    <textarea
-                      value={paymentForm.payment_proof}
-                      onChange={(event) => updatePaymentForm('payment_proof', event.target.value)}
-                    />
-                  </label>
-
-                  <label className="form-field wide">
-                    Remark
-                    <textarea
-                      value={paymentForm.remark}
-                      onChange={(event) => updatePaymentForm('remark', event.target.value)}
-                    />
-                  </label>
-                </div>
+                  </div>
+                </section>
 
                 <PaymentAllocationEditor
                   academicYear={paymentForm.academic_year}
@@ -3091,15 +3238,8 @@ function StudentsPage({
                   onUpdateOneTimeCharge={updatePaymentOneTimeCharge}
                   onCreateOneTimeCharge={() => void submitPaymentOneTimeCharge()}
                   onAddUnclassified={addUnclassifiedPaymentAllocation}
+                  afterAllocation={paymentPostAllocation}
                 />
-
-                <div className="payment-submit-area">
-                  <div className={`agreement-preview ${paymentAmountCents === allocationTotalCents ? '' : 'warning'}`}>
-                    <span>Payment {formatCurrency(Number(paymentForm.amount || 0))}</span>
-                    <span>Allocation {formatCurrency(paymentAllocationTotal)}</span>
-                    <strong>{paymentAmountCents === allocationTotalCents ? 'Balanced' : 'Mismatch'}</strong>
-                  </div>
-                </div>
               </form>
               </ModalFrame>
             )}

@@ -51,6 +51,7 @@ function editorProps(overrides: Partial<PaymentAllocationEditorProps> = {}): Pay
     onUpdateOneTimeCharge: vi.fn(),
     onCreateOneTimeCharge: vi.fn(),
     onAddUnclassified: vi.fn(),
+    afterAllocation: <div aria-label="Balance and details">Balanced</div>,
     ...overrides,
   }
 }
@@ -78,6 +79,32 @@ describe('PaymentAllocationEditor', () => {
     render(<PaymentAllocationEditor {...editorProps({ canAddOneTimeCharge: false })} />)
 
     expect(screen.queryByRole('button', { name: 'Add one-time charge' })).not.toBeInTheDocument()
+  })
+
+  it('renders balance/details after allocation and before advanced options', () => {
+    render(<PaymentAllocationEditor {...editorProps()} />)
+
+    const editor = screen.getByTestId('payment-allocation-editor')
+    const outstanding = within(editor)
+      .getByRole('heading', { name: 'Outstanding fees' })
+      .closest('section')
+    const allocation = within(editor)
+      .getByRole('heading', { name: 'Payment allocation' })
+      .closest('section')
+    const post = within(editor).getByLabelText('Balance and details')
+    const advanced = within(editor).getByText('Advanced options').closest('details')
+
+    expect(editor.children[0]).toBe(outstanding)
+    expect(editor.children[1]).toBe(allocation)
+    expect(editor.children[2]).toContainElement(post)
+    expect(editor.children[3]).toBe(advanced)
+  })
+
+  it('keeps the one-time action available in an empty outstanding state', () => {
+    render(<PaymentAllocationEditor {...editorProps({ outstandingCharges: [] })} />)
+
+    expect(screen.getByText('No outstanding fees found for 2026.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Add one-time charge' })).toBeInTheDocument()
   })
 
   it('reports a selected outstanding fee through the toggle callback', async () => {

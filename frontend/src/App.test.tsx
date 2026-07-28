@@ -939,6 +939,132 @@ describe('demo shell', () => {
     expect(within(dialog).getAllByLabelText(/Unclassified payment \d+ description/)).toHaveLength(1)
   })
 
+  it('shows payment basics, fees, allocation, balance, then supporting details', async () => {
+    const user = userEvent.setup()
+    installApiUser(schoolAdminDialogUser)
+    await renderAuthenticatedApp()
+    await user.click(screen.getByRole('button', { name: 'Students' }))
+    await user.click(await screen.findByRole('button', { name: 'Open' }))
+    await user.click(screen.getByRole('button', { name: 'Create Payment' }))
+
+    const dialog = screen.getByRole('dialog', { name: 'Record Payment' })
+    expect(dialog).toHaveClass('modal-frame--workflow')
+    expect(
+      within(dialog).getByRole('region', { name: 'Student context' }),
+    ).toHaveTextContent('Alyssa Tan')
+    expect(within(dialog).getByRole('heading', { name: 'Payment basics' })).toBeInTheDocument()
+    expect(within(dialog).getByRole('heading', { name: 'Outstanding fees' })).toBeInTheDocument()
+    expect(within(dialog).getByRole('heading', { name: 'Payment allocation' })).toBeInTheDocument()
+    expect(within(dialog).getByText('Amount remaining')).toBeInTheDocument()
+    expect(
+      within(dialog).getByText('Additional payment details').closest('details'),
+    ).not.toHaveAttribute('open')
+    expect(within(dialog).getByRole('button', { name: 'Record Payment' })).toBeDisabled()
+    await waitFor(() => expect(within(dialog).getByLabelText('Amount')).toHaveFocus())
+  })
+
+  it('opens Additional payment details when a contained field has an error', async () => {
+    const user = userEvent.setup()
+    installApiUser(schoolAdminDialogUser)
+    const fetchMock = vi.mocked(globalThis.fetch)
+    const installedImplementation = fetchMock.getMockImplementation()
+
+    if (!installedImplementation) throw new Error('API mock is not installed')
+
+    fetchMock.mockImplementation((input, init) => {
+      const url = new URL(String(input))
+
+      if (url.pathname.endsWith('/students/1/fee-record/outstanding')) {
+        return json({ data: [outstandingUniformCharge] })
+      }
+
+      if (url.pathname.endsWith('/students/1/payments') && init?.method === 'POST') {
+        return json(
+          {
+            message: 'Please check the payment.',
+            errors: { reference_no: ['Reference is invalid.'] },
+          },
+          422,
+        )
+      }
+
+      return installedImplementation(input, init)
+    })
+
+    await renderAuthenticatedApp()
+    await user.click(screen.getByRole('button', { name: 'Students' }))
+    await user.click(await screen.findByRole('button', { name: 'Open' }))
+    await user.click(screen.getByRole('button', { name: 'Create Payment' }))
+
+    const dialog = screen.getByRole('dialog', { name: 'Record Payment' })
+    await user.click(await within(dialog).findByRole('checkbox', { name: /Uniform – Sports T-shirt/ }))
+    await user.click(within(dialog).getByText('Additional payment details'))
+    await user.type(within(dialog).getByLabelText('Reference No'), 'INVALID')
+    const recordButton = within(dialog).getByRole('button', { name: 'Record Payment' })
+    expect(recordButton).toBeEnabled()
+    await user.click(recordButton)
+
+    const details = within(dialog).getByText('Additional payment details').closest('details')
+    expect(await within(dialog).findByText('Reference is invalid.')).toBeInTheDocument()
+    expect(details).toHaveAttribute('open')
+    await waitFor(() => expect(within(dialog).getByLabelText('Reference No')).toHaveFocus())
+  })
+
+  it('preserves the Record Payment endpoint and allocation payload', async () => {
+    const user = userEvent.setup()
+    installApiUser(schoolAdminDialogUser)
+    const fetchMock = vi.mocked(globalThis.fetch)
+    const installedImplementation = fetchMock.getMockImplementation()
+
+    if (!installedImplementation) throw new Error('API mock is not installed')
+
+    fetchMock.mockImplementation((input, init) => {
+      const url = new URL(String(input))
+
+      if (url.pathname.endsWith('/students/1/fee-record/outstanding')) {
+        return json({ data: [outstandingUniformCharge] })
+      }
+
+      if (url.pathname.endsWith('/students/1/payments') && init?.method === 'POST') {
+        return json({ payment: { ...pendingPayment, amount: 80 } })
+      }
+
+      return installedImplementation(input, init)
+    })
+
+    await renderAuthenticatedApp()
+    await user.click(screen.getByRole('button', { name: 'Students' }))
+    await user.click(await screen.findByRole('button', { name: 'Open' }))
+    await user.click(screen.getByRole('button', { name: 'Create Payment' }))
+
+    const dialog = screen.getByRole('dialog', { name: 'Record Payment' })
+    await user.click(await within(dialog).findByRole('checkbox', { name: /Uniform – Sports T-shirt/ }))
+    await user.click(within(dialog).getByRole('button', { name: 'Record Payment' }))
+
+    await waitFor(() => {
+      const request = fetchMock.mock.calls.find(
+        ([input, init]) =>
+          String(input).endsWith('/students/1/payments') && init?.method === 'POST',
+      )
+      expect(JSON.parse(String(request?.[1]?.body))).toMatchObject({
+        payment_method: 'bank_transfer',
+        amount: 80,
+        allocations: [
+          {
+            allocation_type: 'charge',
+            fee_record_charge_id: 41,
+            description: 'Uniform – Sports T-shirt',
+            amount: 80,
+          },
+        ],
+      })
+    })
+    expect(screen.queryByRole('dialog', { name: 'Record Payment' })).not.toBeInTheDocument()
+    expect(
+      screen.getByText('Payment recorded and pending finance verification.'),
+    ).toBeInTheDocument()
+  })
+
   it('uses the compact editor for Create and preserves the request payload', async () => {
     const user = userEvent.setup()
     await renderAuthenticatedApp()

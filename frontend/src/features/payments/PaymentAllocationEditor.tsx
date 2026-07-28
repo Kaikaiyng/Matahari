@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import type { ReactNode } from 'react'
 import type { ValidationErrors } from '../fee-agreements/types'
 import {
   feeRecordCategoryOptions,
@@ -36,6 +37,7 @@ export type PaymentAllocationEditorProps = {
   onUpdateOneTimeCharge: (field: keyof OneTimeChargeDraft, value: string) => void
   onCreateOneTimeCharge: () => void
   onAddUnclassified: () => void
+  afterAllocation: ReactNode
 }
 
 function formatCurrency(amount: number | null) {
@@ -93,6 +95,7 @@ export function PaymentAllocationEditor({
   onUpdateOneTimeCharge,
   onCreateOneTimeCharge,
   onAddUnclassified,
+  afterAllocation,
 }: PaymentAllocationEditorProps) {
   const selectedChargeIds = new Set(
     allocations
@@ -128,8 +131,11 @@ export function PaymentAllocationEditor({
   const incompleteUnclassified = hasIncompleteUnclassifiedAllocation(allocations)
 
   return (
-    <>
-      <section className="payment-allocation-block" aria-labelledby="outstanding-fees-heading">
+    <div className="payment-allocation-editor" data-testid="payment-allocation-editor">
+      <section
+        className="payment-allocation-block payment-outstanding-region"
+        aria-labelledby="outstanding-fees-heading"
+      >
         <div className="payment-subheader">
           <div>
             <h3 id="outstanding-fees-heading">Outstanding fees</h3>
@@ -290,7 +296,10 @@ export function PaymentAllocationEditor({
         </div>
       </section>
 
-      <section className="payment-allocation-block" aria-labelledby="payment-allocation-heading">
+      <section
+        className="payment-allocation-block payment-allocation-region"
+        aria-labelledby="payment-allocation-heading"
+      >
         <div className="payment-subheader">
           <div>
             <h3 id="payment-allocation-heading">Payment allocation</h3>
@@ -361,6 +370,8 @@ export function PaymentAllocationEditor({
         </div>
       </section>
 
+      <div className="payment-post-allocation-region">{afterAllocation}</div>
+
       <details className="payment-advanced-options">
         <summary>Advanced options</summary>
         <div className="advanced-option-content">
@@ -379,6 +390,6 @@ export function PaymentAllocationEditor({
           </button>
         </div>
       </details>
-    </>
+    </div>
   )
 }
