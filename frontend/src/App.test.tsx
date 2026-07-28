@@ -972,6 +972,22 @@ describe('demo shell', () => {
     })
   })
 
+  it('identifies the student and focuses Payment Plan in Fee Agreement', async () => {
+    const user = userEvent.setup()
+    installApiUser(schoolAdminDialogUser)
+    await renderAuthenticatedApp()
+    await user.click(screen.getByRole('button', { name: 'Students' }))
+    await user.click(await screen.findByRole('button', { name: 'Open' }))
+    await user.click(screen.getByRole('button', { name: 'Create Agreement' }))
+
+    const dialog = screen.getByRole('dialog', { name: 'Create Fee Agreement' })
+    expect(dialog).toHaveClass('modal-frame--workflow')
+    expect(
+      within(dialog).getByRole('region', { name: 'Student context' }),
+    ).toHaveTextContent('Alyssa Tan')
+    await waitFor(() => expect(within(dialog).getByLabelText('Payment Plan')).toHaveFocus())
+  })
+
   it('asks before closing a dirty agreement but closes a clean agreement immediately', async () => {
     const user = userEvent.setup()
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)

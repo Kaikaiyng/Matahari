@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import type { RefObject } from 'react'
 import { AgreementReviewPanel } from './AgreementReviewPanel'
 import { FeeItemRow } from './FeeItemRow'
 import type {
@@ -26,12 +27,14 @@ export function FeeAgreementEditor({
   errors,
   currentAgreement,
   onChange,
+  paymentPlanRef,
 }: {
   mode: 'create' | 'supersede'
   form: FeeAgreementForm
   errors: ValidationErrors | undefined
   currentAgreement: FeeAgreement | null
   onChange: (form: FeeAgreementForm) => void
+  paymentPlanRef?: RefObject<HTMLSelectElement | null>
 }) {
   const [expandedFeeItemId, setExpandedFeeItemId] = useState<number | null>(null)
   const [optionalPickerOpen, setOptionalPickerOpen] = useState(false)
@@ -150,15 +153,15 @@ export function FeeAgreementEditor({
   )
 
   return (
-    <div className="fee-agreement-editor">
-      <main className="fee-agreement-editor-main">
-        {mode === 'supersede' && currentAgreement && (
-          <div className="agreement-version-context">
-            <strong>Creating a new version from v{currentAgreement.version_no}</strong>
-            <span>The current agreement stays in version history.</span>
-          </div>
-        )}
+    <div className="fee-agreement-editor" data-testid="fee-agreement-editor">
+      {mode === 'supersede' && currentAgreement && (
+        <div className="agreement-version-context">
+          <strong>Creating a new version from v{currentAgreement.version_no}</strong>
+          <span>The current agreement stays in version history.</span>
+        </div>
+      )}
 
+      <main className="fee-agreement-editor-main">
         <section className="agreement-editor-section" aria-labelledby="agreement-details-title">
           <div className="agreement-section-heading">
             <div>
@@ -182,6 +185,7 @@ export function FeeAgreementEditor({
             <label className="form-field">
               Payment Plan
               <select
+                ref={paymentPlanRef}
                 value={form.payment_plan}
                 onChange={(event) => update('payment_plan', event.target.value as PaymentPlan)}
               >

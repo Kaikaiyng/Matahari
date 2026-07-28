@@ -860,6 +860,7 @@ function StudentsPage({
   const [feeAgreements, setFeeAgreements] = useState<FeeAgreement[]>([])
   const [feeAgreementMode, setFeeAgreementMode] = useState<'create' | 'supersede'>('create')
   const [showFeeAgreementForm, setShowFeeAgreementForm] = useState(false)
+  const feeAgreementPaymentPlanRef = useRef<HTMLSelectElement>(null)
   const [feeAgreementForm, setFeeAgreementForm] = useState<FeeAgreementForm>(defaultAgreementForm([]))
   const [initialFeeAgreementForm, setInitialFeeAgreementForm] = useState<FeeAgreementForm>(
     defaultAgreementForm([]),
@@ -2545,8 +2546,9 @@ function StudentsPage({
                     ? 'Set the agreement dates, review the core fees, and add optional fees only when needed.'
                     : 'Create a new version and review every change before it takes effect.'
                 }
+                size="workflow"
+                initialFocusRef={feeAgreementPaymentPlanRef}
                 onClose={() => closeFeeAgreementEditor()}
-                className="financial-modal"
                 footer={
                   <>
                     <button type="button" className="secondary-action" onClick={() => closeFeeAgreementEditor()}>
@@ -2568,6 +2570,13 @@ function StudentsPage({
                 }
               >
               <form id="fee-agreement-form" className="agreement-form" onSubmit={submitFeeAgreement}>
+                <ModalContextSummary
+                  ariaLabel="Student context"
+                  items={[
+                    { label: 'Student', value: selectedStudent?.full_name ?? 'Not selected' },
+                    { label: 'Student ID', value: selectedStudent?.student_no ?? 'Not recorded' },
+                  ]}
+                />
                 {formatValidationError(feeAgreementErrors, 'items') && (
                   <Message tone="error">{formatValidationError(feeAgreementErrors, 'items')}</Message>
                 )}
@@ -2578,6 +2587,7 @@ function StudentsPage({
                   errors={feeAgreementErrors}
                   currentAgreement={currentFeeAgreement}
                   onChange={setFeeAgreementForm}
+                  paymentPlanRef={feeAgreementPaymentPlanRef}
                 />
 
               </form>
