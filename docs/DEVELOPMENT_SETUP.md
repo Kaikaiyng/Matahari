@@ -211,20 +211,24 @@ The default PHPUnit suite uses in-memory SQLite and cannot prove MariaDB JSON, i
 
 ```powershell
 $env:DB_CONNECTION='mariadb'
+$env:DB_URL=''
 $env:DB_HOST='127.0.0.1'
 $env:DB_PORT='3306'
 $env:DB_DATABASE='matahari_audit_test'
 $env:DB_USERNAME='matahari_test'
 $env:DB_PASSWORD='matahari_test'
+$env:AUDIT_MARIADB_DESTRUCTIVE_TEST='1'
 Push-Location backend
 try {
-    ..\tools\php\php-local.cmd artisan migrate:fresh --env=testing
     ..\tools\php\php-local.cmd artisan test --group=mariadb
 }
 finally {
     Pop-Location
+    Remove-Item Env:\AUDIT_MARIADB_DESTRUCTIVE_TEST -ErrorAction SilentlyContinue
+    Remove-Item Env:\DB_CONNECTION, Env:\DB_URL, Env:\DB_HOST, Env:\DB_PORT, Env:\DB_DATABASE, Env:\DB_USERNAME, Env:\DB_PASSWORD -ErrorAction SilentlyContinue
 }
-Remove-Item Env:\DB_CONNECTION, Env:\DB_HOST, Env:\DB_PORT, Env:\DB_DATABASE, Env:\DB_USERNAME, Env:\DB_PASSWORD -ErrorAction SilentlyContinue
 ```
 
-The database must contain no valuable data because `migrate:fresh` drops its tables. Clear the temporary environment variables after the run. A skipped MariaDB-group test under SQLite is not acceptance evidence.
+The guarded test owns `migrate:fresh`; do not run a separate unguarded refresh. Before dropping any tables, it requires the explicit opt-in, rejects a non-empty `DB_URL`, requires Laravel's `mariadb` driver, and verifies through read-only queries that the connected server identifies itself as MariaDB and the actual database is exactly `matahari_audit_test`.
+
+The database must contain no valuable data because the test drops its tables. The cleanup block clears the opt-in and all temporary database variables even when the test fails. A skipped MariaDB-group test under SQLite is not acceptance evidence.
