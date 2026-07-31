@@ -55,7 +55,7 @@ class AuditRequestContextTest extends TestCase
         $request->attributes->set(AssignRequestId::ATTRIBUTE, (string) Str::uuid7());
         $request->setUserResolver(fn () => $user);
 
-        $context = (new AuditContextFactory())->fromRequest($request);
+        $context = (new AuditContextFactory)->fromRequest($request);
 
         $this->assertSame($user->id, $context->actorId);
         $this->assertSame('auditor', $context->actorUsername);
@@ -67,7 +67,7 @@ class AuditRequestContextTest extends TestCase
 
     public function test_system_context_is_server_generated_and_has_no_actor(): void
     {
-        $context = (new AuditContextFactory())->system(AuditContextType::Console);
+        $context = (new AuditContextFactory)->system(AuditContextType::Console);
 
         $this->assertTrue(Str::isUuid($context->requestId));
         $this->assertSame(AuditContextType::Console, $context->contextType);
@@ -80,7 +80,7 @@ class AuditRequestContextTest extends TestCase
         $this->expectException(LogicException::class);
         $this->expectExceptionMessage('Server request ID middleware did not run.');
 
-        (new AuditContextFactory())->fromRequest(Request::create('/api/students', 'GET'));
+        (new AuditContextFactory)->fromRequest(Request::create('/api/students', 'GET'));
     }
 
     public function test_factory_rejects_malformed_server_request_id(): void
@@ -91,7 +91,7 @@ class AuditRequestContextTest extends TestCase
         $this->expectException(LogicException::class);
         $this->expectExceptionMessage('Server request ID middleware did not run.');
 
-        (new AuditContextFactory())->fromRequest($request);
+        (new AuditContextFactory)->fromRequest($request);
     }
 
     public function test_factory_rejects_valid_non_v7_server_request_id(): void
@@ -105,6 +105,6 @@ class AuditRequestContextTest extends TestCase
         $this->expectException(LogicException::class);
         $this->expectExceptionMessage('Server request ID middleware did not run.');
 
-        (new AuditContextFactory())->fromRequest($request);
+        (new AuditContextFactory)->fromRequest($request);
     }
 }

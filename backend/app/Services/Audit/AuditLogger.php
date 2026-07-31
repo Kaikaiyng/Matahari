@@ -13,8 +13,7 @@ final class AuditLogger implements AuditLoggerContract
 {
     public function __construct(
         private readonly AuditPayloadSanitizer $sanitizer,
-    ) {
-    }
+    ) {}
 
     public function record(AuditEvent $event, AuditContext $context): AuditLog
     {
