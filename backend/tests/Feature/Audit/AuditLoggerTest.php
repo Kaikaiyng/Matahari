@@ -34,8 +34,15 @@ class AuditLoggerTest extends TestCase
             'invoice_prefix' => 'AUD-INV',
             'status' => 'active',
         ]);
+        $actorSchool = School::query()->create([
+            'code' => 'ACT',
+            'name' => 'Actor School',
+            'receipt_prefix' => 'ACT',
+            'invoice_prefix' => 'ACT-INV',
+            'status' => 'active',
+        ]);
         $actor = User::factory()->create([
-            'school_id' => null,
+            'school_id' => $actorSchool->id,
             'username' => 'superadmin',
         ]);
         $requestId = (string) Str::uuid7();
@@ -45,7 +52,7 @@ class AuditLoggerTest extends TestCase
             actorId: $actor->id,
             actorUsername: 'superadmin',
             actorRoles: ['super-admin'],
-            actorSchoolId: null,
+            actorSchoolId: $actorSchool->id,
             ipAddress: '127.0.0.1',
             userAgent: 'Audit Test',
             routeName: 'students.update',
@@ -64,7 +71,7 @@ class AuditLoggerTest extends TestCase
 
         $log = app(AuditLoggerContract::class)->record($event, $context);
 
-        $this->assertTrue(Str::isUuid($log->event_uuid));
+        $this->assertTrue(Str::isUuid($log->event_uuid, 7));
         $this->assertSame($requestId, $log->request_id);
         $this->assertSame($school->id, $log->school_id);
         $this->assertSame(['notes' => 'A'], $log->old_values);
@@ -73,5 +80,29 @@ class AuditLoggerTest extends TestCase
         $this->assertSame(['super-admin'], $log->actor_roles);
         $this->assertSame('student', $log->entity_type);
         $this->assertSame(44, $log->entity_id);
+    }
+
+    public function test_logger_uses_actor_school_when_event_has_no_school(): void
+    {
+        $actorSchool = School::query()->create([
+            'code' => 'FBK',
+            'name' => 'Fallback School',
+            'receipt_prefix' => 'FBK',
+            'invoice_prefix' => 'FBK-INV',
+            'status' => 'active',
+        ]);
+        $context = new AuditContext(
+            requestId: (string) Str::uuid7(),
+            contextType: AuditContextType::Console,
+            actorSchoolId: $actorSchool->id,
+        );
+        $event = new AuditEvent(
+            action: AuditAction::StudentUpdated,
+            module: AuditModule::Students,
+        );
+
+        $log = app(AuditLoggerContract::class)->record($event, $context);
+
+        $this->assertSame($actorSchool->id, $log->school_id);
     }
 }
