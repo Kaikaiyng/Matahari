@@ -48,6 +48,7 @@ return new class extends Migration
     public function up(): void
     {
         $this->assertRequiredColumnsExist();
+        $this->backfillResidualNullValues();
         $this->assertBackfillComplete();
         $this->enforceRequiredColumns();
 
@@ -55,6 +56,7 @@ return new class extends Migration
             $existing = $this->indexNamed($name);
 
             if ($existing !== null) {
+                $this->assertMariaDbIndexMatches($name);
                 $this->assertIndexMatches($name, $existing, $definition);
 
                 continue;
@@ -69,6 +71,8 @@ return new class extends Migration
 
                 $table->index($definition['columns'], $name);
             });
+
+            $this->assertMariaDbIndexMatches($name);
         }
     }
 
@@ -85,6 +89,7 @@ return new class extends Migration
                 continue;
             }
 
+            $this->assertMariaDbIndexMatches($name);
             $this->assertIndexMatches($name, $existing, $definition);
 
             Schema::table('audit_logs', function (Blueprint $table) use ($name, $definition): void {
@@ -113,6 +118,12 @@ return new class extends Migration
                 $table->string('module', 100)->nullable()->change();
             });
         }
+    }
+
+    private function backfillResidualNullValues(): void
+    {
+        $backfill = require __DIR__.'/2026_07_31_000002_backfill_secure_audit_columns.php';
+        $backfill->up();
     }
 
     private function assertRequiredColumnsExist(): void
@@ -176,13 +187,48 @@ return new class extends Migration
      */
     private function assertIndexMatches(string $name, array $existing, array $expected): void
     {
+        $type = $existing['type'] === null ? null : strtolower($existing['type']);
         $matches = array_map('strtolower', $existing['columns']) === $expected['columns']
             && $existing['unique'] === $expected['unique']
-            && $existing['primary'] === false;
+            && $existing['primary'] === false
+            && ($type === null || $type === 'btree');
 
         if (! $matches) {
             throw new RuntimeException(
                 "Cannot manage secure audit index {$name} because its existing definition does not match.",
+            );
+        }
+    }
+
+    private function assertMariaDbIndexMatches(string $name): void
+    {
+        if (! in_array(DB::getDriverName(), ['mariadb', 'mysql'], true)) {
+            return;
+        }
+
+        $statistics = DB::select(
+            <<<'SQL'
+                SELECT INDEX_TYPE AS index_type, SUB_PART AS sub_part
+                FROM information_schema.statistics
+                WHERE TABLE_SCHEMA = DATABASE()
+                  AND TABLE_NAME = 'audit_logs'
+                  AND INDEX_NAME = ?
+                ORDER BY SEQ_IN_INDEX
+                SQL,
+            [$name],
+        );
+
+        $matches = $statistics !== [];
+
+        foreach ($statistics as $statistic) {
+            $matches = $matches
+                && strtolower((string) $statistic->index_type) === 'btree'
+                && $statistic->sub_part === null;
+        }
+
+        if (! $matches) {
+            throw new RuntimeException(
+                "Cannot manage secure audit index {$name} because MariaDB/MySQL reports a non-BTREE or prefix definition.",
             );
         }
     }

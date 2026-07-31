@@ -138,6 +138,46 @@ class AuditMariaDbSchemaTest extends TestCase
         ])));
     }
 
+    public function test_constraint_stage_rejects_a_same_named_fulltext_index(): void
+    {
+        Schema::table('audit_logs', function (Blueprint $table): void {
+            $table->dropIndex('audit_logs_module_index');
+        });
+        DB::statement(
+            'CREATE FULLTEXT INDEX audit_logs_module_index ON audit_logs (module)',
+        );
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage(
+            'Cannot manage secure audit index audit_logs_module_index because MariaDB/MySQL reports a non-BTREE or prefix definition.',
+        );
+
+        $constraints = require database_path(
+            'migrations/2026_07_31_000003_enforce_secure_audit_invariants.php',
+        );
+        $constraints->up();
+    }
+
+    public function test_constraint_stage_rejects_a_same_named_prefix_index(): void
+    {
+        Schema::table('audit_logs', function (Blueprint $table): void {
+            $table->dropIndex('audit_logs_module_index');
+        });
+        DB::statement(
+            'CREATE INDEX audit_logs_module_index ON audit_logs (module(20))',
+        );
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage(
+            'Cannot manage secure audit index audit_logs_module_index because MariaDB/MySQL reports a non-BTREE or prefix definition.',
+        );
+
+        $constraints = require database_path(
+            'migrations/2026_07_31_000003_enforce_secure_audit_invariants.php',
+        );
+        $constraints->up();
+    }
+
     public function test_invalid_native_json_is_rejected(): void
     {
         $invalidRow = [

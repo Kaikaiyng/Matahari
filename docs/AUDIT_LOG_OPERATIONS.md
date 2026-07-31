@@ -26,7 +26,11 @@ These are integration requirements for later phases, not a claim that every busi
 
 ## Failed Migration Recovery
 
+Before the column-addition stage starts, drain in-flight requests and queued jobs, then stop every old application process that can write `audit_logs`. Keep those writers quiesced until all three stages are recorded and the post-migration checks pass. Do not run old and upgraded writers continuously against the schema during this migration.
+
 The secure audit schema upgrade is split into separately recorded column-addition, backfill, and constraint/index stages. If an unrecorded stage fails after MariaDB has committed some DDL, preserve the database and diagnose the original error before rerunning `php artisan migrate --force`. The stages inspect the live schema, keep existing backfilled UUIDs, fill only null Phase 1 values, and skip exact indexes or constraints that already exist.
+
+The constraint stage repeats the null-only backfill immediately before enforcing invariants. This is a recovery defense for a row committed between recorded stages; it is not permission to leave mixed-version writers running during the upgrade.
 
 Do not manually mark a failed stage as migrated, regenerate UUIDs, drop a same-named index, or delete legacy audit rows. The constraint stage deliberately stops if a required column is absent, a required backfill value is null, or a same-named index has a different definition. Treat any of those conditions as a recovery investigation requiring a backup and an explicit data repair plan.
 

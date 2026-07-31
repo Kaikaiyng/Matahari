@@ -3,11 +3,13 @@
 namespace Tests\Feature\Audit;
 
 use Closure;
+use Illuminate\Database\Query\Processors\MySqlProcessor;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use ReflectionMethod;
 use RuntimeException;
 use Tests\TestCase;
 
@@ -103,11 +105,57 @@ class AuditLogUpgradeMigrationTest extends TestCase
         });
     }
 
+    public function test_constraint_stage_heals_a_legacy_row_written_after_the_recorded_backfill(): void
+    {
+        $this->withUpgradeDatabase(function (): void {
+            $existingId = $this->insertLegacyRow();
+            $this->additionMigration()->up();
+            $this->backfillMigration()->up();
+
+            $existingEventUuid = DB::table('audit_logs')
+                ->where('id', $existingId)
+                ->value('event_uuid');
+            $lateLegacyId = $this->insertLegacyRow();
+
+            try {
+                $this->constraintMigration()->up();
+            } catch (RuntimeException $exception) {
+                $this->fail(
+                    'The constraint stage did not heal the post-backfill legacy row: '.$exception->getMessage(),
+                );
+            }
+
+            $lateLegacy = DB::table('audit_logs')->where('id', $lateLegacyId)->firstOrFail();
+            $columns = collect(Schema::getColumns('audit_logs'))->keyBy('name');
+
+            $this->assertSame(
+                $existingEventUuid,
+                DB::table('audit_logs')->where('id', $existingId)->value('event_uuid'),
+            );
+            $this->assertTrue(Str::isUuid($lateLegacy->event_uuid, 7));
+            $this->assertSame('legacy', $lateLegacy->module);
+            $this->assertSame('system', $lateLegacy->context_type);
+            $this->assertSame(1, $lateLegacy->schema_version);
+            $this->assertFalse($columns->get('event_uuid')['nullable']);
+            $this->assertFalse($columns->get('module')['nullable']);
+        });
+    }
+
     public function test_constraint_stage_fails_closed_when_backfill_values_are_missing(): void
     {
         $this->withUpgradeDatabase(function (): void {
             $this->insertLegacyRow();
             $this->additionMigration()->up();
+            DB::unprepared(
+                <<<'SQL'
+                    CREATE TRIGGER prevent_event_uuid_backfill
+                    BEFORE UPDATE OF event_uuid ON audit_logs
+                    WHEN OLD.event_uuid IS NULL
+                    BEGIN
+                        SELECT RAISE(IGNORE);
+                    END
+                    SQL,
+            );
 
             $this->expectException(RuntimeException::class);
             $this->expectExceptionMessage(
@@ -116,6 +164,28 @@ class AuditLogUpgradeMigrationTest extends TestCase
 
             $this->constraintMigration()->up();
         });
+    }
+
+    public function test_portable_index_guard_rejects_a_non_btree_same_named_index(): void
+    {
+        $index = (new MySqlProcessor)->processIndexes([(object) [
+            'name' => 'audit_logs_module_index',
+            'columns' => 'module',
+            'type' => 'FULLTEXT',
+            'unique' => 0,
+        ]])[0];
+        $migration = $this->constraintMigration();
+        $assertIndexMatches = new ReflectionMethod($migration, 'assertIndexMatches');
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage(
+            'Cannot manage secure audit index audit_logs_module_index because its existing definition does not match.',
+        );
+
+        $assertIndexMatches->invoke($migration, 'audit_logs_module_index', $index, [
+            'columns' => ['module'],
+            'unique' => false,
+        ]);
     }
 
     public function test_rollback_removes_only_secure_audit_additions(): void
