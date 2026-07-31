@@ -14,7 +14,7 @@ final class AuditContextFactory
     {
         $requestId = $request->attributes->get(AssignRequestId::ATTRIBUTE);
 
-        if (! is_string($requestId) || ! Str::isUuid($requestId)) {
+        if (! is_string($requestId) || ! Str::isUuid($requestId, 7)) {
             throw new LogicException('Server request ID middleware did not run.');
         }
 

@@ -11,6 +11,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use LogicException;
 use Tests\TestCase;
 
 class AuditRequestContextTest extends TestCase
@@ -28,7 +29,7 @@ class AuditRequestContextTest extends TestCase
         $requestId = $response->headers->get('X-Request-ID');
 
         $this->assertNotSame('client-controlled', $requestId);
-        $this->assertTrue(Str::isUuid($requestId));
+        $this->assertTrue(Str::isUuid($requestId, 7));
     }
 
     public function test_factory_snapshots_sorted_roles_and_actor_school(): void
@@ -72,5 +73,38 @@ class AuditRequestContextTest extends TestCase
         $this->assertSame(AuditContextType::Console, $context->contextType);
         $this->assertNull($context->actorId);
         $this->assertSame([], $context->actorRoles);
+    }
+
+    public function test_factory_rejects_missing_server_request_id(): void
+    {
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('Server request ID middleware did not run.');
+
+        (new AuditContextFactory())->fromRequest(Request::create('/api/students', 'GET'));
+    }
+
+    public function test_factory_rejects_malformed_server_request_id(): void
+    {
+        $request = Request::create('/api/students', 'GET');
+        $request->attributes->set(AssignRequestId::ATTRIBUTE, 'not-a-uuid');
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('Server request ID middleware did not run.');
+
+        (new AuditContextFactory())->fromRequest($request);
+    }
+
+    public function test_factory_rejects_valid_non_v7_server_request_id(): void
+    {
+        $requestId = (string) Str::uuid();
+        $this->assertTrue(Str::isUuid($requestId, 4));
+
+        $request = Request::create('/api/students', 'GET');
+        $request->attributes->set(AssignRequestId::ATTRIBUTE, $requestId);
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('Server request ID middleware did not run.');
+
+        (new AuditContextFactory())->fromRequest($request);
     }
 }
