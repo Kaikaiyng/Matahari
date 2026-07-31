@@ -216,8 +216,15 @@ $env:DB_PORT='3306'
 $env:DB_DATABASE='matahari_audit_test'
 $env:DB_USERNAME='matahari_test'
 $env:DB_PASSWORD='matahari_test'
-tools\php\php-local.cmd backend\artisan migrate:fresh --env=testing
-tools\php\php-local.cmd backend\artisan test --group=mariadb
+Push-Location backend
+try {
+    ..\tools\php\php-local.cmd artisan migrate:fresh --env=testing
+    ..\tools\php\php-local.cmd artisan test --group=mariadb
+}
+finally {
+    Pop-Location
+}
+Remove-Item Env:\DB_CONNECTION, Env:\DB_HOST, Env:\DB_PORT, Env:\DB_DATABASE, Env:\DB_USERNAME, Env:\DB_PASSWORD -ErrorAction SilentlyContinue
 ```
 
 The database must contain no valuable data because `migrate:fresh` drops its tables. Clear the temporary environment variables after the run. A skipped MariaDB-group test under SQLite is not acceptance evidence.
