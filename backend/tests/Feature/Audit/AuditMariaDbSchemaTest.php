@@ -138,6 +138,40 @@ class AuditMariaDbSchemaTest extends TestCase
         ])));
     }
 
+    public function test_payment_allocation_foreign_key_is_exact_and_idempotent(): void
+    {
+        $migration = require database_path(
+            'migrations/2026_06_30_000006_ensure_payment_allocation_fee_agreement_item_foreign_key.php',
+        );
+
+        $migration->up();
+        $migration->up();
+
+        $foreignKeys = array_values(array_filter(
+            Schema::getForeignKeys('payment_allocations'),
+            static fn (array $foreignKey): bool => in_array(
+                'fee_agreement_item_id',
+                $foreignKey['columns'],
+                true,
+            ),
+        ));
+        $column = collect(Schema::getColumns('payment_allocations'))
+            ->firstWhere('name', 'fee_agreement_item_id');
+
+        $this->assertSame([[
+            'name' => 'payment_allocations_fee_agreement_item_ensured_foreign',
+            'columns' => ['fee_agreement_item_id'],
+            'foreign_schema' => 'matahari_audit_test',
+            'foreign_table' => 'fee_agreement_items',
+            'foreign_columns' => ['id'],
+            'on_update' => 'restrict',
+            'on_delete' => 'set null',
+        ]], $foreignKeys);
+        $this->assertSame('bigint', $column['type_name']);
+        $this->assertStringContainsString('unsigned', $column['type']);
+        $this->assertTrue($column['nullable']);
+    }
+
     public function test_constraint_stage_rejects_a_same_named_fulltext_index(): void
     {
         Schema::table('audit_logs', function (Blueprint $table): void {
