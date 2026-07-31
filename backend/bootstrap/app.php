@@ -4,6 +4,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use App\Http\Middleware\AssignRequestId;
 use App\Http\Middleware\EnsureUserHasPermission;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -14,6 +15,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->append(AssignRequestId::class);
+
         $middleware->alias([
             'permission' => EnsureUserHasPermission::class,
         ]);
