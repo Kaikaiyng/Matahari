@@ -2,10 +2,13 @@
 
 namespace App\Audit;
 
+use Illuminate\Support\Str;
+use InvalidArgumentException;
+
 final readonly class AuditContext
 {
     /**
-     * @param array<int, string> $actorRoles
+     * @param  array<int, string>  $actorRoles
      */
     public function __construct(
         public string $requestId,
@@ -19,5 +22,8 @@ final readonly class AuditContext
         public ?string $routeName = null,
         public ?string $httpMethod = null,
     ) {
+        if (! Str::isUuid($this->requestId, 7)) {
+            throw new InvalidArgumentException('Audit request ID must be a UUIDv7.');
+        }
     }
 }

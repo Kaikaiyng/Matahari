@@ -2,6 +2,7 @@
 
 namespace App\Audit;
 
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 
 final readonly class AuditEvent
@@ -25,6 +26,10 @@ final readonly class AuditEvent
 
         if ($this->reason !== null && trim($this->reason) === '') {
             throw new InvalidArgumentException('Audit reason cannot be blank.');
+        }
+
+        if ($this->batchId !== null && ! Str::isUuid($this->batchId, 7)) {
+            throw new InvalidArgumentException('Audit batch ID must be a UUIDv7.');
         }
     }
 }

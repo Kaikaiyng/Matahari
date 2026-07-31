@@ -6,6 +6,21 @@ use InvalidArgumentException;
 
 final class AuditPayloadSanitizer
 {
+    private const PROHIBITED_ENVELOPES = [
+        'headers',
+        'rawbody',
+        'requestbody',
+        'files',
+        'fileuploads',
+        'filecontents',
+    ];
+
+    private const BENIGN_KEYS = [
+        'tokencount',
+        'sessionduration',
+        'cookiepolicy',
+    ];
+
     private const SENSITIVE_FRAGMENTS = [
         'password',
         'token',
@@ -22,7 +37,7 @@ final class AuditPayloadSanitizer
     ];
 
     /**
-     * @param array<array-key, mixed> $payload
+     * @param  array<array-key, mixed>  $payload
      * @return array<array-key, mixed>
      */
     public function sanitize(array $payload): array
@@ -30,7 +45,7 @@ final class AuditPayloadSanitizer
         $sanitized = [];
 
         foreach ($payload as $key => $value) {
-            if (is_string($key) && $this->isSensitiveKey($key)) {
+            if (is_string($key) && $this->shouldDropKey($key)) {
                 continue;
             }
 
@@ -40,9 +55,17 @@ final class AuditPayloadSanitizer
         return $sanitized;
     }
 
-    private function isSensitiveKey(string $key): bool
+    private function shouldDropKey(string $key): bool
     {
         $normalized = strtolower((string) preg_replace('/[^a-z0-9]/i', '', $key));
+
+        if (in_array($normalized, self::PROHIBITED_ENVELOPES, true)) {
+            return true;
+        }
+
+        if (in_array($normalized, self::BENIGN_KEYS, true)) {
+            return false;
+        }
 
         foreach (self::SENSITIVE_FRAGMENTS as $fragment) {
             if (str_contains($normalized, $fragment)) {

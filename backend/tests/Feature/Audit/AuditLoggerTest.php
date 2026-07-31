@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Services\Audit\AuditLogger;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 use Tests\TestCase;
 
 class AuditLoggerTest extends TestCase
@@ -104,5 +105,93 @@ class AuditLoggerTest extends TestCase
         $log = app(AuditLoggerContract::class)->record($event, $context);
 
         $this->assertSame($actorSchool->id, $log->school_id);
+    }
+
+    public function test_logger_never_stores_mixed_case_nested_request_or_file_envelopes(): void
+    {
+        $context = new AuditContext(
+            requestId: (string) Str::uuid7(),
+            contextType: AuditContextType::System,
+        );
+        $event = new AuditEvent(
+            action: AuditAction::StudentUpdated,
+            module: AuditModule::Students,
+            oldValues: [
+                'HEAD-ERS' => 'Authorization: Bearer exposed',
+                'token_count' => 4,
+            ],
+            newValues: [
+                'profile' => [
+                    'Request Body' => '{"password":"exposed"}',
+                    'session_duration' => 900,
+                ],
+            ],
+            metadata: [
+                'upload' => [
+                    'FiLe_UpLoAdS' => ['identity-card.jpg'],
+                    'file.contents' => 'opaque-binary-data',
+                    'cookie_policy' => 'strict',
+                ],
+            ],
+        );
+
+        $log = app(AuditLoggerContract::class)->record($event, $context);
+
+        $this->assertSame(['token_count' => 4], $log->old_values);
+        $this->assertSame([
+            'profile' => [
+                'session_duration' => 900,
+            ],
+        ], $log->new_values);
+        $this->assertSame([
+            'upload' => [
+                'cookie_policy' => 'strict',
+            ],
+        ], $log->metadata);
+    }
+
+    public function test_logger_boundary_rejects_non_uuidv7_request_id_without_storing_a_row(): void
+    {
+        try {
+            app(AuditLoggerContract::class)->record(
+                new AuditEvent(
+                    action: AuditAction::StudentUpdated,
+                    module: AuditModule::Students,
+                ),
+                new AuditContext(
+                    requestId: '550e8400-e29b-41d4-a716-446655440000',
+                    contextType: AuditContextType::System,
+                ),
+            );
+
+            $this->fail('Expected a non-UUIDv7 request ID to be rejected.');
+        } catch (InvalidArgumentException $exception) {
+            $this->assertSame('Audit request ID must be a UUIDv7.', $exception->getMessage());
+        }
+
+        $this->assertDatabaseCount('audit_logs', 0);
+    }
+
+    public function test_logger_boundary_rejects_non_uuidv7_batch_id_without_storing_a_row(): void
+    {
+        try {
+            app(AuditLoggerContract::class)->record(
+                new AuditEvent(
+                    action: AuditAction::StudentUpdated,
+                    module: AuditModule::Students,
+                    batchId: '550e8400-e29b-41d4-a716-446655440000',
+                ),
+                new AuditContext(
+                    requestId: (string) Str::uuid7(),
+                    contextType: AuditContextType::System,
+                ),
+            );
+
+            $this->fail('Expected a non-UUIDv7 batch ID to be rejected.');
+        } catch (InvalidArgumentException $exception) {
+            $this->assertSame('Audit batch ID must be a UUIDv7.', $exception->getMessage());
+        }
+
+        $this->assertDatabaseCount('audit_logs', 0);
     }
 }
