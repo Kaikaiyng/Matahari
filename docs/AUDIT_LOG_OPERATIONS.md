@@ -4,15 +4,38 @@
 
 Matahari treats `audit_logs` as append-only for the application runtime. Laravel model guards prevent ordinary instance updates and deletes, but they do not stop bulk queries, raw SQL, migration credentials, or database administrators.
 
-Before Production launch, use separate deployment and runtime database identities. Replace `matahari` and `matahari_app` below with the deployed database and runtime account:
+Before Production launch, use separate deployment, recovery, and web-runtime
+database identities. The web-runtime identity must start from a
+no-privilege baseline: it must have no global grants, no database/schema or
+wildcard grants, no inherited role that supplies them, and no `GRANT OPTION`.
+Grant it only the table privileges the application needs. For `audit_logs`,
+that allowlist is exactly `SELECT, INSERT`:
 
 ```sql
-REVOKE UPDATE, DELETE ON `matahari`.`audit_logs` FROM 'matahari_app'@'%';
+CREATE USER 'matahari_app'@'%' IDENTIFIED BY '<runtime-secret>';
 GRANT SELECT, INSERT ON `matahari`.`audit_logs` TO 'matahari_app'@'%';
 SHOW GRANTS FOR 'matahari_app'@'%';
 ```
 
-> **DO NOT RUN** these example statements until the actual hosting account, host pattern, migration process, and recovery access are confirmed. Keep migration credentials outside the web runtime.
+Replace `matahari`, `matahari_app`, the host pattern, and the secret with the
+deployed values. `CREATE USER` is shown to emphasize a new, clean runtime
+identity; follow the hosting provider's approved identity-creation process.
+For an existing broadly privileged account, either rebuild it as a clean
+runtime identity or remove every higher-scope grant (including grants supplied
+by roles) before applying this table allowlist. A table-level `REVOKE` does
+not deny a privilege that remains granted globally or at database/schema scope;
+adding table grants alone therefore does not make a broad account
+least-privilege.
+
+`SHOW GRANTS` is useful inspection evidence, but it is not sufficient proof of
+the effective boundary. Review direct grants and active/inherited roles, then
+run the disposable negative verification below. Keep migration and recovery
+credentials outside the web runtime and do not place their secrets in the web
+application configuration.
+
+> **DO NOT RUN** these example statements until the actual hosting account,
+> host pattern, migration process, and recovery access are confirmed. Do not
+> run privilege changes or destructive verification probes against Production.
 
 ## Trusted Proxy Requirement
 
@@ -38,8 +61,63 @@ A controlled rollback must run all three Phase 1 stages in reverse order. It rem
 
 ## Verification Before Launch
 
-1. Confirm the runtime account can select and insert an audit row.
-2. Confirm the runtime account cannot update or delete an audit row.
-3. Confirm migration credentials can run forward migrations during a controlled release.
-4. Confirm audit rows are included in encrypted off-site backups and MariaDB binary logs.
-5. Restore a backup into a temporary database and confirm audit rows are readable.
+Run the following checks only against an explicitly disposable staging or
+restore database, for example `matahari_audit_grant_probe`. It must contain no
+valuable data and must not be Production. Before the runtime account connects,
+an operator using a separate administrative identity creates three disposable
+probe tables in that database:
+
+```sql
+CREATE TABLE `audit_privilege_probe_alter` (`id` INT NOT NULL PRIMARY KEY);
+CREATE TABLE `audit_privilege_probe_drop` (`id` INT NOT NULL PRIMARY KEY);
+CREATE TABLE `audit_privilege_probe_truncate` (`id` INT NOT NULL PRIMARY KEY);
+```
+
+Connect as the runtime identity to that disposable database. The following
+positive probes must succeed; use a fresh UUID value for the insert:
+
+```sql
+INSERT INTO `audit_logs` (
+    `event_uuid`, `action`, `module`, `context_type`, `schema_version`, `created_at`, `updated_at`
+) VALUES (
+    '019fb61a-3c8e-7573-ad4f-6395ae978630', 'grant_probe', 'security', 'system', 1,
+    UTC_TIMESTAMP(), UTC_TIMESTAMP()
+);
+
+SELECT `id`, `event_uuid`
+FROM `audit_logs`
+WHERE `event_uuid` = '019fb61a-3c8e-7573-ad4f-6395ae978630';
+```
+
+Each following statement must fail with a permissions error. Run them only in
+the disposable staging/restore database and only against the disposable probe
+tables named here; never run these destructive probes against Production or a
+database with valuable data:
+
+```sql
+UPDATE `audit_logs`
+SET `action` = 'grant_probe_should_fail'
+WHERE `event_uuid` = '019fb61a-3c8e-7573-ad4f-6395ae978630';
+
+DELETE FROM `audit_logs`
+WHERE `event_uuid` = '019fb61a-3c8e-7573-ad4f-6395ae978630';
+
+ALTER TABLE `audit_privilege_probe_alter`
+ADD COLUMN `should_not_exist` TINYINT;
+
+DROP TABLE `audit_privilege_probe_drop`;
+
+TRUNCATE TABLE `audit_privilege_probe_truncate`;
+```
+
+Stop and investigate if any negative probe succeeds. The separate disposable
+probe tables ensure that a wrongly permitted `ALTER`, `DROP`, or `TRUNCATE`
+does not invalidate the other checks. Record the runtime account, effective
+grant/role review, target database name, statements, expected failures, and
+results as release evidence.
+
+After the boundary checks:
+
+1. Confirm migration credentials can run forward migrations during a controlled release.
+2. Confirm audit rows are included in encrypted off-site backups and MariaDB binary logs.
+3. Restore a backup into a temporary database and confirm audit rows are readable.
