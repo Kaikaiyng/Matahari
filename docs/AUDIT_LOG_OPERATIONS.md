@@ -7,9 +7,9 @@ Matahari treats `audit_logs` as append-only for the application runtime. Laravel
 Before Production launch, use separate deployment, recovery, and web-runtime
 database identities. The web-runtime identity must start from a
 no-privilege baseline: it must have no global grants, no database/schema or
-wildcard grants, no inherited role that supplies them, and no `GRANT OPTION`.
-Grant it only the table privileges the application needs. For `audit_logs`,
-that allowlist is exactly `SELECT, INSERT`:
+wildcard grants, no roles granted at all (including default roles), and no
+`GRANT OPTION`. Grant it only the direct table privileges the application
+needs. For `audit_logs`, that allowlist is exactly `SELECT, INSERT`:
 
 ```sql
 CREATE USER 'matahari_app'@'%' IDENTIFIED BY '<runtime-secret>';
@@ -21,17 +21,30 @@ Replace `matahari`, `matahari_app`, the host pattern, and the secret with the
 deployed values. `CREATE USER` is shown to emphasize a new, clean runtime
 identity; follow the hosting provider's approved identity-creation process.
 For an existing broadly privileged account, either rebuild it as a clean
-runtime identity or remove every higher-scope grant (including grants supplied
-by roles) before applying this table allowlist. A table-level `REVOKE` does
-not deny a privilege that remains granted globally or at database/schema scope;
-adding table grants alone therefore does not make a broad account
-least-privilege.
+runtime identity or remove every higher-scope direct grant, revoke every role
+granted to the runtime account, and clear its default role before applying this
+table allowlist. The following is MariaDB role-administration syntax; verify
+it against the deployed MariaDB version and the hosting provider's approved
+process before use. Provider-managed accounts may require the provider to make
+these changes rather than accepting direct SQL:
+
+```sql
+REVOKE `matahari_runtime_role` FROM 'matahari_app'@'%';
+SET DEFAULT ROLE NONE FOR 'matahari_app'@'%';
+```
+
+Repeat the `REVOKE` for every role granted to the runtime account. A
+table-level `REVOKE` does not deny a privilege that remains granted globally or
+at database/schema scope; adding table grants alone therefore does not make a
+broad account least-privilege.
 
 `SHOW GRANTS` is useful inspection evidence, but it is not sufficient proof of
-the effective boundary. Review direct grants and active/inherited roles, then
-run the disposable negative verification below. Keep migration and recovery
-credentials outside the web runtime and do not place their secrets in the web
-application configuration.
+the effective boundary. MariaDB may show automatic `USAGE ON *.*` for an
+account; that is an acceptable no-privilege baseline, provided no other global
+privileges are present. Review direct grants and confirm the runtime account
+has no role memberships or default role, then run the disposable negative
+verification below. Keep migration and recovery credentials outside the web
+runtime and do not place their secrets in the web application configuration.
 
 > **DO NOT RUN** these example statements until the actual hosting account,
 > host pattern, migration process, and recovery access are confirmed. Do not
@@ -73,19 +86,19 @@ CREATE TABLE `audit_privilege_probe_drop` (`id` INT NOT NULL PRIMARY KEY);
 CREATE TABLE `audit_privilege_probe_truncate` (`id` INT NOT NULL PRIMARY KEY);
 ```
 
-The disposable database must reproduce the runtime identity's effective,
-per-table allowlist for its restored `audit_logs` table. For example, if the
-probe database is `matahari_audit_grant_probe`, the operator grants the same
-runtime identity only the equivalent audit-table access there:
+The disposable database must reproduce the runtime identity's direct,
+per-table allowlist for its restored `audit_logs` table, with no roles granted
+to the runtime account. For example, if the probe database is
+`matahari_audit_grant_probe`, the operator grants the same runtime identity
+only the equivalent audit-table access there:
 
 ```sql
 GRANT SELECT, INSERT ON `matahari_audit_grant_probe`.`audit_logs` TO 'matahari_app'@'%';
 ```
 
 Do not add a database/schema or global grant merely to make this probe run;
-that would invalidate its evidence. If roles are part of the intended runtime
-configuration, reproduce only the same effective per-table allowlist in the
-disposable database and review it before testing.
+do not grant any role to the runtime account for the probe either. Either would
+invalidate the evidence.
 
 Connect as the runtime identity to that disposable database. The following
 positive probes must succeed; use a fresh UUID value for the insert:
@@ -126,9 +139,9 @@ TRUNCATE TABLE `audit_privilege_probe_truncate`;
 
 Stop and investigate if any negative probe succeeds. The separate disposable
 probe tables ensure that a wrongly permitted `ALTER`, `DROP`, or `TRUNCATE`
-does not invalidate the other checks. Record the runtime account, effective
-grant/role review, target database name, statements, expected failures, and
-results as release evidence.
+does not invalidate the other checks. Record the runtime account, direct-grant
+review, confirmation of zero role memberships/default role, target database
+name, statements, expected failures, and results as release evidence.
 
 After the boundary checks:
 
