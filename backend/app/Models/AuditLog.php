@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use LogicException;
 
 class AuditLog extends Model
 {
@@ -41,6 +42,20 @@ class AuditLog extends Model
             'metadata' => 'array',
             'schema_version' => 'integer',
         ];
+    }
+
+    public function save(array $options = [])
+    {
+        if ($this->exists) {
+            throw new LogicException('Audit logs are append-only and cannot be updated.');
+        }
+
+        return parent::save($options);
+    }
+
+    public function delete()
+    {
+        throw new LogicException('Audit logs are append-only and cannot be deleted.');
     }
 
     public function school(): BelongsTo
