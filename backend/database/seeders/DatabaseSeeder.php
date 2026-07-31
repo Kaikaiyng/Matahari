@@ -112,9 +112,6 @@ class DatabaseSeeder extends Seeder
         $roles['ceo']->permissions()->sync($permissions->only([
             'fee_record.view',
             'calendar.view',
-            'calendar.create',
-            'calendar.update',
-            'calendar.delete',
         ])->pluck('id')->all());
         $roles['school-admin']->permissions()->sync($permissions->only([
             'students.view',

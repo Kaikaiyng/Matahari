@@ -186,19 +186,30 @@ class CalendarEventApiTest extends TestCase
         $this->actingAs($user)->deleteJson("/api/calendar-events/{$event->id}")->assertForbidden();
     }
 
-    public function test_every_initial_role_has_calendar_crud_permissions(): void
+    public function test_initial_roles_have_the_approved_calendar_permission_matrix(): void
     {
         $this->seed();
 
-        foreach (['super-admin', 'ceo', 'school-admin', 'finance'] as $roleSlug) {
-            $permissionSlugs = Role::query()->where('slug', $roleSlug)->firstOrFail()
-                ->permissions()->pluck('slug')->all();
+        $expected = [
+            'super-admin' => ['calendar.view', 'calendar.create', 'calendar.update', 'calendar.delete'],
+            'ceo' => ['calendar.view'],
+            'school-admin' => ['calendar.view', 'calendar.create', 'calendar.update', 'calendar.delete'],
+            'finance' => ['calendar.view', 'calendar.create', 'calendar.update', 'calendar.delete'],
+        ];
 
-            $this->assertEqualsCanonicalizing([
-                'calendar.view', 'calendar.create', 'calendar.update', 'calendar.delete',
-            ], array_values(array_intersect($permissionSlugs, [
-                'calendar.view', 'calendar.create', 'calendar.update', 'calendar.delete',
-            ])));
+        foreach ($expected as $roleSlug => $expectedCalendarPermissions) {
+            $actual = Role::query()
+                ->where('slug', $roleSlug)
+                ->firstOrFail()
+                ->permissions()
+                ->whereIn('slug', ['calendar.view', 'calendar.create', 'calendar.update', 'calendar.delete'])
+                ->pluck('slug')
+                ->sort()
+                ->values()
+                ->all();
+
+            sort($expectedCalendarPermissions);
+            $this->assertSame($expectedCalendarPermissions, $actual, "Unexpected calendar permissions for {$roleSlug}");
         }
     }
 
