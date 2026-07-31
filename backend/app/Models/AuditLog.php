@@ -58,6 +58,24 @@ class AuditLog extends Model
         throw new LogicException('Audit logs are append-only and cannot be deleted.');
     }
 
+    protected function incrementOrDecrement($column, $amount, $extra, $method)
+    {
+        if ($this->exists) {
+            throw new LogicException('Audit logs are append-only and cannot be updated.');
+        }
+
+        return parent::incrementOrDecrement($column, $amount, $extra, $method);
+    }
+
+    protected function incrementOrDecrementEach(array $columns, array $extra, string $method)
+    {
+        if ($this->exists) {
+            throw new LogicException('Audit logs are append-only and cannot be updated.');
+        }
+
+        return parent::incrementOrDecrementEach($columns, $extra, $method);
+    }
+
     public function school(): BelongsTo
     {
         return $this->belongsTo(School::class);
