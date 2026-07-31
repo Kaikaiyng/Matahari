@@ -14,6 +14,16 @@ class AuditLogSchemaTest extends TestCase
 {
     use RefreshDatabase;
 
+    private const REQUIRED_INDEXES = [
+        'audit_logs_event_uuid_unique',
+        'audit_logs_created_at_index',
+        'audit_logs_request_id_index',
+        'audit_logs_batch_id_index',
+        'audit_logs_module_index',
+        'audit_logs_action_index',
+        'audit_logs_related_audit_id_index',
+    ];
+
     public function test_fresh_schema_contains_secure_audit_columns(): void
     {
         $this->assertTrue(Schema::hasColumns('audit_logs', [
@@ -31,6 +41,18 @@ class AuditLogSchemaTest extends TestCase
             'context_type',
             'schema_version',
         ]));
+
+        $columns = collect(Schema::getColumns('audit_logs'))->keyBy('name');
+
+        $this->assertFalse($columns->get('event_uuid')['nullable']);
+        $this->assertFalse($columns->get('module')['nullable']);
+        $this->assertEqualsCanonicalizing(
+            self::REQUIRED_INDEXES,
+            array_values(array_intersect(
+                Schema::getIndexListing('audit_logs'),
+                self::REQUIRED_INDEXES,
+            )),
+        );
     }
 
     public function test_event_uuid_is_unique(): void

@@ -24,6 +24,14 @@ Material business mutations must write their audit event inside the same databas
 
 These are integration requirements for later phases, not a claim that every business mutation or authentication flow already has audit integration.
 
+## Failed Migration Recovery
+
+The secure audit schema upgrade is split into separately recorded column-addition, backfill, and constraint/index stages. If an unrecorded stage fails after MariaDB has committed some DDL, preserve the database and diagnose the original error before rerunning `php artisan migrate --force`. The stages inspect the live schema, keep existing backfilled UUIDs, fill only null Phase 1 values, and skip exact indexes or constraints that already exist.
+
+Do not manually mark a failed stage as migrated, regenerate UUIDs, drop a same-named index, or delete legacy audit rows. The constraint stage deliberately stops if a required column is absent, a required backfill value is null, or a same-named index has a different definition. Treat any of those conditions as a recovery investigation requiring a backup and an explicit data repair plan.
+
+A controlled rollback must run all three Phase 1 stages in reverse order. It removes only the secure audit indexes and columns; the pre-existing audit columns and rows remain.
+
 ## Verification Before Launch
 
 1. Confirm the runtime account can select and insert an audit row.

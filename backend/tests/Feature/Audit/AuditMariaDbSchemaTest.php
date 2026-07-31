@@ -177,15 +177,29 @@ class AuditMariaDbSchemaTest extends TestCase
             'updated_at' => now(),
         ]);
 
-        $migration = require database_path('migrations/2026_07_31_000001_expand_audit_logs_for_secure_events.php');
-        $migration->up();
+        $additions = require database_path('migrations/2026_07_31_000001_add_secure_audit_columns.php');
+        $backfill = require database_path('migrations/2026_07_31_000002_backfill_secure_audit_columns.php');
+        $constraints = require database_path('migrations/2026_07_31_000003_enforce_secure_audit_invariants.php');
+
+        $additions->up();
+        $additions->up();
+        $backfill->up();
+
+        $eventUuid = DB::table('audit_logs')->where('id', $legacyId)->value('event_uuid');
+
+        DB::table('audit_logs')->where('id', $legacyId)->update(['module' => null]);
+
+        $backfill->up();
+        $constraints->up();
+        $constraints->up();
 
         $legacy = DB::table('audit_logs')->where('id', $legacyId)->firstOrFail();
 
         $this->assertSame('student.updated', $legacy->action);
         $this->assertSame('{"notes":"A"}', $legacy->old_values);
         $this->assertSame('{"notes":"B"}', $legacy->new_values);
-        $this->assertTrue(Str::isUuid($legacy->event_uuid));
+        $this->assertTrue(Str::isUuid($legacy->event_uuid, 7));
+        $this->assertSame($eventUuid, $legacy->event_uuid);
         $this->assertSame('legacy', $legacy->module);
         $this->assertSame('system', $legacy->context_type);
         $this->assertSame(1, $legacy->schema_version);
