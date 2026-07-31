@@ -8,10 +8,17 @@ use App\Http\Middleware\AssignRequestId;
 use App\Models\Role;
 use App\Models\School;
 use App\Models\User;
+use Closure;
+use Illuminate\Contracts\Debug\ExceptionHandler;
+use Illuminate\Contracts\Http\Kernel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Middleware\ValidatePathEncoding;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use LogicException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Tests\TestCase;
 
 class AuditRequestContextTest extends TestCase
@@ -30,6 +37,90 @@ class AuditRequestContextTest extends TestCase
 
         $this->assertNotSame('client-controlled', $requestId);
         $this->assertTrue(Str::isUuid($requestId, 7));
+    }
+
+    public function test_rendered_api_404_reuses_assigned_request_id_and_ignores_client_spoof(): void
+    {
+        $clientRequestId = (string) Str::uuid7();
+
+        Route::get('/api/test/request-id-rendered-exception', function (Request $request): never {
+            abort(404, 'Not Found', [
+                'X-Test-Assigned-Request-ID' => $request->attributes->get(AssignRequestId::ATTRIBUTE),
+            ]);
+        });
+
+        $response = $this
+            ->withHeader('X-Request-ID', $clientRequestId)
+            ->getJson('/api/test/request-id-rendered-exception')
+            ->assertNotFound()
+            ->assertJson(['message' => 'Not Found'])
+            ->assertHeader('X-Request-ID')
+            ->assertHeader('X-Test-Assigned-Request-ID');
+
+        $requestId = $response->headers->get('X-Request-ID');
+
+        $this->assertTrue(Str::isUuid($requestId, 7));
+        $this->assertNotSame($clientRequestId, $requestId);
+        $this->assertSame(
+            $response->headers->get('X-Test-Assigned-Request-ID'),
+            $requestId,
+        );
+    }
+
+    public function test_downstream_early_response_includes_request_id(): void
+    {
+        $kernel = $this->app->make(Kernel::class);
+        $middleware = $kernel->getGlobalMiddleware();
+        $validatePathIndex = array_search(
+            ValidatePathEncoding::class,
+            $middleware,
+            true,
+        );
+
+        $this->assertIsInt($validatePathIndex);
+
+        array_splice(
+            $middleware,
+            $validatePathIndex + 1,
+            0,
+            [ReturnEarlyTestMiddleware::class],
+        );
+        $kernel->setGlobalMiddleware($middleware);
+
+        $response = $this
+            ->get('/test/request-id-downstream-early')
+            ->assertStatus(429)
+            ->assertSeeText('Downstream early response')
+            ->assertHeader('X-Request-ID');
+
+        $this->assertTrue(
+            Str::isUuid($response->headers->get('X-Request-ID'), 7),
+        );
+    }
+
+    public function test_exception_response_hook_reuses_validated_request_attribute(): void
+    {
+        $requestId = (string) Str::uuid7();
+        $request = Request::create('/api/missing', 'GET');
+        $request->attributes->set(AssignRequestId::ATTRIBUTE, $requestId);
+
+        $response = $this->app
+            ->make(ExceptionHandler::class)
+            ->render($request, new NotFoundHttpException);
+
+        $this->assertSame($requestId, $response->headers->get('X-Request-ID'));
+    }
+
+    public function test_exception_response_hook_does_not_expose_malformed_request_attribute(): void
+    {
+        $request = Request::create('/api/missing', 'GET');
+        $request->attributes->set(AssignRequestId::ATTRIBUTE, 'client-controlled');
+
+        $response = $this->app
+            ->make(ExceptionHandler::class)
+            ->render($request, new NotFoundHttpException);
+
+        $this->assertFalse($response->headers->has('X-Request-ID'));
     }
 
     public function test_factory_snapshots_sorted_roles_and_actor_school(): void
@@ -106,5 +197,13 @@ class AuditRequestContextTest extends TestCase
         $this->expectExceptionMessage('Server request ID middleware did not run.');
 
         (new AuditContextFactory)->fromRequest($request);
+    }
+}
+
+final class ReturnEarlyTestMiddleware
+{
+    public function handle(Request $request, Closure $next): Response
+    {
+        return response('Downstream early response', 429);
     }
 }
