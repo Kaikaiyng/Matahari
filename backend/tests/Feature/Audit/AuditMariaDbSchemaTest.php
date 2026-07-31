@@ -3,6 +3,7 @@
 namespace Tests\Feature\Audit;
 
 use App\Models\AuditLog;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -44,5 +45,17 @@ class AuditMariaDbSchemaTest extends TestCase
         $this->assertSame(['amount' => '120.00'], $log->new_values);
         $this->assertSame($eventUuid, $log->event_uuid);
         $this->assertSame(1, DB::table('audit_logs')->where('event_uuid', $eventUuid)->count());
+
+        $this->expectException(QueryException::class);
+        DB::table('audit_logs')->insert([
+            'event_uuid' => $eventUuid,
+            'request_id' => (string) Str::uuid7(),
+            'action' => 'legacy.test',
+            'module' => 'legacy',
+            'context_type' => 'system',
+            'schema_version' => 1,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
     }
 }

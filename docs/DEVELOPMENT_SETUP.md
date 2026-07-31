@@ -204,3 +204,20 @@ As of 2026-07-22:
 - Backend: 116 tests and 721 assertions
 - API inventory: 35 non-vendor routes
 - Active demo schema: 36 tables
+
+## Audit MariaDB Integration Test
+
+The default PHPUnit suite uses in-memory SQLite and cannot prove MariaDB JSON, index, row-lock, or concurrency behavior. Run audit database integration tests against a disposable MariaDB database:
+
+```powershell
+$env:DB_CONNECTION='mariadb'
+$env:DB_HOST='127.0.0.1'
+$env:DB_PORT='3306'
+$env:DB_DATABASE='matahari_audit_test'
+$env:DB_USERNAME='matahari_test'
+$env:DB_PASSWORD='matahari_test'
+tools\php\php-local.cmd backend\artisan migrate:fresh --env=testing
+tools\php\php-local.cmd backend\artisan test --group=mariadb
+```
+
+The database must contain no valuable data because `migrate:fresh` drops its tables. Clear the temporary environment variables after the run. A skipped MariaDB-group test under SQLite is not acceptance evidence.
