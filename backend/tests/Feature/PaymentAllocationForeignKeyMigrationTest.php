@@ -16,6 +16,8 @@ class PaymentAllocationForeignKeyMigrationTest extends TestCase
 {
     private const CHILD_COLUMN = 'fee_agreement_item_id';
 
+    private const SQLITE_OWNERSHIP_INDEX = 'payment_allocations_fee_agreement_item_ensured_marker';
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -110,6 +112,106 @@ class PaymentAllocationForeignKeyMigrationTest extends TestCase
         $this->assertTrue(Schema::hasColumn('payment_allocations', self::CHILD_COLUMN));
     }
 
+    public function test_sqlite_marker_name_conflict_fails_before_fk_and_retries_safely(): void
+    {
+        $this->requireSqlite();
+
+        $migration = $this->migration();
+        $migration->down();
+
+        Schema::create('payment_allocation_marker_conflicts', function (Blueprint $table): void {
+            $table->id();
+            $table->index('id', self::SQLITE_OWNERSHIP_INDEX);
+        });
+
+        foreach ([1, 2] as $attempt) {
+            $threw = false;
+
+            try {
+                $migration->up();
+            } catch (\Throwable) {
+                $threw = true;
+            }
+
+            $this->assertTrue($threw, "SQLite marker conflict attempt {$attempt} unexpectedly succeeded.");
+            $this->assertSame([], $this->feeAgreementItemForeignKeys());
+            $this->assertFalse($this->hasSqliteOwnershipMarker());
+        }
+
+        Schema::drop('payment_allocation_marker_conflicts');
+
+        $migration->up();
+
+        $this->assertCount(1, $this->feeAgreementItemForeignKeys());
+        $this->assertTrue($this->hasSqliteOwnershipMarker());
+
+        $migration->down();
+
+        $this->assertSame([], $this->feeAgreementItemForeignKeys());
+        $this->assertFalse($this->hasSqliteOwnershipMarker());
+    }
+
+    public function test_sqlite_existing_marker_without_fk_resumes_creation(): void
+    {
+        $this->requireSqlite();
+
+        $migration = $this->migration();
+        $migration->down();
+        $this->createSqliteOwnershipMarker();
+
+        $migration->up();
+
+        $this->assertCount(1, $this->feeAgreementItemForeignKeys());
+        $this->assertTrue($this->hasSqliteOwnershipMarker());
+    }
+
+    public function test_sqlite_existing_marker_without_fk_rolls_back_cleanly(): void
+    {
+        $this->requireSqlite();
+
+        $migration = $this->migration();
+        $migration->down();
+        $this->createSqliteOwnershipMarker();
+
+        $migration->down();
+
+        $this->assertSame([], $this->feeAgreementItemForeignKeys());
+        $this->assertFalse($this->hasSqliteOwnershipMarker());
+    }
+
+    public function test_sqlite_failed_fk_stage_cleans_new_marker_and_retries_safely(): void
+    {
+        $this->requireSqlite();
+
+        $migration = $this->migration();
+        $migration->down();
+
+        Schema::create('__temp__payment_allocations', function (Blueprint $table): void {
+            $table->id();
+        });
+
+        $threw = false;
+
+        try {
+            $migration->up();
+        } catch (\Throwable) {
+            $threw = true;
+        }
+
+        $this->assertTrue($threw, 'The forced SQLite FK-stage failure unexpectedly succeeded.');
+        $this->assertSame([], $this->feeAgreementItemForeignKeys());
+        $this->assertFalse($this->hasSqliteOwnershipMarker());
+
+        Schema::drop('__temp__payment_allocations');
+
+        $migration->up();
+        $this->assertCount(1, $this->feeAgreementItemForeignKeys());
+
+        $migration->down();
+        $this->assertSame([], $this->feeAgreementItemForeignKeys());
+        $this->assertFalse($this->hasSqliteOwnershipMarker());
+    }
+
     /**
      * @return list<array{
      *     columns: list<string>,
@@ -167,6 +269,29 @@ class PaymentAllocationForeignKeyMigrationTest extends TestCase
         return in_array(DB::getDriverName(), ['mariadb', 'mysql'], true)
             ? 'restrict'
             : 'no action';
+    }
+
+    private function createSqliteOwnershipMarker(): void
+    {
+        Schema::table('payment_allocations', function (Blueprint $table): void {
+            $table->index(self::CHILD_COLUMN, self::SQLITE_OWNERSHIP_INDEX);
+        });
+    }
+
+    private function hasSqliteOwnershipMarker(): bool
+    {
+        return in_array(
+            self::SQLITE_OWNERSHIP_INDEX,
+            Schema::getIndexListing('payment_allocations'),
+            true,
+        );
+    }
+
+    private function requireSqlite(): void
+    {
+        if (DB::getDriverName() !== 'sqlite') {
+            $this->markTestSkipped('This ownership-marker state is specific to SQLite.');
+        }
     }
 
     private function guardMariaDbDestructiveRefresh(): void

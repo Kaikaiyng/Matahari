@@ -17,6 +17,7 @@ return new class extends Migration
     {
         $foreignKeys = $this->foreignKeysForChildColumn();
         $sqliteOwnershipIndex = $this->sqliteOwnershipIndex();
+        $usesSqliteOwnershipMarker = DB::getDriverName() === 'sqlite';
 
         if ($sqliteOwnershipIndex !== null && ! $this->matchesSqliteOwnershipIndex($sqliteOwnershipIndex)) {
             throw new RuntimeException(
@@ -34,24 +35,30 @@ return new class extends Migration
             );
         }
 
-        if ($sqliteOwnershipIndex !== null) {
-            throw new RuntimeException(
-                'Cannot ensure payment_allocations.fee_agreement_item_id foreign key because its SQLite ownership marker exists without the expected constraint.',
-            );
+        if (! $usesSqliteOwnershipMarker) {
+            $this->createForeignKey();
+
+            return;
         }
 
-        $usesSqliteOwnershipMarker = DB::getDriverName() === 'sqlite';
+        $createdOwnershipIndex = false;
 
-        Schema::table('payment_allocations', function (Blueprint $table) use ($usesSqliteOwnershipMarker): void {
-            $table->foreign(self::CHILD_COLUMN, self::CONSTRAINT_NAME)
-                ->references('id')
-                ->on('fee_agreement_items')
-                ->nullOnDelete();
+        if ($sqliteOwnershipIndex === null) {
+            // SQLite index names are database-global, and adding the FK rebuilds this table.
+            // Claim ownership before any FK mutation so a name collision cannot leave an unowned FK.
+            $this->createSqliteOwnershipIndex();
+            $createdOwnershipIndex = true;
+        }
 
-            if ($usesSqliteOwnershipMarker) {
-                $table->index(self::CHILD_COLUMN, self::SQLITE_OWNERSHIP_INDEX);
+        try {
+            $this->createForeignKey();
+        } catch (Throwable $foreignKeyFailure) {
+            if ($createdOwnershipIndex) {
+                $this->cleanupAfterFailedSqliteForeignKeyCreation($foreignKeyFailure);
             }
-        });
+
+            throw $foreignKeyFailure;
+        }
     }
 
     public function down(): void
@@ -142,6 +149,16 @@ return new class extends Migration
             : 'no action';
     }
 
+    private function createForeignKey(): void
+    {
+        Schema::table('payment_allocations', function (Blueprint $table): void {
+            $table->foreign(self::CHILD_COLUMN, self::CONSTRAINT_NAME)
+                ->references('id')
+                ->on('fee_agreement_items')
+                ->nullOnDelete();
+        });
+    }
+
     /**
      * @param  list<array{
      *     name: string|null,
@@ -161,9 +178,19 @@ return new class extends Migration
             return;
         }
 
-        if (! $this->matchesSqliteOwnershipIndex($ownershipIndex)
-            || count($foreignKeys) !== 1
-            || ! $this->matchesExpectedDefinition($foreignKeys[0])) {
+        if (! $this->matchesSqliteOwnershipIndex($ownershipIndex)) {
+            throw new RuntimeException(
+                'Cannot remove payment_allocations.fee_agreement_item_id foreign key because its SQLite-owned definition does not match.',
+            );
+        }
+
+        if ($foreignKeys === []) {
+            $this->dropSqliteOwnershipIndex();
+
+            return;
+        }
+
+        if (count($foreignKeys) !== 1 || ! $this->matchesExpectedDefinition($foreignKeys[0])) {
             throw new RuntimeException(
                 'Cannot remove payment_allocations.fee_agreement_item_id foreign key because its SQLite-owned definition does not match.',
             );
@@ -173,6 +200,64 @@ return new class extends Migration
             $table->dropForeign([self::CHILD_COLUMN]);
             $table->dropIndex(self::SQLITE_OWNERSHIP_INDEX);
         });
+    }
+
+    private function createSqliteOwnershipIndex(): void
+    {
+        Schema::table('payment_allocations', function (Blueprint $table): void {
+            $table->index(self::CHILD_COLUMN, self::SQLITE_OWNERSHIP_INDEX);
+        });
+    }
+
+    private function dropSqliteOwnershipIndex(): void
+    {
+        Schema::table('payment_allocations', function (Blueprint $table): void {
+            $table->dropIndex(self::SQLITE_OWNERSHIP_INDEX);
+        });
+    }
+
+    private function cleanupAfterFailedSqliteForeignKeyCreation(Throwable $foreignKeyFailure): void
+    {
+        try {
+            $foreignKeys = $this->foreignKeysForChildColumn();
+
+            if ($foreignKeys !== []) {
+                if (count($foreignKeys) !== 1 || ! $this->matchesExpectedDefinition($foreignKeys[0])) {
+                    throw new RuntimeException(
+                        'The failed SQLite FK stage left an incompatible child-column constraint.',
+                    );
+                }
+
+                Schema::table('payment_allocations', function (Blueprint $table): void {
+                    $table->dropForeign([self::CHILD_COLUMN]);
+                });
+            }
+
+            $ownershipIndex = $this->sqliteOwnershipIndex();
+
+            if ($ownershipIndex !== null) {
+                if (! $this->matchesSqliteOwnershipIndex($ownershipIndex)) {
+                    throw new RuntimeException(
+                        'The failed SQLite FK stage left an incompatible ownership marker.',
+                    );
+                }
+
+                $this->dropSqliteOwnershipIndex();
+            }
+
+            if ($this->foreignKeysForChildColumn() !== [] || $this->sqliteOwnershipIndex() !== null) {
+                throw new RuntimeException(
+                    'The failed SQLite FK stage left residual migration-owned schema state.',
+                );
+            }
+        } catch (Throwable $cleanupFailure) {
+            throw new RuntimeException(
+                'Cannot recover from failed SQLite payment allocation FK creation; cleanup did not complete. '
+                .'Original error: '.$foreignKeyFailure->getMessage()
+                .'; cleanup error: '.$cleanupFailure->getMessage(),
+                previous: $cleanupFailure,
+            );
+        }
     }
 
     /**
