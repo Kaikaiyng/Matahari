@@ -73,6 +73,20 @@ CREATE TABLE `audit_privilege_probe_drop` (`id` INT NOT NULL PRIMARY KEY);
 CREATE TABLE `audit_privilege_probe_truncate` (`id` INT NOT NULL PRIMARY KEY);
 ```
 
+The disposable database must reproduce the runtime identity's effective,
+per-table allowlist for its restored `audit_logs` table. For example, if the
+probe database is `matahari_audit_grant_probe`, the operator grants the same
+runtime identity only the equivalent audit-table access there:
+
+```sql
+GRANT SELECT, INSERT ON `matahari_audit_grant_probe`.`audit_logs` TO 'matahari_app'@'%';
+```
+
+Do not add a database/schema or global grant merely to make this probe run;
+that would invalidate its evidence. If roles are part of the intended runtime
+configuration, reproduce only the same effective per-table allowlist in the
+disposable database and review it before testing.
+
 Connect as the runtime identity to that disposable database. The following
 positive probes must succeed; use a fresh UUID value for the insert:
 
