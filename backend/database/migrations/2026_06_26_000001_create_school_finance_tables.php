@@ -225,7 +225,7 @@ return new class extends Migration
             $table->foreignId('school_id')->constrained()->cascadeOnDelete();
             $table->foreignId('payment_id')->constrained()->cascadeOnDelete();
             $table->foreignId('fee_item_id')->nullable()->constrained()->nullOnDelete();
-            $table->foreignId('fee_agreement_item_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('fee_agreement_item_id')->nullable();
             $table->string('fee_code', 50)->nullable();
             $table->string('description');
             $table->decimal('amount', 10, 2)->default(0);

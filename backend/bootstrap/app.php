@@ -1,10 +1,13 @@
 <?php
 
+use App\Http\Middleware\AssignRequestId;
+use App\Http\Middleware\EnsureUserHasPermission;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
-use App\Http\Middleware\EnsureUserHasPermission;
+use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\Response;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -14,6 +17,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->prepend(AssignRequestId::class);
+
         $middleware->alias([
             'permission' => EnsureUserHasPermission::class,
         ]);
@@ -22,4 +27,18 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*'),
         );
+
+        $exceptions->respond(function (
+            Response $response,
+            Throwable $exception,
+            Request $request,
+        ): Response {
+            $requestId = $request->attributes->get(AssignRequestId::ATTRIBUTE);
+
+            if (is_string($requestId) && Str::isUuid($requestId, 7)) {
+                $response->headers->set('X-Request-ID', $requestId);
+            }
+
+            return $response;
+        });
     })->create();

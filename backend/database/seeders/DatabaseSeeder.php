@@ -102,6 +102,8 @@ class DatabaseSeeder extends Seeder
             'calendar.create' => 'Create calendar events',
             'calendar.update' => 'Update calendar events',
             'calendar.delete' => 'Delete calendar events',
+            'audit.view' => 'View global audit logs',
+            'audit.correct_generic' => 'Correct approved low-risk fields from audit history',
         ])->mapWithKeys(fn (string $name, string $slug) => [
             $slug => Permission::query()->updateOrCreate(['slug' => $slug], ['name' => $name]),
         ]);
@@ -110,9 +112,6 @@ class DatabaseSeeder extends Seeder
         $roles['ceo']->permissions()->sync($permissions->only([
             'fee_record.view',
             'calendar.view',
-            'calendar.create',
-            'calendar.update',
-            'calendar.delete',
         ])->pluck('id')->all());
         $roles['school-admin']->permissions()->sync($permissions->only([
             'students.view',
