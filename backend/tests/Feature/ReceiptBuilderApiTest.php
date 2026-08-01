@@ -11,6 +11,7 @@ use App\Models\Role;
 use App\Models\School;
 use App\Models\Student;
 use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
@@ -51,7 +52,7 @@ class ReceiptBuilderApiTest extends TestCase
         $payment = $this->payment($school, $student, $admin, 'verified', paidBy: 'Michelle Tan');
 
         $response = $this->actingAs($admin)
-            ->postJson("/api/payments/{$payment->id}/receipts")
+            ->postJson("/api/payments/{$payment->id}/receipts", ['receipt_date' => '2026-07-10'])
             ->assertCreated()
             ->assertJsonPath('receipt.receipt_no', 'MIS.A0001 (07/2026)')
             ->assertJsonPath('receipt.status', 'issued')
@@ -318,7 +319,7 @@ class ReceiptBuilderApiTest extends TestCase
             'current_number' => 1,
         ]);
 
-        $this->expectException(\Illuminate\Database\QueryException::class);
+        $this->expectException(QueryException::class);
 
         ReceiptSequence::query()->create([
             'school_id' => $school->id,
@@ -329,7 +330,7 @@ class ReceiptBuilderApiTest extends TestCase
     }
 
     /**
-     * @param array<int, string> $permissionSlugs
+     * @param  array<int, string>  $permissionSlugs
      * @return array{0: School, 1: Student, 2: User}
      */
     private function schoolStudentAndUser(array $permissionSlugs): array
@@ -354,7 +355,7 @@ class ReceiptBuilderApiTest extends TestCase
     }
 
     /**
-     * @param array<int, string> $permissionSlugs
+     * @param  array<int, string>  $permissionSlugs
      */
     private function userWithPermissions(School $school, array $permissionSlugs): User
     {
