@@ -1,0 +1,264 @@
+# Testing and Release
+
+**Status:** Repository command and release reference
+
+**Repository baseline:** `14adce9508992c03c4249d49308a3841c198f4bd`
+
+Run commands from a clean feature branch/worktree. Record the exact command, exit code, counts, skipped cases, and limitations. Never convert a skipped or unavailable check into a pass.
+
+## Dependency Setup
+
+Backend:
+
+```powershell
+cd backend
+$env:PHPRC = (Resolve-Path ..\tools\php).Path
+composer install
+Remove-Item Env:PHPRC
+```
+
+This makes a Composer command that starts the system PHP load `tools/php/php.ini`. If Composer is supplied as a trusted local `composer.phar`, use `php -c ..\tools\php\php.ini <path-to-composer.phar> install`. Composer was not available as a command in the documentation-validation environment, so dependency installation was not rerun; the existing lockfile/vendor tree was used.
+
+Frontend (the lockfile is committed):
+
+```powershell
+cd frontend
+npm.cmd ci
+```
+
+Install only when dependencies are absent or lockfiles changed. Do not update lockfiles unintentionally.
+
+## Backend Validation
+
+Full PHPUnit suite:
+
+```powershell
+cd backend
+..\tools\php\php-local.cmd vendor\bin\phpunit
+```
+
+The default suite uses SQLite `:memory:` and skips opt-in MariaDB destructive cases.
+
+Route loading:
+
+```powershell
+cd backend
+..\tools\php\php-local.cmd artisan route:list --path=api --except-vendor
+```
+
+Configuration loading without exposing environment values:
+
+```powershell
+cd backend
+..\tools\php\php-local.cmd artisan about --only=environment,drivers
+```
+
+Do not paste `php artisan env`, `.env`, connection URLs, secrets, or full production configuration into logs or documentation.
+
+## Frontend Validation
+
+```powershell
+cd frontend
+npm.cmd test
+npm.cmd run lint
+npm.cmd run build
+```
+
+- `test` runs Vitest once.
+- `lint` runs Oxlint.
+- `build` runs `tsc -b` and then Vite production build, so it is also the configured TypeScript check.
+- No browser E2E command is configured.
+
+## Formatting and Static Analysis
+
+Backend formatting check:
+
+```powershell
+cd backend
+..\tools\php\php-local.cmd vendor\bin\pint --test
+```
+
+Apply backend formatting only to intended files when a code change requires it:
+
+```powershell
+cd backend
+..\tools\php\php-local.cmd vendor\bin\pint path\to\file.php
+```
+
+No PHPStan, Psalm, Larastan, or equivalent PHP static-analysis command is configured. Do not claim PHP static analysis passed. Frontend lint and TypeScript checking are covered by the commands above.
+
+## SQLite Migration Lifecycle
+
+Use an explicit disposable file, never the demo database or a database with valuable data:
+
+```powershell
+$migrationDb = Join-Path $env:TEMP 'matahari-migration-check.sqlite'
+if (Test-Path -LiteralPath $migrationDb) { Remove-Item -LiteralPath $migrationDb }
+New-Item -ItemType File -Path $migrationDb | Out-Null
+
+$env:APP_ENV = 'testing'
+$env:DB_CONNECTION = 'sqlite'
+$env:DB_DATABASE = $migrationDb
+$env:DB_URL = ''
+$env:SESSION_DRIVER = 'array'
+$env:CACHE_STORE = 'array'
+$env:QUEUE_CONNECTION = 'sync'
+
+cd backend
+..\tools\php\php-local.cmd artisan config:clear
+..\tools\php\php-local.cmd artisan migrate:fresh --force
+..\tools\php\php-local.cmd artisan migrate:rollback --step=1 --force
+..\tools\php\php-local.cmd artisan migrate --force
+```
+
+After checking every exit code, remove only the exact disposable path and clear the process environment or close the terminal. A one-step rollback proves only the latest batch/step. Migration-specific changes may require a targeted rollback or full disposable reset.
+
+## MariaDB Validation
+
+MariaDB is required for database-sensitive release evidence. Provision a disposable local/test server and a database named exactly:
+
+```text
+matahari_audit_test
+```
+
+The guarded destructive tests refuse to run unless all of these are true:
+
+- `AUDIT_MARIADB_DESTRUCTIVE_TEST=1` is explicitly set.
+- Laravel driver is exactly `mariadb`.
+- `DB_URL` is empty.
+- Configured and actual database names are exactly `matahari_audit_test`.
+- Server version identifies MariaDB.
+
+Set private values in the current process only; the placeholders below are not credentials:
+
+```powershell
+$env:AUDIT_MARIADB_DESTRUCTIVE_TEST = '1'
+$env:DB_CONNECTION = 'mariadb'
+$env:DB_URL = ''
+$env:DB_HOST = '127.0.0.1'
+$env:DB_PORT = '3306'
+$env:DB_DATABASE = 'matahari_audit_test'
+
+cd backend
+..\tools\php\php-local.cmd vendor\bin\phpunit --group mariadb
+```
+
+Set `DB_USERNAME` and `DB_PASSWORD` privately in the process before running the command. Do not paste their values into documentation, shell history, or test reports.
+
+The test database is destroyed/rebuilt. It must contain no valuable data and must not be production or a restored production database.
+
+For a schema-changing release, also run explicit MariaDB lifecycle checks against the disposable database:
+
+```powershell
+..\tools\php\php-local.cmd artisan config:clear
+..\tools\php\php-local.cmd artisan migrate:fresh --force
+..\tools\php\php-local.cmd artisan migrate:rollback --step=1 --force
+..\tools\php\php-local.cmd artisan migrate --force
+```
+
+Validate any migration-specific rollback, foreign keys, exact indexes, JSON behavior, row locking, and concurrent financial paths relevant to the change. Stop on any unexpected schema definition or data loss.
+
+## Documentation Validation
+
+For documentation changes:
+
+- Check every relative Markdown link resolves from its source file.
+- Check fenced code blocks are balanced and language tags are appropriate.
+- Check Mermaid source against GitHub-supported syntax where practical.
+- Check headings and terminology are consistent.
+- Search for unsupported claims and stale counts.
+- Scan staged content for passwords, private keys, tokens, connection strings, real personal data, `.env` values, and generated artifacts.
+
+Repository diff checks:
+
+```powershell
+git status --short
+git diff --check
+git diff --stat
+git diff --name-only
+```
+
+After staging exact intended files:
+
+```powershell
+git diff --cached --check
+git diff --cached --stat
+git diff --cached
+```
+
+## Temporary Public Demo Tooling
+
+The repository includes self-contained contract/runtime tests for the demo launcher. Windows may block direct `.ps1` execution under the machine policy, so run the scripts in a child process with a process-scoped execution policy:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\public-demo\tests\LauncherContract.Tests.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\public-demo\tests\PublicDemo.Tests.ps1
+```
+
+These tests validate the launcher tooling only. They do not prove Cloudflare availability, public DNS propagation, production security, or stable deployment.
+
+## Security Review
+
+Before release, confirm:
+
+- Every protected backend route has authentication, the correct permission, and school-scope enforcement.
+- Unauthorized, cross-school, inactive-user, and invalid-state tests exist for changed operations.
+- Frontend visibility never substitutes for backend authorization.
+- Session cookie, HTTPS, CORS, CSRF, proxy trust, and login throttling match the deployed topology.
+- Demo credentials/data are absent from deployment.
+- Financial mutations preserve original records, actor/time/reason, transactions, and audit requirements.
+- Runtime database grants are least-privilege; audit-table write access is limited as documented.
+- No secrets or real student information are staged.
+
+## Manual Smoke Tests
+
+Use fictional data in a local or approved test environment:
+
+1. Login, session restore, logout, invalid credentials, and inactive-user login.
+2. Exercise each seeded role and direct API denial, not only button visibility.
+3. Search/create/view/status-change a student in the UI as authorized; smoke-test profile update through the protected API because a complete profile-edit UI is not implemented. Verify denial for Finance/CEO.
+4. Create and supersede a Fee Agreement; inspect version history and future-charge behavior.
+5. Preview/activate charges and add a manual charge; confirm totals.
+6. Record cash and non-cash payments; verify pending payment; test partial allocation and over-allocation rejection.
+7. Issue, print, void, and regenerate a receipt; confirm numbers are not reused and issued receipt blocks payment void.
+8. Test calendar view/create/update/delete by role and school.
+9. Confirm placeholder pages are not presented as completed modules.
+10. Check desktop, tablet, mobile, keyboard focus, and native browser print preview.
+
+Real iPad Safari and native print preview are manual evidence; automated component tests do not replace them.
+
+## Release Checklist
+
+- [ ] Branch is based on the latest remote default branch and has no conflicts.
+- [ ] Working tree contains only intended changes.
+- [ ] Focused and full backend tests pass; skips are explained.
+- [ ] Frontend tests, lint, TypeScript, and production build pass.
+- [ ] Route and configuration loading pass.
+- [ ] Temporary public-demo tests pass when launcher files changed.
+- [ ] SQLite migration lifecycle passes where relevant.
+- [ ] MariaDB validation passes for database-sensitive work, or the release is blocked.
+- [ ] Migration rollback/data-recovery behavior is reviewed and tested.
+- [ ] Backend formatting and available analysis checks pass.
+- [ ] Security, permissions, school scope, financial integrity, and audit impact are reviewed.
+- [ ] Manual smoke/UAT evidence is recorded for user-visible workflows.
+- [ ] Documentation, links, code fences, Mermaid, and secret scans pass.
+- [ ] No Critical or Important issue remains unresolved.
+- [ ] Pull request includes summary, exact validation results, limitations, and scope.
+- [ ] Required reviews/status checks and branch protection are satisfied without override.
+
+## Rollback Preparation
+
+- Take and verify a backup before any production schema/data release.
+- Record the previous application commit/artifact and compatible schema version.
+- Prefer a forward corrective migration over destructive reversal when historical migrations or new writes make `down()` unsafe.
+- Test restore into a temporary environment and reconcile students, charges, allocations, payments, receipts, sequences, and audit rows.
+- Define the stop/writer-quiesce procedure for multi-stage audit migrations.
+- Never call a migration rollback safe merely because `down()` exists.
+
+## Git Cleanliness and Merge Rules
+
+- Fetch before final validation and confirm the branch is not behind.
+- Do not commit user files from another task, ignored runtime tools, database files, `dist`, `test-results`, or tunnel state.
+- Do not force-push, use `--no-verify`, disable checks, or override branch protection.
+- Do not merge with failing tests, conflicts, missing required review, insufficient credentials, or unresolved Critical/Important issues.
+- If blocked, keep the work on the pushed feature branch, create a pull request when possible, and report the exact blocker.

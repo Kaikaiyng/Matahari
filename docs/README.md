@@ -1,35 +1,43 @@
 # Documentation Index
 
-This directory contains both current implementation references and historical planning records. Start here when maintaining Matahari so an old proposal is not mistaken for current runtime behavior.
+Start with the canonical documents below. They describe the repository baseline inspected on 2026-08-03 and explicitly separate current behavior from intended or unverified policy.
 
-## Current references
+## Canonical Project Knowledge
 
-| Document | Use it for |
+| Document | Purpose |
 | --- | --- |
-| [Maintenance Guide](MAINTENANCE_GUIDE.md) | Source-of-truth rules, change map, API ownership, verification, and release checklist |
-| [Implementation Status](IMPLEMENTATION_STATUS.md) | Shipped modules, deferred scope, current verification evidence, and known limitations |
-| [Development Setup](DEVELOPMENT_SETUP.md) | Local setup, SQLite/MariaDB options, test commands, and LAN testing |
-| [System Architecture](SYSTEM_ARCHITECTURE.md) | Runtime boundaries, authentication/RBAC, API inventory, and domain flow |
-| [Database Design](DATABASE_DESIGN.md) | Current tables, relationships, integrity rules, and migration caveat |
-| [Project Workflow Catalog](PROJECT_WORKFLOW_CATALOG.md) | Detailed current workflows and implemented/deferred boundaries |
-| [UAT Checklist](UAT_CHECKLIST.md) | Manual acceptance checks for the implemented product |
-| [Demo Review Script](DEMO_REVIEW_SCRIPT.md) | Suggested stakeholder demonstration sequence |
-| [Temporary Public Demo](PUBLIC_DEMO.md) | Safe start/stop instructions for a temporary Cloudflare Quick Tunnel |
-| [Workflow Atlas](workflow-diagrams/README.md) | Historical Mermaid/FigJam snapshot, its verification date, and known drift |
+| [Project Overview](project-overview.md) | Business purpose, users, scale, scope, boundaries, and operational assumptions |
+| [Business Rules](business-rules.md) | Student, agreement, discount, payment, receipt, retention, and financial-integrity rules |
+| [Architecture](architecture.md) | Backend/frontend boundaries, authentication, authorization, data flow, audit, and deployment assumptions |
+| [Database](database.md) | Engines, tables, relationships, constraints, money, statuses, migrations, rollback, and MariaDB considerations |
+| [Permissions](permissions.md) | Seeded role matrix, enforcement locations, and frontend/backend gaps |
+| [Current Status](current-status.md) | Commit snapshot, implemented/partial work, risks, test status, deployment state, and priorities |
+| [Testing and Release](testing-and-release.md) | Exact validation commands, database checks, security review, smoke tests, release, and rollback |
 
-Package-specific references:
+The root [README](../README.md) is the human entry point. Future coding agents must also follow [AGENTS.md](../AGENTS.md).
 
-- [Frontend README](../frontend/README.md)
-- [Backend README](../backend/README.md)
+## Supporting Current References
 
-## Business input requiring approval
+- [Maintenance Guide](MAINTENANCE_GUIDE.md)
+- [System Architecture](SYSTEM_ARCHITECTURE.md)
+- [Database Design](DATABASE_DESIGN.md)
+- [Implementation Status](IMPLEMENTATION_STATUS.md)
+- [Development Setup](DEVELOPMENT_SETUP.md)
+- [Project Workflow Catalog](PROJECT_WORKFLOW_CATALOG.md)
+- [UAT Checklist](UAT_CHECKLIST.md)
+- [Demo Review Script](DEMO_REVIEW_SCRIPT.md)
+- [Temporary Public Demo](PUBLIC_DEMO.md)
+- [Audit Log Operations](AUDIT_LOG_OPERATIONS.md)
+- [Workflow Atlas](workflow-diagrams/README.md)
 
-- [Business Rules v0.1](business-rules/business-rules-v0.1.md) is a draft stakeholder source. Its `TBD` items are not permission to invent behavior.
-- [Stakeholder Questions](STAKEHOLDER_QUESTIONS.md) is a historical discovery guide that remains useful for interviews.
+Some supporting references predate the secure-audit foundation and contain stale test counts or over-broad claims. When they conflict, the canonical lowercase documents and current code/tests take precedence. Preserve useful historical context; correct current-reference drift in a focused follow-up rather than treating an old statement as runtime fact.
 
-## Historical planning records
+## Business Input Requiring Approval
 
-These documents explain how the MVP was originally framed. They are not current completion checklists:
+- [Business Rules v0.1](business-rules/business-rules-v0.1.md) is a stakeholder draft. Its `TBD` items are not permission to invent formulas or behavior.
+- [Stakeholder Questions](STAKEHOLDER_QUESTIONS.md) is a discovery guide, not an approved rule set.
+
+## Historical Product and Planning Records
 
 - [PRD](PRD.md)
 - [Executive Summary](EXECUTIVE_SUMMARY.md)
@@ -40,27 +48,12 @@ These documents explain how the MVP was originally framed. They are not current 
 - [Decision Log](DECISIONS.md)
 - [Roadmap](ROADMAP.md)
 
-## Delivery designs and implementation plans
+Files under `superpowers/specs/` and `superpowers/plans/` preserve delivery decisions and execution history. They are not current completion claims. The documentation-foundation execution plan is [here](superpowers/plans/2026-08-03-project-knowledge-foundation.md).
 
-The files below preserve feature decisions and implementation history. Current code and the current references above take precedence if they differ.
+## Documentation Ownership
 
-| Delivery | Design | Plan |
-| --- | --- | --- |
-| iPad-first responsive demo | [Design](superpowers/specs/2026-07-11-ipad-first-responsive-demo-design.md) | [Plan](superpowers/plans/2026-07-11-ipad-first-responsive-demo.md) |
-| Project documentation refresh | [Design](superpowers/specs/2026-07-12-project-documentation-refresh-design.md) | [Plan](superpowers/plans/2026-07-12-project-documentation-refresh.md) |
-| SQLite to MariaDB | [Design](superpowers/specs/2026-07-12-sqlite-to-mariadb-design.md) | [Plan](superpowers/plans/2026-07-12-sqlite-to-mariadb.md) |
-| Username authentication/user management | [Design](superpowers/specs/2026-07-12-username-auth-user-management-design.md) | [Plan](superpowers/plans/2026-07-12-username-auth-user-management.md) |
-| Demo readiness hardening | [Design](superpowers/specs/2026-07-17-demo-readiness-hardening-design.md) | [Plan](superpowers/plans/2026-07-17-demo-readiness-hardening.md) |
-| Reference admin UI refresh | [Design](superpowers/specs/2026-07-17-reference-admin-ui-refresh-design.md) | [Plan](superpowers/plans/2026-07-17-reference-admin-ui-refresh.md) |
-| Shared calendar | [Design](superpowers/specs/2026-07-19-shared-calendar-design.md) | [Plan](superpowers/plans/2026-07-19-shared-calendar.md) |
-| Temporary public demo | [Design](superpowers/specs/2026-07-20-temporary-public-demo-design.md) | [Plan](superpowers/plans/2026-07-20-temporary-public-demo.md) |
-| Class directory | [Design](superpowers/specs/2026-07-21-class-directory-design.md) | [Plan](superpowers/plans/2026-07-21-class-directory.md) |
-| Dashboard outstanding fees | [Design](superpowers/specs/2026-07-21-dashboard-outstanding-fees-design.md) | [Plan](superpowers/plans/2026-07-21-dashboard-outstanding-fees.md) |
-| Student fee-period filter | [Design](superpowers/specs/2026-07-21-students-fee-period-filter-design.md) | [Plan](superpowers/plans/2026-07-21-students-fee-period-filter.md) |
-
-## Documentation ownership
-
-- Update current references in the same pull request as behavior changes.
-- Preserve historical documents. Add a dated correction note instead of rewriting the original decision history.
-- Generate route and test counts from commands; do not copy old totals forward.
-- Never add credentials, real student information, local database files, tunnel state, or `.env` contents to documentation.
+- Update canonical documentation in the same pull request as behavior, permission, schema, command, or status changes.
+- Keep counts tied to a dated command result.
+- Do not infer backend rules from navigation labels or frontend visibility.
+- Use **Needs confirmation**, **Not verified**, or **Planned, not implemented** when evidence is incomplete.
+- Never add credentials, real personal data, `.env` content, database files, tunnel state, or generated artifacts.
