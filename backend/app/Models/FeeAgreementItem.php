@@ -27,6 +27,7 @@ class FeeAgreementItem extends Model
     protected function casts(): array
     {
         return [
+            'amount' => 'decimal:2',
             'is_mandatory' => 'boolean',
             'billing_months' => 'array',
             'requires_preview_confirmation' => 'boolean',

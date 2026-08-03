@@ -33,6 +33,7 @@ class Payment extends Model
     protected function casts(): array
     {
         return [
+            'amount' => 'decimal:2',
             'payment_date' => 'date',
             'received_date' => 'date',
             'verified_at' => 'datetime',

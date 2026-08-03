@@ -17,6 +17,13 @@ class ReceiptItem extends Model
         'sort_order',
     ];
 
+    protected function casts(): array
+    {
+        return [
+            'amount' => 'decimal:2',
+        ];
+    }
+
     public function school(): BelongsTo
     {
         return $this->belongsTo(School::class);

@@ -51,6 +51,7 @@ class FeeAgreementVersioningService
                 'effective_from' => $data['effective_from'],
                 'effective_to' => $data['effective_to'] ?? null,
                 'is_current' => true,
+                'current_slot' => 1,
                 'status' => 'active',
                 'remarks' => $data['remarks'] ?? null,
                 'created_by' => $userId,
@@ -98,6 +99,7 @@ class FeeAgreementVersioningService
             $lockedCurrent->update([
                 'effective_to' => $newEffectiveFrom->copy()->subDay()->toDateString(),
                 'is_current' => false,
+                'current_slot' => null,
                 'status' => 'superseded',
                 'updated_by' => $userId,
             ]);
@@ -111,6 +113,7 @@ class FeeAgreementVersioningService
                 ->lockForUpdate()
                 ->update([
                     'is_current' => false,
+                    'current_slot' => null,
                     'status' => 'superseded',
                     'updated_by' => $userId,
                 ]);
@@ -124,6 +127,7 @@ class FeeAgreementVersioningService
                 'effective_from' => $data['effective_from'],
                 'effective_to' => $data['effective_to'] ?? null,
                 'is_current' => true,
+                'current_slot' => 1,
                 'status' => 'active',
                 'remarks' => $data['remarks'] ?? null,
                 'created_by' => $userId,

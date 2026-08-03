@@ -33,6 +33,9 @@ class FeeRecordCharge extends Model
     protected function casts(): array
     {
         return [
+            'expected_amount' => 'decimal:2',
+            'paid_amount_cached' => 'decimal:2',
+            'outstanding_amount_cached' => 'decimal:2',
             'activated_at' => 'datetime',
         ];
     }
