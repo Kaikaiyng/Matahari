@@ -8,17 +8,23 @@ use App\Models\Payment;
 use App\Models\School;
 use App\Models\Student;
 use App\Services\Billing\FeeRecordSummaryService;
+use App\Support\SchoolScopeResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
-    public function school(Request $request, FeeRecordSummaryService $feeRecordSummaryService): JsonResponse
-    {
+    public function school(
+        Request $request,
+        FeeRecordSummaryService $feeRecordSummaryService,
+        SchoolScopeResolver $schoolScopeResolver,
+    ): JsonResponse {
         $data = $request->validate([
             'academic_year' => ['sometimes', 'string', 'regex:/^\d{4}$/'],
+            'school_id' => ['sometimes', 'integer'],
         ]);
-        $school = School::query()->findOrFail((int) $request->query('school_id', 1));
+        $schoolId = $schoolScopeResolver->resolve($request->user(), $data['school_id'] ?? null);
+        $school = School::query()->findOrFail($schoolId);
         $today = now()->toDateString();
         $currentMonth = (string) $request->query('invoice_month', now()->format('Y-m'));
         $academicYear = $data['academic_year'] ?? now()->format('Y');

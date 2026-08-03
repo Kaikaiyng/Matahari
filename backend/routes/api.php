@@ -37,8 +37,10 @@ Route::middleware($sessionMiddleware)->group(function (): void {
 });
 
 Route::middleware([...$sessionMiddleware, 'auth', 'active'])->group(function (): void {
-    Route::get('/dashboard/school', [DashboardController::class, 'school']);
-    Route::post('/invoices/generate-monthly', [InvoiceGenerationController::class, 'store']);
+    Route::get('/dashboard/school', [DashboardController::class, 'school'])
+        ->middleware('permission:fee_record.view');
+    Route::post('/invoices/generate-monthly', [InvoiceGenerationController::class, 'store'])
+        ->middleware('permission:fee_record.generate');
 
     Route::get('/calendar-events', [CalendarEventController::class, 'index'])
         ->middleware('permission:calendar.view');
