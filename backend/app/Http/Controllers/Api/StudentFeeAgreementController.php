@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Audit\AuditContextFactory;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreFeeAgreementRequest;
 use App\Models\FeeAgreement;
@@ -30,10 +31,16 @@ class StudentFeeAgreementController extends Controller
         StoreFeeAgreementRequest $request,
         Student $student,
         FeeAgreementVersioningService $service,
+        AuditContextFactory $contextFactory,
     ): JsonResponse {
         $this->assertSchoolScope($request, $student);
 
-        $agreement = $service->createCurrent($student, $request->validated(), $request->user()?->id);
+        $agreement = $service->createCurrent(
+            $student,
+            $request->validated(),
+            $request->user()?->id,
+            $contextFactory->fromRequest($request),
+        );
 
         return response()->json(['fee_agreement' => $this->feeAgreementResponse($agreement)], 201);
     }

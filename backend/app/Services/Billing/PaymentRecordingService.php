@@ -2,6 +2,13 @@
 
 namespace App\Services\Billing;
 
+use App\Audit\AuditAction;
+use App\Audit\AuditContext;
+use App\Audit\AuditContextFactory;
+use App\Audit\AuditEvent;
+use App\Audit\AuditModule;
+use App\Audit\AuditSubject;
+use App\Contracts\AuditLoggerContract;
 use App\Models\FeeAgreementItem;
 use App\Models\FeeRecordCharge;
 use App\Models\FeeItem;
@@ -14,15 +21,26 @@ use Illuminate\Validation\ValidationException;
 
 class PaymentRecordingService
 {
+    public function __construct(
+        private readonly AuditLoggerContract $auditLogger,
+        private readonly AuditContextFactory $contextFactory,
+    ) {
+    }
+
     /**
      * @param array<string, mixed> $data
      */
-    public function createForStudent(Student $student, array $data, User $recordedBy): Payment
+    public function createForStudent(
+        Student $student,
+        array $data,
+        User $recordedBy,
+        ?AuditContext $auditContext = null,
+    ): Payment
     {
         $this->assertSchoolScope($student, $recordedBy);
         $this->assertAllocationTotal((float) $data['amount'], $data['allocations'] ?? []);
 
-        return DB::transaction(function () use ($student, $data, $recordedBy): Payment {
+        return DB::transaction(function () use ($student, $data, $recordedBy, $auditContext): Payment {
             $isCash = $data['payment_method'] === 'cash';
 
             $payment = Payment::query()->create([
@@ -56,16 +74,32 @@ class PaymentRecordingService
                 $this->applyChargeAllocations($payment->refresh()->load('allocations'));
             }
 
-            return $payment->refresh()->load(['allocations', 'recordedBy', 'verifiedBy', 'voidedBy', 'issuedReceipt']);
+            $payment = $payment->refresh()->load(['allocations', 'recordedBy', 'verifiedBy', 'voidedBy', 'issuedReceipt']);
+            $this->auditLogger->record(new AuditEvent(
+                action: AuditAction::PaymentRecorded,
+                module: AuditModule::Payments,
+                schoolId: $payment->school_id,
+                subjectType: AuditSubject::Payment,
+                subjectId: $payment->id,
+                newValues: $this->paymentAuditValues($payment),
+                metadata: ['student_id' => $payment->student_id],
+            ), $auditContext ?? $this->contextFactory->system());
+
+            return $payment;
         });
     }
 
     /**
      * @param array<string, mixed> $data
      */
-    public function verify(Payment $payment, array $data, User $verifiedBy): Payment
+    public function verify(
+        Payment $payment,
+        array $data,
+        User $verifiedBy,
+        ?AuditContext $auditContext = null,
+    ): Payment
     {
-        return DB::transaction(function () use ($payment, $data, $verifiedBy): Payment {
+        return DB::transaction(function () use ($payment, $data, $verifiedBy, $auditContext): Payment {
             $lockedPayment = Payment::query()
                 ->with(['student', 'allocations'])
                 ->whereKey($payment->id)
@@ -86,6 +120,13 @@ class PaymentRecordingService
                 throw ValidationException::withMessages(['payment' => 'Only pending payments can be verified.']);
             }
 
+            $oldValues = [
+                'status' => $lockedPayment->status,
+                'received_date' => $lockedPayment->received_date?->toDateString(),
+                'verified_by' => $lockedPayment->verified_by,
+                'verified_at' => $lockedPayment->verified_at?->toISOString(),
+            ];
+
             $this->applyChargeAllocations($lockedPayment);
 
             $lockedPayment->update([
@@ -98,13 +139,35 @@ class PaymentRecordingService
                 'verified_at' => now(),
             ]);
 
-            return $lockedPayment->refresh()->load(['allocations', 'recordedBy', 'verifiedBy', 'voidedBy', 'issuedReceipt']);
+            $lockedPayment = $lockedPayment->refresh()->load(['allocations', 'recordedBy', 'verifiedBy', 'voidedBy', 'issuedReceipt']);
+            $this->auditLogger->record(new AuditEvent(
+                action: AuditAction::PaymentVerified,
+                module: AuditModule::Payments,
+                schoolId: $lockedPayment->school_id,
+                subjectType: AuditSubject::Payment,
+                subjectId: $lockedPayment->id,
+                oldValues: $oldValues,
+                newValues: [
+                    'status' => $lockedPayment->status,
+                    'received_date' => $lockedPayment->received_date?->toDateString(),
+                    'verified_by' => $lockedPayment->verified_by,
+                    'verified_at' => $lockedPayment->verified_at?->toISOString(),
+                ],
+                metadata: ['student_id' => $lockedPayment->student_id],
+            ), $auditContext ?? $this->contextFactory->system());
+
+            return $lockedPayment;
         });
     }
 
-    public function void(Payment $payment, string $voidReason, User $voidedBy): Payment
+    public function void(
+        Payment $payment,
+        string $voidReason,
+        User $voidedBy,
+        ?AuditContext $auditContext = null,
+    ): Payment
     {
-        return DB::transaction(function () use ($payment, $voidReason, $voidedBy): Payment {
+        return DB::transaction(function () use ($payment, $voidReason, $voidedBy, $auditContext): Payment {
             $lockedPayment = Payment::query()
                 ->with(['student', 'allocations'])
                 ->whereKey($payment->id)
@@ -119,6 +182,8 @@ class PaymentRecordingService
 
             $this->assertNoIssuedReceipt($lockedPayment);
 
+            $oldStatus = $lockedPayment->status;
+
             if ($lockedPayment->status === 'verified') {
                 $this->reverseChargeAllocations($lockedPayment);
             }
@@ -130,7 +195,24 @@ class PaymentRecordingService
                 'void_reason' => $voidReason,
             ]);
 
-            return $lockedPayment->refresh()->load(['allocations', 'recordedBy', 'verifiedBy', 'voidedBy', 'issuedReceipt']);
+            $lockedPayment = $lockedPayment->refresh()->load(['allocations', 'recordedBy', 'verifiedBy', 'voidedBy', 'issuedReceipt']);
+            $this->auditLogger->record(new AuditEvent(
+                action: AuditAction::PaymentVoided,
+                module: AuditModule::Payments,
+                schoolId: $lockedPayment->school_id,
+                subjectType: AuditSubject::Payment,
+                subjectId: $lockedPayment->id,
+                oldValues: ['status' => $oldStatus],
+                newValues: [
+                    'status' => $lockedPayment->status,
+                    'voided_by' => $lockedPayment->voided_by,
+                    'voided_at' => $lockedPayment->voided_at?->toISOString(),
+                ],
+                metadata: ['student_id' => $lockedPayment->student_id],
+                reason: $voidReason,
+            ), $auditContext ?? $this->contextFactory->system());
+
+            return $lockedPayment;
         });
     }
 
@@ -394,5 +476,33 @@ class PaymentRecordingService
     private function centsToMoney(int $cents): float
     {
         return round($cents / 100, 2);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function paymentAuditValues(Payment $payment): array
+    {
+        return [
+            'student_id' => $payment->student_id,
+            'payment_method' => $payment->payment_method,
+            'payment_date' => $payment->payment_date->toDateString(),
+            'received_date' => $payment->received_date?->toDateString(),
+            'amount' => $payment->amount,
+            'reference_no' => $payment->reference_no,
+            'status' => $payment->status,
+            'recorded_by' => $payment->recorded_by,
+            'verified_by' => $payment->verified_by,
+            'allocation_ids' => $payment->allocations->pluck('id')->values()->all(),
+            'allocations' => $payment->allocations->map(fn ($allocation) => [
+                'id' => $allocation->id,
+                'allocation_type' => $allocation->allocation_type,
+                'fee_record_charge_id' => $allocation->fee_record_charge_id,
+                'fee_agreement_item_id' => $allocation->fee_agreement_item_id,
+                'fee_item_id' => $allocation->fee_item_id,
+                'fee_code' => $allocation->fee_code,
+                'amount' => $allocation->amount,
+            ])->values()->all(),
+        ];
     }
 }

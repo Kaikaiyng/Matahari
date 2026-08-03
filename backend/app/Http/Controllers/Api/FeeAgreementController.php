@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Audit\AuditContextFactory;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SupersedeFeeAgreementRequest;
 use App\Models\FeeAgreement;
@@ -22,10 +23,16 @@ class FeeAgreementController extends Controller
         SupersedeFeeAgreementRequest $request,
         FeeAgreement $feeAgreement,
         FeeAgreementVersioningService $service,
+        AuditContextFactory $contextFactory,
     ): JsonResponse {
         $this->assertSchoolScope($request, $feeAgreement);
 
-        $newAgreement = $service->supersede($feeAgreement, $request->validated(), $request->user()?->id);
+        $newAgreement = $service->supersede(
+            $feeAgreement,
+            $request->validated(),
+            $request->user()?->id,
+            $contextFactory->fromRequest($request),
+        );
 
         return response()->json(['fee_agreement' => $this->feeAgreementResponse($newAgreement)], 201);
     }

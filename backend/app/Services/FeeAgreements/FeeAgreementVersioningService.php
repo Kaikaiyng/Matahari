@@ -2,6 +2,13 @@
 
 namespace App\Services\FeeAgreements;
 
+use App\Audit\AuditAction;
+use App\Audit\AuditContext;
+use App\Audit\AuditContextFactory;
+use App\Audit\AuditEvent;
+use App\Audit\AuditModule;
+use App\Audit\AuditSubject;
+use App\Contracts\AuditLoggerContract;
 use App\Models\FeeAgreement;
 use App\Models\FeeAgreementDiscount;
 use App\Models\FeeAgreementItem;
@@ -15,12 +22,23 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class FeeAgreementVersioningService
 {
+    public function __construct(
+        private readonly AuditLoggerContract $auditLogger,
+        private readonly AuditContextFactory $contextFactory,
+    ) {
+    }
+
     /**
      * @param array<string, mixed> $data
      */
-    public function createCurrent(Student $student, array $data, ?int $userId = null): FeeAgreement
+    public function createCurrent(
+        Student $student,
+        array $data,
+        ?int $userId = null,
+        ?AuditContext $auditContext = null,
+    ): FeeAgreement
     {
-        return DB::transaction(function () use ($student, $data, $userId): FeeAgreement {
+        return DB::transaction(function () use ($student, $data, $userId, $auditContext): FeeAgreement {
             $existingCurrent = FeeAgreement::query()
                 ->where('school_id', $student->school_id)
                 ->where('student_id', $student->id)
@@ -60,16 +78,32 @@ class FeeAgreementVersioningService
 
             $this->snapshotItemsAndDiscounts($agreement, $data, $userId);
 
-            return $agreement->load(['student', 'items', 'discounts.selectedItems']);
+            $agreement->load(['student', 'items', 'discounts.selectedItems']);
+            $this->auditLogger->record(new AuditEvent(
+                action: AuditAction::FeeAgreementCreated,
+                module: AuditModule::FeeAgreements,
+                schoolId: $agreement->school_id,
+                subjectType: AuditSubject::FeeAgreement,
+                subjectId: $agreement->id,
+                newValues: $this->agreementAuditValues($agreement),
+                metadata: ['student_id' => $agreement->student_id],
+            ), $auditContext ?? $this->contextFactory->system());
+
+            return $agreement;
         });
     }
 
     /**
      * @param array<string, mixed> $data
      */
-    public function supersede(FeeAgreement $currentAgreement, array $data, ?int $userId = null): FeeAgreement
+    public function supersede(
+        FeeAgreement $currentAgreement,
+        array $data,
+        ?int $userId = null,
+        ?AuditContext $auditContext = null,
+    ): FeeAgreement
     {
-        return DB::transaction(function () use ($currentAgreement, $data, $userId): FeeAgreement {
+        return DB::transaction(function () use ($currentAgreement, $data, $userId, $auditContext): FeeAgreement {
             /** @var FeeAgreement $lockedCurrent */
             $lockedCurrent = FeeAgreement::query()
                 ->whereKey($currentAgreement->id)
@@ -95,6 +129,12 @@ class FeeAgreementVersioningService
                     'Fee Agreement cannot be superseded while charge history exists on or after the new effective month.',
                 );
             }
+
+            $oldValues = [
+                'status' => $lockedCurrent->status,
+                'is_current' => $lockedCurrent->is_current,
+                'effective_to' => $lockedCurrent->effective_to?->toDateString(),
+            ];
 
             $lockedCurrent->update([
                 'effective_to' => $newEffectiveFrom->copy()->subDay()->toDateString(),
@@ -136,7 +176,28 @@ class FeeAgreementVersioningService
 
             $this->snapshotItemsAndDiscounts($newAgreement, $data, $userId);
 
-            return $newAgreement->load(['student', 'items', 'discounts.selectedItems']);
+            $newAgreement->load(['student', 'items', 'discounts.selectedItems']);
+            $this->auditLogger->record(new AuditEvent(
+                action: AuditAction::FeeAgreementSuperseded,
+                module: AuditModule::FeeAgreements,
+                schoolId: $lockedCurrent->school_id,
+                subjectType: AuditSubject::FeeAgreement,
+                subjectId: $lockedCurrent->id,
+                oldValues: $oldValues,
+                newValues: [
+                    'status' => 'superseded',
+                    'is_current' => false,
+                    'effective_to' => $lockedCurrent->fresh()->effective_to?->toDateString(),
+                    'replacement_agreement_id' => $newAgreement->id,
+                    'replacement_version_no' => $newAgreement->version_no,
+                ],
+                metadata: [
+                    'student_id' => $lockedCurrent->student_id,
+                    'replacement' => $this->agreementAuditValues($newAgreement),
+                ],
+            ), $auditContext ?? $this->contextFactory->system());
+
+            return $newAgreement;
         });
     }
 
@@ -244,5 +305,38 @@ class FeeAgreementVersioningService
     private function defaultDiscountScope(string $discountType): string
     {
         return $discountType === 'percentage' ? 'tuition_only' : 'total_payable';
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function agreementAuditValues(FeeAgreement $agreement): array
+    {
+        return [
+            'academic_year' => $agreement->academic_year,
+            'version_no' => $agreement->version_no,
+            'payment_plan' => $agreement->payment_plan,
+            'effective_from' => $agreement->effective_from->toDateString(),
+            'effective_to' => $agreement->effective_to?->toDateString(),
+            'is_current' => $agreement->is_current,
+            'status' => $agreement->status,
+            'items' => $agreement->items->map(fn (FeeAgreementItem $item) => [
+                'id' => $item->id,
+                'fee_item_id' => $item->fee_item_id,
+                'fee_code' => $item->fee_code,
+                'amount' => $item->amount,
+                'billing_frequency' => $item->billing_frequency,
+                'billing_months' => $item->billing_months,
+                'requires_preview_confirmation' => $item->requires_preview_confirmation,
+            ])->values()->all(),
+            'discounts' => $agreement->discounts->map(fn (FeeAgreementDiscount $discount) => [
+                'id' => $discount->id,
+                'discount_label' => $discount->discount_label,
+                'discount_type' => $discount->discount_type,
+                'scope' => $discount->scope,
+                'value' => $discount->value,
+                'selected_fee_codes' => $discount->selectedItems->pluck('fee_code')->values()->all(),
+            ])->values()->all(),
+        ];
     }
 }
