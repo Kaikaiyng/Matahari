@@ -78,7 +78,7 @@ class FeeRecordChargeGenerationService
     public function activate(
         Student $student,
         string $academicYear,
-        User $activatedBy,
+        ?User $activatedBy = null,
         ?AuditContext $auditContext = null,
     ): array {
         return DB::transaction(function () use ($student, $academicYear, $activatedBy, $auditContext): array {
@@ -147,7 +147,7 @@ class FeeRecordChargeGenerationService
                 ],
                 metadata: [
                     'charge_ids' => collect($created)->pluck('id')->values()->all(),
-                    'activated_by' => $activatedBy->id,
+                    ...($activatedBy ? ['activated_by' => $activatedBy->id] : []),
                 ],
             ), $auditContext ?? $this->contextFactory->system());
 
