@@ -1,7 +1,7 @@
 <?php
 
-use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\AuditLogController;
+use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CalendarEventController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FeeAgreementController;

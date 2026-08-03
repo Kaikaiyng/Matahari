@@ -7,9 +7,7 @@ use Illuminate\Contracts\Validation\ValidationRule;
 
 class DatabaseMoney implements ValidationRule
 {
-    public function __construct(private readonly bool $allowZero = true)
-    {
-    }
+    public function __construct(private readonly bool $allowZero = true) {}
 
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {

@@ -6,6 +6,7 @@ use App\Models\FeeAgreement;
 use App\Models\FeeAgreementDiscount;
 use App\Models\FeeAgreementItem;
 use App\Models\FeeItem;
+use App\Models\FeeRecordCharge;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\School;
@@ -214,12 +215,12 @@ class FeeRecordChargeCellApiTest extends TestCase
             ->postJson("/api/students/{$student->id}/fee-record/activate", ['academic_year' => '2026'])
             ->assertCreated();
 
-        \App\Models\FeeRecordCharge::query()->where('billing_month', '2026-01')->update([
+        FeeRecordCharge::query()->where('billing_month', '2026-01')->update([
             'paid_amount_cached' => 1000,
             'outstanding_amount_cached' => 0,
             'collection_status' => 'paid',
         ]);
-        \App\Models\FeeRecordCharge::query()->where('billing_month', '2026-02')->update([
+        FeeRecordCharge::query()->where('billing_month', '2026-02')->update([
             'paid_amount_cached' => 400,
             'outstanding_amount_cached' => 600,
             'collection_status' => 'partial',
@@ -278,7 +279,7 @@ class FeeRecordChargeCellApiTest extends TestCase
     }
 
     /**
-     * @param array<int, string> $permissionSlugs
+     * @param  array<int, string>  $permissionSlugs
      * @return array{0: School, 1: Student, 2: User}
      */
     private function schoolStudentAndUser(array $permissionSlugs): array
@@ -303,7 +304,7 @@ class FeeRecordChargeCellApiTest extends TestCase
     }
 
     /**
-     * @param array<int, string> $permissionSlugs
+     * @param  array<int, string>  $permissionSlugs
      */
     private function userWithPermissions(School $school, array $permissionSlugs): User
     {
@@ -329,8 +330,7 @@ class FeeRecordChargeCellApiTest extends TestCase
         string $paymentPlan,
         string $effectiveFrom = '2026-01-01',
         ?string $effectiveTo = '2026-12-31',
-    ): FeeAgreement
-    {
+    ): FeeAgreement {
         return FeeAgreement::query()->create([
             'school_id' => $school->id,
             'student_id' => $student->id,
@@ -345,7 +345,7 @@ class FeeRecordChargeCellApiTest extends TestCase
     }
 
     /**
-     * @param array<string, mixed> $overrides
+     * @param  array<string, mixed>  $overrides
      */
     private function agreementItem(
         School $school,

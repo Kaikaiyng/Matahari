@@ -25,19 +25,17 @@ class FeeAgreementVersioningService
     public function __construct(
         private readonly AuditLoggerContract $auditLogger,
         private readonly AuditContextFactory $contextFactory,
-    ) {
-    }
+    ) {}
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     public function createCurrent(
         Student $student,
         array $data,
         ?int $userId = null,
         ?AuditContext $auditContext = null,
-    ): FeeAgreement
-    {
+    ): FeeAgreement {
         return DB::transaction(function () use ($student, $data, $userId, $auditContext): FeeAgreement {
             $existingCurrent = FeeAgreement::query()
                 ->where('school_id', $student->school_id)
@@ -94,15 +92,14 @@ class FeeAgreementVersioningService
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     public function supersede(
         FeeAgreement $currentAgreement,
         array $data,
         ?int $userId = null,
         ?AuditContext $auditContext = null,
-    ): FeeAgreement
-    {
+    ): FeeAgreement {
         return DB::transaction(function () use ($currentAgreement, $data, $userId, $auditContext): FeeAgreement {
             /** @var FeeAgreement $lockedCurrent */
             $lockedCurrent = FeeAgreement::query()
@@ -202,7 +199,7 @@ class FeeAgreementVersioningService
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     private function snapshotItemsAndDiscounts(FeeAgreement $agreement, array $data, ?int $userId): void
     {
@@ -279,8 +276,8 @@ class FeeAgreementVersioningService
     }
 
     /**
-     * @param Collection<string, FeeAgreementItem> $agreementItemsByCode
-     * @param array<int, string> $selectedFeeCodes
+     * @param  Collection<string, FeeAgreementItem>  $agreementItemsByCode
+     * @param  array<int, string>  $selectedFeeCodes
      */
     private function syncSelectedFeeItems(
         FeeAgreementDiscount $discount,

@@ -13,7 +13,7 @@ class FeeRecordSummaryService
     public function __construct(private readonly FeeRecordCategoryMapper $categoryMapper) {}
 
     /**
-     * @param array<string, mixed> $filters
+     * @param  array<string, mixed>  $filters
      * @return array<int, array<string, mixed>>
      */
     public function summary(?int $schoolId, array $filters): array
@@ -58,7 +58,7 @@ class FeeRecordSummaryService
     }
 
     /**
-     * @param Collection<int, int> $studentIds
+     * @param  Collection<int, int>  $studentIds
      * @return Collection<int, Receipt>
      */
     private function latestReceipts(Collection $studentIds, ?int $schoolId): Collection

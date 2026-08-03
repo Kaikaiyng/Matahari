@@ -10,8 +10,8 @@ use App\Audit\AuditModule;
 use App\Audit\AuditSubject;
 use App\Contracts\AuditLoggerContract;
 use App\Models\FeeAgreementItem;
-use App\Models\FeeRecordCharge;
 use App\Models\FeeItem;
+use App\Models\FeeRecordCharge;
 use App\Models\Payment;
 use App\Models\Receipt;
 use App\Models\Student;
@@ -24,19 +24,17 @@ class PaymentRecordingService
     public function __construct(
         private readonly AuditLoggerContract $auditLogger,
         private readonly AuditContextFactory $contextFactory,
-    ) {
-    }
+    ) {}
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     public function createForStudent(
         Student $student,
         array $data,
         User $recordedBy,
         ?AuditContext $auditContext = null,
-    ): Payment
-    {
+    ): Payment {
         $this->assertSchoolScope($student, $recordedBy);
         $this->assertAllocationTotal((float) $data['amount'], $data['allocations'] ?? []);
 
@@ -90,15 +88,14 @@ class PaymentRecordingService
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     public function verify(
         Payment $payment,
         array $data,
         User $verifiedBy,
         ?AuditContext $auditContext = null,
-    ): Payment
-    {
+    ): Payment {
         return DB::transaction(function () use ($payment, $data, $verifiedBy, $auditContext): Payment {
             $lockedPayment = Payment::query()
                 ->with(['student', 'allocations'])
@@ -165,8 +162,7 @@ class PaymentRecordingService
         string $voidReason,
         User $voidedBy,
         ?AuditContext $auditContext = null,
-    ): Payment
-    {
+    ): Payment {
         return DB::transaction(function () use ($payment, $voidReason, $voidedBy, $auditContext): Payment {
             $lockedPayment = Payment::query()
                 ->with(['student', 'allocations'])
@@ -224,7 +220,7 @@ class PaymentRecordingService
     }
 
     /**
-     * @param array<int, array<string, mixed>> $allocations
+     * @param  array<int, array<string, mixed>>  $allocations
      */
     private function assertAllocationTotal(float $paymentAmount, array $allocations): void
     {
@@ -238,7 +234,7 @@ class PaymentRecordingService
     }
 
     /**
-     * @param array<string, mixed> $allocation
+     * @param  array<string, mixed>  $allocation
      * @return array<string, mixed>
      */
     private function allocationSnapshot(Student $student, array $allocation, ?string $academicYear): array
@@ -312,7 +308,7 @@ class PaymentRecordingService
     }
 
     /**
-     * @param array<string, mixed> $allocation
+     * @param  array<string, mixed>  $allocation
      */
     private function allocationType(array $allocation): string
     {
@@ -332,7 +328,7 @@ class PaymentRecordingService
     }
 
     /**
-     * @param array<string, mixed> $allocation
+     * @param  array<string, mixed>  $allocation
      */
     private function lockUsableCharge(Student $student, array $allocation, ?string $academicYear): FeeRecordCharge
     {

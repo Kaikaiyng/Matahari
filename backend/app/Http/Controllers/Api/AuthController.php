@@ -18,8 +18,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
-use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\Response;
 use Throwable;
 
 class AuthController extends Controller
@@ -27,8 +27,7 @@ class AuthController extends Controller
     public function __construct(
         private readonly AuditLoggerContract $auditLogger,
         private readonly AuditContextFactory $contextFactory,
-    ) {
-    }
+    ) {}
 
     public function login(LoginRequest $request): JsonResponse
     {

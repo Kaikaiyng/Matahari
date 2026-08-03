@@ -2,9 +2,9 @@
 
 namespace Tests\Feature;
 
-use App\Models\FeeItem;
 use App\Models\FeeAgreement;
 use App\Models\FeeAgreementItem;
+use App\Models\FeeItem;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Permission;
@@ -435,7 +435,7 @@ class PaymentModuleApiTest extends TestCase
     }
 
     /**
-     * @param array<int, string> $permissionSlugs
+     * @param  array<int, string>  $permissionSlugs
      * @return array{0: School, 1: Student, 2?: User}
      */
     private function schoolStudentAndUser(array $permissionSlugs): array
@@ -464,7 +464,7 @@ class PaymentModuleApiTest extends TestCase
     }
 
     /**
-     * @param array<int, string> $permissionSlugs
+     * @param  array<int, string>  $permissionSlugs
      */
     private function userWithPermissions(School $school, array $permissionSlugs): User
     {

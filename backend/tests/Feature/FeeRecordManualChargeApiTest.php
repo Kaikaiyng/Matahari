@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Models\FeeAgreement;
 use App\Models\FeeItem;
-use App\Models\FeeRecordCharge;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\School;
@@ -223,7 +222,7 @@ class FeeRecordManualChargeApiTest extends TestCase
     }
 
     /**
-     * @param array<int, string> $permissionSlugs
+     * @param  array<int, string>  $permissionSlugs
      * @return array{0: School, 1: Student, 2: User}
      */
     private function schoolStudentAndUser(array $permissionSlugs, string $schoolCode = 'MIS'): array
@@ -248,7 +247,7 @@ class FeeRecordManualChargeApiTest extends TestCase
     }
 
     /**
-     * @param array<int, string> $permissionSlugs
+     * @param  array<int, string>  $permissionSlugs
      */
     private function userWithPermissions(School $school, array $permissionSlugs): User
     {

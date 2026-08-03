@@ -23,19 +23,17 @@ class ReceiptGenerationService
     public function __construct(
         private readonly AuditLoggerContract $auditLogger,
         private readonly AuditContextFactory $contextFactory,
-    ) {
-    }
+    ) {}
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     public function generate(
         Payment $payment,
         array $data,
         User $issuedBy,
         ?AuditContext $auditContext = null,
-    ): Receipt
-    {
+    ): Receipt {
         return DB::transaction(function () use ($payment, $data, $issuedBy, $auditContext): Receipt {
             $lockedPayment = Payment::query()
                 ->with(['school', 'student', 'allocations'])
@@ -109,8 +107,7 @@ class ReceiptGenerationService
         string $voidReason,
         User $voidedBy,
         ?AuditContext $auditContext = null,
-    ): Receipt
-    {
+    ): Receipt {
         return DB::transaction(function () use ($receipt, $voidReason, $voidedBy, $auditContext): Receipt {
             $lockedReceipt = Receipt::query()
                 ->whereKey($receipt->id)

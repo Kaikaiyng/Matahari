@@ -35,6 +35,7 @@ class InvoiceGenerationService
         foreach ($students as $student) {
             if ($this->invoiceExists($schoolId, $student->id, $invoiceMonth)) {
                 $skipped[] = ['student_id' => $student->id, 'reason' => 'Invoice already exists.'];
+
                 continue;
             }
 
@@ -42,6 +43,7 @@ class InvoiceGenerationService
 
             if ($feeLines === []) {
                 $skipped[] = ['student_id' => $student->id, 'reason' => 'No active fees assigned.'];
+
                 continue;
             }
 
@@ -128,7 +130,7 @@ class InvoiceGenerationService
     }
 
     /**
-     * @param array<int, array<string, mixed>> $feeLines
+     * @param  array<int, array<string, mixed>>  $feeLines
      * @return array<int, array<string, mixed>>
      */
     private function buildDiscountLines(Student $student, array $feeLines, string $invoiceMonth): array

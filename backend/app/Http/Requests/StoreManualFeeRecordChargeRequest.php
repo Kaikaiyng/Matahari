@@ -2,8 +2,8 @@
 
 namespace App\Http\Requests;
 
-use App\Services\Billing\FeeRecordCategoryMapper;
 use App\Rules\DatabaseMoney;
+use App\Services\Billing\FeeRecordCategoryMapper;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;

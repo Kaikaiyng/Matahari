@@ -30,11 +30,10 @@ class StudentMutationService
     public function __construct(
         private readonly AuditLoggerContract $auditLogger,
         private readonly AuditContextFactory $contextFactory,
-    ) {
-    }
+    ) {}
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     public function create(int $schoolId, array $data, ?AuditContext $context = null): Student
     {
@@ -58,7 +57,7 @@ class StudentMutationService
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     public function update(Student $student, array $data, ?AuditContext $context = null): Student
     {
