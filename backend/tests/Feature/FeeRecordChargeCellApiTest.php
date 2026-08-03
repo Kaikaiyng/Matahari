@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\FeeAgreement;
+use App\Models\FeeAgreementDiscount;
 use App\Models\FeeAgreementItem;
 use App\Models\FeeItem;
 use App\Models\Permission;
@@ -150,6 +151,57 @@ class FeeRecordChargeCellApiTest extends TestCase
             ->assertJsonValidationErrors(['fee_record']);
 
         $this->assertDatabaseCount('fee_record_charges', 12);
+    }
+
+    public function test_discounted_agreement_cannot_preview_or_activate_until_billing_rules_are_approved(): void
+    {
+        [$school, $student, $admin] = $this->schoolStudentAndUser(['fee_record.view', 'fee_record.generate']);
+        $agreement = $this->agreement($school, $student, 'monthly');
+        $this->agreementItem($school, $agreement, 'TUITION', 'SF+MF', 'Tuition Fee', 1000);
+        FeeAgreementDiscount::query()->create([
+            'school_id' => $school->id,
+            'fee_agreement_id' => $agreement->id,
+            'discount_label' => 'Sibling discount',
+            'discount_type' => 'percentage',
+            'scope' => 'tuition_only',
+            'value' => 10,
+            'remark' => 'Formula not approved for charge generation.',
+        ]);
+
+        $this->actingAs($admin)
+            ->getJson("/api/students/{$student->id}/fee-record/preview?academic_year=2026")
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['fee_record']);
+
+        $this->actingAs($admin)
+            ->postJson("/api/students/{$student->id}/fee-record/activate", ['academic_year' => '2026'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['fee_record']);
+
+        $this->assertDatabaseCount('fee_record_charges', 0);
+    }
+
+    public function test_preview_confirmation_flag_blocks_activation(): void
+    {
+        [$school, $student, $admin] = $this->schoolStudentAndUser(['fee_record.view', 'fee_record.generate']);
+        $agreement = $this->agreement($school, $student, 'monthly');
+        $item = $this->agreementItem($school, $agreement, 'TUITION', 'SF+MF', 'Tuition Fee', 1000, [
+            'requires_preview_confirmation' => true,
+        ]);
+
+        $this->actingAs($admin)
+            ->getJson("/api/students/{$student->id}/fee-record/preview?academic_year=2026")
+            ->assertOk()
+            ->assertJsonPath('needs_confirmation', true)
+            ->assertJsonPath('warnings.0.fee_agreement_item_id', $item->id)
+            ->assertJsonPath('warnings.0.reason', 'preview_confirmation_required');
+
+        $this->actingAs($admin)
+            ->postJson("/api/students/{$student->id}/fee-record/activate", ['academic_year' => '2026'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['fee_record']);
+
+        $this->assertDatabaseCount('fee_record_charges', 0);
     }
 
     public function test_outstanding_endpoint_returns_only_billable_unpaid_or_partial_charge_cells(): void

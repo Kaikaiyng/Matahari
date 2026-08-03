@@ -116,6 +116,51 @@ class FeeAgreementApiTest extends TestCase
             ->count());
     }
 
+    public function test_supersede_is_blocked_when_old_agreement_has_future_charge_history(): void
+    {
+        [$school, $student, $admin] = $this->schoolStudentAndUser([
+            'fee_agreements.create',
+            'fee_agreements.update',
+            'fee_record.generate',
+        ]);
+        $tuition = $this->feeItem($school, 'TUITION', 'Tuition Fee', 'mandatory');
+        $misc = $this->feeItem($school, 'MISC', 'Misc Fee', 'mandatory');
+
+        $this->actingAs($admin)
+            ->postJson("/api/students/{$student->id}/fee-agreements", [
+                'academic_year' => '2026',
+                'payment_plan' => 'monthly',
+                'effective_from' => '2026-01-01',
+                'items' => [
+                    ['fee_item_id' => $tuition->id, 'amount' => 800],
+                    ['fee_item_id' => $misc->id, 'amount' => 90],
+                ],
+            ])->assertCreated();
+
+        $current = FeeAgreement::query()->firstOrFail();
+
+        $this->actingAs($admin)
+            ->postJson("/api/students/{$student->id}/fee-record/activate", ['academic_year' => '2026'])
+            ->assertCreated();
+
+        $this->actingAs($admin)
+            ->postJson("/api/fee-agreements/{$current->id}/supersede", [
+                'effective_from' => '2026-06-01',
+                'items' => [
+                    ['fee_item_id' => $tuition->id, 'amount' => 820],
+                    ['fee_item_id' => $misc->id, 'amount' => 90],
+                ],
+            ])
+            ->assertConflict()
+            ->assertJsonPath('message', 'Fee Agreement cannot be superseded while charge history exists on or after the new effective month.');
+
+        $current->refresh();
+        $this->assertTrue($current->is_current);
+        $this->assertSame('active', $current->status);
+        $this->assertDatabaseCount('fee_agreements', 1);
+        $this->assertDatabaseCount('fee_record_charges', 24);
+    }
+
     public function test_superseding_fee_agreement_stores_item_billing_configuration(): void
     {
         [$school, $student, $admin] = $this->schoolStudentAndUser(['fee_agreements.create', 'fee_agreements.update']);

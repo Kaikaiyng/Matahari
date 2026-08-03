@@ -11,6 +11,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class FeeAgreementVersioningService
 {
@@ -81,6 +82,19 @@ class FeeAgreementVersioningService
             }
 
             $newEffectiveFrom = Carbon::parse($data['effective_from']);
+            $newEffectiveMonth = $newEffectiveFrom->copy()->startOfMonth()->format('Y-m');
+            $hasChargeHistory = $lockedCurrent->feeRecordCharges()
+                ->where('billing_month', '>=', $newEffectiveMonth)
+                ->lockForUpdate()
+                ->exists();
+
+            if ($hasChargeHistory) {
+                throw new HttpException(
+                    409,
+                    'Fee Agreement cannot be superseded while charge history exists on or after the new effective month.',
+                );
+            }
+
             $lockedCurrent->update([
                 'effective_to' => $newEffectiveFrom->copy()->subDay()->toDateString(),
                 'is_current' => false,

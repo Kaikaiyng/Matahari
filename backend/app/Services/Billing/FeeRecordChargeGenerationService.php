@@ -20,10 +20,15 @@ class FeeRecordChargeGenerationService
     public function preview(Student $student, string $academicYear): array
     {
         $agreement = $this->activeAgreement($student, $academicYear);
+        $this->assertDiscountBillingIsSupported($agreement);
         $charges = [];
         $warnings = [];
 
         foreach ($agreement->items->sortBy('sort_order')->values() as $item) {
+            if ($item->requires_preview_confirmation) {
+                $warnings[] = $this->previewConfirmationWarning($item);
+            }
+
             $months = $this->billingMonths($agreement, $item);
 
             if ($months === null) {
@@ -144,7 +149,7 @@ class FeeRecordChargeGenerationService
     private function activeAgreement(Student $student, string $academicYear, bool $lock = false): FeeAgreement
     {
         $query = FeeAgreement::query()
-            ->with('items')
+            ->with(['items', 'discounts'])
             ->where('school_id', $student->school_id)
             ->where('student_id', $student->id)
             ->where('academic_year', $academicYear)
@@ -265,6 +270,29 @@ class FeeRecordChargeGenerationService
             'reason' => 'billing_months_required',
             'message' => 'Billing months must be configured before charge generation.',
         ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function previewConfirmationWarning(FeeAgreementItem $item): array
+    {
+        return [
+            'fee_agreement_item_id' => $item->id,
+            'fee_code' => $item->fee_code,
+            'description' => $item->description,
+            'reason' => 'preview_confirmation_required',
+            'message' => 'This fee item requires an approved preview confirmation before activation.',
+        ];
+    }
+
+    private function assertDiscountBillingIsSupported(FeeAgreement $agreement): void
+    {
+        if ($agreement->discounts->contains(fn ($discount) => (float) $discount->value > 0)) {
+            throw ValidationException::withMessages([
+                'fee_record' => 'Discount calculation rules are not approved; charge preview and activation are blocked.',
+            ]);
+        }
     }
 
     /**

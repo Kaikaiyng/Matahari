@@ -232,7 +232,7 @@ describe('FeeAgreementEditor', () => {
     expect(screen.queryByText('Transport')).not.toBeInTheDocument()
   })
 
-  it('keeps manual discount collapsed and updates the review total when enabled', async () => {
+  it('labels a discount total as illustrative and warns that billing is blocked', async () => {
     const user = userEvent.setup()
     render(<EditorHarness />)
 
@@ -244,7 +244,10 @@ describe('FeeAgreementEditor', () => {
     await user.type(screen.getByLabelText('Discount Value'), '40')
 
     const review = screen.getByRole('complementary', { name: 'Agreement Summary' })
-    expect(within(review).getByText('Preview total').closest('div')).toHaveTextContent('RM 850')
+    expect(within(review).getByText('Illustrative total').closest('div')).toHaveTextContent('RM 850')
+    expect(review).toHaveTextContent(
+      'Discount billing rules are not approved. Fee Record preview and activation will be blocked.',
+    )
   })
 
   it('shows plain-language Supersede changes', () => {

@@ -17,6 +17,7 @@ export function AgreementReviewPanel({
   errorCount: number
 }) {
   const totals = agreementTotals(form)
+  const discountBlocksBilling = form.discount.enabled && Number(form.discount.value || 0) > 0
   const enabledItems = form.items.filter((item) => item.enabled)
   const coreFeeCount = form.items.filter(
     (item) => item.enabled && (item.code === 'TUITION' || item.code === 'MISC'),
@@ -46,7 +47,7 @@ export function AgreementReviewPanel({
           <dd>− {formatCurrency(totals.discountAmount)}</dd>
         </div>
         <div className="agreement-review-total">
-          <dt>Preview total</dt>
+          <dt>{discountBlocksBilling ? 'Illustrative total' : 'Preview total'}</dt>
           <dd>{formatCurrency(totals.total)}</dd>
         </div>
         <div>
@@ -66,6 +67,12 @@ export function AgreementReviewPanel({
       {errorCount > 0 && (
         <p className="agreement-review-warning">
           {errorCount} area{errorCount === 1 ? '' : 's'} need attention.
+        </p>
+      )}
+
+      {discountBlocksBilling && (
+        <p className="agreement-review-warning">
+          Discount billing rules are not approved. Fee Record preview and activation will be blocked.
         </p>
       )}
 
