@@ -930,7 +930,7 @@ function StudentsPage({
   const canUpdateFeeAgreement = hasPermission(user, 'fee_agreements.update')
   const canEditFeeAgreement = canCreateFeeAgreement || canUpdateFeeAgreement
   const canViewFeeRecord = hasPermission(user, 'fee_record.view')
-  const canActivateFeeRecord = hasPermission(user, 'fee_record.generate') || hasPermission(user, 'fee_record.manage')
+  const canActivateFeeRecord = hasPermission(user, 'fee_record.generate')
   const canManageFeeRecord = hasPermission(user, 'fee_record.manage')
   const canViewPayments = hasPermission(user, 'payments.view')
   const canCreatePayments = hasPermission(user, 'payments.create')
@@ -2921,7 +2921,7 @@ function StudentsPage({
                 </div>
 
                 {!canActivateFeeRecord && (
-                  <Message tone="info">Activation is hidden for this role. Users need fee_record.generate or fee_record.manage.</Message>
+                  <Message tone="info">Activation is hidden for this role. Users need fee_record.generate.</Message>
                 )}
 
                 {showManualChargeForm && canManageFeeRecord && (
