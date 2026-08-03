@@ -13,7 +13,7 @@ class FeeRecordCategoryMonthlyService
     public function __construct(private readonly FeeRecordCategoryMapper $categoryMapper) {}
 
     /**
-     * @param array<string, mixed> $filters
+     * @param  array<string, mixed>  $filters
      * @return array<int, array<string, mixed>>
      */
     public function monthly(?int $schoolId, array $filters): array
@@ -62,7 +62,7 @@ class FeeRecordCategoryMonthlyService
     }
 
     /**
-     * @param Collection<int, int> $chargeIds
+     * @param  Collection<int, int>  $chargeIds
      * @return Collection<int, array<int, string>>
      */
     private function receiptRefsByChargeId(Collection $chargeIds, ?int $schoolId): Collection
@@ -89,7 +89,7 @@ class FeeRecordCategoryMonthlyService
     }
 
     /**
-     * @param Collection<int, array<int, string>> $receiptRefsByChargeId
+     * @param  Collection<int, array<int, string>>  $receiptRefsByChargeId
      * @return array<string, mixed>|null
      */
     private function monthlyRow(

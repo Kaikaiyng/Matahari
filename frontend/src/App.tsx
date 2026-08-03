@@ -7,21 +7,18 @@ import {
   ClipboardList,
   CreditCard,
   Eye,
-  FileText,
   GraduationCap,
+  History,
   LayoutDashboard,
   LockKeyhole,
   Mail,
   Phone,
-  ReceiptText,
   RefreshCw,
   Search,
   School,
   ShieldCheck,
-  Settings,
   UserPlus,
   Users,
-  WalletCards,
 } from 'lucide-react'
 import { ApiError, apiRequest } from './api'
 import { AdminShell } from './components/AdminShell'
@@ -48,6 +45,7 @@ import {
   validateFeeAgreementBillingConfig,
 } from './features/fee-agreements/feeAgreementEditorModel'
 import { FeeAgreementEditor } from './features/fee-agreements/FeeAgreementEditor'
+import { AuditTrailPage } from './features/audit/AuditTrailPage'
 import { PaymentAllocationEditor } from './features/payments/PaymentAllocationEditor'
 import type {
   FeeAgreement,
@@ -79,11 +77,7 @@ type PageKey =
   | 'parents'
   | 'fees'
   | 'fee-record'
-  | 'invoices'
-  | 'payments'
-  | 'receipts'
-  | 'reports'
-  | 'settings'
+  | 'audit'
 
 type CurrentUser = {
   id: number
@@ -361,33 +355,29 @@ const navGroups: NavigationGroup<PageKey>[] = [
   {
     label: 'Overview',
     items: [
-      { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-      { key: 'calendar', label: 'Calendar', icon: CalendarDays },
+      { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, requiredPermission: 'fee_record.view' },
+      { key: 'calendar', label: 'Calendar', icon: CalendarDays, requiredPermission: 'calendar.view' },
     ],
   },
   {
     label: 'People',
     items: [
-      { key: 'students', label: 'Students', icon: GraduationCap },
-      { key: 'classes', label: 'Classes', icon: School },
-      { key: 'parents', label: 'Parents', icon: Users },
+      { key: 'students', label: 'Students', icon: GraduationCap, requiredPermission: 'students.view' },
+      { key: 'classes', label: 'Classes', icon: School, requiredPermission: 'students.view' },
+      { key: 'parents', label: 'Parents', icon: Users, requiredPermission: 'parents.view' },
     ],
   },
   {
     label: 'Finance',
     items: [
-      { key: 'fees', label: 'Fees', icon: CreditCard },
-      { key: 'fee-record', label: 'Fee Record', icon: ClipboardList },
-      { key: 'invoices', label: 'Invoices', icon: FileText },
-      { key: 'payments', label: 'Payments', icon: WalletCards },
-      { key: 'receipts', label: 'Receipts', icon: ReceiptText },
+      { key: 'fees', label: 'Fees', icon: CreditCard, requiredPermission: 'fee_items.view' },
+      { key: 'fee-record', label: 'Fee Record', icon: ClipboardList, requiredPermission: 'fee_record.view' },
     ],
   },
   {
-    label: 'Management',
+    label: 'Administration',
     items: [
-      { key: 'reports', label: 'Reports', icon: BarChart3 },
-      { key: 'settings', label: 'Settings', icon: Settings },
+      { key: 'audit', label: 'Audit Trail', icon: History, requiredPermission: 'audit.view' },
     ],
   },
 ]
@@ -940,7 +930,7 @@ function StudentsPage({
   const canUpdateFeeAgreement = hasPermission(user, 'fee_agreements.update')
   const canEditFeeAgreement = canCreateFeeAgreement || canUpdateFeeAgreement
   const canViewFeeRecord = hasPermission(user, 'fee_record.view')
-  const canActivateFeeRecord = hasPermission(user, 'fee_record.generate') || hasPermission(user, 'fee_record.manage')
+  const canActivateFeeRecord = hasPermission(user, 'fee_record.generate')
   const canManageFeeRecord = hasPermission(user, 'fee_record.manage')
   const canViewPayments = hasPermission(user, 'payments.view')
   const canCreatePayments = hasPermission(user, 'payments.create')
@@ -2931,7 +2921,7 @@ function StudentsPage({
                 </div>
 
                 {!canActivateFeeRecord && (
-                  <Message tone="info">Activation is hidden for this role. Users need fee_record.generate or fee_record.manage.</Message>
+                  <Message tone="info">Activation is hidden for this role. Users need fee_record.generate.</Message>
                 )}
 
                 {showManualChargeForm && canManageFeeRecord && (
@@ -4052,21 +4042,6 @@ function FeesPage() {
   )
 }
 
-function PrototypePage({ title, label }: { title: string; label: string }) {
-  return (
-    <section className="page-stack">
-      <PageHeader eyebrow={label} title={title} description="This supporting module is reserved for a later delivery phase." />
-      <DataPanel eyebrow={label} title={title}>
-        <div className="empty-state compact">
-          <ClipboardList size={24} />
-          <strong>Module not included in this MVP</strong>
-          <p>The navigation and workspace are ready for future implementation.</p>
-        </div>
-      </DataPanel>
-    </section>
-  )
-}
-
 function FeeRecordSummaryPage({
   user,
   onUnauthorized,
@@ -4417,6 +4392,7 @@ function DashboardPage({
   setActivePage: (page: PageKey) => void
 }) {
   const canViewFeeRecord = hasPermission(user, 'fee_record.view')
+  const canViewStudents = hasPermission(user, 'students.view')
   const unavailableValue = apiState === 'loading' ? 'Loading...' : 'Unavailable'
   const metrics = useMemo<Array<{
     label: string
@@ -4467,12 +4443,12 @@ function DashboardPage({
         eyebrow="Overview"
         title="School overview"
         description="Review student accounts, fee agreements, collections, and outstanding balances."
-        action={
+        action={canViewStudents ? (
           <button className="primary-action compact" onClick={() => setActivePage('students')}>
             <GraduationCap size={18} />
             Open Students
           </button>
-        }
+        ) : undefined}
       />
 
       {apiState === 'demo' && (
@@ -4563,14 +4539,24 @@ function App() {
   const [focusedStudentId, setFocusedStudentId] = useState<number | null>(null)
   const [classReturnContext, setClassReturnContext] = useState<SchoolClassOption | null>(null)
 
-  const loadDashboard = async () => {
+  const loadDashboard = async (sessionUser: CurrentUser) => {
     setDashboard(null)
+
+    if (sessionUser.school_id === null) {
+      setApiState('live')
+      return
+    }
+
     setApiState('loading')
+    const today = new Date()
+    const params = new URLSearchParams({
+      school_id: String(sessionUser.school_id),
+      invoice_month: today.toISOString().slice(0, 7),
+      academic_year: String(today.getFullYear()),
+    })
 
     try {
-      const response = await apiRequest<DashboardResponse>(
-        '/dashboard/school?school_id=1&invoice_month=2026-07&academic_year=2026',
-      )
+      const response = await apiRequest<DashboardResponse>(`/dashboard/school?${params.toString()}`)
       setDashboard(response)
       setApiState('live')
     } catch {
@@ -4586,7 +4572,7 @@ function App() {
       const response = await apiRequest<{ user: CurrentUser }>('/me')
       setUser(response.user)
       setAuthState('authenticated')
-      void loadDashboard()
+      void loadDashboard(response.user)
     } catch (currentUserError) {
       if (currentUserError instanceof ApiError && currentUserError.status !== 401) {
         setApiState('demo')
@@ -4603,7 +4589,7 @@ function App() {
   const handleLogin = (loggedInUser: CurrentUser) => {
     setUser(loggedInUser)
     setAuthState('authenticated')
-    void loadDashboard()
+    void loadDashboard(loggedInUser)
   }
 
   const handleLogout = async () => {
@@ -4621,6 +4607,7 @@ function App() {
   const handleUnauthorized = () => {
     setUser(null)
     setAuthState('guest')
+    setActivePage('dashboard')
     setFocusedStudentId(null)
     setClassReturnContext(null)
   }
@@ -4643,12 +4630,23 @@ function App() {
   }
 
   const handleSelectPage = (page: PageKey) => {
+    if (!user || !navItems.some((item) => item.key === page && (!item.requiredPermission || hasPermission(user, item.requiredPermission)))) {
+      return
+    }
+
     setClassReturnContext(null)
     setFocusedStudentId(null)
     setActivePage(page)
   }
 
-  const pageTitle = navItems.find((item) => item.key === activePage)?.label ?? 'Dashboard'
+  const availableNavGroups = navGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => !item.requiredPermission || (user && hasPermission(user, item.requiredPermission))),
+    }))
+    .filter((group) => group.items.length > 0)
+  const availableNavItems = availableNavGroups.flatMap((group) => group.items)
+  const pageTitle = availableNavItems.find((item) => item.key === activePage)?.label ?? 'Dashboard'
 
   if (authState === 'checking') {
     return <SessionLoader logoSrc={misLogo} brand="Matahari School ERP" />
@@ -4660,9 +4658,18 @@ function App() {
 
   const renderPage = () => {
     if (activePage === 'calendar') {
+      if (user.school_id === null) {
+        return (
+          <section className="page-stack">
+            <PageHeader eyebrow="Overview" title="Calendar" />
+            <Message tone="info">A school must be selected before school-scoped calendar data can be loaded.</Message>
+          </section>
+        )
+      }
+
       return (
         <CalendarPage
-          schoolId={dashboard?.school.id ?? user.school_id ?? 1}
+          schoolId={dashboard?.school.id ?? user.school_id}
           permissions={user.permissions}
           onUnauthorized={handleUnauthorized}
         />
@@ -4708,27 +4715,18 @@ function App() {
       return <FeeRecordSummaryPage user={user} onUnauthorized={handleUnauthorized} onOpenStudent={openStudentDetail} />
     }
 
-    if (activePage === 'invoices') {
-      return <PrototypePage label="Invoices" title="Invoice Module" />
+    if (activePage === 'audit') {
+      return <AuditTrailPage onUnauthorized={handleUnauthorized} />
     }
 
-    if (activePage === 'payments') {
-      return <PrototypePage label="Payments" title="Payment Module" />
-    }
-
-    if (activePage === 'receipts') {
-      return <PrototypePage label="Receipts" title="Receipt Module" />
-    }
-
-    if (activePage === 'reports') {
-      return <PrototypePage label="Reports" title="Reports Module" />
-    }
-
-    if (activePage === 'settings') {
-      return <PrototypePage label="Settings" title="Settings Module" />
-    }
-
-    return <DashboardPage dashboard={dashboard} apiState={apiState} user={user} setActivePage={setActivePage} />
+    return (
+      <>
+        {user.school_id === null && (
+          <Message tone="info">A school must be selected before school-scoped dashboard data can be loaded.</Message>
+        )}
+        <DashboardPage dashboard={dashboard} apiState={apiState} user={user} setActivePage={setActivePage} />
+      </>
+    )
   }
 
   return (
@@ -4736,8 +4734,8 @@ function App() {
       brandLogo={misLogo}
       activePage={activePage}
       pageTitle={pageTitle}
-      contextText={dashboard?.school.name ?? 'School ERP'}
-      navGroups={navGroups}
+      contextText={dashboard?.school.name ?? (user.school_id === null ? 'School selection required' : 'School ERP')}
+      navGroups={availableNavGroups}
       apiState={apiState}
       user={user}
       onSelectPage={handleSelectPage}

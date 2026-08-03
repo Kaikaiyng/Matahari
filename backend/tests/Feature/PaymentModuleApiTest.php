@@ -2,9 +2,9 @@
 
 namespace Tests\Feature;
 
-use App\Models\FeeItem;
 use App\Models\FeeAgreement;
 use App\Models\FeeAgreementItem;
+use App\Models\FeeItem;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\Permission;
@@ -18,6 +18,28 @@ use Tests\TestCase;
 class PaymentModuleApiTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_payment_and_allocation_amounts_reject_excess_precision_and_database_overflow(): void
+    {
+        [$school, $student, $admin] = $this->schoolStudentAndUser(['payments.create']);
+        $tuition = $this->feeItem($school, 'TUITION', 'Tuition Fee');
+
+        foreach (['0.001', '100000000.00'] as $amount) {
+            $this->actingAs($admin)
+                ->postJson("/api/students/{$student->id}/payments", [
+                    'payment_method' => 'bank_transfer',
+                    'payment_date' => '2026-07-05',
+                    'amount' => $amount,
+                    'allocations' => [
+                        ['fee_item_id' => $tuition->id, 'amount' => $amount],
+                    ],
+                ])
+                ->assertUnprocessable()
+                ->assertJsonValidationErrors(['amount', 'allocations.0.amount']);
+        }
+
+        $this->assertDatabaseCount('payments', 0);
+    }
 
     public function test_school_admin_can_create_non_cash_payment_as_pending_verification(): void
     {
@@ -413,7 +435,7 @@ class PaymentModuleApiTest extends TestCase
     }
 
     /**
-     * @param array<int, string> $permissionSlugs
+     * @param  array<int, string>  $permissionSlugs
      * @return array{0: School, 1: Student, 2?: User}
      */
     private function schoolStudentAndUser(array $permissionSlugs): array
@@ -442,7 +464,7 @@ class PaymentModuleApiTest extends TestCase
     }
 
     /**
-     * @param array<int, string> $permissionSlugs
+     * @param  array<int, string>  $permissionSlugs
      */
     private function userWithPermissions(School $school, array $permissionSlugs): User
     {

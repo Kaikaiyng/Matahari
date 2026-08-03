@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Audit\AuditContextFactory;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreStudentRequest;
 use App\Http\Requests\UpdateStudentRequest;
 use App\Models\Student;
+use App\Services\Students\StudentMutationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -39,17 +41,17 @@ class StudentController extends Controller
         return response()->json(['data' => $students]);
     }
 
-    public function store(StoreStudentRequest $request): JsonResponse
-    {
+    public function store(
+        StoreStudentRequest $request,
+        StudentMutationService $service,
+        AuditContextFactory $contextFactory,
+    ): JsonResponse {
         $data = $request->validated();
         $schoolId = $this->schoolId($request, $data['school_id'] ?? null);
 
         unset($data['school_id']);
 
-        $student = Student::query()->create([
-            ...$data,
-            'school_id' => $schoolId,
-        ]);
+        $student = $service->create($schoolId, $data, $contextFactory->fromRequest($request));
 
         return response()->json(['student' => $this->studentDetail($student->load(['class', 'parents']))], 201);
     }
@@ -63,11 +65,19 @@ class StudentController extends Controller
         ]);
     }
 
-    public function update(UpdateStudentRequest $request, Student $student): JsonResponse
-    {
+    public function update(
+        UpdateStudentRequest $request,
+        Student $student,
+        StudentMutationService $service,
+        AuditContextFactory $contextFactory,
+    ): JsonResponse {
         $this->assertSchoolScope($request, $student);
 
-        $student->update($request->safe()->except('status'));
+        $student = $service->update(
+            $student,
+            $request->safe()->except('status'),
+            $contextFactory->fromRequest($request),
+        );
 
         return response()->json(['student' => $this->studentDetail($student->fresh(['class', 'parents']))]);
     }

@@ -84,12 +84,12 @@ class FeeRecordPaymentAllocationApiTest extends TestCase
         $noCharge = $this->charge($school, $student, expectedAmount: 0, billingStatus: 'no_charge', collectionStatus: 'paid');
 
         foreach ([
-            [$otherStudentCharge->id, 1000],
-            [$otherSchoolCharge->id, 1000],
-            [$smallCharge->id, 150],
-            [$noCharge->id, 1],
+            [$otherStudentCharge->id, 1000, 'allocations.0.fee_record_charge_id'],
+            [$otherSchoolCharge->id, 1000, 'allocations.0.fee_record_charge_id'],
+            [$smallCharge->id, 150, 'allocations'],
+            [$noCharge->id, 1, 'allocations'],
         ] as $case) {
-            [$chargeId, $amount] = $case;
+            [$chargeId, $amount, $errorKey] = $case;
 
             $this->actingAs($admin)
                 ->postJson("/api/students/{$student->id}/payments", [
@@ -106,7 +106,7 @@ class FeeRecordPaymentAllocationApiTest extends TestCase
                     ],
                 ])
                 ->assertUnprocessable()
-                ->assertJsonValidationErrors(['allocations']);
+                ->assertJsonValidationErrors([$errorKey]);
         }
     }
 
@@ -341,7 +341,7 @@ class FeeRecordPaymentAllocationApiTest extends TestCase
     }
 
     /**
-     * @param array<int, string> $permissionSlugs
+     * @param  array<int, string>  $permissionSlugs
      * @return array{0: School, 1: Student, 2: User}
      */
     private function schoolStudentAndUser(array $permissionSlugs): array
@@ -366,7 +366,7 @@ class FeeRecordPaymentAllocationApiTest extends TestCase
     }
 
     /**
-     * @param array<int, string> $permissionSlugs
+     * @param  array<int, string>  $permissionSlugs
      */
     private function userWithPermissions(School $school, array $permissionSlugs): User
     {

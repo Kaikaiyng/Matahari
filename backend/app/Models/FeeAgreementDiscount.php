@@ -19,6 +19,13 @@ class FeeAgreementDiscount extends Model
         'created_by',
     ];
 
+    protected function casts(): array
+    {
+        return [
+            'value' => 'decimal:2',
+        ];
+    }
+
     public function feeAgreement(): BelongsTo
     {
         return $this->belongsTo(FeeAgreement::class);

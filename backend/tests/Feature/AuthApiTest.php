@@ -7,11 +7,19 @@ use App\Models\School;
 use App\Models\Student;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\RateLimiter;
 use Tests\TestCase;
 
 class AuthApiTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function tearDown(): void
+    {
+        RateLimiter::clear('login:admin|127.0.0.1');
+
+        parent::tearDown();
+    }
 
     public function test_school_admin_can_login_and_read_current_user(): void
     {
@@ -92,6 +100,68 @@ class AuthApiTest extends TestCase
             ->assertUnprocessable()
             ->assertJsonPath('message', 'The username or password is incorrect.')
             ->assertJsonValidationErrors(['username']);
+    }
+
+    public function test_login_is_throttled_by_normalized_username_and_ip(): void
+    {
+        $this->seed();
+
+        foreach (range(1, 5) as $attempt) {
+            $this->postJson('/api/login', [
+                'username' => ' ADMIN ',
+                'password' => 'wrong-password',
+            ])->assertUnprocessable();
+        }
+
+        $this->assertSame(5, RateLimiter::attempts('login:admin|127.0.0.1'));
+
+        $this->postJson('/api/login', [
+            'username' => 'admin',
+            'password' => 'wrong-password',
+        ])
+            ->assertTooManyRequests()
+            ->assertJsonMissingPath('errors.username');
+    }
+
+    public function test_successful_login_clears_previous_failed_attempts(): void
+    {
+        $this->seed();
+
+        foreach (range(1, 4) as $attempt) {
+            $this->postJson('/api/login', [
+                'username' => 'admin',
+                'password' => 'wrong-password',
+            ])->assertUnprocessable();
+        }
+
+        $this->postJson('/api/login', [
+            'username' => 'admin',
+            'password' => 'password',
+        ])->assertOk();
+
+        $this->postJson('/api/logout')->assertOk();
+
+        foreach (range(1, 5) as $attempt) {
+            $this->postJson('/api/login', [
+                'username' => 'admin',
+                'password' => 'wrong-password',
+            ])->assertUnprocessable();
+        }
+    }
+
+    public function test_existing_session_is_invalidated_when_account_becomes_inactive(): void
+    {
+        $this->seed();
+
+        $this->postJson('/api/login', [
+            'username' => 'admin',
+            'password' => 'password',
+        ])->assertOk();
+
+        User::query()->where('username', 'admin')->update(['status' => 'inactive']);
+
+        $this->getJson('/api/me')->assertUnauthorized();
+        $this->getJson('/api/me')->assertUnauthorized();
     }
 
     public function test_unauthenticated_students_api_returns_401(): void

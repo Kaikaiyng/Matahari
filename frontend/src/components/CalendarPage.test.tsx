@@ -54,7 +54,7 @@ function json(data: unknown, status = 200) {
 
 function installFetchMock() {
   vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
-    const url = new URL(String(input))
+    const url = new URL(String(input), window.location.origin)
     const method = init?.method ?? 'GET'
 
     if (url.pathname.endsWith('/calendar-events') && method === 'GET') {
@@ -110,6 +110,7 @@ describe('CalendarPage', () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(new Date('2026-07-19T04:00:00Z'))
+    document.cookie = 'XSRF-TOKEN=calendar-test; path=/'
     installFetchMock()
   })
 
@@ -319,7 +320,7 @@ describe('CalendarPage', () => {
       starts_at: '2026-07-26T00:00:00.000Z',
     }
     vi.mocked(globalThis.fetch).mockImplementation((input) => {
-      const url = new URL(String(input))
+      const url = new URL(String(input), window.location.origin)
       return json({
         data: url.searchParams.get('start') === '2026-07-26' ? [boundaryEvent] : [utcDatedEvent],
       })
@@ -347,7 +348,7 @@ describe('CalendarPage', () => {
 
   it('clears prior-school events immediately and keeps them cleared when reload fails', async () => {
     vi.mocked(globalThis.fetch).mockImplementation((input) => {
-      const url = new URL(String(input))
+      const url = new URL(String(input), window.location.origin)
       if (url.searchParams.get('school_id') === '8') {
         return json({ message: 'Unable to load the new school calendar.' }, 422)
       }
@@ -438,7 +439,7 @@ describe('CalendarPage', () => {
   it('does not let an older GET replace a successful mutation result', async () => {
     let resolveGet!: (response: Response) => void
     vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
-      const url = new URL(String(input))
+      const url = new URL(String(input), window.location.origin)
       if (init?.method === 'POST') {
         const body = JSON.parse(String(init.body))
         return json({ calendar_event: { ...appointment, ...body, id: 50 } }, 201)
@@ -471,7 +472,7 @@ describe('CalendarPage', () => {
 
   it('keeps a future month empty when a new event defaults outside its visible range', async () => {
     vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
-      const url = new URL(String(input))
+      const url = new URL(String(input), window.location.origin)
       const method = init?.method ?? 'GET'
       if (method === 'GET') {
         return json({
@@ -503,7 +504,7 @@ describe('CalendarPage', () => {
 
   it('removes the sole visible event when an edit moves it outside the visible range', async () => {
     vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
-      const url = new URL(String(input))
+      const url = new URL(String(input), window.location.origin)
       const method = init?.method ?? 'GET'
       if (method === 'GET') return json({ data: [appointment] })
       if (url.pathname.endsWith('/calendar-events/1') && method === 'PATCH') {
@@ -534,7 +535,7 @@ describe('CalendarPage', () => {
     }
     let resolvePatch!: (response: Response) => void
     vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
-      const url = new URL(String(input))
+      const url = new URL(String(input), window.location.origin)
       if (init?.method === 'PATCH') {
         return new Promise<Response>((resolve) => {
           resolvePatch = resolve
@@ -570,7 +571,7 @@ describe('CalendarPage', () => {
 
   it('preserves edited values and shows API validation errors after a failed update', async () => {
     vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
-      const url = new URL(String(input))
+      const url = new URL(String(input), window.location.origin)
       if (url.pathname.endsWith('/calendar-events/1') && init?.method === 'PATCH') {
         return json(
           {
@@ -633,7 +634,7 @@ describe('CalendarPage', () => {
   it('waits for one successful delete before removing the event', async () => {
     let resolveDelete!: (response: Response) => void
     vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
-      const url = new URL(String(input))
+      const url = new URL(String(input), window.location.origin)
       if (url.pathname.endsWith('/calendar-events/1') && init?.method === 'DELETE') {
         return new Promise<Response>((resolve) => {
           resolveDelete = resolve
@@ -666,7 +667,7 @@ describe('CalendarPage', () => {
 
   it('keeps the event and confirmation visible after a failed delete', async () => {
     vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
-      const url = new URL(String(input))
+      const url = new URL(String(input), window.location.origin)
       if (url.pathname.endsWith('/calendar-events/1') && init?.method === 'DELETE') {
         return json({ message: 'You cannot delete this event.' }, 403)
       }

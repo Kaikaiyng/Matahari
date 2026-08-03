@@ -17,6 +17,9 @@ const currentUser = {
     'calendar.delete',
     'students.view',
     'students.create',
+    'parents.view',
+    'fee_items.view',
+    'fee_agreements.view',
     'fee_agreements.create',
     'fee_agreements.update',
     'fee_record.view',
@@ -31,6 +34,13 @@ const currentUser = {
     'receipts.void',
     'receipts.print',
   ],
+}
+
+const superAdminUser = {
+  ...currentUser,
+  school_id: null,
+  roles: ['super-admin'],
+  permissions: [...currentUser.permissions, 'audit.view'],
 }
 
 const schoolAdminDialogUser = {
@@ -275,13 +285,21 @@ function json(data: unknown, status = 200) {
   )
 }
 
+function noContent() {
+  return Promise.resolve(new Response(null, { status: 204 }))
+}
+
 function installApiMock() {
   vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
-    const url = new URL(String(input))
+    const url = new URL(String(input), window.location.origin)
 
+    if (url.pathname.endsWith('/csrf-cookie')) return noContent()
     if (url.pathname.endsWith('/me')) return json({ user: currentUser })
     if (url.pathname.endsWith('/dashboard/school')) return json(dashboard)
     if (url.pathname.endsWith('/calendar-events')) return json({ data: [] })
+    if (url.pathname.endsWith('/audit-logs')) {
+      return json({ data: [], meta: { per_page: 50, next_cursor: null, previous_cursor: null } })
+    }
     if (
       url.pathname.endsWith('/students/1/fee-agreements') &&
       init?.method === 'POST'
@@ -320,14 +338,14 @@ function installApiMock() {
   })
 }
 
-function installApiUser(user: typeof currentUser) {
+function installApiUser(user: Omit<typeof currentUser, 'school_id'> & { school_id: number | null }) {
   const fetchMock = vi.mocked(globalThis.fetch)
   const installedImplementation = fetchMock.getMockImplementation()
 
   if (!installedImplementation) throw new Error('API mock is not installed')
 
   fetchMock.mockImplementation((input, init) => {
-    const url = new URL(String(input))
+    const url = new URL(String(input), window.location.origin)
     if (url.pathname.endsWith('/me')) return json({ user })
     return installedImplementation(input, init)
   })
@@ -367,8 +385,9 @@ describe('demo shell', () => {
   it('uses empty username credentials and submits the username login payload', async () => {
     const user = userEvent.setup()
     vi.mocked(globalThis.fetch).mockImplementation((input) => {
-      const url = new URL(String(input))
+      const url = new URL(String(input), window.location.origin)
 
+      if (url.pathname.endsWith('/csrf-cookie')) return noContent()
       if (url.pathname.endsWith('/me')) return json({ message: 'Unauthenticated.' }, 401)
       if (url.pathname.endsWith('/login')) return json({ user: currentUser })
 
@@ -399,8 +418,9 @@ describe('demo shell', () => {
   it('shows an invalid-credentials message only once', async () => {
     const user = userEvent.setup()
     vi.mocked(globalThis.fetch).mockImplementation((input) => {
-      const url = new URL(String(input))
+      const url = new URL(String(input), window.location.origin)
 
+      if (url.pathname.endsWith('/csrf-cookie')) return noContent()
       if (url.pathname.endsWith('/me')) return json({ message: 'Unauthenticated.' }, 401)
       if (url.pathname.endsWith('/login')) {
         return json(
@@ -441,7 +461,7 @@ describe('demo shell', () => {
     if (!installedImplementation) throw new Error('API mock is not installed')
 
     fetchMock.mockImplementation((input, init) => {
-      const url = new URL(String(input))
+      const url = new URL(String(input), window.location.origin)
 
       if (url.pathname.endsWith('/dashboard/school')) {
         return new Promise<Response>(() => undefined)
@@ -469,7 +489,7 @@ describe('demo shell', () => {
     if (!installedImplementation) throw new Error('API mock is not installed')
 
     fetchMock.mockImplementation((input, init) => {
-      const url = new URL(String(input))
+      const url = new URL(String(input), window.location.origin)
 
       if (url.pathname.endsWith('/dashboard/school')) {
         return json({ message: 'Dashboard unavailable.' }, 500)
@@ -503,7 +523,7 @@ describe('demo shell', () => {
     expect(await screen.findByRole('heading', { name: 'Admin Fee Record' })).toBeInTheDocument()
   })
 
-  it('shows the complete sidebar including display-only modules', async () => {
+  it('shows only verified modules allowed by the current user permissions', async () => {
     await renderAuthenticatedApp()
 
     const navigation = screen.getByRole('navigation', { name: 'Main navigation' })
@@ -515,16 +535,12 @@ describe('demo shell', () => {
       'Parents',
       'Fees',
       'Fee Record',
-      'Invoices',
-      'Payments',
-      'Receipts',
-      'Reports',
-      'Settings',
     ])
     expect(within(navigation).getByText('Overview')).toBeInTheDocument()
     expect(within(navigation).getByText('People')).toBeInTheDocument()
     expect(within(navigation).getByText('Finance')).toBeInTheDocument()
-    expect(within(navigation).getByText('Management')).toBeInTheDocument()
+    expect(within(navigation).queryByText('Management')).not.toBeInTheDocument()
+    expect(within(navigation).queryByRole('button', { name: 'Audit Trail' })).not.toBeInTheDocument()
   })
 
   it('opens Calendar with the active school context', async () => {
@@ -537,27 +553,27 @@ describe('demo shell', () => {
     await waitFor(() =>
       expect(
         vi.mocked(globalThis.fetch).mock.calls.some(([input]) => {
-          const url = new URL(String(input))
+          const url = new URL(String(input), window.location.origin)
           return url.pathname.endsWith('/calendar-events') && url.searchParams.get('school_id') === '1'
         }),
       ).toBe(true),
     )
   })
 
-  it.each([
-    ['Invoices', 'Invoice Module'],
-    ['Payments', 'Payment Module'],
-    ['Receipts', 'Receipt Module'],
-    ['Reports', 'Reports Module'],
-    ['Settings', 'Settings Module'],
-  ])('opens %s as a not-yet-developed display page', async (destination, pageTitle) => {
+  it('shows Audit Trail only to an authorized user and does not assume school 1 for a global account', async () => {
     const user = userEvent.setup()
+    installApiUser(superAdminUser)
     await renderAuthenticatedApp()
 
-    await user.click(screen.getByRole('button', { name: destination }))
+    expect(screen.getByText('A school must be selected before school-scoped dashboard data can be loaded.')).toBeInTheDocument()
+    expect(
+      vi.mocked(globalThis.fetch).mock.calls.some(([input]) => new URL(String(input), window.location.origin).pathname.endsWith('/dashboard/school')),
+    ).toBe(false)
 
-    expect((await screen.findAllByRole('heading', { name: pageTitle })).length).toBeGreaterThan(0)
-    expect(screen.getByText('Module not included in this MVP')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Audit Trail' }))
+
+    expect(await screen.findByRole('heading', { name: 'Audit Trail', level: 2 })).toBeInTheDocument()
+    expect(screen.getByText('No audit events found')).toBeInTheDocument()
   })
 
   it('uses a dedicated filter toolbar and data panel on Students', async () => {
@@ -607,7 +623,7 @@ describe('demo shell', () => {
 
     const fetchMock = vi.mocked(globalThis.fetch)
     const studentListRequestsBefore = fetchMock.mock.calls.filter(([input]) => {
-      const url = new URL(String(input))
+      const url = new URL(String(input), window.location.origin)
       return url.pathname.endsWith('/students') && url.searchParams.has('status')
     }).length
 
@@ -616,7 +632,7 @@ describe('demo shell', () => {
     expect(screen.getByRole('button', { name: 'Back to MA1' })).toBeInTheDocument()
     expect(
       fetchMock.mock.calls.filter(([input]) => {
-        const url = new URL(String(input))
+        const url = new URL(String(input), window.location.origin)
         return url.pathname.endsWith('/students') && url.searchParams.has('status')
       }),
     ).toHaveLength(studentListRequestsBefore)
@@ -688,7 +704,7 @@ describe('demo shell', () => {
     if (!installedImplementation) throw new Error('API mock is not installed')
 
     fetchMock.mockImplementation((input, init) => {
-      const url = new URL(String(input))
+      const url = new URL(String(input), window.location.origin)
       if (url.pathname.endsWith('/students') && init?.method === 'POST') {
         return json(
           {
@@ -893,7 +909,7 @@ describe('demo shell', () => {
     if (!installedImplementation) throw new Error('API mock is not installed')
 
     fetchMock.mockImplementation((input, init) => {
-      const url = new URL(String(input))
+      const url = new URL(String(input), window.location.origin)
 
       if (url.pathname.endsWith('/students/1/payments') && init?.method !== 'POST') {
         return json({ data: [{ ...pendingPayment, status }] })
@@ -924,7 +940,7 @@ describe('demo shell', () => {
     if (!installedImplementation) throw new Error('API mock is not installed')
 
     fetchMock.mockImplementation((input, init) => {
-      const url = new URL(String(input))
+      const url = new URL(String(input), window.location.origin)
 
       if (url.pathname.endsWith('/students/1/payments') && init?.method !== 'POST') {
         return json({
@@ -982,7 +998,7 @@ describe('demo shell', () => {
     if (!installedImplementation) throw new Error('API mock is not installed')
 
     fetchMock.mockImplementation((input, init) => {
-      const url = new URL(String(input))
+      const url = new URL(String(input), window.location.origin)
       if (url.pathname.endsWith('/payments/11/verify') && init?.method === 'POST') {
         return json({ payment: { ...pendingPayment, status: 'verified' } })
       }
@@ -1024,7 +1040,7 @@ describe('demo shell', () => {
     if (!installedImplementation) throw new Error('API mock is not installed')
 
     fetchMock.mockImplementation((input, init) => {
-      const url = new URL(String(input))
+      const url = new URL(String(input), window.location.origin)
       if (url.pathname.endsWith('/payments/11/void') && init?.method === 'POST') {
         return json({ payment: { ...pendingPayment, status: 'voided' } })
       }
@@ -1057,7 +1073,7 @@ describe('demo shell', () => {
     if (!installedImplementation) throw new Error('API mock is not installed')
 
     fetchMock.mockImplementation((input, init) => {
-      const url = new URL(String(input))
+      const url = new URL(String(input), window.location.origin)
       if (url.pathname.endsWith('/receipts/21/void') && init?.method === 'POST') {
         return json({ receipt: { ...issuedReceipt, status: 'voided' } })
       }
@@ -1090,7 +1106,7 @@ describe('demo shell', () => {
     if (!installedImplementation) throw new Error('API mock is not installed')
 
     fetchMock.mockImplementation((input, init) => {
-      const url = new URL(String(input))
+      const url = new URL(String(input), window.location.origin)
 
       if (url.pathname.endsWith('/students/1/fee-record/manual-charges') && init?.method === 'POST') {
         return json({ data: outstandingUniformCharge })
@@ -1143,7 +1159,7 @@ describe('demo shell', () => {
     if (!installedImplementation) throw new Error('API mock is not installed')
 
     fetchMock.mockImplementation((input, init) => {
-      const url = new URL(String(input))
+      const url = new URL(String(input), window.location.origin)
 
       if (url.pathname.endsWith('/students/1/fee-record/manual-charges') && init?.method === 'POST') {
         return json(
@@ -1185,7 +1201,7 @@ describe('demo shell', () => {
     if (!installedImplementation) throw new Error('API mock is not installed')
 
     fetchMock.mockImplementation((input, init) => {
-      const url = new URL(String(input))
+      const url = new URL(String(input), window.location.origin)
 
       if (url.pathname.endsWith('/me')) {
         return json({
@@ -1259,7 +1275,7 @@ describe('demo shell', () => {
     if (!installedImplementation) throw new Error('API mock is not installed')
 
     fetchMock.mockImplementation((input, init) => {
-      const url = new URL(String(input))
+      const url = new URL(String(input), window.location.origin)
 
       if (url.pathname.endsWith('/students/1/fee-record/outstanding')) {
         return json({ data: [outstandingUniformCharge] })
@@ -1310,7 +1326,7 @@ describe('demo shell', () => {
     if (!installedImplementation) throw new Error('API mock is not installed')
 
     fetchMock.mockImplementation((input, init) => {
-      const url = new URL(String(input))
+      const url = new URL(String(input), window.location.origin)
 
       if (url.pathname.endsWith('/students/1/fee-record/outstanding')) {
         return json({ data: [outstandingUniformCharge] })
@@ -1436,7 +1452,7 @@ describe('demo shell', () => {
     if (!installedImplementation) throw new Error('API mock is not installed')
 
     fetchMock.mockImplementation((input, init) => {
-      const url = new URL(String(input))
+      const url = new URL(String(input), window.location.origin)
       if (
         url.pathname.endsWith('/students/1/fee-agreements') &&
         init?.method !== 'POST'
@@ -1476,7 +1492,7 @@ describe('demo shell', () => {
     if (!installedImplementation) throw new Error('API mock is not installed')
 
     fetchMock.mockImplementation((input, init) => {
-      const url = new URL(String(input))
+      const url = new URL(String(input), window.location.origin)
       if (url.pathname.endsWith('/fee-items')) {
         return new Promise<Response>(() => undefined)
       }

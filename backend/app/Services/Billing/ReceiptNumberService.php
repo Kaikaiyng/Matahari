@@ -8,9 +8,7 @@ use App\Models\User;
 
 class ReceiptNumberService
 {
-    public function __construct(private readonly ReceiptGenerationService $receipts)
-    {
-    }
+    public function __construct(private readonly ReceiptGenerationService $receipts) {}
 
     public function generateForPayment(Payment $payment, ?int $generatedBy = null): Receipt
     {

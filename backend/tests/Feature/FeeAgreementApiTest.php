@@ -116,6 +116,51 @@ class FeeAgreementApiTest extends TestCase
             ->count());
     }
 
+    public function test_supersede_is_blocked_when_old_agreement_has_future_charge_history(): void
+    {
+        [$school, $student, $admin] = $this->schoolStudentAndUser([
+            'fee_agreements.create',
+            'fee_agreements.update',
+            'fee_record.generate',
+        ]);
+        $tuition = $this->feeItem($school, 'TUITION', 'Tuition Fee', 'mandatory');
+        $misc = $this->feeItem($school, 'MISC', 'Misc Fee', 'mandatory');
+
+        $this->actingAs($admin)
+            ->postJson("/api/students/{$student->id}/fee-agreements", [
+                'academic_year' => '2026',
+                'payment_plan' => 'monthly',
+                'effective_from' => '2026-01-01',
+                'items' => [
+                    ['fee_item_id' => $tuition->id, 'amount' => 800],
+                    ['fee_item_id' => $misc->id, 'amount' => 90],
+                ],
+            ])->assertCreated();
+
+        $current = FeeAgreement::query()->firstOrFail();
+
+        $this->actingAs($admin)
+            ->postJson("/api/students/{$student->id}/fee-record/activate", ['academic_year' => '2026'])
+            ->assertCreated();
+
+        $this->actingAs($admin)
+            ->postJson("/api/fee-agreements/{$current->id}/supersede", [
+                'effective_from' => '2026-06-01',
+                'items' => [
+                    ['fee_item_id' => $tuition->id, 'amount' => 820],
+                    ['fee_item_id' => $misc->id, 'amount' => 90],
+                ],
+            ])
+            ->assertConflict()
+            ->assertJsonPath('message', 'Fee Agreement cannot be superseded while charge history exists on or after the new effective month.');
+
+        $current->refresh();
+        $this->assertTrue($current->is_current);
+        $this->assertSame('active', $current->status);
+        $this->assertDatabaseCount('fee_agreements', 1);
+        $this->assertDatabaseCount('fee_record_charges', 24);
+    }
+
     public function test_superseding_fee_agreement_stores_item_billing_configuration(): void
     {
         [$school, $student, $admin] = $this->schoolStudentAndUser(['fee_agreements.create', 'fee_agreements.update']);
@@ -207,6 +252,110 @@ class FeeAgreementApiTest extends TestCase
             ]);
     }
 
+    public function test_fee_agreement_rejects_ambiguous_year_duplicate_items_and_invalid_money(): void
+    {
+        [$school, $student, $admin] = $this->schoolStudentAndUser(['fee_agreements.create']);
+        $tuition = $this->feeItem($school, 'TUITION', 'Tuition Fee', 'mandatory');
+        $misc = $this->feeItem($school, 'MISC', 'Misc Fee', 'mandatory');
+
+        foreach ([
+            ['academic_year' => '2026/2027', 'items' => [
+                ['fee_item_id' => $tuition->id, 'amount' => 800],
+                ['fee_item_id' => $misc->id, 'amount' => 90],
+            ], 'error' => 'academic_year'],
+            ['academic_year' => '2026', 'items' => [
+                ['fee_item_id' => $tuition->id, 'amount' => 800],
+                ['fee_item_id' => $tuition->id, 'amount' => 800],
+                ['fee_item_id' => $misc->id, 'amount' => 90],
+            ], 'error' => 'items.1.fee_item_id'],
+            ['academic_year' => '2026', 'items' => [
+                ['fee_item_id' => $tuition->id, 'amount' => '800.001'],
+                ['fee_item_id' => $misc->id, 'amount' => 90],
+            ], 'error' => 'items.0.amount'],
+            ['academic_year' => '2026', 'items' => [
+                ['fee_item_id' => $tuition->id, 'amount' => '100000000.00'],
+                ['fee_item_id' => $misc->id, 'amount' => 90],
+            ], 'error' => 'items.0.amount'],
+        ] as $case) {
+            $this->actingAs($admin)
+                ->postJson("/api/students/{$student->id}/fee-agreements", [
+                    'academic_year' => $case['academic_year'],
+                    'payment_plan' => 'monthly',
+                    'effective_from' => '2026-01-01',
+                    'items' => $case['items'],
+                ])
+                ->assertUnprocessable()
+                ->assertJsonValidationErrors([$case['error']]);
+        }
+
+        $this->assertDatabaseCount('fee_agreements', 0);
+    }
+
+    public function test_fee_agreement_rejects_cross_school_fee_item_without_server_error(): void
+    {
+        [$school, $student, $admin] = $this->schoolStudentAndUser(['fee_agreements.create']);
+        $tuition = $this->feeItem($school, 'TUITION', 'Tuition Fee', 'mandatory');
+        $misc = $this->feeItem($school, 'MISC', 'Misc Fee', 'mandatory');
+        $otherSchool = School::query()->create([
+            'code' => 'OTH',
+            'name' => 'Other School',
+            'receipt_prefix' => 'OTH',
+            'invoice_prefix' => 'OTH-INV',
+            'status' => 'active',
+        ]);
+        $otherItem = $this->feeItem($otherSchool, 'UNIFORM', 'Uniform', 'optional');
+
+        $this->actingAs($admin)
+            ->postJson("/api/students/{$student->id}/fee-agreements", [
+                'academic_year' => '2026',
+                'payment_plan' => 'monthly',
+                'effective_from' => '2026-01-01',
+                'items' => [
+                    ['fee_item_id' => $tuition->id, 'amount' => 800],
+                    ['fee_item_id' => $misc->id, 'amount' => 90],
+                    ['fee_item_id' => $otherItem->id, 'amount' => 120],
+                ],
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['items.2.fee_item_id']);
+
+        $this->assertDatabaseCount('fee_agreements', 0);
+    }
+
+    public function test_selected_discount_codes_and_percentage_are_strictly_validated(): void
+    {
+        [$school, $student, $admin] = $this->schoolStudentAndUser(['fee_agreements.create']);
+        $tuition = $this->feeItem($school, 'TUITION', 'Tuition Fee', 'mandatory');
+        $misc = $this->feeItem($school, 'MISC', 'Misc Fee', 'mandatory');
+
+        $this->actingAs($admin)
+            ->postJson("/api/students/{$student->id}/fee-agreements", [
+                'academic_year' => '2026',
+                'payment_plan' => 'monthly',
+                'effective_from' => '2026-01-01',
+                'items' => [
+                    ['fee_item_id' => $tuition->id, 'amount' => 800],
+                    ['fee_item_id' => $misc->id, 'amount' => 90],
+                ],
+                'discounts' => [[
+                    'discount_label' => 'Invalid discount',
+                    'discount_type' => 'percentage',
+                    'scope' => 'selected_fee_items',
+                    'value' => 101,
+                    'remark' => 'Test validation.',
+                    'selected_fee_codes' => ['UNKNOWN', 'UNKNOWN'],
+                ]],
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors([
+                'discounts.0.value',
+                'discounts.0.selected_fee_codes.1',
+                'discounts.0.selected_fee_codes',
+            ]);
+
+        $this->assertDatabaseCount('fee_agreements', 0);
+    }
+
     public function test_finance_user_can_view_but_cannot_create_fee_agreement(): void
     {
         [$school, $student, $finance] = $this->schoolStudentAndUser(['fee_agreements.view']);
@@ -226,7 +375,7 @@ class FeeAgreementApiTest extends TestCase
     }
 
     /**
-     * @param array<int, string> $permissionSlugs
+     * @param  array<int, string>  $permissionSlugs
      * @return array{0: School, 1: Student, 2: User}
      */
     private function schoolStudentAndUser(array $permissionSlugs): array

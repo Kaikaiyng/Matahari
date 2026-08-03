@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AuditLogController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CalendarEventController;
 use App\Http\Controllers\Api\DashboardController;
@@ -15,6 +16,7 @@ use App\Http\Controllers\Api\StudentFeeAgreementController;
 use App\Http\Controllers\Api\StudentStatusController;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
 
@@ -22,20 +24,29 @@ $sessionMiddleware = [
     EncryptCookies::class,
     AddQueuedCookiesToResponse::class,
     StartSession::class,
+    PreventRequestForgery::class,
 ];
 
 Route::middleware($sessionMiddleware)->group(function (): void {
+    Route::get('/csrf-cookie', fn () => response()->noContent());
     Route::post('/login', [AuthController::class, 'login']);
 
-    Route::middleware('auth')->group(function (): void {
+    Route::middleware(['auth', 'active'])->group(function (): void {
         Route::get('/me', [AuthController::class, 'me']);
         Route::post('/logout', [AuthController::class, 'logout']);
     });
 });
 
-Route::middleware([...$sessionMiddleware, 'auth'])->group(function (): void {
-    Route::get('/dashboard/school', [DashboardController::class, 'school']);
-    Route::post('/invoices/generate-monthly', [InvoiceGenerationController::class, 'store']);
+Route::middleware([...$sessionMiddleware, 'auth', 'active'])->group(function (): void {
+    Route::get('/dashboard/school', [DashboardController::class, 'school'])
+        ->middleware('permission:fee_record.view');
+    Route::post('/invoices/generate-monthly', [InvoiceGenerationController::class, 'store'])
+        ->middleware('permission:fee_record.generate');
+
+    Route::get('/audit-logs', [AuditLogController::class, 'index'])
+        ->middleware('permission:audit.view');
+    Route::get('/audit-logs/{auditLog}', [AuditLogController::class, 'show'])
+        ->middleware('permission:audit.view');
 
     Route::get('/calendar-events', [CalendarEventController::class, 'index'])
         ->middleware('permission:calendar.view');

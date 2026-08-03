@@ -2,6 +2,13 @@
 
 namespace App\Services\Billing;
 
+use App\Audit\AuditAction;
+use App\Audit\AuditContext;
+use App\Audit\AuditContextFactory;
+use App\Audit\AuditEvent;
+use App\Audit\AuditModule;
+use App\Audit\AuditSubject;
+use App\Contracts\AuditLoggerContract;
 use App\Models\Payment;
 use App\Models\Receipt;
 use App\Models\ReceiptSequence;
@@ -13,12 +20,21 @@ use Illuminate\Validation\ValidationException;
 
 class ReceiptGenerationService
 {
+    public function __construct(
+        private readonly AuditLoggerContract $auditLogger,
+        private readonly AuditContextFactory $contextFactory,
+    ) {}
+
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
-    public function generate(Payment $payment, array $data, User $issuedBy): Receipt
-    {
-        return DB::transaction(function () use ($payment, $data, $issuedBy): Receipt {
+    public function generate(
+        Payment $payment,
+        array $data,
+        User $issuedBy,
+        ?AuditContext $auditContext = null,
+    ): Receipt {
+        return DB::transaction(function () use ($payment, $data, $issuedBy, $auditContext): Receipt {
             $lockedPayment = Payment::query()
                 ->with(['school', 'student', 'allocations'])
                 ->whereKey($payment->id)
@@ -68,13 +84,31 @@ class ReceiptGenerationService
                 ]);
             }
 
-            return $receipt->refresh()->load(['items', 'issuedBy', 'voidedBy']);
+            $receipt = $receipt->refresh()->load(['items', 'issuedBy', 'voidedBy']);
+            $this->auditLogger->record(new AuditEvent(
+                action: AuditAction::ReceiptIssued,
+                module: AuditModule::Receipts,
+                schoolId: $receipt->school_id,
+                subjectType: AuditSubject::Receipt,
+                subjectId: $receipt->id,
+                newValues: $this->receiptAuditValues($receipt),
+                metadata: [
+                    'payment_id' => $receipt->payment_id,
+                    'student_id' => $receipt->student_id,
+                ],
+            ), $auditContext ?? $this->contextFactory->system());
+
+            return $receipt;
         });
     }
 
-    public function void(Receipt $receipt, string $voidReason, User $voidedBy): Receipt
-    {
-        return DB::transaction(function () use ($receipt, $voidReason, $voidedBy): Receipt {
+    public function void(
+        Receipt $receipt,
+        string $voidReason,
+        User $voidedBy,
+        ?AuditContext $auditContext = null,
+    ): Receipt {
+        return DB::transaction(function () use ($receipt, $voidReason, $voidedBy, $auditContext): Receipt {
             $lockedReceipt = Receipt::query()
                 ->whereKey($receipt->id)
                 ->lockForUpdate()
@@ -94,7 +128,28 @@ class ReceiptGenerationService
                 'void_reason' => $voidReason,
             ]);
 
-            return $lockedReceipt->refresh()->load(['items', 'issuedBy', 'voidedBy']);
+            $lockedReceipt = $lockedReceipt->refresh()->load(['items', 'issuedBy', 'voidedBy']);
+            $this->auditLogger->record(new AuditEvent(
+                action: AuditAction::ReceiptVoided,
+                module: AuditModule::Receipts,
+                schoolId: $lockedReceipt->school_id,
+                subjectType: AuditSubject::Receipt,
+                subjectId: $lockedReceipt->id,
+                oldValues: ['status' => 'issued'],
+                newValues: [
+                    'status' => $lockedReceipt->status,
+                    'active_payment_id' => $lockedReceipt->active_payment_id,
+                    'voided_by' => $lockedReceipt->voided_by,
+                    'voided_at' => $lockedReceipt->voided_at?->toISOString(),
+                ],
+                metadata: [
+                    'payment_id' => $lockedReceipt->payment_id,
+                    'student_id' => $lockedReceipt->student_id,
+                ],
+                reason: $voidReason,
+            ), $auditContext ?? $this->contextFactory->system());
+
+            return $lockedReceipt;
         });
     }
 
@@ -185,5 +240,28 @@ class ReceiptGenerationService
             ->where('series', $series)
             ->lockForUpdate()
             ->firstOrFail();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function receiptAuditValues(Receipt $receipt): array
+    {
+        return [
+            'receipt_no' => $receipt->receipt_no,
+            'payment_id' => $receipt->payment_id,
+            'student_id' => $receipt->student_id,
+            'receipt_date' => $receipt->receipt_date->toDateString(),
+            'amount' => $receipt->amount,
+            'status' => $receipt->status,
+            'issued_by' => $receipt->issued_by,
+            'item_ids' => $receipt->items->pluck('id')->values()->all(),
+            'items' => $receipt->items->map(fn ($item) => [
+                'id' => $item->id,
+                'payment_allocation_id' => $item->payment_allocation_id,
+                'fee_code' => $item->fee_code,
+                'amount' => $item->amount,
+            ])->values()->all(),
+        ];
     }
 }

@@ -2,28 +2,45 @@
 
 namespace App\Services\Billing;
 
+use App\Audit\AuditAction;
+use App\Audit\AuditContext;
+use App\Audit\AuditContextFactory;
+use App\Audit\AuditEvent;
+use App\Audit\AuditModule;
+use App\Audit\AuditSubject;
+use App\Contracts\AuditLoggerContract;
 use App\Models\FeeAgreement;
 use App\Models\FeeItem;
 use App\Models\FeeRecordCharge;
 use App\Models\Student;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class FeeRecordManualChargeService
 {
+    public function __construct(
+        private readonly AuditLoggerContract $auditLogger,
+        private readonly AuditContextFactory $contextFactory,
+    ) {}
+
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
-    public function create(Student $student, array $data): FeeRecordCharge
-    {
-        return DB::transaction(function () use ($student, $data): FeeRecordCharge {
+    public function create(
+        Student $student,
+        array $data,
+        User $createdBy,
+        ?AuditContext $auditContext = null,
+    ): FeeRecordCharge {
+        return DB::transaction(function () use ($student, $data, $createdBy, $auditContext): FeeRecordCharge {
             $academicYear = (string) $data['academic_year'];
             $agreement = $this->activeAgreement($student, $academicYear);
             $feeItem = $this->feeItem($student, $data['fee_item_id'] ?? null);
             $feeCode = trim((string) ($data['fee_code'] ?? '')) ?: $feeItem?->code;
             $expectedAmount = round((float) $data['expected_amount'], 2);
 
-            return FeeRecordCharge::query()->create([
+            $charge = FeeRecordCharge::query()->create([
                 'school_id' => $student->school_id,
                 'student_id' => $student->id,
                 'fee_agreement_id' => $agreement->id,
@@ -44,6 +61,27 @@ class FeeRecordManualChargeService
                 'source_type' => 'manual_charge',
                 'activated_at' => now(),
             ]);
+
+            $this->auditLogger->record(new AuditEvent(
+                action: AuditAction::FeeRecordManualChargeCreated,
+                module: AuditModule::FeeRecord,
+                schoolId: $student->school_id,
+                subjectType: AuditSubject::FeeRecordCharge,
+                subjectId: $charge->id,
+                newValues: [
+                    'student_id' => $student->id,
+                    'fee_agreement_id' => $agreement->id,
+                    'academic_year' => $academicYear,
+                    'billing_month' => $charge->billing_month,
+                    'fee_record_category' => $charge->fee_record_category,
+                    'fee_code' => $charge->fee_code,
+                    'description' => $charge->description,
+                    'expected_amount' => $charge->expected_amount,
+                ],
+                metadata: ['created_by' => $createdBy->id],
+            ), $auditContext ?? $this->contextFactory->system());
+
+            return $charge;
         });
     }
 

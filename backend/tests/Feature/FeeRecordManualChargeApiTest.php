@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Models\FeeAgreement;
 use App\Models\FeeItem;
-use App\Models\FeeRecordCharge;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\School;
@@ -201,8 +200,29 @@ class FeeRecordManualChargeApiTest extends TestCase
             ->assertJsonValidationErrors(['billing_month', 'description', 'expected_amount']);
     }
 
+    public function test_manual_charge_rejects_excess_precision_and_database_overflow(): void
+    {
+        [$school, $student, $admin] = $this->schoolStudentAndUser(['fee_record.manage']);
+        $this->agreement($school, $student);
+
+        foreach (['120.001', '100000000.00'] as $amount) {
+            $this->actingAs($admin)
+                ->postJson("/api/students/{$student->id}/fee-record/manual-charges", [
+                    'academic_year' => '2026',
+                    'billing_month' => '2026-07',
+                    'fee_record_category' => 'OTHERS',
+                    'description' => 'Uniform',
+                    'expected_amount' => $amount,
+                ])
+                ->assertUnprocessable()
+                ->assertJsonValidationErrors(['expected_amount']);
+        }
+
+        $this->assertDatabaseCount('fee_record_charges', 0);
+    }
+
     /**
-     * @param array<int, string> $permissionSlugs
+     * @param  array<int, string>  $permissionSlugs
      * @return array{0: School, 1: Student, 2: User}
      */
     private function schoolStudentAndUser(array $permissionSlugs, string $schoolCode = 'MIS'): array
@@ -227,7 +247,7 @@ class FeeRecordManualChargeApiTest extends TestCase
     }
 
     /**
-     * @param array<int, string> $permissionSlugs
+     * @param  array<int, string>  $permissionSlugs
      */
     private function userWithPermissions(School $school, array $permissionSlugs): User
     {

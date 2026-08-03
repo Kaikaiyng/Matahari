@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Audit\AuditContextFactory;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreManualFeeRecordChargeRequest;
 use App\Models\FeeRecordCharge;
@@ -105,21 +106,33 @@ class FeeRecordController extends Controller
         Request $request,
         Student $student,
         FeeRecordChargeGenerationService $service,
+        AuditContextFactory $contextFactory,
     ): JsonResponse {
         $this->assertSchoolScope($request, $student);
         $data = $request->validate($this->academicYearRules());
 
-        return response()->json($service->activate($student, $data['academic_year']), 201);
+        return response()->json($service->activate(
+            $student,
+            $data['academic_year'],
+            $request->user(),
+            $contextFactory->fromRequest($request),
+        ), 201);
     }
 
     public function storeManualCharge(
         StoreManualFeeRecordChargeRequest $request,
         Student $student,
         FeeRecordManualChargeService $service,
+        AuditContextFactory $contextFactory,
     ): JsonResponse {
         $this->assertSchoolScope($request, $student);
 
-        $charge = $service->create($student, $request->validated());
+        $charge = $service->create(
+            $student,
+            $request->validated(),
+            $request->user(),
+            $contextFactory->fromRequest($request),
+        );
 
         return response()->json(['data' => $this->chargeResponse($charge)], 201);
     }

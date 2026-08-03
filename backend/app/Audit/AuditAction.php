@@ -14,6 +14,8 @@ enum AuditAction: string
     case FeeAgreementCreated = 'fee_agreement.created';
     case FeeAgreementSuperseded = 'fee_agreement.superseded';
     case FeeAgreementCorrected = 'fee_agreement.corrected';
+    case FeeRecordActivated = 'fee_record.activated';
+    case FeeRecordManualChargeCreated = 'fee_record.manual_charge_created';
     case PaymentRecorded = 'payment.recorded';
     case PaymentVerified = 'payment.verified';
     case PaymentVoided = 'payment.voided';

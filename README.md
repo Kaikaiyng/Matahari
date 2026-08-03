@@ -1,101 +1,134 @@
-# Matahari Admin Finance MVP
+# Matahari School Management System
 
-Matahari is an internal school administration finance system for Matahari International School. The current MVP replaces the most error-prone parts of spreadsheet-based fee administration with controlled student, charge, payment, and receipt workflows.
+Matahari is an administration and finance workflow MVP for Matahari International School. It supports a stakeholder demo and continued development of student, fee, payment, receipt, and calendar workflows. It is not yet a complete academic ERP or a production deployment package.
 
-The application is demo-ready on desktop and responsive for iPad landscape, iPad portrait, and mobile portrait. It is not yet a complete school ERP or production deployment package.
+## Current Scope
 
-## Implemented Modules
+Implemented workflows include:
 
-- Login, session authentication, role assignments, and permission-gated actions
-- Shared school calendar with school isolation, CRUD permissions, Malaysia-time handling, and responsive month/mobile views
-- Read-only class directory with active-student rosters and Student Detail navigation
-- Student list, search, status and fee-period filters, create, detail, and status updates
-- Versioned Fee Agreements with Charge Type, Billing Pattern, and Jan-Dec billing configuration
-- Fee Record charge preview and activation
-- Manual and one-time charges
-- Outstanding-charge payment allocation with partial amounts
-- Payment history, verification, void safeguards, and allocation detail
-- Receipt generation, viewing, browser printing, voiding, and regeneration
-- Student Fee Record totals
-- Fee Record Summary
-- Category Monthly Fee Record with a horizontally scrollable Jan-Dec ledger
-- Dashboard collection metrics with Fee Record-based outstanding total and explicit unavailable states
+- Username/password login with Laravel session cookies and seeded role permissions.
+- Student search, creation, detail, status changes, and read-only class rosters.
+- Versioned Fee Agreements and billing configuration.
+- Fee Record preview, activation, manual charges, outstanding balances, summary, and category/month views.
+- Payment allocation, verification, void safeguards, receipt generation, browser printing, and receipt void/regeneration.
+- Shared school calendar CRUD.
+- Permission-filtered navigation and a Super Admin-only, read-only Audit Trail with filters and event detail.
+- Responsive desktop, tablet, and mobile administration UI.
+- CSRF-protected session mutations, login throttling, active-session rechecks, request IDs, and transactional audit events for implemented critical workflows.
 
-## Responsive Demo Support
+Important boundaries:
 
-| Viewport | Navigation and content behavior |
+- Payments and receipts are implemented inside Student Detail; unimplemented top-level placeholder navigation has been removed.
+- The parent directory and fee catalogue top-level pages remain display-only; parent mutations, fee catalogue management, reports, exports, settings, user management, password reset, and production deployment are incomplete or not implemented.
+- Discounts can be stored as agreement snapshots, but charge preview/activation deliberately fails closed until approved formulas exist.
+- Generic audit correction/recovery and audit export are planned, not implemented.
+
+## Technology Stack
+
+| Area | Repository version or implementation |
 | --- | --- |
-| Desktop, 1181px+ | Full sidebar and dense finance tables |
-| iPad landscape, 1024-1180px | Compact labelled navigation rail |
-| iPad portrait, 768-1023px | Drawer navigation and single-column task flow |
-| Mobile, below 768px | Drawer navigation, stacked forms, mobile record rows, and contained ledgers |
+| Backend | PHP `^8.3`, Laravel Framework `13.17.0` from `composer.lock` |
+| Frontend | React `19.2.7`, TypeScript `6.0.x`, Vite `8.1.0` |
+| Authentication | Laravel `web` guard with session cookies |
+| Production database direction | MariaDB/MySQL-compatible |
+| Local demo and default tests | SQLite; PHPUnit uses SQLite `:memory:` |
+| Backend tests | PHPUnit `12.5.30` |
+| Frontend tests/lint | Vitest, Testing Library, Oxlint |
 
-Wide financial ledgers intentionally scroll inside their own containers. The page itself should not scroll horizontally.
+The repository does not use Laravel 10. The separate React application is under `frontend/`; the npm manifest under `backend/` is Laravel scaffold tooling, not the main frontend.
 
-## Technology
-
-- Frontend: React 19, TypeScript 6, Vite 8, Lucide React, and project CSS
-- Backend: Laravel 13 on PHP 8.4
-- Database: SQLite for the repeatable local demo and automated tests; MariaDB remains supported for development environments
-- Authentication: Laravel session cookies
-- Authorization: roles, permissions, and middleware-enforced permission slugs
-
-TailwindCSS, Docker, Nginx, Cloudflare, hosting, and deployment are planning directions, not current repository dependencies.
-
-## Repository Layout
+## Repository Structure
 
 ```text
-frontend/   React admin application
-backend/    Laravel JSON API and finance domain
-docs/       Product, architecture, database, setup, UAT, and demo documentation
-tools/php/  Project PHP configuration and Windows launch helpers
-tools/public-demo/  Temporary HTTPS demo launcher and contract tests
+backend/             Laravel API, domain services, schema, seeders, tests
+frontend/            React application, components, feature models, tests
+docs/                Current documentation and historical delivery records
+tools/php/           Windows PHP launchers and local SQLite demo helpers
+tools/public-demo/   Temporary Cloudflare Quick Tunnel demo tooling
 ```
 
-## Quick Start on Windows
+Future coding agents must also read [AGENTS.md](AGENTS.md).
 
-Prerequisites:
+## Prerequisites
 
-- Node.js and `npm.cmd`
-- PHP 8.4
-- Backend dependencies already installed with Composer, or Composer available to install them
-- SQLite for the simplest setup, or a local MariaDB database
+- PHP 8.3 or newer with the extensions enabled by `tools/php/php.ini`.
+- Composer.
+- Node.js and npm. The repository does not currently pin a Node version.
+- SQLite for the quickest local demo, or a separately provisioned MariaDB database for compatibility work.
 
-Prepare a clean demo database from the repository root. This command resets only the ignored `backend/database/database.sqlite` file; it does not read, modify, or reset a configured MariaDB database:
+## Local Demo Setup
+
+Install dependencies once:
+
+```powershell
+cd backend
+$env:PHPRC = (Resolve-Path ..\tools\php).Path
+composer install
+Remove-Item Env:PHPRC
+cd ..\frontend
+npm.cmd ci
+cd ..
+```
+
+`PHPRC` makes a Composer installation that launches the system `php.exe` load this repository's `tools/php/php.ini`. If Composer is not installed as a command, run its trusted local `composer.phar` explicitly with `php -c ..\tools\php\php.ini` instead.
+
+Create or reset only the ignored local demo SQLite database:
 
 ```powershell
 tools\php\reset-demo-sqlite.cmd
 ```
 
-Start the backend:
+This command runs `migrate:fresh --seed` against `backend/database/database.sqlite`. Do not adapt it to a database containing valuable data. Seeded users are demo-only; inspect the seeder locally if credentials are needed, and never reuse them in a deployed environment.
+
+Start the API in one terminal:
 
 ```powershell
 tools\php\serve-demo-backend.cmd
 ```
 
-Start the frontend in another terminal:
+Start the React frontend in another terminal:
 
 ```powershell
 cd frontend
-npm.cmd install
 npm.cmd run dev
 ```
 
-Open `http://127.0.0.1:5173`. The frontend defaults to `http://127.0.0.1:8000/api`.
-
-For a different API address, create `frontend/.env.local`:
+The frontend defaults to the same-origin `/api` path. Vite development and preview proxy that path to `http://127.0.0.1:8000` by default. To use another local backend target without changing the browser API origin, create an untracked `frontend/.env.local`:
 
 ```dotenv
-VITE_API_BASE_URL=http://127.0.0.1:8000/api
+VITE_API_PROXY_TARGET=http://127.0.0.1:8000
 ```
 
-For iPad testing on the same LAN, bind both servers to `0.0.0.0` and set `VITE_API_BASE_URL` to the computer's LAN IP. Do not expose phpMyAdmin or database ports to the LAN.
+`VITE_API_BASE_URL` is supported for an explicitly reviewed alternative topology, but cross-origin session/cookie behavior is deployment-sensitive and is not the default.
 
-See [Development Setup](docs/DEVELOPMENT_SETUP.md) for database options, seed data, LAN commands, and troubleshooting.
+## General Backend Environment
 
-For temporary internet access to seeded demo data, follow [Temporary Public Demo](docs/PUBLIC_DEMO.md). It exposes only the frontend preview through a temporary Cloudflare Quick Tunnel and keeps Laravel/database services on localhost.
+For non-demo development:
 
-## Verification
+```powershell
+cd backend
+Copy-Item .env.example .env
+..\tools\php\php-local.cmd artisan key:generate
+if (-not (Test-Path -LiteralPath database\database.sqlite)) {
+    New-Item -ItemType File -Path database\database.sqlite | Out-Null
+}
+..\tools\php\php-local.cmd artisan migrate --force
+```
+
+The file-creation step is required because the example environment defaults to SQLite and the database file is intentionally not committed. For MariaDB, omit that step, set private local values for `DB_CONNECTION=mariadb`, host, port, database, username, and password, then clear cached configuration. Do not commit `.env` or include credentials in documentation.
+
+Use `migrate --force` for an existing database. Never use `migrate:fresh` when data must be preserved.
+
+## Verification Commands
+
+Backend:
+
+```powershell
+cd backend
+..\tools\php\php-local.cmd vendor\bin\phpunit
+..\tools\php\php-local.cmd vendor\bin\pint --test
+..\tools\php\php-local.cmd artisan route:list --path=api --except-vendor
+```
 
 Frontend:
 
@@ -106,70 +139,42 @@ npm.cmd run lint
 npm.cmd run build
 ```
 
-Backend:
+`npm.cmd run build` runs `tsc -b` before the Vite production build. No PHP static-analysis command or automated CI workflow is currently configured. MariaDB and rollback validation require the disposable-database workflow in [Testing and Release](docs/testing-and-release.md); the default SQLite test suite is not sufficient proof.
 
-```powershell
-cd backend
-..\tools\php\php-local.cmd vendor\bin\phpunit
-```
+## Development Workflow
 
-Last verified baseline on 2026-07-22:
+1. Fetch the latest remote default branch and create a dedicated feature branch/worktree.
+2. Read the relevant canonical documentation and existing tests.
+3. Make the smallest complete change; avoid unrelated refactoring.
+4. Enforce permissions and school scope on the backend, not only in the UI.
+5. Run focused checks and the complete relevant validation set.
+6. Update documentation in the same pull request when behavior, schema, permissions, or commands change.
+7. Review the final diff and secret scan before pushing.
 
-- Frontend build: passed
-- Frontend lint: zero errors and zero warnings
-- Frontend tests: 75 tests passed across 7 files
-- Backend: 116 tests, 721 assertions
-- Laravel API: 35 non-vendor API routes
-- Active local schema: 36 tables
+## Security Notes
+
+- Do not use demo data or seeded passwords in production.
+- Frontend-hidden actions are not an authorization boundary.
+- CSRF middleware, a same-origin CSRF-cookie bootstrap, username-plus-IP login throttling, and active-user request checks are implemented. HTTPS cookie flags, proxy trust, rate-limit storage, CORS, and session topology still require deployment-specific verification.
+- Audit rows are append-only at the Eloquent model layer, not against raw SQL or privileged database users. Runtime least-privilege requirements are documented in [Audit Log Operations](docs/AUDIT_LOG_OPERATIONS.md).
+- Do not commit `.env`, database files, test artifacts, real student data, tokens, or tunnel runtime state.
 
 ## Documentation
 
-| Document | Purpose |
-| --- | --- |
-| [Documentation Index](docs/README.md) | Entry point for current references, business inputs, and historical delivery records |
-| [Maintenance Guide](docs/MAINTENANCE_GUIDE.md) | Code ownership, API layout, change map, verification, and pull-request checklist |
-| [Implementation Status](docs/IMPLEMENTATION_STATUS.md) | Implemented and deferred scope, verification, and known limitations |
-| [Development Setup](docs/DEVELOPMENT_SETUP.md) | Local frontend, backend, database, and LAN demo setup |
-| [System Architecture](docs/SYSTEM_ARCHITECTURE.md) | Runtime boundaries, authentication, RBAC, API inventory, and finance flow |
-| [Database Design](docs/DATABASE_DESIGN.md) | Active table groups, relationships, constraints, and migration caveat |
-| [UAT Checklist](docs/UAT_CHECKLIST.md) | Acceptance checks for implemented demo workflows |
-| [Demo Review Script](docs/DEMO_REVIEW_SCRIPT.md) | Desktop/iPad/mobile demonstration sequence |
-| [Project Workflow Catalog](docs/PROJECT_WORKFLOW_CATALOG.md) | Detailed current workflows and implemented/deferred boundaries |
-| [Temporary Public Demo](docs/PUBLIC_DEMO.md) | Safe temporary HTTPS demo operation and troubleshooting |
-| [Business Rules v0.1](docs/business-rules/business-rules-v0.1.md) | Draft stakeholder rules and explicit TBD items requiring approval |
-| [PRD](docs/PRD.md) | Historical product planning baseline |
-| [Decision Log](docs/DECISIONS.md) | Historical product and technical decisions |
-| [Roadmap](docs/ROADMAP.md) | Historical delivery plan and future direction |
+- [Project Overview](docs/project-overview.md)
+- [Business Rules](docs/business-rules.md)
+- [Architecture](docs/architecture.md)
+- [Database](docs/database.md)
+- [Permissions](docs/permissions.md)
+- [Current Status](docs/current-status.md)
+- [Testing and Release](docs/testing-and-release.md)
+- [Documentation Index](docs/README.md)
 
-Additional project documentation:
+## Current Limitations
 
-- Package guides: [Frontend README](frontend/README.md), [Backend README](backend/README.md)
-- Historical planning: [Executive Summary](docs/EXECUTIVE_SUMMARY.md), [Architecture Review Plan](docs/ARCHITECTURE_REVIEW_PLAN.md), [Business Workflows](docs/BUSINESS_WORKFLOWS.md), [MVP Assumptions](docs/MVP_ASSUMPTIONS.md), [Implementation Backlog](docs/IMPLEMENTATION_BACKLOG.md), and [Stakeholder Questions](docs/STAKEHOLDER_QUESTIONS.md)
-- Responsive delivery: [design](docs/superpowers/specs/2026-07-11-ipad-first-responsive-demo-design.md) and [implementation plan](docs/superpowers/plans/2026-07-11-ipad-first-responsive-demo.md)
-- MariaDB migration: [design](docs/superpowers/specs/2026-07-12-sqlite-to-mariadb-design.md) and [implementation plan](docs/superpowers/plans/2026-07-12-sqlite-to-mariadb.md)
-- Documentation refresh: [design](docs/superpowers/specs/2026-07-12-project-documentation-refresh-design.md) and [implementation plan](docs/superpowers/plans/2026-07-12-project-documentation-refresh.md)
-
-## Deferred Scope
-
-The following are intentionally not implemented in this MVP:
-
-- Statements and reminders
-- General reports and exports
-- PDF generation
-- Parent Portal
-- Remaining production dashboard/invoice reporting beyond the implemented Fee Record outstanding total
-- Hosting, deployment, domain, Docker, Nginx, and Cloudflare configuration
-- New major school ERP modules
-
-The existing receipt screen supports browser printing; that is separate from PDF generation.
-
-## Known Limitations
-
-- Real-device iPad Safari testing is still recommended even though the four target viewport sizes passed browser QA.
-- Receipt print CSS was preserved, but native browser print-preview automation was unavailable during responsive QA.
-- Fresh MariaDB setup needs special handling for one historical migration that creates `payment_allocations.fee_agreement_item_id` before `fee_agreement_items` exists. See [Database Design](docs/DATABASE_DESIGN.md).
-- MariaDB and phpMyAdmin, when used for development, are local operator tools and are not part of a production deployment.
-
-## Security
-
-Never commit `.env` files, database passwords, phpMyAdmin credentials, real student data, or local backup files. The seeded accounts and sample data are for local development only.
+- No formal load or concurrency limit has been validated. Historical planning used approximately 200 students for cost estimation only; this is not a tested capacity claim.
+- The default automated backend suite uses SQLite and cannot prove MariaDB JSON, index, locking, foreign-key, or rollback behavior.
+- No stable hosting, production environment, CI pipeline, monitoring, or verified backup/restore process is included.
+- User administration and password reset are not implemented.
+- General reports, exports, statements, reminders, parent portal, PDF generation, and academic ERP modules are not implemented.
+- Operational readiness remains incomplete: production hosting, CI, monitoring, least-privilege database grants, backups, restore drills, and approved discount/correction policies are not verified. See [Current Status](docs/current-status.md).

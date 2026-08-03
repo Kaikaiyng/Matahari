@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Audit\AuditContextFactory;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\GenerateReceiptRequest;
 use App\Http\Requests\VoidReceiptRequest;
@@ -32,8 +33,14 @@ class ReceiptController extends Controller
         GenerateReceiptRequest $request,
         Payment $payment,
         ReceiptGenerationService $service,
+        AuditContextFactory $contextFactory,
     ): JsonResponse {
-        $receipt = $service->generate($payment, $request->validated(), $request->user());
+        $receipt = $service->generate(
+            $payment,
+            $request->validated(),
+            $request->user(),
+            $contextFactory->fromRequest($request),
+        );
 
         return response()->json(['receipt' => $this->receiptResponse($receipt)], 201);
     }
@@ -56,8 +63,14 @@ class ReceiptController extends Controller
         VoidReceiptRequest $request,
         Receipt $receipt,
         ReceiptGenerationService $service,
+        AuditContextFactory $contextFactory,
     ): JsonResponse {
-        $receipt = $service->void($receipt, $request->validated('void_reason'), $request->user());
+        $receipt = $service->void(
+            $receipt,
+            $request->validated('void_reason'),
+            $request->user(),
+            $contextFactory->fromRequest($request),
+        );
 
         return response()->json(['receipt' => $this->receiptResponse($receipt)]);
     }

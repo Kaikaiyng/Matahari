@@ -87,8 +87,8 @@ class DemoScenarioSeeder extends Seeder
     }
 
     /**
-     * @param array<int, FeeItem> $feeItems
-     * @param array<int, int> $billingMonths
+     * @param  array<int, FeeItem>  $feeItems
+     * @param  array<int, int>  $billingMonths
      */
     private function activateAgreement(Student $student, User $admin, array $feeItems, array $billingMonths): void
     {

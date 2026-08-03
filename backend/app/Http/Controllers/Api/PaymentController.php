@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Audit\AuditContextFactory;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StorePaymentRequest;
 use App\Http\Requests\VerifyPaymentRequest;
@@ -32,8 +33,14 @@ class PaymentController extends Controller
         StorePaymentRequest $request,
         Student $student,
         PaymentRecordingService $service,
+        AuditContextFactory $contextFactory,
     ): JsonResponse {
-        $payment = $service->createForStudent($student, $request->validated(), $request->user());
+        $payment = $service->createForStudent(
+            $student,
+            $request->validated(),
+            $request->user(),
+            $contextFactory->fromRequest($request),
+        );
 
         return response()->json(['payment' => $this->paymentResponse($payment)], 201);
     }
@@ -42,8 +49,14 @@ class PaymentController extends Controller
         VerifyPaymentRequest $request,
         Payment $payment,
         PaymentRecordingService $service,
+        AuditContextFactory $contextFactory,
     ): JsonResponse {
-        $payment = $service->verify($payment, $request->validated(), $request->user());
+        $payment = $service->verify(
+            $payment,
+            $request->validated(),
+            $request->user(),
+            $contextFactory->fromRequest($request),
+        );
 
         return response()->json(['payment' => $this->paymentResponse($payment)]);
     }
@@ -52,8 +65,14 @@ class PaymentController extends Controller
         VoidPaymentRequest $request,
         Payment $payment,
         PaymentRecordingService $service,
+        AuditContextFactory $contextFactory,
     ): JsonResponse {
-        $payment = $service->void($payment, $request->validated('void_reason'), $request->user());
+        $payment = $service->void(
+            $payment,
+            $request->validated('void_reason'),
+            $request->user(),
+            $contextFactory->fromRequest($request),
+        );
 
         return response()->json(['payment' => $this->paymentResponse($payment)]);
     }

@@ -18,6 +18,7 @@ class FeeAgreement extends Model
         'effective_from',
         'effective_to',
         'is_current',
+        'current_slot',
         'status',
         'remarks',
         'created_by',
@@ -30,6 +31,7 @@ class FeeAgreement extends Model
             'effective_from' => 'date',
             'effective_to' => 'date',
             'is_current' => 'boolean',
+            'current_slot' => 'integer',
         ];
     }
 

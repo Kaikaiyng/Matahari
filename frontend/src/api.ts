@@ -12,16 +12,32 @@ export class ApiError extends Error {
   }
 }
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:8000/api'
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? '/api'
+
+let csrfBootstrap: Promise<void> | null = null
 
 type RequestOptions = Omit<RequestInit, 'body' | 'credentials'> & {
   body?: unknown
 }
 
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  return performRequest<T>(path, options, true)
+}
+
+async function performRequest<T>(path: string, options: RequestOptions, retryAfterCsrfFailure: boolean): Promise<T> {
   const { body, ...requestOptions } = options
   const headers = new Headers(options.headers)
   headers.set('Accept', 'application/json')
+  const method = (options.method ?? 'GET').toUpperCase()
+
+  if (!isSafeMethod(method)) {
+    await ensureCsrfCookie()
+    const token = readCookie('XSRF-TOKEN')
+
+    if (token) {
+      headers.set('X-XSRF-TOKEN', token)
+    }
+  }
 
   const init: RequestInit = {
     ...requestOptions,
@@ -35,6 +51,13 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   }
 
   const response = await fetch(`${apiBaseUrl}${path}`, init)
+
+  if (response.status === 419 && !isSafeMethod(method) && retryAfterCsrfFailure) {
+    await ensureCsrfCookie(true)
+
+    return performRequest<T>(path, options, false)
+  }
+
   const payload = await readJson(response)
 
   if (!response.ok) {
@@ -53,6 +76,45 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   }
 
   return payload as T
+}
+
+async function ensureCsrfCookie(forceRefresh = false): Promise<void> {
+  if (!forceRefresh && readCookie('XSRF-TOKEN')) {
+    return
+  }
+
+  if (!csrfBootstrap) {
+    csrfBootstrap = (async () => {
+      const response = await fetch(`${apiBaseUrl}/csrf-cookie`, {
+        credentials: 'include',
+        headers: { Accept: 'application/json' },
+      })
+
+      if (!response.ok) {
+        throw new ApiError(response.status, 'Unable to establish a secure session. Please reload and try again.')
+      }
+
+    })().finally(() => {
+      csrfBootstrap = null
+    })
+  }
+
+  await csrfBootstrap
+}
+
+function isSafeMethod(method: string): boolean {
+  return ['GET', 'HEAD', 'OPTIONS'].includes(method)
+}
+
+function readCookie(name: string): string | null {
+  const prefix = `${encodeURIComponent(name)}=`
+  const value = document.cookie
+    .split(';')
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(prefix))
+    ?.slice(prefix.length)
+
+  return value === undefined ? null : decodeURIComponent(value)
 }
 
 async function readJson(response: Response): Promise<Record<string, unknown> | undefined> {
@@ -80,6 +142,14 @@ function defaultErrorMessage(status: number) {
 
   if (status === 422) {
     return 'Please check the form and try again.'
+  }
+
+  if (status === 419) {
+    return 'Your secure session expired. Please try again.'
+  }
+
+  if (status === 429) {
+    return 'Too many attempts. Please wait and try again.'
   }
 
   return 'Request failed. Please try again.'
