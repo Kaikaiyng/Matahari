@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\DatabaseMoney;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -22,6 +23,9 @@ class StorePaymentRequest extends FormRequest
      */
     public function rules(): array
     {
+        $student = $this->route('student');
+        $schoolId = $student?->school_id ?? $this->user()?->school_id;
+
         return [
             'payment_method' => ['required', 'string', Rule::in([
                 'cash',
@@ -33,7 +37,7 @@ class StorePaymentRequest extends FormRequest
             ])],
             'payment_date' => ['required', 'date'],
             'received_date' => ['required_if:payment_method,cash', 'nullable', 'date'],
-            'amount' => ['required', 'numeric', 'min:0.01'],
+            'amount' => ['required', new DatabaseMoney(false)],
             'paid_by' => ['nullable', 'string', 'max:255'],
             'bank_account' => ['nullable', 'string', 'max:255'],
             'reference_no' => ['nullable', 'string', 'max:100'],
@@ -42,11 +46,25 @@ class StorePaymentRequest extends FormRequest
             'academic_year' => ['nullable', 'string', 'regex:/^\d{4}$/'],
             'allocations' => ['required', 'array', 'min:1'],
             'allocations.*.allocation_type' => ['nullable', 'string', Rule::in(['charge', 'manual', 'legacy'])],
-            'allocations.*.fee_record_charge_id' => ['nullable', 'integer', 'exists:fee_record_charges,id'],
-            'allocations.*.fee_item_id' => ['nullable', 'integer', 'exists:fee_items,id'],
-            'allocations.*.fee_agreement_item_id' => ['nullable', 'integer', 'exists:fee_agreement_items,id'],
+            'allocations.*.fee_record_charge_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('fee_record_charges', 'id')->where(fn ($query) => $query
+                    ->where('school_id', $schoolId)
+                    ->where('student_id', $student?->id)),
+            ],
+            'allocations.*.fee_item_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('fee_items', 'id')->where(fn ($query) => $query->where('school_id', $schoolId)),
+            ],
+            'allocations.*.fee_agreement_item_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('fee_agreement_items', 'id')->where(fn ($query) => $query->where('school_id', $schoolId)),
+            ],
             'allocations.*.description' => ['nullable', 'string', 'max:255'],
-            'allocations.*.amount' => ['required', 'numeric', 'min:0.01'],
+            'allocations.*.amount' => ['required', new DatabaseMoney(false)],
             'status' => ['prohibited'],
             'recorded_by' => ['prohibited'],
             'verified_by' => ['prohibited'],

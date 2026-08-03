@@ -127,11 +127,29 @@ class FeeAgreementVersioningService
      */
     private function snapshotItemsAndDiscounts(FeeAgreement $agreement, array $data, ?int $userId): void
     {
+        $submittedItemIds = collect($data['items'])
+            ->pluck('fee_item_id')
+            ->map(fn ($id) => (int) $id)
+            ->values();
+        $uniqueItemIds = $submittedItemIds->unique()->values();
+
+        if ($submittedItemIds->count() !== $uniqueItemIds->count()) {
+            throw ValidationException::withMessages([
+                'items' => 'Fee items must not be duplicated.',
+            ]);
+        }
+
         $feeItems = FeeItem::query()
             ->where('school_id', $agreement->school_id)
-            ->whereIn('id', collect($data['items'])->pluck('fee_item_id')->all())
+            ->whereIn('id', $uniqueItemIds->all())
             ->get()
             ->keyBy('id');
+
+        if ($feeItems->count() !== $uniqueItemIds->count()) {
+            throw ValidationException::withMessages([
+                'items' => 'Every fee item must belong to the agreement school.',
+            ]);
+        }
 
         $agreementItemsByCode = collect();
 
@@ -195,6 +213,12 @@ class FeeAgreementVersioningService
             ->filter()
             ->values()
             ->all();
+
+        if (count($itemIds) !== count(array_unique($selectedFeeCodes))) {
+            throw ValidationException::withMessages([
+                'discounts' => 'Every selected fee code must belong to the Fee Agreement.',
+            ]);
+        }
 
         $discount->selectedItems()->sync($itemIds);
     }

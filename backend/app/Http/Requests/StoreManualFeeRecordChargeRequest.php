@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Services\Billing\FeeRecordCategoryMapper;
+use App\Rules\DatabaseMoney;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -19,14 +20,21 @@ class StoreManualFeeRecordChargeRequest extends FormRequest
      */
     public function rules(): array
     {
+        $student = $this->route('student');
+        $schoolId = $student?->school_id ?? $this->user()?->school_id;
+
         return [
             'academic_year' => ['required', 'string', 'regex:/^\d{4}$/'],
             'billing_month' => ['required', 'string', 'regex:/^\d{4}-(0[1-9]|1[0-2])$/'],
             'fee_record_category' => ['nullable', 'string', Rule::in(app(FeeRecordCategoryMapper::class)->categories())],
-            'fee_item_id' => ['nullable', 'integer', 'exists:fee_items,id'],
+            'fee_item_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('fee_items', 'id')->where(fn ($query) => $query->where('school_id', $schoolId)),
+            ],
             'fee_code' => ['nullable', 'string', 'max:50'],
             'description' => ['required', 'string', 'max:255'],
-            'expected_amount' => ['required', 'numeric', 'gt:0'],
+            'expected_amount' => ['required', new DatabaseMoney(false)],
             'remark' => ['nullable', 'string', 'max:1000'],
         ];
     }

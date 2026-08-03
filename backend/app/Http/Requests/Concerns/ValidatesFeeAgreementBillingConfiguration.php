@@ -27,7 +27,7 @@ trait ValidatesFeeAgreementBillingConfiguration
                 'one_time',
             ])],
             'items.*.billing_months' => ['nullable', 'array'],
-            'items.*.billing_months.*' => ['integer', 'between:1,12'],
+            'items.*.billing_months.*' => ['integer', 'between:1,12', 'distinct'],
             'items.*.requires_preview_confirmation' => ['sometimes', 'boolean'],
         ];
     }
