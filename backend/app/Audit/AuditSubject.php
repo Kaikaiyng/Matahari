@@ -6,6 +6,7 @@ enum AuditSubject: string
 {
     case Student = 'student';
     case FeeAgreement = 'fee_agreement';
+    case FeeRecordCharge = 'fee_record_charge';
     case Payment = 'payment';
     case Receipt = 'receipt';
     case User = 'user';

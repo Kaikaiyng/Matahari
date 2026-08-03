@@ -2,17 +2,29 @@
 
 namespace App\Services\Billing;
 
+use App\Audit\AuditAction;
+use App\Audit\AuditContext;
+use App\Audit\AuditContextFactory;
+use App\Audit\AuditEvent;
+use App\Audit\AuditModule;
+use App\Audit\AuditSubject;
+use App\Contracts\AuditLoggerContract;
 use App\Models\FeeAgreement;
 use App\Models\FeeAgreementItem;
 use App\Models\FeeRecordCharge;
 use App\Models\Student;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class FeeRecordChargeGenerationService
 {
-    public function __construct(private readonly FeeRecordCategoryMapper $categoryMapper) {}
+    public function __construct(
+        private readonly FeeRecordCategoryMapper $categoryMapper,
+        private readonly AuditLoggerContract $auditLogger,
+        private readonly AuditContextFactory $contextFactory,
+    ) {}
 
     /**
      * @return array<string, mixed>
@@ -63,9 +75,13 @@ class FeeRecordChargeGenerationService
     /**
      * @return array<string, mixed>
      */
-    public function activate(Student $student, string $academicYear): array
-    {
-        return DB::transaction(function () use ($student, $academicYear): array {
+    public function activate(
+        Student $student,
+        string $academicYear,
+        User $activatedBy,
+        ?AuditContext $auditContext = null,
+    ): array {
+        return DB::transaction(function () use ($student, $academicYear, $activatedBy, $auditContext): array {
             $agreement = $this->activeAgreement($student, $academicYear, lock: true);
 
             $existingCharges = FeeRecordCharge::query()
@@ -117,6 +133,23 @@ class FeeRecordChargeGenerationService
                     'activated_at' => $activatedAt,
                 ]);
             }
+
+            $this->auditLogger->record(new AuditEvent(
+                action: AuditAction::FeeRecordActivated,
+                module: AuditModule::FeeRecord,
+                schoolId: $student->school_id,
+                subjectType: AuditSubject::FeeAgreement,
+                subjectId: $agreement->id,
+                newValues: [
+                    'student_id' => $student->id,
+                    'academic_year' => $academicYear,
+                    'created_count' => count($created),
+                ],
+                metadata: [
+                    'charge_ids' => collect($created)->pluck('id')->values()->all(),
+                    'activated_by' => $activatedBy->id,
+                ],
+            ), $auditContext ?? $this->contextFactory->system());
 
             return [
                 'created_count' => count($created),
@@ -198,7 +231,6 @@ class FeeRecordChargeGenerationService
     }
 
     /**
-     * @param mixed $months
      * @return array<int, int>
      */
     private function normalizedMonthNumbers(mixed $months): array

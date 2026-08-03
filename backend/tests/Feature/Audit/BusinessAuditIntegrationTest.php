@@ -6,7 +6,6 @@ use App\Audit\AuditContext;
 use App\Audit\AuditEvent;
 use App\Contracts\AuditLoggerContract;
 use App\Models\AuditLog;
-use App\Models\FeeAgreement;
 use App\Models\FeeItem;
 use App\Models\Payment;
 use App\Models\School;
@@ -228,6 +227,91 @@ class BusinessAuditIntegrationTest extends TestCase
             ->assertServerError();
         $this->assertDatabaseCount('receipts', 0);
         $this->assertDatabaseCount('receipt_sequences', 0);
+    }
+
+    public function test_fee_record_activation_and_manual_charge_are_audited(): void
+    {
+        $this->seed();
+        $school = School::query()->where('code', 'MIS')->firstOrFail();
+        $student = Student::query()->where('school_id', $school->id)->firstOrFail();
+        $admin = User::query()->where('username', 'admin')->firstOrFail();
+        $tuition = FeeItem::query()->where('school_id', $school->id)->where('code', 'TUITION')->firstOrFail();
+        $misc = FeeItem::query()->where('school_id', $school->id)->where('code', 'MISC')->firstOrFail();
+
+        $agreementId = $this->actingAs($admin)
+            ->postJson("/api/students/{$student->id}/fee-agreements", [
+                'academic_year' => '2026',
+                'payment_plan' => 'monthly',
+                'effective_from' => '2026-01-01',
+                'items' => [
+                    ['fee_item_id' => $tuition->id, 'amount' => 800],
+                    ['fee_item_id' => $misc->id, 'amount' => 90],
+                ],
+            ])->assertCreated()->json('fee_agreement.id');
+
+        $this->actingAs($admin)
+            ->postJson("/api/students/{$student->id}/fee-record/activate", ['academic_year' => '2026'])
+            ->assertCreated();
+
+        $manualChargeId = $this->actingAs($admin)
+            ->postJson("/api/students/{$student->id}/fee-record/manual-charges", [
+                'academic_year' => '2026',
+                'billing_month' => '2026-08',
+                'fee_record_category' => 'OTHERS',
+                'description' => 'Replacement workbook',
+                'expected_amount' => 25,
+            ])->assertCreated()->json('data.id');
+
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'fee_record.activated',
+            'entity_type' => 'fee_agreement',
+            'entity_id' => $agreementId,
+            'user_id' => $admin->id,
+        ]);
+        $this->assertDatabaseHas('audit_logs', [
+            'action' => 'fee_record.manual_charge_created',
+            'entity_type' => 'fee_record_charge',
+            'entity_id' => $manualChargeId,
+            'user_id' => $admin->id,
+        ]);
+    }
+
+    public function test_required_audit_failure_rolls_back_fee_record_activation_and_manual_charge(): void
+    {
+        $this->seed();
+        $school = School::query()->where('code', 'MIS')->firstOrFail();
+        $student = Student::query()->where('school_id', $school->id)->firstOrFail();
+        $admin = User::query()->where('username', 'admin')->firstOrFail();
+        $tuition = FeeItem::query()->where('school_id', $school->id)->where('code', 'TUITION')->firstOrFail();
+        $misc = FeeItem::query()->where('school_id', $school->id)->where('code', 'MISC')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->postJson("/api/students/{$student->id}/fee-agreements", [
+                'academic_year' => '2026',
+                'payment_plan' => 'monthly',
+                'effective_from' => '2026-01-01',
+                'items' => [
+                    ['fee_item_id' => $tuition->id, 'amount' => 800],
+                    ['fee_item_id' => $misc->id, 'amount' => 90],
+                ],
+            ])->assertCreated();
+
+        $this->bindThrowingAuditLogger();
+
+        $this->actingAs($admin)
+            ->postJson("/api/students/{$student->id}/fee-record/activate", ['academic_year' => '2026'])
+            ->assertServerError();
+        $this->assertDatabaseCount('fee_record_charges', 0);
+
+        $this->actingAs($admin)
+            ->postJson("/api/students/{$student->id}/fee-record/manual-charges", [
+                'academic_year' => '2026',
+                'billing_month' => '2026-08',
+                'fee_record_category' => 'OTHERS',
+                'description' => 'Replacement workbook',
+                'expected_amount' => 25,
+            ])->assertServerError();
+        $this->assertDatabaseCount('fee_record_charges', 0);
     }
 
     private function bindThrowingAuditLogger(): void

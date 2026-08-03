@@ -8,6 +8,7 @@ enum AuditModule: string
     case Authentication = 'authentication';
     case Students = 'students';
     case FeeAgreements = 'fee_agreements';
+    case FeeRecord = 'fee_record';
     case Payments = 'payments';
     case Receipts = 'receipts';
     case Users = 'users';
