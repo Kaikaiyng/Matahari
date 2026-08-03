@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\AssignRequestId;
+use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\EnsureUserHasPermission;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -20,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->prepend(AssignRequestId::class);
 
         $middleware->alias([
+            'active' => EnsureUserIsActive::class,
             'permission' => EnsureUserHasPermission::class,
         ]);
     })
