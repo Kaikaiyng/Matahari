@@ -35,12 +35,15 @@ Matahari is a school administration and finance MVP for Matahari International S
 - Apply `auth`, the correct `permission:<slug>`, and school-scope enforcement to protected operations. Test both unauthorized and cross-school cases.
 - Do not weaken authentication, authorization, validation, school scoping, or audit behavior to make a test pass.
 - Never add secrets, credentials, real student data, private connection strings, database files, or tunnel state to Git or documentation.
-- Treat audit support as partial: the foundation exists, but business mutations and an Audit Trail UI/API are not yet integrated.
+- Preserve native CSRF middleware, login throttling, active-session checks, and same-origin session behavior on authenticated APIs.
+- Material student and finance mutations must write their audit event inside the same transaction and roll back if audit persistence fails. Authentication audit is best-effort with the redacted security-log fallback.
+- Audit access is read-only and restricted by backend `audit.view`; never add update/delete audit routes or expose secret-bearing payloads.
 
 ## Database and Migration Rules
 
 - Production direction is MariaDB/MySQL-compatible. SQLite-only success is not proof of MariaDB compatibility.
 - Use decimal-safe storage and application handling for money; do not introduce binary floating-point calculations into financial decisions.
+- Preserve the database uniqueness guards for one current agreement per student/year and one scheduled charge per agreement item/month. Do not bypass migration duplicate-data preflights.
 - Do not casually edit migrations that may have run elsewhere. Add a corrective migration unless the repository is demonstrably unreleased and the change is explicitly approved.
 - Preserve foreign-key creation and rollback order. Every new migration needs a tested `down()` path unless an exception is documented.
 - Never run `migrate:fresh`, destructive schema probes, or seeders against a database that may contain valuable data.

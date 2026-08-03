@@ -2,7 +2,7 @@
 
 **Status:** Current schema reference
 
-**Repository baseline:** `14adce9508992c03c4249d49308a3841c198f4bd`
+**Repository baseline:** `8b65469e96a81551d9c7cac4cf10c44ab6342761`
 
 ## Engines and Configuration
 
@@ -77,19 +77,19 @@ Verified uniqueness includes:
 - `(school_id, student_no)` for students.
 - `(school_id, code)` for fee items.
 - `(school_id, student_id, academic_year, version_no)` for Fee Agreement versions.
+- `(school_id, student_id, academic_year, current_slot)` for at most one current Fee Agreement; historical rows have nullable `current_slot`.
 - Fee Agreement discount/item pivot pairs.
 - Legacy `(school_id, invoice_no)` and `(school_id, student_id, invoice_month)`.
 - Receipt sequence `(school_id, prefix, series)`.
 - Receipt number `(school_id, receipt_no)`.
 - Issued-receipt guard `(school_id, active_payment_id)`; voiding clears `active_payment_id`, preserving history while allowing regeneration.
 - `audit_logs.event_uuid`.
+- `(school_id, fee_agreement_item_id, billing_month)` for scheduled agreement-item Fee Record charges. Nullable agreement-item IDs keep separate manual charges possible.
 
 Important lookup indexes cover student status/class/level, agreement current lookup, Fee Record student/category/agreement-item month, payment date/student/status/reference, payment allocation targets, receipt payment/student/date/status, audit request/batch/module/action/time, and calendar school/start.
 
 Known integrity gaps:
 
-- The Fee Agreement current lookup is not unique; the database does not guarantee one current version per student/year.
-- The Fee Record agreement-item/month index is not unique; there is no database duplicate-charge constraint.
 - Most status columns are unconstrained strings rather than enums/checks.
 - Actor `user_id` and financial row `school_id` are not protected by composite foreign keys.
 
@@ -99,9 +99,9 @@ All schema money/value fields use `DECIMAL(10,2)`, including fee/discount values
 
 Application caveat:
 
-- Eloquent models do not consistently apply `decimal:2` casts.
-- Payment allocation equality is compared in cents, which is safer.
-- Legacy invoice calculations and some reporting conversions use PHP floating-point values.
+- Active Fee Agreement item/discount, Fee Record, payment/allocation, and receipt/item models cast persisted amounts as `decimal:2`.
+- Input validation limits newly hardened financial requests to `99,999,999.99` and at most two decimal places; payment allocation equality is compared in cents.
+- Legacy assignment/invoice models and some reporting conversions still use PHP floating-point values.
 
 Therefore, do not claim end-to-end decimal safety. New financial logic should use an explicit decimal/cents strategy and tests.
 
@@ -142,6 +142,8 @@ The `custom` demo payment plan cannot be submitted through the current agreement
 - Never run `migrate:fresh` against a database containing data.
 
 The payment-allocation agreement-item foreign key is now created by the later corrective migration `2026_06_30_000006_ensure_payment_allocation_fee_agreement_item_foreign_key.php`, after `fee_agreement_items` exists. Older documentation describing the original fresh-MariaDB ordering defect is stale. On 2026-08-03, the documentation task successfully ran fresh/one-step rollback/re-migration and the guarded 8-test/33-assertion group on a disposable MariaDB 11.4.12 instance. This is local schema evidence, not production compatibility proof.
+
+`2026_08_03_000001_add_financial_integrity_constraints.php` adds the current-agreement and scheduled-charge unique keys. Its `up()` preflights duplicate current agreements and duplicate scheduled charges and aborts with an explicit error rather than deleting or choosing data. Its `down()` removes those constraints and `current_slot`; release rollback must account for the resulting loss of database-level protection.
 
 ## Rollback Expectations and Known Risks
 

@@ -2,7 +2,7 @@
 
 **Status:** Current implementation and confirmed product context
 
-**Repository baseline:** `14adce9508992c03c4249d49308a3841c198f4bd`
+**Repository baseline:** `8b65469e96a81551d9c7cac4cf10c44ab6342761`
 
 **Reviewed:** 2026-08-03
 
@@ -33,7 +33,7 @@ Do not describe the system as unlimited or use the historical cost estimate as p
 
 ### Implemented
 
-- Username login/logout/session restoration and seeded role-permission lookup.
+- Username login/logout/session restoration, CSRF-protected mutations, login throttling, active-session status checks, and seeded role-permission lookup.
 - Student list, search, filters, creation, details, backend profile update, and lifecycle status changes.
 - Read-only class directory and active-student rosters.
 - Versioned Fee Agreement creation, history, detail, and superseding.
@@ -42,27 +42,29 @@ Do not describe the system as unlimited or use the historical cost estimate as p
 - Student-centred payment recording, allocation, verification, void reversal, and history.
 - Receipt issue, snapshot items, browser print view, void, regeneration, and history.
 - School calendar list/create/update/delete.
-- Responsive application shell and admin UI.
+- Permission-filtered responsive application shell and admin UI.
 - Temporary local/public demo tooling.
-- Audit schema, logger, sanitizer, request IDs, seeded audit permissions, and model-level append-only guards.
+- Audit schema, logger, sanitizer, request IDs, model-level append-only guards, critical authentication/student/finance event integration, a read-only API, and a Super Admin Audit Trail UI.
+- Backend permission and authenticated-school enforcement for the legacy dashboard and monthly invoice endpoints.
+- Database guards for one current Fee Agreement per school/student/year and one scheduled charge per agreement item/month.
 
 ### Partially Implemented
 
-- Dashboard: API-backed metrics exist, but the frontend request is hard-coded to school `1`, July 2026, and academic year 2026. The backend endpoint lacks a specific permission and school-scope check.
+- Dashboard: API-backed metrics are available to `fee_record.view`. School-bound users are forced to their own school; global Super Admin must provide an explicit valid school. The frontend does not yet provide a school selector, so a global account receives a scope-required state instead of an assumed school.
 - Students: backend profile update exists, but the frontend does not expose a complete student-profile edit workflow; guardian data is read-only in Student Detail.
 - Parents: schema, relationships, and seed data exist; the top-level frontend is static and there are no parent CRUD APIs.
 - Fee catalogue: read API and schema exist; the top-level page is static and no management API/UI exists.
-- Fee Agreements: versions and snapshots work, but discounts are not applied to generated Fee Record amounts; superseding does not reconcile old future charges.
-- Payments and receipts: real workflows are implemented within Student Detail; top-level navigation pages are placeholders.
-- Invoices: legacy schema and a monthly-generation API remain, but the top-level page is a placeholder and the active Fee Record workflow does not use invoices as its source of truth.
-- Audit: secure foundation exists, but application business/authentication actions do not call it and there is no Audit Trail API or frontend.
+- Fee Agreements: versions and snapshots work. Discount formulas are not approved, so agreements with non-zero discounts cannot preview or activate charges. Superseding is rejected if old charge history exists on or after the new effective month; no automated credit/recalculation workflow exists.
+- Payments and receipts: real workflows are implemented within Student Detail; there are no separate top-level modules.
+- Invoices: legacy schema and a permission/school-scoped monthly-generation API remain, but the active Fee Record workflow does not use invoices as its source of truth and no invoice UI exists.
+- Audit: critical authentication, student, agreement, Fee Record activation/manual charge, payment, and receipt actions are covered. Calendar changes, exports, user management, generic correction, and recovery audit flows are not integrated because those features are lower-risk operational changes or absent from the current product.
 
 ### Planned, Not Implemented
 
 - User/role administration, account status management, and password reset.
 - General reports, exports, statements, reminders, and server-generated PDF documents.
 - Parent portal and communications.
-- Audit list/detail UI, business-event integration, generic corrections, and recovery workflows beyond the foundation.
+- Generic audit corrections, audit export, and recovery workflows beyond read-only event review.
 - Refunds, credits, overpayments, write-offs, and approved financial correction workflows.
 - Stable production hosting, CI/CD, monitoring, scheduled backups, and a verified restore process.
 - Cross-school management reporting and complete multi-school tenant controls.
@@ -80,7 +82,7 @@ Unless a future approved specification adds them, do not infer these from naviga
 - React presents administration workflows and client-side usability checks.
 - Laravel is authoritative for authentication, authorization, validation, school scoping, state transitions, numbering, and persisted finance effects.
 - MariaDB/MySQL-compatible behavior is the production direction. SQLite supports the local demo and default automated tests only.
-- The application currently models school ownership with `school_id`, but there is no global tenant middleware. Scope checks are implemented per controller/request/service and are incomplete on legacy endpoints.
+- The application models school ownership with `school_id`. A shared resolver protects the dashboard and legacy invoice paths, while other scope checks remain distributed across controllers, requests, and services; there is no global tenant middleware.
 - No third-party business system integration is present. The public demo tunnel is temporary transport, not a domain service.
 
 ## Operational Assumptions

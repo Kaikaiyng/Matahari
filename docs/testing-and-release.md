@@ -2,7 +2,7 @@
 
 **Status:** Repository command and release reference
 
-**Repository baseline:** `14adce9508992c03c4249d49308a3841c198f4bd`
+**Repository baseline:** `8b65469e96a81551d9c7cac4cf10c44ab6342761`
 
 Run commands from a clean feature branch/worktree. Record the exact command, exit code, counts, skipped cases, and limitations. Never convert a skipped or unavailable check into a pass.
 
@@ -19,11 +19,20 @@ Remove-Item Env:PHPRC
 
 This makes a Composer command that starts the system PHP load `tools/php/php.ini`. If Composer is supplied as a trusted local `composer.phar`, use `php -c ..\tools\php\php.ini <path-to-composer.phar> install`. Composer was not available as a command in the documentation-validation environment, so dependency installation was not rerun; the existing lockfile/vendor tree was used.
 
+When network access and Composer are available, also run `composer audit --locked`. The 2026-08-03 validation environment did not provide a Composer command, so PHP dependency advisories remain **Not verified** by that environment.
+
 Frontend (the lockfile is committed):
 
 ```powershell
 cd frontend
 npm.cmd ci
+```
+
+Audit both the production and complete dependency trees:
+
+```powershell
+npm.cmd audit --omit=dev --audit-level=moderate
+npm.cmd audit --audit-level=moderate
 ```
 
 Install only when dependencies are absent or lockfiles changed. Do not update lockfiles unintentionally.
@@ -214,16 +223,18 @@ Before release, confirm:
 
 Use fictional data in a local or approved test environment:
 
-1. Login, session restore, logout, invalid credentials, and inactive-user login.
+1. Request `/api/csrf-cookie`; confirm login without a valid CSRF header returns 419, then login with the cookie/header pair. Exercise session restore, logout, invalid credentials, throttling, and an already-authenticated user deactivated in the database.
 2. Exercise each seeded role and direct API denial, not only button visibility.
 3. Search/create/view/status-change a student in the UI as authorized; smoke-test profile update through the protected API because a complete profile-edit UI is not implemented. Verify denial for Finance/CEO.
-4. Create and supersede a Fee Agreement; inspect version history and future-charge behavior.
-5. Preview/activate charges and add a manual charge; confirm totals.
+4. Create and supersede a Fee Agreement; inspect version history. Confirm a replacement across existing charge history returns 409 without changing either version.
+5. Preview/activate charges and add a manual charge; confirm totals and Audit Trail events. Confirm non-zero discounts and `requires_preview_confirmation` prevent activation.
 6. Record cash and non-cash payments; verify pending payment; test partial allocation and over-allocation rejection.
 7. Issue, print, void, and regenerate a receipt; confirm numbers are not reused and issued receipt blocks payment void.
 8. Test calendar view/create/update/delete by role and school.
-9. Confirm placeholder pages are not presented as completed modules.
+9. Confirm navigation exposes only permission-backed entries and Audit Trail appears only to Super Admin. A global account without a selected school must not silently use school `1`.
 10. Check desktop, tablet, mobile, keyboard focus, and native browser print preview.
+
+For a real HTTP CSRF smoke test, use a disposable local database and an exact temporary port, start `artisan serve` in a hidden child process, preserve cookies in one client session, and stop only that recorded process ID afterward. Laravel feature tests disable CSRF middleware during normal test execution, so route/middleware feature tests do not replace this HTTP check.
 
 Real iPad Safari and native print preview are manual evidence; automated component tests do not replace them.
 

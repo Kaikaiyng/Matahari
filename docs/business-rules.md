@@ -2,7 +2,7 @@
 
 **Status:** Verified current behavior plus confirmed intended policy
 
-**Repository baseline:** `14adce9508992c03c4249d49308a3841c198f4bd`
+**Repository baseline:** `8b65469e96a81551d9c7cac4cf10c44ab6342761`
 
 This document separates policy from implementation. A confirmed intended rule is not described as enforced unless the backend or schema proves it.
 
@@ -37,6 +37,7 @@ Verified rules:
 - Superseding locks the current agreement, marks it `superseded` and not current, and creates a new active current version.
 - Agreement items snapshot fee code, description, amount, classification, billing frequency, billing months, and preview metadata.
 - The database uniquely identifies a version by school, student, academic year, and `version_no`.
+- A nullable `current_slot` unique key enforces at most one current agreement for each school, student, and academic year. Current rows use slot `1`; historical rows use `NULL`.
 - School Admin and Super Admin can create/supersede through current seeded permissions. Finance cannot.
 
 Confirmed policy:
@@ -45,12 +46,12 @@ Confirmed policy:
 - Replacements supersede earlier versions, and history must remain available.
 - Finance users must not create or supersede agreements unless a future approved change explicitly grants and enforces that authority.
 
-Important gaps:
+Current safeguards and limitations:
 
-- The database does not enforce that only one agreement is current for a student/year.
-- Old activated future Fee Record charges are not reconciled when an agreement is superseded. Activating the replacement can leave old and new future charges outstanding.
-- `requires_preview_confirmation` is stored, but the backend does not enforce a general confirmation step based on that flag.
-- Agreement academic-year validation and Fee Record academic-year validation do not use the same format.
+- Superseding is rejected with HTTP 409 when the earlier agreement has any Fee Record charge on or after the replacement effective month. The transaction leaves both versions unchanged.
+- `requires_preview_confirmation` produces an explicit preview warning and blocks activation. No server-bound approval mechanism exists yet.
+- Agreement and Fee Record request paths require a four-digit academic year; a new agreement effective date must fall within that year.
+- The migration adding current-agreement and scheduled-charge uniqueness aborts instead of guessing how to repair duplicate pre-existing rows.
 
 **Needs confirmation:** The approved policy for future charges when an agreement is replaced mid-year: cancel, credit, recalculate, or preserve them through a separate correction process.
 
@@ -63,10 +64,10 @@ Verified data concepts:
 - Agreement discount and selected-item relationships are snapshotted in the database.
 - Seed data includes a sibling-discount example. Seed values are demo fixtures, not approved production formulas.
 
-Current limitation:
+Current limitation and fail-closed behavior:
 
-- Agreement discounts are not applied by Fee Record preview or activation. Generated charges currently use agreement item amounts directly.
-- Percentage and fixed-value business bounds are incomplete.
+- Approved discount formulas do not exist. Any agreement containing a non-zero discount is rejected by Fee Record preview and activation instead of generating undiscounted charges.
+- Percentage values are capped at 100, selected fee codes must belong to the submitted agreement items, and monetary values are limited to the database-safe range with at most two decimal places. These validation bounds are not a business formula.
 
 **Needs confirmation:** Staff child, sibling, referral, legacy-pricing, scholarship, priority/stacking, proration, eligibility reassessment, removal, approval, and effective-date rules. No formula or percentage should be implemented from historical examples alone.
 
@@ -81,9 +82,11 @@ Verified rules:
 - Collection states include `unpaid`, `partial`, and `paid`.
 - Charge origins include `scheduled` and `manual`.
 
-Integrity gap:
+Integrity safeguards:
 
-- The `(school, fee_agreement_item, billing_month)` database index is not unique. Current duplicate prevention is service-level and scoped to an agreement, so it does not resolve superseded-version overlap.
+- `(school_id, fee_agreement_item_id, billing_month)` is unique for scheduled agreement-item charges. Because manual charges use a nullable agreement-item ID, repeated legitimate manual charges remain possible.
+- Activation rejects a second generation for the same student, agreement, and academic year.
+- Manual charges and scheduled activation write central audit events in the same database transaction; an audit failure rolls the charges back.
 
 ## Payments
 
@@ -120,9 +123,9 @@ Confirmed policy:
 - Verified payments must not be silently rewritten.
 - Voiding must preserve the original payment and its audit information.
 
-Current limitation:
+Current audit behavior:
 
-- Payment records store actor/time/reason fields, but normal payment actions do not emit records through the new audit logger.
+- Record, verify, and void actions emit allowlisted central audit events inside their finance transaction. If the required audit insert fails, the payment mutation is rolled back.
 - The schema does not constrain payment status values with an enum/check.
 - Payment proof is a nullable string, not a verified upload workflow.
 
@@ -153,9 +156,10 @@ Confirmed policy:
 - Frontend button hiding does not grant or deny authority.
 - School ownership is checked in multiple controllers, requests, and services, not by a single tenant layer.
 
-Exception:
+Legacy endpoint hardening:
 
-- The legacy dashboard and monthly invoice-generation endpoints require authentication only. They do not enforce a specific permission or the authenticated user's school. This contradicts the intended backend-authorization rule and is an open security issue.
+- Dashboard access requires `fee_record.view`; monthly invoice generation requires `fee_record.generate`.
+- A school-bound user is forced to their stored school even if another ID is submitted. A global Super Admin must submit an explicit existing school. Invoice actors are derived from the authenticated user, and submitted classes must belong to the resolved school.
 
 See [Permissions](permissions.md) for the complete matrix.
 
@@ -177,9 +181,9 @@ Verified safeguards include transactions, row locks for critical payment/receipt
 Known limitations:
 
 - Legacy invoice calculations and some summaries use PHP floating-point operations. Do not claim all application financial calculations are decimal-safe.
-- Discounts do not affect the active Fee Record calculation.
-- Superseding an agreement can leave overlapping future charges.
-- Normal financial mutations are not integrated with the audit logger.
+- Discounted charge generation is unavailable until formulas and approval behavior are confirmed; it fails closed rather than billing the wrong amount.
+- Agreements with existing charges on or after a proposed replacement month require a future approved correction/reconciliation workflow before superseding.
+- Current central audit coverage includes agreement create/supersede, Fee Record activation/manual charges, payment record/verify/void, and receipt issue/void. Generic corrections, refunds, credits, write-offs, and exports are not implemented.
 - Production MariaDB runtime grants, backups, binary logging, and restore reconciliation are **Not verified**.
 
 These limitations must be resolved and tested before describing the finance workflow as production-ready.

@@ -2,7 +2,7 @@
 
 **Status:** Seeded role matrix and verified enforcement map
 
-**Repository baseline:** `14adce9508992c03c4249d49308a3841c198f4bd`
+**Repository baseline:** `8b65469e96a81551d9c7cac4cf10c44ab6342761`
 
 ## Labels
 
@@ -49,7 +49,7 @@ Super Admin receives all 29 seeded permissions. The other seeded assignments are
 | Calendar create/update/delete | Allowed | Allowed | Allowed | Denied | Separate `calendar.*` route middleware |
 | Manage users/roles | Not implemented | Not implemented | Not implemented | Not implemented | No user-management route/service/UI |
 | Reset passwords | Not implemented | Not implemented | Not implemented | Not implemented | No password-reset route; reset storage was removed |
-| View audit records | Not implemented | Not implemented | Not implemented | Not implemented | Super Admin has `audit.view`, but no audit route/UI uses it |
+| View audit records | Allowed | Denied | Denied | Denied | `audit.view` on read-only list/detail routes; permission-filtered Audit Trail UI |
 | Perform generic audit correction | Not implemented | Not implemented | Not implemented | Not implemented | Super Admin has `audit.correct_generic`, but no correction workflow exists |
 | Change system settings | Not implemented | Not implemented | Not implemented | Not implemented | Settings page is a placeholder |
 
@@ -74,33 +74,24 @@ It does not grant receipt view/print, student view, payment view, or a general r
 | School scope | Distributed controller/request/service checks; no global tenant middleware |
 | Mutation validation | Laravel Form Requests plus service invariants |
 | Frontend actions | `permissions.includes(...)` checks for many pages/buttons; not authoritative |
-| Frontend navigation | Not permission-filtered; all 12 navigation items are visible to every authenticated user |
+| Frontend navigation | Each visible entry declares a required permission; absent groups are removed. This is a usability layer only. |
 
 No Laravel policies are present.
 
-## Backend Enforcement Gaps
+## Legacy Endpoint Enforcement
 
-### Legacy dashboard
+- `GET /api/dashboard/school` requires `fee_record.view`.
+- `POST /api/invoices/generate-monthly` requires `fee_record.generate`.
+- School-bound users are forced to their stored school; a global Super Admin must supply an explicit valid school.
+- Invoice `created_by` comes from the authenticated actor, and a submitted class must belong to the resolved school.
 
-`GET /api/dashboard/school` requires only `auth`. It accepts a requested `school_id` and does not compare it with the authenticated user's school. Any logged-in user can directly request data for another existing school ID.
-
-Frontend hiding of an outstanding card for users without `fee_record.view` does not protect this endpoint.
-
-### Legacy invoice generation
-
-`POST /api/invoices/generate-monthly` requires only `auth`. It accepts school and actor identifiers without binding them to the authenticated user. It can write legacy invoices without a specific permission or school-scope enforcement.
-
-These are release-blocking authorization issues.
+Focused permission, forged-actor, missing-school, invalid-school, and cross-school tests cover these rules.
 
 ## Frontend/Backend Mismatches
 
-- Students navigation is always visible; the Students page initially requests protected data without checking `students.view`, relying on backend 403.
-- Student Detail requests Fee Agreement history without first checking `fee_agreements.view`.
-- Fee items are requested based on agreement edit rights rather than `fee_items.view`.
-- The frontend shows Fee Record activation for `fee_record.generate` **or** `fee_record.manage`; the backend requires `fee_record.generate`.
 - CEO can see Calendar event summaries through `calendar.view`, but the frontend does not open full event detail unless the user also has update or delete permission.
-- Most payment and receipt action buttons match their backend permissions.
-- Top-level Payments/Receipts navigation opens placeholders even when the user has access; implemented workflows are inside Student Detail.
+- Guardian data is embedded in Student Detail under `students.view`; the separate `parents.view` slug is used for navigation but has no parent API to enforce. Seeded roles currently grant both permissions together where student access exists, but the intended separation is **Needs confirmation**.
+- Payment and receipt actions and Fee Record activation match backend slugs. Implemented payment/receipt workflows remain inside Student Detail rather than separate navigation modules.
 
 Frontend mismatches should be corrected for usability, but backend checks must remain the security boundary.
 

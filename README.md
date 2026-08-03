@@ -12,15 +12,16 @@ Implemented workflows include:
 - Fee Record preview, activation, manual charges, outstanding balances, summary, and category/month views.
 - Payment allocation, verification, void safeguards, receipt generation, browser printing, and receipt void/regeneration.
 - Shared school calendar CRUD.
+- Permission-filtered navigation and a Super Admin-only, read-only Audit Trail with filters and event detail.
 - Responsive desktop, tablet, and mobile administration UI.
-- Secure audit schema/logger foundation and request IDs.
+- CSRF-protected session mutations, login throttling, active-session rechecks, request IDs, and transactional audit events for implemented critical workflows.
 
 Important boundaries:
 
-- Payments and receipts are implemented inside Student Detail; their top-level navigation pages remain placeholders.
-- Parents, fee catalogue management, invoices, reports, exports, settings, user management, password reset, and production deployment are incomplete or not implemented.
-- Audit logging is not yet connected to normal business mutations, and there is no Audit Trail API or frontend.
-- The legacy dashboard and monthly invoice endpoints have unresolved authorization and school-scope gaps. See [Current Status](docs/current-status.md).
+- Payments and receipts are implemented inside Student Detail; unimplemented top-level placeholder navigation has been removed.
+- The parent directory and fee catalogue top-level pages remain display-only; parent mutations, fee catalogue management, reports, exports, settings, user management, password reset, and production deployment are incomplete or not implemented.
+- Discounts can be stored as agreement snapshots, but charge preview/activation deliberately fails closed until approved formulas exist.
+- Generic audit correction/recovery and audit export are planned, not implemented.
 
 ## Technology Stack
 
@@ -92,11 +93,13 @@ cd frontend
 npm.cmd run dev
 ```
 
-The frontend defaults to `http://127.0.0.1:8000/api`. To change it, create an untracked `frontend/.env.local`:
+The frontend defaults to the same-origin `/api` path. Vite development and preview proxy that path to `http://127.0.0.1:8000` by default. To use another local backend target without changing the browser API origin, create an untracked `frontend/.env.local`:
 
 ```dotenv
-VITE_API_BASE_URL=http://127.0.0.1:8000/api
+VITE_API_PROXY_TARGET=http://127.0.0.1:8000
 ```
+
+`VITE_API_BASE_URL` is supported for an explicitly reviewed alternative topology, but cross-origin session/cookie behavior is deployment-sensitive and is not the default.
 
 ## General Backend Environment
 
@@ -152,7 +155,7 @@ npm.cmd run build
 
 - Do not use demo data or seeded passwords in production.
 - Frontend-hidden actions are not an authorization boundary.
-- Production session cookie, proxy trust, CSRF, login throttling, database grants, backup/restore, and deployment hardening require review before launch.
+- CSRF middleware, a same-origin CSRF-cookie bootstrap, username-plus-IP login throttling, and active-user request checks are implemented. HTTPS cookie flags, proxy trust, rate-limit storage, CORS, and session topology still require deployment-specific verification.
 - Audit rows are append-only at the Eloquent model layer, not against raw SQL or privileged database users. Runtime least-privilege requirements are documented in [Audit Log Operations](docs/AUDIT_LOG_OPERATIONS.md).
 - Do not commit `.env`, database files, test artifacts, real student data, tokens, or tunnel runtime state.
 
@@ -174,4 +177,4 @@ npm.cmd run build
 - No stable hosting, production environment, CI pipeline, monitoring, or verified backup/restore process is included.
 - User administration and password reset are not implemented.
 - General reports, exports, statements, reminders, parent portal, PDF generation, and academic ERP modules are not implemented.
-- Important security and financial-integrity risks remain open; the system must not be described as production-ready. See [Current Status](docs/current-status.md).
+- Operational readiness remains incomplete: production hosting, CI, monitoring, least-privilege database grants, backups, restore drills, and approved discount/correction policies are not verified. See [Current Status](docs/current-status.md).
