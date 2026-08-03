@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\AuditLogController;
 use App\Http\Controllers\Api\CalendarEventController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\FeeAgreementController;
@@ -41,6 +42,11 @@ Route::middleware([...$sessionMiddleware, 'auth', 'active'])->group(function ():
         ->middleware('permission:fee_record.view');
     Route::post('/invoices/generate-monthly', [InvoiceGenerationController::class, 'store'])
         ->middleware('permission:fee_record.generate');
+
+    Route::get('/audit-logs', [AuditLogController::class, 'index'])
+        ->middleware('permission:audit.view');
+    Route::get('/audit-logs/{auditLog}', [AuditLogController::class, 'show'])
+        ->middleware('permission:audit.view');
 
     Route::get('/calendar-events', [CalendarEventController::class, 'index'])
         ->middleware('permission:calendar.view');
