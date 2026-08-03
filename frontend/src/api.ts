@@ -14,7 +14,6 @@ export class ApiError extends Error {
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? '/api'
 
-let csrfReady = false
 let csrfBootstrap: Promise<void> | null = null
 
 type RequestOptions = Omit<RequestInit, 'body' | 'credentials'> & {
@@ -54,8 +53,7 @@ async function performRequest<T>(path: string, options: RequestOptions, retryAft
   const response = await fetch(`${apiBaseUrl}${path}`, init)
 
   if (response.status === 419 && !isSafeMethod(method) && retryAfterCsrfFailure) {
-    csrfReady = false
-    await ensureCsrfCookie()
+    await ensureCsrfCookie(true)
 
     return performRequest<T>(path, options, false)
   }
@@ -80,8 +78,8 @@ async function performRequest<T>(path: string, options: RequestOptions, retryAft
   return payload as T
 }
 
-async function ensureCsrfCookie(): Promise<void> {
-  if (csrfReady && readCookie('XSRF-TOKEN')) {
+async function ensureCsrfCookie(forceRefresh = false): Promise<void> {
+  if (!forceRefresh && readCookie('XSRF-TOKEN')) {
     return
   }
 
@@ -96,7 +94,6 @@ async function ensureCsrfCookie(): Promise<void> {
         throw new ApiError(response.status, 'Unable to establish a secure session. Please reload and try again.')
       }
 
-      csrfReady = true
     })().finally(() => {
       csrfBootstrap = null
     })

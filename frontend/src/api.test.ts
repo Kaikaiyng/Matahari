@@ -76,4 +76,35 @@ describe('apiRequest', () => {
     expect(fetchSpy).toHaveBeenCalledTimes(1)
     expect(fetchSpy).toHaveBeenCalledWith('/api/me', expect.objectContaining({ credentials: 'include' }))
   })
+
+  it('reuses an existing CSRF cookie without another bootstrap request', async () => {
+    document.cookie = 'XSRF-TOKEN=existing-token; path=/'
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ ok: true }), { status: 200 }),
+    )
+
+    await apiRequest('/students', { method: 'POST', body: { name: 'Student' } })
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1)
+    const request = fetchSpy.mock.calls[0][1] as RequestInit
+    expect(new Headers(request.headers).get('X-XSRF-TOKEN')).toBe('existing-token')
+  })
+
+  it('refreshes the CSRF cookie once after a 419 response', async () => {
+    document.cookie = 'XSRF-TOKEN=stale-token; path=/'
+    const fetchSpy = vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(new Response(JSON.stringify({ message: 'CSRF token mismatch.' }), { status: 419 }))
+      .mockImplementationOnce(async () => {
+        document.cookie = 'XSRF-TOKEN=fresh-token; path=/'
+        return new Response(null, { status: 204 })
+      })
+      .mockResolvedValueOnce(new Response(JSON.stringify({ ok: true }), { status: 200 }))
+
+    await apiRequest('/students', { method: 'POST', body: { name: 'Student' } })
+
+    expect(fetchSpy).toHaveBeenCalledTimes(3)
+    expect(fetchSpy).toHaveBeenNthCalledWith(2, '/api/csrf-cookie', expect.any(Object))
+    const retriedRequest = fetchSpy.mock.calls[2][1] as RequestInit
+    expect(new Headers(retriedRequest.headers).get('X-XSRF-TOKEN')).toBe('fresh-token')
+  })
 })

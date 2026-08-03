@@ -46,7 +46,7 @@ function json(data: unknown, status = 200) {
 
 function installSuccessApi() {
   vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
-    const url = new URL(String(input))
+    const url = new URL(String(input), window.location.origin)
     if (url.pathname.endsWith('/classes')) return json({ data: classes })
     if (url.pathname.endsWith('/students')) return json({ data: students })
     return json({ message: 'Not found' }, 404)
@@ -85,8 +85,8 @@ describe('ClassesPage', () => {
 
     const studentRequest = vi
       .mocked(globalThis.fetch)
-      .mock.calls.find(([input]) => new URL(String(input)).pathname.endsWith('/students'))
-    expect(new URL(String(studentRequest?.[0])).searchParams.get('status')).toBe('active')
+      .mock.calls.find(([input]) => new URL(String(input), window.location.origin).pathname.endsWith('/students'))
+    expect(new URL(String(studentRequest?.[0]), window.location.origin).searchParams.get('status')).toBe('active')
   })
 
   it('opens an Active roster and forwards the selected class with the student', async () => {
@@ -131,7 +131,7 @@ describe('ClassesPage', () => {
     const user = userEvent.setup()
     let shouldFail = true
     vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
-      const url = new URL(String(input))
+      const url = new URL(String(input), window.location.origin)
       if (shouldFail && url.pathname.endsWith('/classes')) {
         return json({ message: 'Service unavailable' }, 500)
       }

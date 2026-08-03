@@ -8,6 +8,7 @@ export type NavigationItem<PageKey extends string> = {
   key: PageKey
   label: string
   icon: LucideIcon
+  requiredPermission?: string
 }
 
 export type NavigationGroup<PageKey extends string> = {
