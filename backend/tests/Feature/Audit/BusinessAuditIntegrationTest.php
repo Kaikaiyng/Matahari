@@ -59,7 +59,7 @@ class BusinessAuditIntegrationTest extends TestCase
     public function test_agreement_payment_and_receipt_lifecycle_is_audited(): void
     {
         $this->seed();
-        $school = School::query()->where('code', 'MIS')->firstOrFail();
+        $school = School::query()->where('code', 'DEMO')->firstOrFail();
         $student = Student::query()->where('school_id', $school->id)->firstOrFail();
         $admin = User::query()->where('username', 'admin')->firstOrFail();
         $finance = User::query()->where('username', 'finance')->firstOrFail();
@@ -157,7 +157,7 @@ class BusinessAuditIntegrationTest extends TestCase
     public function test_required_audit_failure_rolls_back_agreement_and_payment_creation(): void
     {
         $this->seed();
-        $school = School::query()->where('code', 'MIS')->firstOrFail();
+        $school = School::query()->where('code', 'DEMO')->firstOrFail();
         $student = Student::query()->where('school_id', $school->id)->firstOrFail();
         $admin = User::query()->where('username', 'admin')->firstOrFail();
         $tuition = FeeItem::query()->where('school_id', $school->id)->where('code', 'TUITION')->firstOrFail();
@@ -187,7 +187,7 @@ class BusinessAuditIntegrationTest extends TestCase
     public function test_required_audit_failure_rolls_back_payment_verification_and_receipt_issue(): void
     {
         $this->seed();
-        $school = School::query()->where('code', 'MIS')->firstOrFail();
+        $school = School::query()->where('code', 'DEMO')->firstOrFail();
         $student = Student::query()->where('school_id', $school->id)->firstOrFail();
         $admin = User::query()->where('username', 'admin')->firstOrFail();
         $finance = User::query()->where('username', 'finance')->firstOrFail();
@@ -232,7 +232,7 @@ class BusinessAuditIntegrationTest extends TestCase
     public function test_fee_record_activation_and_manual_charge_are_audited(): void
     {
         $this->seed();
-        $school = School::query()->where('code', 'MIS')->firstOrFail();
+        $school = School::query()->where('code', 'DEMO')->firstOrFail();
         $student = Student::query()->where('school_id', $school->id)->firstOrFail();
         $admin = User::query()->where('username', 'admin')->firstOrFail();
         $tuition = FeeItem::query()->where('school_id', $school->id)->where('code', 'TUITION')->firstOrFail();
@@ -279,7 +279,7 @@ class BusinessAuditIntegrationTest extends TestCase
     public function test_required_audit_failure_rolls_back_fee_record_activation_and_manual_charge(): void
     {
         $this->seed();
-        $school = School::query()->where('code', 'MIS')->firstOrFail();
+        $school = School::query()->where('code', 'DEMO')->firstOrFail();
         $student = Student::query()->where('school_id', $school->id)->firstOrFail();
         $admin = User::query()->where('username', 'admin')->firstOrFail();
         $tuition = FeeItem::query()->where('school_id', $school->id)->where('code', 'TUITION')->firstOrFail();

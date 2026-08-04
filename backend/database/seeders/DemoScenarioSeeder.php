@@ -22,7 +22,7 @@ class DemoScenarioSeeder extends Seeder
 {
     public function run(): void
     {
-        $school = School::query()->where('code', 'MIS')->firstOrFail();
+        $school = School::query()->where('code', 'DEMO')->firstOrFail();
         $admin = User::query()->where('username', 'admin')->firstOrFail();
         $yearTwo = SchoolClass::query()
             ->where('school_id', $school->id)
@@ -40,9 +40,9 @@ class DemoScenarioSeeder extends Seeder
             ->where('code', 'MISC')
             ->firstOrFail();
 
-        $alyssa = Student::query()->where('school_id', $school->id)->where('student_no', 'MIS-2026-001')->firstOrFail();
-        $daniel = Student::query()->where('school_id', $school->id)->where('student_no', 'MIS-2026-002')->firstOrFail();
-        $mika = Student::query()->where('school_id', $school->id)->where('student_no', 'MIS-2026-003')->firstOrFail();
+        $alyssa = Student::query()->where('school_id', $school->id)->where('student_no', 'DEMO-2026-001')->firstOrFail();
+        $daniel = Student::query()->where('school_id', $school->id)->where('student_no', 'DEMO-2026-002')->firstOrFail();
+        $mika = Student::query()->where('school_id', $school->id)->where('student_no', 'DEMO-2026-003')->firstOrFail();
 
         $this->activateAgreement($alyssa, $admin, [$tuition, $misc], [7, 8, 9]);
         $this->activateAgreement($daniel, $admin, [$tuition, $misc], [7]);
@@ -55,7 +55,7 @@ class DemoScenarioSeeder extends Seeder
     private function createUnconfiguredStudent(School $school, SchoolClass $schoolClass): void
     {
         $student = Student::query()->updateOrCreate(
-            ['school_id' => $school->id, 'student_no' => 'MIS-2026-004'],
+            ['school_id' => $school->id, 'student_no' => 'DEMO-2026-004'],
             [
                 'class_id' => $schoolClass->id,
                 'level_group' => 'primary',

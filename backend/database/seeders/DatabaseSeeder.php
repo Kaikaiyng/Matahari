@@ -21,14 +21,14 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $school = School::query()->updateOrCreate(
-            ['code' => 'MIS'],
+            ['code' => 'DEMO'],
             [
-                'name' => 'Matahari International School',
-                'receipt_prefix' => 'MIS',
-                'invoice_prefix' => 'MIS-INV',
-                'email' => 'admin@mis.edu.my',
+                'name' => 'Demo International School',
+                'receipt_prefix' => 'DEMO',
+                'invoice_prefix' => 'DEMO-INV',
+                'email' => 'admin@demo-school.test',
                 'phone' => '+60 3-0000 0000',
-                'address' => 'Matahari International School, Malaysia',
+                'address' => 'Fictional demo school, Malaysia',
                 'status' => 'active',
             ],
         );
@@ -48,7 +48,7 @@ class DatabaseSeeder extends Seeder
             ['username' => 'superadmin'],
             [
                 'school_id' => null,
-                'name' => 'MIS Super Admin',
+                'name' => 'Demo Super Admin',
                 'password' => Hash::make('password'),
                 'status' => 'active',
             ],
@@ -58,7 +58,7 @@ class DatabaseSeeder extends Seeder
             ['username' => 'admin'],
             [
                 'school_id' => $school->id,
-                'name' => 'MIS School Admin',
+                'name' => 'Demo School Admin',
                 'password' => Hash::make('password'),
                 'status' => 'active',
             ],
@@ -68,7 +68,7 @@ class DatabaseSeeder extends Seeder
             ['username' => 'finance'],
             [
                 'school_id' => $school->id,
-                'name' => 'MIS Finance Admin',
+                'name' => 'Demo Finance Admin',
                 'password' => Hash::make('password'),
                 'status' => 'active',
             ],
@@ -198,7 +198,7 @@ class DatabaseSeeder extends Seeder
 
         $students = [
             [
-                'student_no' => 'MIS-2026-001',
+                'student_no' => 'DEMO-2026-001',
                 'full_name' => 'Alyssa Tan',
                 'class_id' => $yearFour->id,
                 'parent' => 'Michelle Tan',
@@ -206,7 +206,7 @@ class DatabaseSeeder extends Seeder
                 'discount' => true,
             ],
             [
-                'student_no' => 'MIS-2026-002',
+                'student_no' => 'DEMO-2026-002',
                 'full_name' => 'Daniel Lim',
                 'class_id' => $yearTwo->id,
                 'parent' => 'Jonathan Lim',
@@ -214,7 +214,7 @@ class DatabaseSeeder extends Seeder
                 'discount' => false,
             ],
             [
-                'student_no' => 'MIS-2026-003',
+                'student_no' => 'DEMO-2026-003',
                 'full_name' => 'Mika Wong',
                 'class_id' => $yearFour->id,
                 'parent' => 'Rachel Wong',
@@ -268,7 +268,7 @@ class DatabaseSeeder extends Seeder
                 );
             }
 
-            if ($student->student_no === 'MIS-2026-001') {
+            if ($student->student_no === 'DEMO-2026-001') {
                 StudentFeeAssignment::query()->updateOrCreate(
                     [
                         'school_id' => $school->id,

@@ -23,7 +23,7 @@ class BillingWorkflowTest extends TestCase
     {
         $this->seed();
 
-        $school = School::query()->where('code', 'MIS')->firstOrFail();
+        $school = School::query()->where('code', 'DEMO')->firstOrFail();
 
         $result = app(InvoiceGenerationService::class)->generateMonthly(
             schoolId: $school->id,
@@ -36,11 +36,11 @@ class BillingWorkflowTest extends TestCase
         $this->assertSame(0, $result['skipped_count']);
 
         $invoice = Invoice::query()
-            ->whereHas('student', fn ($query) => $query->where('student_no', 'MIS-2026-001'))
+            ->whereHas('student', fn ($query) => $query->where('student_no', 'DEMO-2026-001'))
             ->with('items')
             ->firstOrFail();
 
-        $this->assertSame('MIS-INV-2026-000001', $invoice->invoice_no);
+        $this->assertSame('DEMO-INV-2026-000001', $invoice->invoice_no);
         $this->assertSame('2026-07', $invoice->invoice_month);
         $this->assertEquals(970.00, (float) $invoice->subtotal);
         $this->assertEquals(97.00, (float) $invoice->discount_total);
@@ -56,7 +56,7 @@ class BillingWorkflowTest extends TestCase
     {
         $this->seed();
 
-        $school = School::query()->where('code', 'MIS')->firstOrFail();
+        $school = School::query()->where('code', 'DEMO')->firstOrFail();
         $service = app(InvoiceGenerationService::class);
 
         $service->generateMonthly($school->id, '2026-07', '2026-07-01', '2026-07-10');
@@ -71,10 +71,10 @@ class BillingWorkflowTest extends TestCase
     {
         $this->seed();
 
-        $school = School::query()->where('code', 'MIS')->firstOrFail();
+        $school = School::query()->where('code', 'DEMO')->firstOrFail();
         app(InvoiceGenerationService::class)->generateMonthly($school->id, '2026-07', '2026-07-01', '2026-07-10');
 
-        $student = Student::query()->where('student_no', 'MIS-2026-002')->firstOrFail();
+        $student = Student::query()->where('student_no', 'DEMO-2026-002')->firstOrFail();
         $feeItem = FeeItem::query()->where('school_id', $school->id)->where('code', 'TUITION')->firstOrFail();
         $admin = User::query()->where('username', 'admin')->firstOrFail();
 
@@ -103,7 +103,7 @@ class BillingWorkflowTest extends TestCase
         $receiptService = app(ReceiptGenerationService::class);
         $firstReceipt = $receiptService->generate($firstPayment, ['receipt_date' => '2026-07-05'], $admin);
 
-        $this->assertSame('MIS.A0001 (07/2026)', $firstReceipt->receipt_no);
+        $this->assertSame('DEMO.A0001 (07/2026)', $firstReceipt->receipt_no);
 
         $this->expectException(ValidationException::class);
         $receiptService->generate($firstPayment, ['receipt_date' => '2026-07-05'], $admin);
@@ -113,8 +113,8 @@ class BillingWorkflowTest extends TestCase
     {
         $this->seed();
 
-        $school = School::query()->where('code', 'MIS')->firstOrFail();
-        $student = Student::query()->where('student_no', 'MIS-2026-002')->firstOrFail();
+        $school = School::query()->where('code', 'DEMO')->firstOrFail();
+        $student = Student::query()->where('student_no', 'DEMO-2026-002')->firstOrFail();
         $feeItem = FeeItem::query()->where('school_id', $school->id)->where('code', 'TUITION')->firstOrFail();
         $admin = User::query()->where('username', 'admin')->firstOrFail();
 
@@ -146,18 +146,18 @@ class BillingWorkflowTest extends TestCase
         $receiptService->void($firstReceipt, 'Wrong receipt.', $admin);
         $secondReceipt = $receiptService->generate($firstPayment, ['receipt_date' => '2026-08-06'], $admin);
 
-        $this->assertSame('MIS.A0001 (07/2026)', $firstReceipt->receipt_no);
-        $this->assertSame('MIS.A0002 (08/2026)', $secondReceipt->receipt_no);
+        $this->assertSame('DEMO.A0001 (07/2026)', $firstReceipt->receipt_no);
+        $this->assertSame('DEMO.A0002 (08/2026)', $secondReceipt->receipt_no);
     }
 
     public function test_payment_recording_is_student_first_and_does_not_touch_invoice_or_receipt(): void
     {
         $this->seed();
 
-        $school = School::query()->where('code', 'MIS')->firstOrFail();
+        $school = School::query()->where('code', 'DEMO')->firstOrFail();
         app(InvoiceGenerationService::class)->generateMonthly($school->id, '2026-07', '2026-07-01', '2026-07-10');
 
-        $student = Student::query()->where('student_no', 'MIS-2026-002')->firstOrFail();
+        $student = Student::query()->where('student_no', 'DEMO-2026-002')->firstOrFail();
         $invoice = $student->invoices()->firstOrFail();
         $feeItem = FeeItem::query()->where('school_id', $school->id)->where('code', 'TUITION')->firstOrFail();
         $admin = User::query()->where('username', 'admin')->firstOrFail();

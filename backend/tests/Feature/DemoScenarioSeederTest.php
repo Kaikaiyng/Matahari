@@ -42,10 +42,10 @@ class DemoScenarioSeederTest extends TestCase
 
         $this->assertSame(0, Student::query()->where('full_name', 'like', 'QA%')->count());
 
-        $alyssa = Student::query()->where('student_no', 'MIS-2026-001')->firstOrFail();
-        $daniel = Student::query()->where('student_no', 'MIS-2026-002')->firstOrFail();
-        $mika = Student::query()->where('student_no', 'MIS-2026-003')->firstOrFail();
-        $noor = Student::query()->where('student_no', 'MIS-2026-004')->firstOrFail();
+        $alyssa = Student::query()->where('student_no', 'DEMO-2026-001')->firstOrFail();
+        $daniel = Student::query()->where('student_no', 'DEMO-2026-002')->firstOrFail();
+        $mika = Student::query()->where('student_no', 'DEMO-2026-003')->firstOrFail();
+        $noor = Student::query()->where('student_no', 'DEMO-2026-004')->firstOrFail();
 
         $this->assertTrue(FeeRecordCharge::query()
             ->where('student_id', $alyssa->id)
