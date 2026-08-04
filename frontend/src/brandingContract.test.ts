@@ -54,4 +54,12 @@ describe('runtime branding contract', () => {
       }
     }
   })
+
+  it('uses the semantic danger token for destructive focus', () => {
+    const appStyles = readFileSync(resolve(frontendRoot, 'src', 'App.css'), 'utf8')
+
+    expect(appStyles).toMatch(
+      /\.modal-danger-action:focus-visible\s*\{\s*outline-color:\s*var\(--danger-dark\);\s*\}/,
+    )
+  })
 })

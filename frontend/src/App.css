@@ -1451,7 +1451,7 @@ th {
 }
 
 .modal-danger-action:focus-visible {
-  outline-color: #7f1119;
+  outline-color: var(--danger-dark);
 }
 
 .payment-allocation-summary td {
