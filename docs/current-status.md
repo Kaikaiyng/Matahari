@@ -2,13 +2,13 @@
 
 **Snapshot date:** 2026-08-04
 
-**Inspected implementation commit:** `142606090d0cf112fbb041ed695b756007d5f3da`
+**Inspected implementation commit:** `faee84d72a7e75cbac967774446235a571a734de`
 
 **Default branch:** `master`
 
 **Overall status:** White-labelled neutral administration-finance demo MVP with application hardening in place; production operations and several business policies remain incomplete
 
-The commit above is the white-label implementation snapshot immediately before this documentation refresh. Use Git history and the final merge commit for the complete delivered snapshot.
+The commit above is the final white-label feature head delivered through [pull request #8](https://github.com/Kaikaiyng/Matahari/pull/8). GitHub merged it into `master` as `2f4c6bd199a7fae149658d3993aba370203746de` on 2026-08-04.
 
 ## Runtime Demo Identity
 
@@ -152,7 +152,7 @@ White-label branch validation on 2026-08-04:
 - Controller QA reset the ignored disposable SQLite demo database, then used the in-app browser against temporary local backend/frontend processes on ports 8010/5180. Login/checking-session, sidebar/drawer, Dashboard, Students list, Student Detail, Calendar, Super Admin Audit Trail, and receipt view were checked at 1440x900, 1180x820, 820x1180, and 390x844. No page-level horizontal overflow or legacy runtime branding was observed, and `DEMO` identifiers were visible.
 - Receipt `DEMO.A0001` displayed the exact `SAMPLE — NOT A VALID RECEIPT` notice. With print media emulated at an A4-like 794x1123 viewport, the receipt and notice remained visible with no document horizontal overflow or legacy branding.
 - QA used a temporary ignored `backend/.env`, generated from `.env.example` to provide `APP_KEY`, and removed it afterward. Unknown existing services on ports 8000/5173 were left untouched; only the exact temporary processes on 8010/5180 were stopped. The gstack browse package lacked Playwright in this environment, so the Codex in-app browser was used as the fallback; this is an environment limitation, not a product issue.
-- Final release delivery, push, pull-request, and merge validation remain **Needs confirmation**.
+- Release delivery is verified: [pull request #8](https://github.com/Kaikaiyng/Matahari/pull/8) was merged into `master` as `2f4c6bd199a7fae149658d3993aba370203746de` on 2026-08-04. The remote feature branch was retained, matching existing repository practice.
 
 ## Deployment Status
 
