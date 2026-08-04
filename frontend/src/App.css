@@ -38,13 +38,13 @@ h2 {
   min-width: 244px;
   height: 44px;
   padding: 0 16px;
-  background: #ee2f37;
+  background: var(--brand-primary);
   color: #ffffff;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 9px;
-  box-shadow: 0 10px 24px rgba(238, 47, 55, 0.24);
+  box-shadow: 0 10px 24px rgb(37 99 235 / 24%);
 }
 
 .primary-action.compact {
@@ -108,7 +108,7 @@ h2 {
 
 .metric-card.danger strong,
 .metric-card.warning strong {
-  color: #d82730;
+  color: var(--danger);
 }
 
 .metric-card.positive strong {
@@ -208,12 +208,12 @@ h2 {
 }
 
 .summary-grid article.warning {
-  border-color: #f4c7ca;
-  background: #fff7f7;
+  border-color: var(--danger);
+  background: var(--danger-soft);
 }
 
 .summary-grid article.warning strong {
-  color: #d82730;
+  color: var(--danger);
 }
 
 .cards-grid {
@@ -259,7 +259,7 @@ h2 {
 }
 
 .class-card > svg {
-  color: #d82730;
+  color: var(--brand-primary);
 }
 
 .class-card h4,
@@ -394,7 +394,7 @@ h2 {
 }
 
 .report-card svg {
-  color: #ee2f37;
+  color: var(--brand-primary);
 }
 
 .report-card strong {
@@ -417,7 +417,7 @@ h2 {
 }
 
 .warning-icon {
-  color: #d82730;
+  color: var(--danger);
 }
 
 .table-wrap,
@@ -540,7 +540,7 @@ h2 {
 
 .fee-record-row.has-outstanding td:first-child,
 .fee-record-row.has-outstanding td:nth-child(2) {
-  background: #fffafa;
+  background: var(--danger-soft);
 }
 
 .fee-record-ledger .panel-header {
@@ -584,11 +584,11 @@ h2 {
 }
 
 .fee-record-row.has-outstanding {
-  background: #fffafa;
+  background: var(--danger-soft);
 }
 
 .fee-record-row.has-outstanding td {
-  border-bottom-color: #f3d2d5;
+  border-bottom-color: var(--danger);
 }
 
 .month-cell {
@@ -634,8 +634,8 @@ h2 {
 }
 
 .month-cell.unpaid {
-  background: #fff5f5;
-  border-color: #f0c7ca;
+  background: var(--danger-soft);
+  border-color: var(--danger);
 }
 
 .month-cell.no_charge {
@@ -654,7 +654,7 @@ h2 {
 }
 
 .link-button:hover {
-  color: #d82730;
+  color: var(--brand-primary-dark);
 }
 
 table {
@@ -698,8 +698,8 @@ th {
 }
 
 .badge.danger {
-  background: #ffe7e9;
-  color: #b31923;
+  background: var(--danger-soft);
+  color: var(--danger-dark);
 }
 
 .badge.neutral {
@@ -740,7 +740,7 @@ th {
 }
 
 .outstanding-item b {
-  color: #d82730;
+  color: var(--danger);
   font-size: 15px;
   white-space: nowrap;
 }
@@ -792,8 +792,8 @@ th {
 }
 
 .message-card.error {
-  background: #ffe7e9;
-  color: #b31923;
+  background: var(--danger-soft);
+  color: var(--danger-dark);
 }
 
 .message-card.info {
@@ -852,7 +852,7 @@ th {
 }
 
 .form-field small {
-  color: #b31923;
+  color: var(--danger-dark);
   font-size: 12px;
   font-weight: 700;
 }
@@ -1007,14 +1007,14 @@ th {
 }
 
 .fee-record-warning-list {
-  border-color: #f0c7ca;
-  background: #fff7f7;
+  border-color: var(--danger);
+  background: var(--danger-soft);
 }
 
 .warning-row {
   display: grid;
   gap: 4px;
-  border: 1px solid #f0c7ca;
+  border: 1px solid var(--danger);
   border-radius: 8px;
   background: #ffffff;
   padding: 10px;
@@ -1219,9 +1219,9 @@ th {
 }
 
 .inline-error {
-  border: 1px solid #f2c7ca;
-  background: #fff5f5;
-  color: #a52b34;
+  border: 1px solid var(--danger);
+  background: var(--danger-soft);
+  color: var(--danger-dark);
 }
 
 .payment-advanced-options {
@@ -1440,12 +1440,12 @@ th {
 }
 
 .danger-action {
-  border-color: #ffd0d4;
-  color: #b31923;
+  border-color: var(--danger);
+  color: var(--danger-dark);
 }
 
 .modal-danger-action {
-  background: var(--brand-red-dark, #b31923);
+  background: var(--danger-dark);
   color: #ffffff;
   box-shadow: none;
 }
@@ -1534,10 +1534,10 @@ th {
 
 .receipt-demo-notice {
   margin: 0 0 18px;
-  border: 2px dashed #9f1239;
+  border: 2px dashed var(--brand-primary-dark);
   border-radius: 6px;
-  background: #fff1f2;
-  color: #881337;
+  background: var(--brand-primary-soft);
+  color: var(--brand-primary-dark);
   padding: 10px 12px;
   font-size: 13px;
   font-weight: 900;

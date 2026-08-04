@@ -131,7 +131,7 @@
 }
 
 .agreement-review-details > summary {
-  color: var(--brand-red-dark, #b31923);
+  color: var(--brand-primary-dark);
   cursor: pointer;
   font-weight: 800;
 }
@@ -217,7 +217,7 @@
 .text-button {
   border: 0;
   background: transparent;
-  color: #aa252c;
+  color: var(--brand-primary-dark);
   cursor: pointer;
   font: inherit;
   font-size: 13px;
@@ -226,7 +226,7 @@
 }
 
 .danger-text {
-  color: #b3262e;
+  color: var(--danger);
 }
 
 .fee-item-advanced {
@@ -328,26 +328,26 @@
 }
 
 .fee-agreement-editor .billing-month-option input:checked + span {
-  border-color: #aa252c;
-  background: #fff0f1;
-  color: #8e1e25;
+  border-color: var(--brand-primary);
+  background: var(--brand-primary-soft);
+  color: var(--brand-primary-dark);
 }
 
 .fee-agreement-editor .billing-month-option input:focus-visible + span {
-  outline: 3px solid rgba(170, 37, 44, 0.2);
+  outline: 3px solid rgb(37 99 235 / 24%);
   outline-offset: 1px;
 }
 
 .field-error {
   margin: 8px 0 0;
-  color: #b3262e;
+  color: var(--danger);
   font-size: 12px;
   font-weight: 800;
 }
 
 .fee-item-row:has(.field-error) {
   border-radius: 8px;
-  box-shadow: 0 0 0 2px rgb(208 52 61 / 12%);
+  box-shadow: 0 0 0 2px rgb(180 35 24 / 12%);
 }
 
 .optional-fee-empty {
