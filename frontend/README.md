@@ -35,13 +35,20 @@ Use `npm.cmd` on Windows when PowerShell blocks `npm.ps1`.
 /api
 ```
 
-Vite development and preview proxy that same-origin path to `http://127.0.0.1:8000` by default. To use another local backend target without changing the browser API origin, set `VITE_API_PROXY_TARGET` in `frontend/.env.local`:
+Vite development and preview proxy that same-origin path to `http://127.0.0.1:8000` by default. To use another local backend target without changing the browser API origin, set `VITE_API_PROXY_TARGET` in the process environment before starting Vite. `vite.config.ts` reads `process.env`, so this setting is not loaded from `frontend/.env.local`:
 
-```dotenv
-VITE_API_PROXY_TARGET=http://127.0.0.1:8000
+```powershell
+$env:VITE_API_PROXY_TARGET = 'http://127.0.0.1:8000'
+npm.cmd run dev
 ```
 
-Set `VITE_API_BASE_URL` only when intentionally using a direct or different API base. That topology may require explicit cross-origin and session-cookie configuration. Requests include credentials because authentication uses Laravel session cookies.
+Use `frontend/.env.local` only when intentionally setting `VITE_API_BASE_URL` to a direct or different API base:
+
+```dotenv
+VITE_API_BASE_URL=https://api.example.test/api
+```
+
+That topology may require explicit cross-origin and session-cookie configuration. Requests include credentials because authentication uses Laravel session cookies.
 
 ## Implemented Screens and Flows
 
@@ -99,7 +106,7 @@ npm.cmd audit --audit-level=moderate
 
 Last verified on 2026-08-04:
 
-- Vitest passed 148 tests across 14 files.
+- Vitest passed 153 tests across 14 files.
 - Oxlint completed with no reported diagnostics.
 - TypeScript and the production build passed with 73 modules transformed.
 - Production-only and complete-tree npm audits both reported 0 vulnerabilities.

@@ -22,6 +22,13 @@ const runtimeTextExtensions = new Set([
   '.webmanifest',
 ])
 const testPathSegments = new Set(['test', 'tests', '__tests__', '__mocks__', '__fixtures__'])
+const activeDemoSourcePaths = [
+  'backend/database/seeders/DatabaseSeeder.php',
+  'backend/database/seeders/DemoScenarioSeeder.php',
+  'backend/app/Services/Billing/ReceiptGenerationService.php',
+  'docs/DEMO_REVIEW_SCRIPT.md',
+  'frontend/README.md',
+]
 const prohibitedContentTokens = [
   /Matahari/i,
   /MIS logo/i,
@@ -30,7 +37,7 @@ const prohibitedContentTokens = [
   /--brand-red/i,
   /#(?:ee2f37|d82730|b31923)/i,
 ]
-const prohibitedFileNameTokens = [/Matahari/i, /mis-logo/i, /\bMIS\b/i]
+const prohibitedPathTokens = [/Matahari/i, /mis-logo/i, /\bMIS\b/i]
 const approvedRootPalette = {
   '--brand-primary': '#2563eb',
   '--brand-primary-dark': '#1d4ed8',
@@ -46,11 +53,38 @@ const approvedRootPalette = {
   '--border': '#dfe5ee',
   '--border-strong': '#cbd5e1',
 } as const
+const approvedSchoolSeed = {
+  name: 'Demo International School',
+  receipt_prefix: 'DEMO',
+  invoice_prefix: 'DEMO-INV',
+  email: 'admin@demo-school.test',
+  phone: '+60 3-0000 0000',
+  address: 'Fictional demo school, Malaysia',
+  status: 'active',
+} as const
+const semanticSelectorPattern =
+  /danger|error|invalid|warning|warn|outstanding|unpaid|delete|void|field-error|form-field|overdue|failed|destructive|critical|alert/i
 
 type ContractSource = {
   path: string
+  source?: string
+}
+
+type TextContractSource = ContractSource & {
   source: string
 }
+
+type CssBlock = {
+  selector: string
+  declarations: string
+}
+
+type CssViolation = {
+  selector: string
+  token: string
+}
+
+type RgbColor = readonly [number, number, number]
 
 function filesRecursively(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -80,40 +114,193 @@ function frontendRuntimeFiles(): string[] {
   ].sort()
 }
 
-function expectNoMatch(path: string, token: string | undefined): void {
-  expect(token, `${path}: prohibited token ${JSON.stringify(token)}`).toBeUndefined()
+function frontendRepositoryPath(path: string): string {
+  return `frontend/${relative(frontendRoot, path).replaceAll('\\', '/')}`
 }
 
-function expectSourcePattern({ path, source }: ContractSource, label: string, pattern: RegExp): void {
-  expect(pattern.test(source), `${path}: expected ${label}`).toBe(true)
-}
-
-function readContractSource(path: string): ContractSource {
+function readContractSource(path: string): TextContractSource {
   return {
     path,
     source: readFileSync(resolve(repositoryRoot, path), 'utf8'),
   }
 }
 
-describe('runtime branding contract', () => {
-  it('keeps runtime frontend source and public asset names free of legacy branding', () => {
-    for (const file of frontendRuntimeFiles()) {
-      const path = relative(frontendRoot, file)
+function runtimeContractSources(): ContractSource[] {
+  return frontendRuntimeFiles().map((file) => ({
+    path: frontendRepositoryPath(file),
+    source: runtimeTextExtensions.has(extname(file)) ? readFileSync(file, 'utf8') : undefined,
+  }))
+}
 
-      for (const pattern of prohibitedFileNameTokens) {
-        expectNoMatch(path, path.match(pattern)?.[0])
-      }
+function isTextCssSource(source: ContractSource): source is TextContractSource {
+  return source.path.endsWith('.css') && source.source !== undefined
+}
 
-      if (!runtimeTextExtensions.has(extname(file))) {
-        continue
-      }
+function negativeScanSources(): ContractSource[] {
+  return [...runtimeContractSources(), ...activeDemoSourcePaths.map(readContractSource)]
+}
 
-      const source = readFileSync(file, 'utf8')
+function expectNoMatch(path: string, token: string | undefined): void {
+  expect(token, `${path}: prohibited token ${JSON.stringify(token)}`).toBeUndefined()
+}
 
-      for (const pattern of prohibitedContentTokens) {
-        expectNoMatch(path, source.match(pattern)?.[0])
-      }
+function expectNoProhibitedContent(sources: ContractSource[]): void {
+  for (const { path, source } of sources) {
+    for (const pattern of prohibitedPathTokens) {
+      expectNoMatch(path, path.match(pattern)?.[0])
     }
+
+    if (source === undefined) {
+      continue
+    }
+
+    for (const pattern of prohibitedContentTokens) {
+      expectNoMatch(path, source.match(pattern)?.[0])
+    }
+  }
+}
+
+function expectSourcePattern({ path, source }: TextContractSource, label: string, pattern: RegExp): void {
+  expect(pattern.test(source), `${path}: expected ${label}`).toBe(true)
+}
+
+function expectOccurrenceCount(source: TextContractSource, label: string, pattern: RegExp, expected: number): void {
+  expect([...source.source.matchAll(pattern)].length, `${source.path}: ${label} occurrence count`).toBe(expected)
+}
+
+function phpStringFieldValues(source: string, field: string): string[] {
+  return [...source.matchAll(new RegExp(`'${field}'\\s*(?:=>|,)\\s*'([^']+)'`, 'g'))].map((match) => match[1])
+}
+
+function expectExactValues(path: string, label: string, actual: string[], expected: readonly string[]): void {
+  expect([...actual].sort(), `${path}: ${label}`).toEqual([...expected].sort())
+}
+
+function expectExclusiveSchoolSeed(databaseSeeder: TextContractSource): void {
+  expectOccurrenceCount(databaseSeeder, 'School::updateOrCreate', /School::query\(\)->updateOrCreate\(/g, 1)
+
+  const records = [
+    ...databaseSeeder.source.matchAll(
+      /School::query\(\)->updateOrCreate\(\s*\[\s*'code'\s*=>\s*'([^']+)'\s*,?\s*\],\s*\[([\s\S]*?)\n\s*\],\s*\);/g,
+    ),
+  ]
+
+  expect(records.length, `${databaseSeeder.path}: school seed record count`).toBe(1)
+
+  const record = records[0]
+  expect(record?.[1], `${databaseSeeder.path}: school code`).toBe('DEMO')
+
+  const fields = [...(record?.[2] ?? '').matchAll(/'([a-z_]+)'\s*=>\s*'([^']+)'/g)]
+  expectExactValues(
+    databaseSeeder.path,
+    'school seed field names',
+    fields.map((field) => field[1]),
+    Object.keys(approvedSchoolSeed),
+  )
+
+  for (const [field, value] of Object.entries(approvedSchoolSeed)) {
+    const matches = fields.filter((candidate) => candidate[1] === field)
+
+    expect(matches.length, `${databaseSeeder.path}: ${field} occurrence count`).toBe(1)
+    expect(matches[0]?.[2], `${databaseSeeder.path}: ${field}`).toBe(value)
+  }
+}
+
+function cssBlocks(source: string): CssBlock[] {
+  return [...source.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map((match) => ({
+    selector: match[1].trim(),
+    declarations: match[2],
+  }))
+}
+
+function hexToRgb(literal: string): RgbColor {
+  const hex = literal.slice(1)
+  const normalized = hex.length <= 4 ? hex.slice(0, 3).split('').map((part) => part.repeat(2)).join('') : hex.slice(0, 6)
+
+  return [
+    Number.parseInt(normalized.slice(0, 2), 16),
+    Number.parseInt(normalized.slice(2, 4), 16),
+    Number.parseInt(normalized.slice(4, 6), 16),
+  ]
+}
+
+function rgbComponent(component: string): number {
+  const value = Number.parseFloat(component)
+
+  return component.endsWith('%') ? (value / 100) * 255 : value
+}
+
+function isSaturatedRed([red, green, blue]: RgbColor): boolean {
+  const maximum = Math.max(red, green, blue)
+  const minimum = Math.min(red, green, blue)
+  const delta = maximum - minimum
+
+  if (maximum === 0 || delta === 0 || delta / maximum < 0.45) {
+    return false
+  }
+
+  let hue: number
+
+  if (maximum === red) {
+    hue = 60 * (((green - blue) / delta) % 6)
+  } else if (maximum === green) {
+    hue = 60 * ((blue - red) / delta + 2)
+  } else {
+    hue = 60 * ((red - green) / delta + 4)
+  }
+
+  const normalizedHue = (hue + 360) % 360
+
+  return normalizedHue <= 20 || normalizedHue >= 340
+}
+
+function redColorLiterals(declarations: string): string[] {
+  const hexLiterals = [...declarations.matchAll(/#(?:[\da-f]{3,4}|[\da-f]{6}|[\da-f]{8})\b/gi)]
+    .map((match) => match[0])
+    .filter((literal) => isSaturatedRed(hexToRgb(literal)))
+  const rgbLiterals = [
+    ...declarations.matchAll(
+      /rgba?\(\s*([\d.]+%?)\s*(?:,|\s)\s*([\d.]+%?)\s*(?:,|\s)\s*([\d.]+%?)(?:\s*(?:,|\/)\s*[\d.]+%?)?\s*\)/gi,
+    ),
+  ]
+    .filter((match) => isSaturatedRed([rgbComponent(match[1]), rgbComponent(match[2]), rgbComponent(match[3])]))
+    .map((match) => match[0])
+
+  return [...hexLiterals, ...rgbLiterals]
+}
+
+function compactSelector(selector: string): string {
+  return selector.replace(/\s+/g, ' ').trim()
+}
+
+function semanticColorViolations(source: string): CssViolation[] {
+  return cssBlocks(source).flatMap(({ selector, declarations }) => {
+    const normalizedSelector = compactSelector(selector)
+    const declarationsToInspect =
+      normalizedSelector === ':root' ? declarations.replace(/^\s*--[\w-]+\s*:\s*[^;]+;\s*$/gm, '') : declarations
+
+    if (semanticSelectorPattern.test(normalizedSelector)) {
+      return []
+    }
+
+    const dangerTokens = [...declarationsToInspect.matchAll(/var\(--danger(?:-[\w-]+)?\)/g)].map((match) => match[0])
+
+    return [...dangerTokens, ...redColorLiterals(declarationsToInspect)].map((token) => ({
+      selector: normalizedSelector,
+      token,
+    }))
+  })
+}
+
+function expectNoSemanticColorViolations(source: TextContractSource): void {
+  for (const violation of semanticColorViolations(source.source)) {
+    expect(violation, `${source.path}: ${violation.selector}: ${violation.token}`).toBeUndefined()
+  }
+}
+
+describe('runtime branding contract', () => {
+  it('keeps runtime and active demo sources free of legacy branding', () => {
+    expectNoProhibitedContent(negativeScanSources())
   })
 
   it('uses the exact approved root palette', () => {
@@ -136,34 +323,63 @@ describe('runtime branding contract', () => {
     }
   })
 
-  it('keeps the backend demo seed and receipt fallback identity approved', () => {
+  it('uses danger tokens and saturated red literals only in semantic CSS selectors', () => {
+    for (const source of runtimeContractSources().filter(isTextCssSource)) {
+      expectNoSemanticColorViolations(source)
+    }
+  })
+
+  it('classifies saturated red without treating green or amber as danger colors', () => {
+    expect(isSaturatedRed(hexToRgb('#b42318'))).toBe(true)
+    expect(isSaturatedRed([180, 35, 24])).toBe(true)
+    expect(isSaturatedRed(hexToRgb('#167a4a'))).toBe(false)
+    expect(isSaturatedRed(hexToRgb('#9b6500'))).toBe(false)
+    expect(isSaturatedRed(hexToRgb('#2563eb'))).toBe(false)
+  })
+
+  it('detects raw red outside a semantic CSS selector', () => {
+    expect(semanticColorViolations('.primary-action { color: #b42318; }')).toEqual([
+      { selector: '.primary-action', token: '#b42318' },
+    ])
+  })
+
+  it('keeps the backend demo seed and receipt fallback identity exclusively approved', () => {
     const databaseSeeder = readContractSource('backend/database/seeders/DatabaseSeeder.php')
     const demoScenarioSeeder = readContractSource('backend/database/seeders/DemoScenarioSeeder.php')
     const receiptGenerationService = readContractSource('backend/app/Services/Billing/ReceiptGenerationService.php')
 
-    expectSourcePattern(databaseSeeder, 'school code DEMO', /\['code'\s*=>\s*'DEMO'\]/)
-    expectSourcePattern(databaseSeeder, 'Demo International School', /'name'\s*=>\s*'Demo International School'/)
-    expectSourcePattern(databaseSeeder, 'receipt prefix DEMO', /'receipt_prefix'\s*=>\s*'DEMO'/)
-    expectSourcePattern(databaseSeeder, 'invoice prefix DEMO-INV', /'invoice_prefix'\s*=>\s*'DEMO-INV'/)
+    expectExclusiveSchoolSeed(databaseSeeder)
+    expectOccurrenceCount(databaseSeeder, 'DEMO school code', /\['code'\s*=>\s*'DEMO'\]/g, 1)
+    expectOccurrenceCount(databaseSeeder, 'Demo International School', /Demo International School/g, 1)
 
     for (const name of ['Demo Super Admin', 'Demo School Admin', 'Demo Finance Admin']) {
-      expectSourcePattern(databaseSeeder, name, new RegExp(`'name'\\s*=>\\s*'${name}'`))
+      expectOccurrenceCount(databaseSeeder, name, new RegExp(name, 'g'), 1)
     }
 
-    for (const studentNo of ['DEMO-2026-001', 'DEMO-2026-002', 'DEMO-2026-003']) {
-      expectSourcePattern(databaseSeeder, studentNo, new RegExp(`'student_no'\\s*=>\\s*'${studentNo}'`))
-    }
-
+    expectExactValues(
+      databaseSeeder.path,
+      'seeded student identifiers',
+      phpStringFieldValues(databaseSeeder.source, 'student_no'),
+      ['DEMO-2026-001', 'DEMO-2026-002', 'DEMO-2026-003'],
+    )
     expectSourcePattern(demoScenarioSeeder, 'school lookup DEMO', /where\('code',\s*'DEMO'\)/)
-
-    for (const studentNo of ['DEMO-2026-001', 'DEMO-2026-002', 'DEMO-2026-003', 'DEMO-2026-004']) {
-      expectSourcePattern(demoScenarioSeeder, studentNo, new RegExp(`'${studentNo}'`))
-    }
-
-    expectSourcePattern(
+    expectOccurrenceCount(
+      demoScenarioSeeder,
+      'school code lookup',
+      /School::query\(\)->where\('code',\s*'[^']+'\)/g,
+      1,
+    )
+    expectExactValues(
+      demoScenarioSeeder.path,
+      'scenario student identifiers',
+      phpStringFieldValues(demoScenarioSeeder.source, 'student_no'),
+      ['DEMO-2026-001', 'DEMO-2026-002', 'DEMO-2026-003', 'DEMO-2026-004'],
+    )
+    expectOccurrenceCount(
       receiptGenerationService,
       'last-resort receipt fallback DEMO',
-      /\$prefix\s*=\s*\$payment->school\?->receipt_prefix\s*\?:\s*\$payment->school\?->code\s*\?:\s*'DEMO';/,
+      /\$prefix\s*=\s*\$payment->school\?->receipt_prefix\s*\?:\s*\$payment->school\?->code\s*\?:\s*'DEMO';/g,
+      1,
     )
   })
 
