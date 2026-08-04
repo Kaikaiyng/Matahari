@@ -1,8 +1,8 @@
-# Responsive Finance MVP Demo Script
+# School Admin System Demo Script
 
 Status: Current demo sequence
 
-Last updated: 2026-07-22
+Last updated: 2026-08-04
 
 ## 1. Demo Goal
 
@@ -41,11 +41,10 @@ For a real iPad, connect both devices to the same trusted LAN and follow [Develo
 Suggested explanation:
 
 ```text
-This is the current Matahari internal Admin Finance MVP.
+This is an independent School Admin System workflow prototype.
 
-The demo focuses on the school calendar, class/student navigation, fee agreements,
-charge generation, payment allocation, payment verification, receipts, and fee-record
-ledgers. It is designed first for school admin work on desktop and iPad.
+The demo uses a fictional school, fictional users, and sample financial records. It is
+not affiliated with or endorsed by any school, and printed receipts are not valid receipts.
 ```
 
 ## 4. Login and Navigation

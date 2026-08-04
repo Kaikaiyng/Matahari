@@ -1,6 +1,8 @@
-# Matahari Frontend
+# School Admin System Frontend
 
-The frontend is a React and TypeScript admin application for the Matahari Finance MVP. It uses Vite, Lucide icons, and focused project CSS. The application is intentionally practical and data-dense rather than a consumer mobile app or marketing dashboard.
+The frontend is a React and TypeScript neutral administration/finance demo. It uses Vite, Lucide icons, and focused project CSS. The application is intentionally practical and data-dense rather than a consumer mobile app or marketing dashboard. Runtime product copy is centralized in `src/branding.ts`; a fresh disposable backend demo seed supplies the fictional `Demo International School` tenant.
+
+The repository retains earlier internal project history as development evidence, but that history is not part of the neutral runtime identity or a claim of school affiliation. Do not use presentation changes to rename existing tenant data or historical receipt identifiers.
 
 ## Stack
 

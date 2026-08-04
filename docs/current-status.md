@@ -1,14 +1,22 @@
 # Current Status
 
-**Snapshot date:** 2026-08-03
+**Snapshot date:** 2026-08-04
 
-**Inspected implementation commit:** `8b65469e96a81551d9c7cac4cf10c44ab6342761`
+**Inspected implementation commit:** `142606090d0cf112fbb041ed695b756007d5f3da`
 
 **Default branch:** `master`
 
-**Overall status:** Internal/demo administration-finance MVP with application hardening in place; production operations and several business policies remain incomplete
+**Overall status:** White-labelled neutral administration-finance demo MVP with application hardening in place; production operations and several business policies remain incomplete
 
-The commit above is the last application commit before this documentation refresh. Use Git history and the final merge commit for the complete delivered snapshot.
+The commit above is the white-label implementation snapshot immediately before this documentation refresh. Use Git history and the final merge commit for the complete delivered snapshot.
+
+## Runtime Demo Identity
+
+The runtime demonstration is presented as **School Admin System**. A fresh, intentional reset of the ignored disposable SQLite demo database seeds the fictional **Demo International School** tenant and `DEMO` identifiers; printable receipts are marked as samples and are not valid receipts.
+
+The repository retains internal Matahari project history and historical records as development evidence. Those records do not describe the neutral runtime identity or establish an affiliation with, or endorsement by, a school. The reset command never runs automatically and must not be adapted to a database containing valuable data. Existing receipt identifiers are financial history and are never rewritten automatically.
+
+Later school-specific branding requires explicit approval and a controlled update to the presentation configuration and, if needed, a fresh disposable demo seed. It must not rename existing tenant data or rewrite financial history.
 
 ## Technology Snapshot
 
@@ -134,6 +142,14 @@ Final branch validation on 2026-08-03:
 - Composer/PHP dependency advisory audit: **Not verified** because no Composer command was available. Existing locked dependencies and tests were used; this is a release-environment limitation.
 
 The disposable MariaDB server used `--skip-grant-tables` solely to validate schema and application behavior without local credentials. This does not validate production accounts, grants, TLS, or authentication configuration.
+
+White-label branch validation on 2026-08-04:
+
+- `php artisan test --no-ansi`: 210 passed, 8 MariaDB-only tests skipped, and 1,129 assertions; exit 0.
+- `php vendor/bin/pint --test`, `php artisan route:list --path=api --except-vendor`, and `php artisan about --only=environment,drivers`: exit 0; 38 API routes loaded.
+- `npm.cmd test -- --run`: 14 files and 148 tests passed; exit 0. `npm.cmd run lint` and `npm.cmd run build` also exited 0; the production build transformed 73 modules.
+- `npm.cmd audit --omit=dev --audit-level=moderate` and `npm.cmd audit --audit-level=moderate`: 0 vulnerabilities.
+- Browser/print visual smoke and final release, push, pull-request, and merge validation are **Needs confirmation**; they are not represented by the automated results above.
 
 ## Deployment Status
 

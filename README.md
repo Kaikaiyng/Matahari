@@ -1,6 +1,8 @@
-# Matahari School Management System
+# School Admin System
 
-Matahari is an administration and finance workflow MVP for Matahari International School. It supports a stakeholder demo and continued development of student, fee, payment, receipt, and calendar workflows. It is not yet a complete academic ERP or a production deployment package.
+School Admin System is a neutral administration and finance workflow MVP for independent demonstrations and continued development of student, fee, payment, receipt, and calendar workflows. Its seeded demo uses the fictional `Demo International School` tenant. It is not yet a complete academic ERP or a production deployment package.
+
+This repository retains its internal Matahari project history and historical records as development evidence. The neutral runtime demo is not an affiliation with, or endorsement by, any school.
 
 ## Current Scope
 
@@ -72,13 +74,15 @@ cd ..
 
 `PHPRC` makes a Composer installation that launches the system `php.exe` load this repository's `tools/php/php.ini`. If Composer is not installed as a command, run its trusted local `composer.phar` explicitly with `php -c ..\tools\php\php.ini` instead.
 
-Create or reset only the ignored local demo SQLite database:
+Create or intentionally reset only the ignored local demo SQLite database:
 
 ```powershell
 tools\php\reset-demo-sqlite.cmd
 ```
 
-This command runs `migrate:fresh --seed` against `backend/database/database.sqlite`. Do not adapt it to a database containing valuable data. Seeded users are demo-only; inspect the seeder locally if credentials are needed, and never reuse them in a deployed environment.
+`tools\php\reset-demo-sqlite.cmd` destroys only the ignored, disposable `backend/database/database.sqlite` demo database and then runs `migrate:fresh --seed`. It reseeds the fictional `Demo International School` tenant and `DEMO` identifiers. It does not run automatically; do not adapt it to a database containing valuable data. Existing receipt identifiers are financial history and are never rewritten automatically. Seeded users are demo-only; inspect the seeder locally if credentials are needed, and never reuse them in a deployed environment.
+
+The runtime product label and receipt disclaimer are centralized in `frontend/src/branding.ts`. Later school-specific branding requires explicit approval and a deliberate update to the presentation configuration and, where appropriate, a fresh disposable demo seed. It must not be used to rename an existing tenant or rewrite historical receipt identifiers.
 
 Start the API in one terminal:
 
