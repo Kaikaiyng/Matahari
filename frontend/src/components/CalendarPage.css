@@ -31,7 +31,7 @@
 }
 
 .calendar-title {
-  color: var(--brand-red-dark, #b31923);
+  color: var(--brand-primary-dark);
 }
 
 .calendar-title h2 {
@@ -93,12 +93,12 @@
 }
 
 .calendar-day.calendar-today {
-  background: #fff6f6;
-  box-shadow: inset 0 0 0 2px var(--brand-red, #ee2f37);
+  background: var(--brand-primary-soft);
+  box-shadow: inset 0 0 0 2px var(--brand-primary);
 }
 
 .calendar-day.calendar-today .calendar-day-number {
-  color: var(--brand-red-dark, #b31923);
+  color: var(--brand-primary-dark);
 }
 
 .calendar-day-number {
@@ -205,11 +205,11 @@
 }
 
 .calendar-form-field [aria-invalid='true'] {
-  border-color: var(--brand-red-dark, #b31923);
+  border-color: var(--danger-dark);
 }
 
 .calendar-form-field small {
-  color: var(--brand-red-dark, #b31923);
+  color: var(--danger-dark);
   font-size: 12px;
 }
 
@@ -233,7 +233,7 @@
 .calendar-checkbox-field input {
   width: 18px;
   height: 18px;
-  accent-color: var(--brand-red, #ee2f37);
+  accent-color: var(--brand-primary);
 }
 
 .calendar-field-errors {
@@ -242,7 +242,7 @@
 }
 
 .calendar-field-errors small {
-  color: var(--brand-red-dark, #b31923);
+  color: var(--danger-dark);
   font-size: 12px;
   font-weight: 700;
 }
@@ -252,7 +252,7 @@
 }
 
 .calendar-confirm-delete {
-  background: var(--brand-red-dark, #b31923);
+  background: var(--danger-dark);
 }
 
 .calendar-delete-copy {
@@ -262,7 +262,7 @@
   line-height: 1.55;
 }
 
-.calendar-event-appointment { border-left-color: #d43a45; }
+.calendar-event-appointment { border-left-color: var(--brand-primary); }
 .calendar-event-training { border-left-color: #217a52; }
 .calendar-event-meeting { border-left-color: #3155a4; }
 .calendar-event-school_event { border-left-color: #a36400; }

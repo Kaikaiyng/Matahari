@@ -175,7 +175,7 @@ class AuthApiTest extends TestCase
     {
         $this->seed();
 
-        $school = School::query()->where('code', 'MIS')->firstOrFail();
+        $school = School::query()->where('code', 'DEMO')->firstOrFail();
 
         $this->getJson('/api/dashboard/school?school_id='.$school->id.'&invoice_month=2026-07')
             ->assertUnauthorized();
@@ -199,14 +199,14 @@ class AuthApiTest extends TestCase
 
         $this->getJson('/api/students')
             ->assertOk()
-            ->assertJsonPath('data.0.student_no', 'MIS-2026-001');
+            ->assertJsonPath('data.0.student_no', 'DEMO-2026-001');
     }
 
     public function test_finance_still_cannot_create_fee_agreement_after_login(): void
     {
         $this->seed();
 
-        $school = School::query()->where('code', 'MIS')->firstOrFail();
+        $school = School::query()->where('code', 'DEMO')->firstOrFail();
         $student = Student::query()->where('school_id', $school->id)->firstOrFail();
         $tuition = FeeItem::query()->where('school_id', $school->id)->where('code', 'TUITION')->firstOrFail();
         $misc = FeeItem::query()->where('school_id', $school->id)->where('code', 'MISC')->firstOrFail();

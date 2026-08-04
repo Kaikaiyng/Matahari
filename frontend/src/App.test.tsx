@@ -74,7 +74,7 @@ const financeDialogUser = {
 }
 
 const dashboard = {
-  school: { id: 1, code: 'MIS', name: 'Matahari International School' },
+  school: { id: 1, code: 'DEMO', name: 'Demo International School' },
   metrics: {
     today_collection: 0,
     monthly_collection: 0,
@@ -323,6 +323,7 @@ function installApiMock() {
     if (url.pathname.endsWith('/students/1/fee-agreements')) return json({ data: [] })
     if (url.pathname.endsWith('/students/1/payments')) return json({ data: [pendingPayment] })
     if (url.pathname.endsWith('/students/1/receipts')) return json({ data: [issuedReceipt] })
+    if (url.pathname.endsWith('/receipts/21')) return json({ receipt: issuedReceipt })
     if (url.pathname.endsWith('/students/1/fee-record/outstanding')) return json({ data: [] })
     if (url.pathname.endsWith('/fee-items')) return json({ data: feeItems })
     if (url.pathname.endsWith('/classes')) return json({ data: schoolClasses })
@@ -397,6 +398,8 @@ describe('demo shell', () => {
     render(<App />)
 
     const username = await screen.findByLabelText('Username')
+    expect(screen.getByRole('img', { name: 'School Admin System logo' })).toBeInTheDocument()
+    expect(screen.getByText('School Admin System')).toBeInTheDocument()
     const password = screen.getByLabelText('Password')
     expect(username).toHaveValue('')
     expect(password).toHaveValue('')
@@ -447,6 +450,9 @@ describe('demo shell', () => {
   it('uses a compact Dashboard header and shared metric cards', async () => {
     await renderAuthenticatedApp()
 
+    const utilityHeader = document.querySelector<HTMLElement>('.utility-header')
+    if (!utilityHeader) throw new Error('Utility header was not rendered')
+    expect(within(utilityHeader).getByText('Demo International School')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'School overview' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Open Students' })).toBeInTheDocument()
     expect(screen.getByRole('region', { name: 'Dashboard metrics' })).toBeInTheDocument()
@@ -988,6 +994,15 @@ describe('demo shell', () => {
     expect(summary).toHaveTextContent('Alyssa Tan')
     expect(summary).toHaveTextContent('The linked payment remains verified')
     await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Cancel' })).toHaveFocus())
+  })
+
+  it('marks the displayed receipt as a fictional sample', async () => {
+    const user = userEvent.setup()
+    await openSelectedStudentPayments(user)
+    await user.click(await screen.findByRole('button', { name: 'View' }))
+
+    expect(screen.getByRole('heading', { name: 'Demo International School' })).toBeInTheDocument()
+    expect(screen.getByRole('note')).toHaveTextContent('SAMPLE — NOT A VALID RECEIPT')
   })
 
   it('preserves Verify Payment submission and success refresh behavior', async () => {

@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import { LogOut, Menu, X } from 'lucide-react'
+import { productBrand } from '../branding'
+import { BrandMark } from './BrandMark'
 import './AdminShell.css'
 
 export type NavigationItem<PageKey extends string> = {
@@ -17,7 +19,6 @@ export type NavigationGroup<PageKey extends string> = {
 }
 
 type AdminShellProps<PageKey extends string> = {
-  brandLogo: string
   activePage: PageKey
   pageTitle: string
   contextText: string
@@ -33,7 +34,6 @@ type AdminShellProps<PageKey extends string> = {
 }
 
 export function AdminShell<PageKey extends string>({
-  brandLogo,
   activePage,
   pageTitle,
   contextText,
@@ -130,10 +130,10 @@ export function AdminShell<PageKey extends string>({
         inert={isNarrowViewport && !isOpen ? true : undefined}
       >
         <div className="admin-brand">
-          <img src={brandLogo} alt="MIS logo" />
+          <BrandMark className="admin-brand-mark" size={27} />
           <div>
-            <strong>MIS</strong>
-            <span>School ERP</span>
+            <strong>{productBrand.productShortName}</strong>
+            <span>{productBrand.productDescriptor}</span>
           </div>
           <button
             ref={closeRef}

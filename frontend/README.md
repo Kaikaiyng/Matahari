@@ -1,6 +1,8 @@
-# Matahari Frontend
+# School Admin System Frontend
 
-The frontend is a React and TypeScript admin application for the Matahari Finance MVP. It uses Vite, Lucide icons, and focused project CSS. The application is intentionally practical and data-dense rather than a consumer mobile app or marketing dashboard.
+The frontend is a React and TypeScript neutral administration/finance demo. It uses Vite, Lucide icons, and focused project CSS. The application is intentionally practical and data-dense rather than a consumer mobile app or marketing dashboard. Runtime product copy is centralized in `src/branding.ts`; a fresh disposable backend demo seed supplies the fictional `Demo International School` tenant.
+
+The repository retains earlier internal project history as development evidence, but that history is not part of the neutral runtime identity or a claim of school affiliation. Do not use presentation changes to rename existing tenant data or historical receipt identifiers.
 
 ## Stack
 
@@ -30,16 +32,23 @@ Use `npm.cmd` on Windows when PowerShell blocks `npm.ps1`.
 `src/api.ts` defaults to:
 
 ```text
-http://127.0.0.1:8000/api
+/api
 ```
 
-Override it with `frontend/.env.local`:
+Vite development and preview proxy that same-origin path to `http://127.0.0.1:8000` by default. To use another local backend target without changing the browser API origin, set `VITE_API_PROXY_TARGET` in the process environment before starting Vite. `vite.config.ts` reads `process.env`, so this setting is not loaded from `frontend/.env.local`:
+
+```powershell
+$env:VITE_API_PROXY_TARGET = 'http://127.0.0.1:8000'
+npm.cmd run dev
+```
+
+Use `frontend/.env.local` only when intentionally setting `VITE_API_BASE_URL` to a direct or different API base:
 
 ```dotenv
-VITE_API_BASE_URL=http://127.0.0.1:8000/api
+VITE_API_BASE_URL=https://api.example.test/api
 ```
 
-Requests include credentials because authentication uses Laravel session cookies. The backend must allow the exact frontend origin when testing from another host or LAN address.
+That topology may require explicit cross-origin and session-cookie configuration. Requests include credentials because authentication uses Laravel session cookies.
 
 ## Implemented Screens and Flows
 
@@ -88,15 +97,19 @@ Touch-oriented controls use 44px targets on tablet/mobile. Wide finance ledgers 
 ## Verification
 
 ```powershell
+npm.cmd test -- --run
 npm.cmd run lint
 npm.cmd run build
+npm.cmd audit --omit=dev --audit-level=moderate
+npm.cmd audit --audit-level=moderate
 ```
 
-Last verified on 2026-07-22:
+Last verified on 2026-08-04:
 
-- Vitest passed 75 tests across 7 files
-- Build passed with 66 modules transformed
-- Lint reported zero errors and zero warnings
-- Earlier responsive browser QA covered 1440x900, 1180x820, 820x1180, and 390x844; real-device iPad Safari remains recommended
+- Vitest passed 156 tests across 14 files.
+- Oxlint completed with no reported diagnostics.
+- TypeScript and the production build passed with 73 modules transformed.
+- Production-only and complete-tree npm audits both reported 0 vulnerabilities.
+- Local in-app browser QA covered 1440x900, 1180x820, 820x1180, and 390x844; real-device iPad Safari remains recommended.
 
 The responsive acceptance details are in [the implemented responsive design](../docs/superpowers/specs/2026-07-11-ipad-first-responsive-demo-design.md).
