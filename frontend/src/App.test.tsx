@@ -74,7 +74,7 @@ const financeDialogUser = {
 }
 
 const dashboard = {
-  school: { id: 1, code: 'MIS', name: 'Matahari International School' },
+  school: { id: 1, code: 'DEMO', name: 'Demo International School' },
   metrics: {
     today_collection: 0,
     monthly_collection: 0,
@@ -450,6 +450,9 @@ describe('demo shell', () => {
   it('uses a compact Dashboard header and shared metric cards', async () => {
     await renderAuthenticatedApp()
 
+    const utilityHeader = document.querySelector<HTMLElement>('.utility-header')
+    if (!utilityHeader) throw new Error('Utility header was not rendered')
+    expect(within(utilityHeader).getByText('Demo International School')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'School overview' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Open Students' })).toBeInTheDocument()
     expect(screen.getByRole('region', { name: 'Dashboard metrics' })).toBeInTheDocument()
