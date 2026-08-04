@@ -145,9 +145,9 @@ The disposable MariaDB server used `--skip-grant-tables` solely to validate sche
 
 White-label branch validation on 2026-08-04:
 
-- `php artisan test --no-ansi`: 210 passed, 8 MariaDB-only tests skipped, and 1,129 assertions; exit 0.
+- `php artisan test --no-ansi`: 211 passed, 8 MariaDB-only tests skipped, and 1,131 assertions; exit 0.
 - `php vendor/bin/pint --test`, `php artisan route:list --path=api --except-vendor`, and `php artisan about --only=environment,drivers`: exit 0; 38 API routes loaded.
-- `npm.cmd test -- --run`: 14 files and 148 tests passed; exit 0. `npm.cmd run lint` and `npm.cmd run build` also exited 0; the production build transformed 73 modules.
+- `npm.cmd test -- --run`: 14 files and 156 tests passed; exit 0. `npm.cmd run lint` and `npm.cmd run build` also exited 0; the production build transformed 73 modules.
 - `npm.cmd audit --omit=dev --audit-level=moderate` and `npm.cmd audit --audit-level=moderate`: 0 vulnerabilities.
 - Controller QA reset the ignored disposable SQLite demo database, then used the in-app browser against temporary local backend/frontend processes on ports 8010/5180. Login/checking-session, sidebar/drawer, Dashboard, Students list, Student Detail, Calendar, Super Admin Audit Trail, and receipt view were checked at 1440x900, 1180x820, 820x1180, and 390x844. No page-level horizontal overflow or legacy runtime branding was observed, and `DEMO` identifiers were visible.
 - Receipt `DEMO.A0001` displayed the exact `SAMPLE — NOT A VALID RECEIPT` notice. With print media emulated at an A4-like 794x1123 viewport, the receipt and notice remained visible with no document horizontal overflow or legacy branding.

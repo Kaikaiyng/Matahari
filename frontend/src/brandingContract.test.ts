@@ -207,10 +207,42 @@ function expectExclusiveSchoolSeed(databaseSeeder: TextContractSource): void {
 }
 
 function cssBlocks(source: string): CssBlock[] {
-  return [...source.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map((match) => ({
+  const commentFreeSource = source.replace(/\/\*[\s\S]*?\*\//g, '')
+
+  return [...commentFreeSource.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map((match) => ({
     selector: match[1].trim(),
     declarations: match[2],
   }))
+}
+
+function rootPaletteContractViolations(source: string): string[] {
+  const rootBlocks = cssBlocks(source).filter(({ selector }) => compactSelector(selector) === ':root')
+
+  if (rootBlocks.length !== 1) {
+    return [`expected exactly one :root block, found ${rootBlocks.length}`]
+  }
+
+  const palette = Object.fromEntries(
+    [...rootBlocks[0].declarations.matchAll(/^\s*(--[\w-]+):\s*([^;]+);/gm)].map(([, token, value]) => [
+      token,
+      value,
+    ]),
+  )
+  const violations: string[] = []
+  const actualTokens = Object.keys(palette).sort()
+  const expectedTokens = Object.keys(approvedRootPalette).sort()
+
+  if (JSON.stringify(actualTokens) !== JSON.stringify(expectedTokens)) {
+    violations.push(`root palette tokens: ${actualTokens.join(', ')}`)
+  }
+
+  for (const [token, value] of Object.entries(approvedRootPalette)) {
+    if (palette[token] !== value) {
+      violations.push(`${token}: ${String(palette[token])}`)
+    }
+  }
+
+  return violations
 }
 
 function hexToRgb(literal: string): RgbColor {
@@ -276,10 +308,13 @@ function compactSelector(selector: string): string {
 function semanticColorViolations(source: string): CssViolation[] {
   return cssBlocks(source).flatMap(({ selector, declarations }) => {
     const normalizedSelector = compactSelector(selector)
+    const effectiveSelectors = normalizedSelector.split(',').map(compactSelector).filter(Boolean)
     const declarationsToInspect =
-      normalizedSelector === ':root' ? declarations.replace(/^\s*--[\w-]+\s*:\s*[^;]+;\s*$/gm, '') : declarations
+      effectiveSelectors.length === 1 && effectiveSelectors[0] === ':root'
+        ? declarations.replace(/^\s*--[\w-]+\s*:\s*[^;]+;\s*$/gm, '')
+        : declarations
 
-    if (semanticSelectorPattern.test(normalizedSelector)) {
+    if (effectiveSelectors.length > 0 && effectiveSelectors.every((candidate) => semanticSelectorPattern.test(candidate))) {
       return []
     }
 
@@ -306,21 +341,8 @@ describe('runtime branding contract', () => {
   it('uses the exact approved root palette', () => {
     const path = 'frontend/src/index.css'
     const source = readFileSync(resolve(repositoryRoot, path), 'utf8')
-    const rootBlock = source.match(/:root\s*\{([\s\S]*?)\n\}/)?.[1]
 
-    expect(rootBlock, `${path}: missing :root block`).toBeDefined()
-
-    const palette = Object.fromEntries(
-      [...(rootBlock ?? '').matchAll(/^\s*(--[\w-]+):\s*([^;]+);/gm)].map(([, token, value]) => [token, value]),
-    )
-
-    expect(Object.keys(palette).sort(), `${path}: root palette tokens`).toEqual(
-      Object.keys(approvedRootPalette).sort(),
-    )
-
-    for (const [token, value] of Object.entries(approvedRootPalette)) {
-      expect(palette[token], `${path}: ${token}`).toBe(value)
-    }
+    expect(rootPaletteContractViolations(source), path).toEqual([])
   })
 
   it('uses danger tokens and saturated red literals only in semantic CSS selectors', () => {
@@ -343,7 +365,28 @@ describe('runtime branding contract', () => {
     ])
   })
 
-  it('keeps the backend demo seed and receipt fallback identity exclusively approved', () => {
+  it('rejects a non-semantic selector mixed with a semantic selector', () => {
+    expect(semanticColorViolations('.danger-action, .primary-action { color: #b42318; }')).toEqual([
+      { selector: '.danger-action, .primary-action', token: '#b42318' },
+    ])
+  })
+
+  it('does not let CSS comments make a neutral selector semantic', () => {
+    expect(semanticColorViolations('.primary-action /* danger */ { color: #b42318; }')).toEqual([
+      { selector: '.primary-action', token: '#b42318' },
+    ])
+  })
+
+  it('rejects a second root block that introduces an unapproved red token', () => {
+    const firstRoot = `:root {\n${Object.entries(approvedRootPalette)
+      .map(([token, value]) => `  ${token}: ${value};`)
+      .join('\n')}\n}`
+    const source = `${firstRoot}\n:root { --brand-accent: #ff0000; }\n.primary-action { color: var(--brand-accent); }`
+
+    expect(rootPaletteContractViolations(source)).toEqual(['expected exactly one :root block, found 2'])
+  })
+
+  it('keeps the backend demo seed and receipt fallback identity approved', () => {
     const databaseSeeder = readContractSource('backend/database/seeders/DatabaseSeeder.php')
     const demoScenarioSeeder = readContractSource('backend/database/seeders/DemoScenarioSeeder.php')
     const receiptGenerationService = readContractSource('backend/app/Services/Billing/ReceiptGenerationService.php')

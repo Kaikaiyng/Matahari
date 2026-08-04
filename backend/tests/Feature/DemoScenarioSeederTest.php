@@ -6,6 +6,7 @@ use App\Models\FeeAgreement;
 use App\Models\FeeRecordCharge;
 use App\Models\Receipt;
 use App\Models\Role;
+use App\Models\School;
 use App\Models\Student;
 use Database\Seeders\DemoScenarioSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -26,6 +27,32 @@ class DemoScenarioSeederTest extends TestCase
                 "Expected {$roleSlug} to have fee_record.view.",
             );
         }
+    }
+
+    public function test_default_seed_has_exactly_one_approved_demo_school_identity(): void
+    {
+        $this->seed();
+
+        $this->assertSame(1, School::query()->count());
+        $this->assertSame([
+            'code' => 'DEMO',
+            'name' => 'Demo International School',
+            'receipt_prefix' => 'DEMO',
+            'invoice_prefix' => 'DEMO-INV',
+            'email' => 'admin@demo-school.test',
+            'phone' => '+60 3-0000 0000',
+            'address' => 'Fictional demo school, Malaysia',
+            'status' => 'active',
+        ], School::query()->sole()->only([
+            'code',
+            'name',
+            'receipt_prefix',
+            'invoice_prefix',
+            'email',
+            'phone',
+            'address',
+            'status',
+        ]));
     }
 
     public function test_default_seed_creates_clean_and_varied_demo_finance_scenarios(): void

@@ -106,7 +106,7 @@ npm.cmd audit --audit-level=moderate
 
 Last verified on 2026-08-04:
 
-- Vitest passed 153 tests across 14 files.
+- Vitest passed 156 tests across 14 files.
 - Oxlint completed with no reported diagnostics.
 - TypeScript and the production build passed with 73 modules transformed.
 - Production-only and complete-tree npm audits both reported 0 vulnerabilities.
