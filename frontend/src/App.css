@@ -775,12 +775,9 @@ th {
   gap: 16px;
 }
 
-.login-card img {
+.login-brand-mark {
   width: 72px;
   height: 72px;
-  object-fit: contain;
-  border-radius: 8px;
-  background: #ffffff;
 }
 
 .message-card {
@@ -1525,15 +1522,30 @@ th {
   margin-bottom: 18px;
 }
 
-.receipt-brand img {
+.receipt-brand-mark {
   width: 72px;
   height: 72px;
-  object-fit: contain;
 }
 
 .receipt-brand h2 {
   margin: 2px 0 4px;
   font-size: 22px;
+}
+
+.receipt-demo-notice {
+  margin: 0 0 18px;
+  border: 2px dashed #9f1239;
+  border-radius: 6px;
+  background: #fff1f2;
+  color: #881337;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  line-height: 1.35;
+  text-align: center;
+  text-transform: uppercase;
+  break-inside: avoid;
 }
 
 .receipt-brand span,
@@ -2105,7 +2117,7 @@ th {
     align-items: flex-start;
   }
 
-  .receipt-brand img {
+  .receipt-brand-mark {
     width: 56px;
     height: 56px;
   }
@@ -2372,6 +2384,7 @@ th {
   }
 
   .receipt-brand,
+  .receipt-demo-notice,
   .receipt-footer {
     break-inside: avoid;
   }

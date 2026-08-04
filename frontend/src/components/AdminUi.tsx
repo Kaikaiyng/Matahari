@@ -2,6 +2,8 @@ import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import type { ReactNode, RefObject } from 'react'
 import { createPortal } from 'react-dom'
 import { AlertTriangle, CheckCircle2, Info, X } from 'lucide-react'
+import { productBrand } from '../branding'
+import { BrandMark } from './BrandMark'
 import './AdminUi.css'
 
 export type UiTone = 'neutral' | 'positive' | 'warning' | 'danger' | 'info'
@@ -369,12 +371,12 @@ export function InlineMessage({
   )
 }
 
-export function SessionLoader({ logoSrc, brand }: { logoSrc: string; brand: string }) {
+export function SessionLoader() {
   return (
     <main className="session-screen">
       <section className="session-card">
-        <img src={logoSrc} alt="MIS logo" />
-        <p className="eyebrow">{brand}</p>
+        <BrandMark className="session-brand-mark" />
+        <p className="eyebrow">{productBrand.productName}</p>
         <h1>Checking your session</h1>
         <div className="session-progress" aria-hidden="true">
           <span />

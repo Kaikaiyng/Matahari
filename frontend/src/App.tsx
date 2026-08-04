@@ -21,6 +21,8 @@ import {
   Users,
 } from 'lucide-react'
 import { ApiError, apiRequest } from './api'
+import { productBrand } from './branding'
+import { BrandMark } from './components/BrandMark'
 import { AdminShell } from './components/AdminShell'
 import type { NavigationGroup } from './components/AdminShell'
 import {
@@ -66,7 +68,6 @@ import {
   type OutstandingChargeCell,
   type PaymentAllocationDraft,
 } from './features/payments/paymentAllocationModel'
-import misLogo from './assets/mis-logo.jpg'
 import './App.css'
 
 type PageKey =
@@ -389,13 +390,13 @@ const parents = [
     name: 'Michelle Tan',
     phone: '012-345 6789',
     email: 'michelle@example.test',
-    address: 'Matahari family contact',
+    address: 'Fictional demo contact',
   },
   {
     name: 'Jonathan Lim',
     phone: '012-222 4411',
     email: 'jonathan@example.test',
-    address: 'Matahari family contact',
+    address: 'Fictional demo contact',
   },
 ]
 
@@ -779,9 +780,9 @@ function LoginScreen({
   return (
     <main className="login-screen">
       <form className="login-card" onSubmit={submitLogin}>
-        <img src={misLogo} alt="MIS logo" />
+        <BrandMark className="login-brand-mark" size={34} />
         <div>
-          <p className="eyebrow">Matahari School ERP</p>
+          <p className="eyebrow">{productBrand.productName}</p>
           <h1>Admin Login</h1>
         </div>
 
@@ -3841,13 +3842,16 @@ function StudentsPage({
               <article className="receipt-print-scope">
                 <div className="receipt-sheet">
                   <div className="receipt-brand">
-                    <img src={misLogo} alt="MIS logo" />
+                    <BrandMark className="receipt-brand-mark" size={34} />
                     <div>
-                      <p className="eyebrow">Official Receipt</p>
-                      <h2>Matahari International School</h2>
+                      <p className="eyebrow">Sample Receipt</p>
+                      <h2>{productBrand.demoOrganizationName}</h2>
                       <span>Payment made is not refundable.</span>
                     </div>
                   </div>
+                  <p className="receipt-demo-notice" role="note">
+                    {productBrand.receiptDisclaimer}
+                  </p>
 
                   <div className="receipt-meta">
                     <div>
@@ -4649,7 +4653,7 @@ function App() {
   const pageTitle = availableNavItems.find((item) => item.key === activePage)?.label ?? 'Dashboard'
 
   if (authState === 'checking') {
-    return <SessionLoader logoSrc={misLogo} brand="Matahari School ERP" />
+    return <SessionLoader />
   }
 
   if (!user) {
@@ -4731,7 +4735,6 @@ function App() {
 
   return (
     <AdminShell
-      brandLogo={misLogo}
       activePage={activePage}
       pageTitle={pageTitle}
       contextText={dashboard?.school.name ?? (user.school_id === null ? 'School selection required' : 'School ERP')}
