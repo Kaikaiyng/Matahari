@@ -32,16 +32,16 @@ Use `npm.cmd` on Windows when PowerShell blocks `npm.ps1`.
 `src/api.ts` defaults to:
 
 ```text
-http://127.0.0.1:8000/api
+/api
 ```
 
-Override it with `frontend/.env.local`:
+Vite development and preview proxy that same-origin path to `http://127.0.0.1:8000` by default. To use another local backend target without changing the browser API origin, set `VITE_API_PROXY_TARGET` in `frontend/.env.local`:
 
 ```dotenv
-VITE_API_BASE_URL=http://127.0.0.1:8000/api
+VITE_API_PROXY_TARGET=http://127.0.0.1:8000
 ```
 
-Requests include credentials because authentication uses Laravel session cookies. The backend must allow the exact frontend origin when testing from another host or LAN address.
+Set `VITE_API_BASE_URL` only when intentionally using a direct or different API base. That topology may require explicit cross-origin and session-cookie configuration. Requests include credentials because authentication uses Laravel session cookies.
 
 ## Implemented Screens and Flows
 
