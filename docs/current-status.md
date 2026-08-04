@@ -149,7 +149,10 @@ White-label branch validation on 2026-08-04:
 - `php vendor/bin/pint --test`, `php artisan route:list --path=api --except-vendor`, and `php artisan about --only=environment,drivers`: exit 0; 38 API routes loaded.
 - `npm.cmd test -- --run`: 14 files and 148 tests passed; exit 0. `npm.cmd run lint` and `npm.cmd run build` also exited 0; the production build transformed 73 modules.
 - `npm.cmd audit --omit=dev --audit-level=moderate` and `npm.cmd audit --audit-level=moderate`: 0 vulnerabilities.
-- Browser/print visual smoke and final release, push, pull-request, and merge validation are **Needs confirmation**; they are not represented by the automated results above.
+- Controller QA reset the ignored disposable SQLite demo database, then used the in-app browser against temporary local backend/frontend processes on ports 8010/5180. Login/checking-session, sidebar/drawer, Dashboard, Students list, Student Detail, Calendar, Super Admin Audit Trail, and receipt view were checked at 1440x900, 1180x820, 820x1180, and 390x844. No page-level horizontal overflow or legacy runtime branding was observed, and `DEMO` identifiers were visible.
+- Receipt `DEMO.A0001` displayed the exact `SAMPLE — NOT A VALID RECEIPT` notice. With print media emulated at an A4-like 794x1123 viewport, the receipt and notice remained visible with no document horizontal overflow or legacy branding.
+- QA used a temporary ignored `backend/.env`, generated from `.env.example` to provide `APP_KEY`, and removed it afterward. Unknown existing services on ports 8000/5173 were left untouched; only the exact temporary processes on 8010/5180 were stopped. The gstack browse package lacked Playwright in this environment, so the Codex in-app browser was used as the fallback; this is an environment limitation, not a product issue.
+- Final release delivery, push, pull-request, and merge validation remain **Needs confirmation**.
 
 ## Deployment Status
 

@@ -90,15 +90,19 @@ Touch-oriented controls use 44px targets on tablet/mobile. Wide finance ledgers 
 ## Verification
 
 ```powershell
+npm.cmd test -- --run
 npm.cmd run lint
 npm.cmd run build
+npm.cmd audit --omit=dev --audit-level=moderate
+npm.cmd audit --audit-level=moderate
 ```
 
-Last verified on 2026-07-22:
+Last verified on 2026-08-04:
 
-- Vitest passed 75 tests across 7 files
-- Build passed with 66 modules transformed
-- Lint reported zero errors and zero warnings
-- Earlier responsive browser QA covered 1440x900, 1180x820, 820x1180, and 390x844; real-device iPad Safari remains recommended
+- Vitest passed 148 tests across 14 files.
+- Oxlint completed with no reported diagnostics.
+- TypeScript and the production build passed with 73 modules transformed.
+- Production-only and complete-tree npm audits both reported 0 vulnerabilities.
+- Local in-app browser QA covered 1440x900, 1180x820, 820x1180, and 390x844; real-device iPad Safari remains recommended.
 
 The responsive acceptance details are in [the implemented responsive design](../docs/superpowers/specs/2026-07-11-ipad-first-responsive-demo-design.md).
