@@ -13,6 +13,7 @@ Start with the canonical documents below. They describe the repository baseline 
 | [Permissions](permissions.md) | Seeded role matrix, enforcement locations, and frontend/backend gaps |
 | [Current Status](current-status.md) | Commit snapshot, implemented/partial work, risks, test status, deployment state, and priorities |
 | [Testing and Release](testing-and-release.md) | Exact validation commands, database checks, security review, smoke tests, release, and rollback |
+| [Staging and Production Deployment Design](superpowers/specs/2026-08-06-staging-production-deployment-design.md) | Approved VPS-first staging/production topology, exact-artifact promotion, database separation, backup, monitoring, and deferred infrastructure choices; planned, not implemented |
 
 The root [README](../README.md) is the human entry point. Future coding agents must also follow [AGENTS.md](../AGENTS.md).
 

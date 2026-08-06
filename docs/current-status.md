@@ -162,6 +162,8 @@ White-label branch validation on 2026-08-04:
 - A temporary Quick Tunnel launcher exists for demos only.
 - Backup, binary-log, restore, reconciliation, runtime database grants, and recovery objectives are **Not verified**.
 
+An approved, implementation-ready direction is recorded in [Staging and Production Deployment Design](superpowers/specs/2026-08-06-staging-production-deployment-design.md): one Ubuntu 24.04 LTS VPS, Docker Compose, separate staging/production application stacks and MariaDB databases, one immutable ZIP promoted from staging to production, manual production approval, daily backup plus binary-log recovery, and Telegram alerts. This is a design record only; none of those controls is implemented or verified yet.
+
 The repository must not be described as production-ready.
 
 ## Immediate Recommended Priorities

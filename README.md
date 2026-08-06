@@ -172,6 +172,7 @@ npm.cmd run build
 - [Permissions](docs/permissions.md)
 - [Current Status](docs/current-status.md)
 - [Testing and Release](docs/testing-and-release.md)
+- [Staging and Production Deployment Design](docs/superpowers/specs/2026-08-06-staging-production-deployment-design.md) — approved direction; planned, not implemented
 - [Documentation Index](docs/README.md)
 
 ## Current Limitations
