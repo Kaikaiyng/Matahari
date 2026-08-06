@@ -25,6 +25,7 @@ import { productBrand } from './branding'
 import { BrandMark } from './components/BrandMark'
 import { AdminShell } from './components/AdminShell'
 import type { NavigationGroup } from './components/AdminShell'
+import { DeploymentBanner } from './components/DeploymentBanner'
 import {
   DataPanel,
   FieldError,
@@ -4657,7 +4658,12 @@ function App() {
   }
 
   if (!user) {
-    return <LoginScreen onLogin={handleLogin} />
+    return (
+      <>
+        <DeploymentBanner />
+        <LoginScreen onLogin={handleLogin} />
+      </>
+    )
   }
 
   const renderPage = () => {
@@ -4734,18 +4740,21 @@ function App() {
   }
 
   return (
-    <AdminShell
-      activePage={activePage}
-      pageTitle={pageTitle}
-      contextText={dashboard?.school.name ?? (user.school_id === null ? 'School selection required' : 'School ERP')}
-      navGroups={availableNavGroups}
-      apiState={apiState}
-      user={user}
-      onSelectPage={handleSelectPage}
-      onLogout={() => void handleLogout()}
-    >
-      {renderPage()}
-    </AdminShell>
+    <>
+      <DeploymentBanner />
+      <AdminShell
+        activePage={activePage}
+        pageTitle={pageTitle}
+        contextText={dashboard?.school.name ?? (user.school_id === null ? 'School selection required' : 'School ERP')}
+        navGroups={availableNavGroups}
+        apiState={apiState}
+        user={user}
+        onSelectPage={handleSelectPage}
+        onLogout={() => void handleLogout()}
+      >
+        {renderPage()}
+      </AdminShell>
+    </>
   )
 }
 

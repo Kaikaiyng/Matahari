@@ -1,0 +1,19 @@
+.deployment-banner {
+  position: relative;
+  z-index: 100;
+  width: 100%;
+  padding: 0.45rem 1rem;
+  border-bottom: 1px solid #92400e;
+  background: #fef3c7;
+  color: #78350f;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-align: center;
+}
+
+@media print {
+  .deployment-banner {
+    display: none;
+  }
+}

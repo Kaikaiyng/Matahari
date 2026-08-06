@@ -14,11 +14,14 @@ use App\Http\Controllers\Api\SchoolClassController;
 use App\Http\Controllers\Api\StudentController;
 use App\Http\Controllers\Api\StudentFeeAgreementController;
 use App\Http\Controllers\Api\StudentStatusController;
+use App\Http\Controllers\DeploymentInfoController;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
+
+Route::get('/deployment-info', DeploymentInfoController::class)->name('deployment-info');
 
 $sessionMiddleware = [
     EncryptCookies::class,
