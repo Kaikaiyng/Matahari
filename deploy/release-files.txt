@@ -1,0 +1,15 @@
+backend/app
+backend/bootstrap
+backend/config
+backend/database/migrations
+backend/public
+backend/resources
+backend/routes
+backend/storage/app/.gitignore
+backend/storage/framework/.gitignore
+backend/storage/logs/.gitignore
+backend/artisan
+backend/composer.json
+backend/composer.lock
+backend/vendor
+frontend/dist

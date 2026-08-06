@@ -1,2 +1,4 @@
 /.demo-public/
 .gstack/
+/deploy/.build/
+/deploy/artifacts/
