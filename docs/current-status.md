@@ -58,7 +58,7 @@ The confirmed earlier technology direction named Laravel 10, but this repository
 - Reports beyond Fee Record views, exports, statements, reminders, parent portal, and server-side PDF.
 - Refund, credit, overpayment, write-off, and approved correction/recovery workflows.
 - Full academic ERP modules.
-- Stable production deployment, CI/CD, monitoring, backup scheduling, and restore tooling.
+- Stable production deployment, automatic staging delivery, production promotion, monitoring, backup scheduling, and restore tooling. Repository CI/runtime configuration exists but external execution remains incomplete.
 
 ## Security and Operational Concerns
 
@@ -108,7 +108,7 @@ Remaining limitations:
 - Parent and fee catalogue top-level pages use static demo content.
 - No pagination for major student and Fee Record summary queries; no formal scale tests or volume factories.
 - Most status values are unconstrained strings.
-- No project-level PHP static analysis, browser E2E suite, performance suite, or CI workflow.
+- No project-level PHP static analysis, browser E2E suite, or performance suite. CI source now exists; current GitHub execution evidence must be checked separately.
 - Supporting uppercase/historical documents may contain stale counts or pre-hardening descriptions; the canonical lowercase documents linked from the root README take precedence.
 
 ## Test Status
@@ -154,15 +154,29 @@ White-label branch validation on 2026-08-04:
 - QA used a temporary ignored `backend/.env`, generated from `.env.example` to provide `APP_KEY`, and removed it afterward. Unknown existing services on ports 8000/5173 were left untouched; only the exact temporary processes on 8010/5180 were stopped. The gstack browse package lacked Playwright in this environment, so the Codex in-app browser was used as the fallback; this is an environment limitation, not a product issue.
 - Release delivery is verified: [pull request #8](https://github.com/Kaikaiyng/Matahari/pull/8) was merged into `master` as `2f4c6bd199a7fae149658d3993aba370203746de` on 2026-08-04. The remote feature branch was retained, matching existing repository practice.
 
+Deployment-foundation local validation on 2026-08-06:
+
+- `php artisan test --no-ansi`: 224 tests, 216 passed, 8 MariaDB-only skipped, and 1,147 assertions; exit 0.
+- `php vendor/bin/pint --test`: exit 0.
+- API and health route loading: 39 API routes plus the `/health` route loaded; exit 0.
+- `npm.cmd test -- --run`: 15 files and 158 tests passed; exit 0.
+- `npm.cmd run lint` and `npm.cmd run build`: exit 0; TypeScript and Vite production build completed with 75 transformed modules.
+- `node --test deploy/tests/*.test.mjs`: 14 deployment contract tests passed; exit 0.
+- Bash syntax validation passed for the release packager, PHP entrypoint, database initializer, and runtime-grant scripts.
+- Tracked secret-bearing filename and private-key-content scans returned no findings.
+- Docker is not installed on this workstation. Image build, Nginx syntax, Compose rendering/startup, container health, and real MariaDB identity/grant behavior remain **Not verified** locally and must be checked by GitHub/VPS execution.
+
 ## Deployment Status
 
 - No production environment or production database is evidenced in the repository.
-- No GitHub Actions/other CI workflow is present.
-- No stable hosting, Docker, Nginx, TLS, monitoring, or infrastructure configuration is present.
+- GitHub Actions now defines quick checks, a single immutable ZIP build, full application/dependency checks, and a disposable MariaDB migration lifecycle. GitHub-hosted execution must be verified against the current `master` run.
+- Pinned PHP-FPM/Nginx definitions, private MariaDB Compose configuration, generic isolated staging/production application stacks, non-secret environment examples, database identity/grant scripts, and deployment contract tests are present.
+- The repository exposes a database-aware, non-secret `/health` response and a runtime `/api/deployment-info` label so the same ZIP can display `STAGING`, `PRE-LAUNCH DEMO`, or no banner.
+- No stable hosting, real Docker/Compose startup, edge TLS/Basic Auth, remote deployment, monitoring, or infrastructure runtime is verified.
 - A temporary Quick Tunnel launcher exists for demos only.
 - Backup, binary-log, restore, reconciliation, runtime database grants, and recovery objectives are **Not verified**.
 
-An approved, implementation-ready direction is recorded in [Staging and Production Deployment Design](superpowers/specs/2026-08-06-staging-production-deployment-design.md): one Ubuntu 24.04 LTS VPS, Docker Compose, separate staging/production application stacks and MariaDB databases, one immutable ZIP promoted from staging to production, manual production approval, daily backup plus binary-log recovery, and Telegram alerts. This is a design record only; none of those controls is implemented or verified yet.
+The approved direction is recorded in [Staging and Production Deployment Design](superpowers/specs/2026-08-06-staging-production-deployment-design.md), and the current repository-owned portion is documented in [Deployment Foundation](deployment-foundation.md). Automatic staging SSH deployment, exact-artifact production promotion, atomic remote switching, backup/restore, and Telegram monitoring remain follow-up work.
 
 The repository must not be described as production-ready.
 
@@ -171,7 +185,7 @@ The repository must not be described as production-ready.
 1. Confirm discount formulas/eligibility and the approved correction/reconciliation policy before enabling discounted or retroactive billing.
 2. Define refund, credit, overpayment, write-off, and audit-driven correction/recovery workflows.
 3. Add the global Super Admin school selector and remove remaining static prototype data from operational pages.
-4. Establish CI, production configuration, least-privilege database access, monitoring, backups, and a verified restore/reconciliation drill.
+4. Run and stabilize the new CI on `master`, then implement remote staging/production release operations, execute least-privilege database grants, monitoring, backups, and a verified restore/reconciliation drill.
 5. Add pagination, load targets, and MariaDB concurrency testing for the intended operating scale.
 6. Decompose the frontend application and add URL routing/browser E2E coverage.
 

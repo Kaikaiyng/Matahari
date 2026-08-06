@@ -143,7 +143,7 @@ npm.cmd run lint
 npm.cmd run build
 ```
 
-`npm.cmd run build` runs `tsc -b` before the Vite production build. No PHP static-analysis command or automated CI workflow is currently configured. MariaDB and rollback validation require the disposable-database workflow in [Testing and Release](docs/testing-and-release.md); the default SQLite test suite is not sufficient proof.
+`npm.cmd run build` runs `tsc -b` before the Vite production build. No PHP static-analysis command is currently configured. GitHub Actions now defines quick checks, one immutable ZIP build, full application validation, dependency audits, and a disposable MariaDB migration lifecycle; its current execution result must still be checked in GitHub. See [Testing and Release](docs/testing-and-release.md) and [Deployment Foundation](docs/deployment-foundation.md).
 
 ## Development Workflow
 
@@ -172,14 +172,15 @@ npm.cmd run build
 - [Permissions](docs/permissions.md)
 - [Current Status](docs/current-status.md)
 - [Testing and Release](docs/testing-and-release.md)
-- [Staging and Production Deployment Design](docs/superpowers/specs/2026-08-06-staging-production-deployment-design.md) — approved direction; planned, not implemented
+- [Deployment Foundation](docs/deployment-foundation.md)
+- [Staging and Production Deployment Design](docs/superpowers/specs/2026-08-06-staging-production-deployment-design.md) — approved direction; repository foundation partially implemented
 - [Documentation Index](docs/README.md)
 
 ## Current Limitations
 
 - No formal load or concurrency limit has been validated. Historical planning used approximately 200 students for cost estimation only; this is not a tested capacity claim.
 - The default automated backend suite uses SQLite and cannot prove MariaDB JSON, index, locking, foreign-key, or rollback behavior.
-- No stable hosting, production environment, CI pipeline, monitoring, or verified backup/restore process is included.
+- No stable hosting or production environment exists. CI and portable Docker/Compose source are included, but real container startup, remote deployment, monitoring, and backup/restore remain unverified.
 - User administration and password reset are not implemented.
 - General reports, exports, statements, reminders, parent portal, PDF generation, and academic ERP modules are not implemented.
-- Operational readiness remains incomplete: production hosting, CI, monitoring, least-privilege database grants, backups, restore drills, and approved discount/correction policies are not verified. See [Current Status](docs/current-status.md).
+- Operational readiness remains incomplete: production hosting, remote release operations, monitoring, runtime grant execution, backups, restore drills, and approved discount/correction policies are not verified. See [Current Status](docs/current-status.md).

@@ -66,7 +66,7 @@ Do not describe the system as unlimited or use the historical cost estimate as p
 - Parent portal and communications.
 - Generic audit corrections, audit export, and recovery workflows beyond read-only event review.
 - Refunds, credits, overpayments, write-offs, and approved financial correction workflows.
-- Stable production hosting, CI/CD, monitoring, scheduled backups, and a verified restore process.
+- Stable production hosting, remote CD/promotion, monitoring, scheduled backups, and a verified restore process. Repository-owned CI and deployment configuration now exist but require current runner/container evidence.
 - Cross-school management reporting and complete multi-school tenant controls.
 
 ## Explicitly Out of Current Scope
@@ -74,7 +74,7 @@ Do not describe the system as unlimited or use the historical cost estimate as p
 Unless a future approved specification adds them, do not infer these from navigation labels or historical plans:
 
 - Attendance, grading, examinations, timetabling, learning management, admissions automation, HR/payroll, library, transport operations, and other complete academic ERP modules.
-- Production Docker, Nginx, Cloudflare, domain, TLS, or VPS configuration.
+- Provider-specific VPS provisioning, public domains, edge TLS/Basic Auth, Cloudflare, and live infrastructure state.
 - Mobile applications.
 
 ## System Boundaries

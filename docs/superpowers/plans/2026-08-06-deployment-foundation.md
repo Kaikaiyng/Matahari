@@ -8,6 +8,8 @@
 
 **Tech Stack:** PHP 8.4 / Laravel 13, React 19 / TypeScript 6 / Vite 8, Node.js 24, Docker Compose, Nginx, MariaDB, GitHub Actions, Bash, Node built-in test runner
 
+**Execution note:** Implemented on `feat/deployment-foundation`. The safe runtime label uses `GET /api/deployment-info` rather than the initially drafted root path so local Vite and production Nginx both use the existing same-origin `/api` boundary.
+
 ## Global Constraints
 
 - Target one Ubuntu 24.04 LTS VPS; keep provider-specific values out of tracked files.

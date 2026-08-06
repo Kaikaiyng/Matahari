@@ -1,10 +1,12 @@
 # Staging and Production Deployment Design
 
-**Status:** Approved design; planned, not implemented
+**Status:** Approved design; repository deployment foundation implemented, remote environments and operations not implemented
 
 **Decision date:** 2026-08-06
 
 **Target platform:** One Ubuntu 24.04 LTS VPS, designed so the deployment can later move to another VPS provider
+
+**Implementation note:** Health/deployment-info endpoints, runtime banner, immutable release builder, pinned PHP-FPM/Nginx source, isolated database/application Compose definitions, environment examples, database identity/grant scripts, deployment contract tests, and GitHub Actions qualification source are now present. Real Docker startup, staging/production VPS deployment, TLS/Basic Auth, automatic staging delivery, production promotion, backup/restore, and Telegram monitoring remain unverified or not configured. See [Deployment Foundation](../../deployment-foundation.md).
 
 ## 1. Purpose
 

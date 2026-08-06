@@ -195,6 +195,44 @@ git diff --cached --stat
 git diff --cached
 ```
 
+## Deployment Foundation Validation
+
+Run all deployment source contracts from the repository root:
+
+```powershell
+node --test deploy/tests/*.test.mjs
+```
+
+These tests verify the release allowlist and manifest, unsafe-path exclusions, pinned runtime contracts, Nginx routing boundaries, private MariaDB topology, staging/production naming, runtime/migration identity separation, environment examples, GitHub workflow ordering, and absence of tracked-style secret artifacts under `deploy/`.
+
+Rehearse the release tree only after production backend dependencies and the frontend build exist:
+
+```powershell
+$releaseCommit = git rev-parse HEAD
+node deploy/scripts/create-release.mjs --source . --output deploy/.build/release --commit $releaseCommit --build-time 2026-08-06T00:00:00.000Z --infrastructure-version 1 --php-version 8.4.21 --node-version 24.12.0
+Get-FileHash -Algorithm SHA256 deploy/.build/release/release-manifest.json
+```
+
+The fixed timestamp above is for a deterministic local rehearsal, not a real release. GitHub supplies the current UTC build time and creates the ZIP/checksum once. A production promotion must consume that artifact without rebuilding it.
+
+When Docker is available, validation also requires:
+
+```bash
+docker build -f deploy/docker/php/Dockerfile -t matahari-php:8.4.21-1 .
+docker compose --env-file /path/to/private/database.env -f deploy/compose/database.yml config
+docker compose --env-file /path/to/private/staging.env -f deploy/compose/application.yml config
+docker compose --env-file /path/to/private/production.env -f deploy/compose/application.yml config
+```
+
+Then start only disposable infrastructure, confirm container health, run migrations with the environment-specific migrator, apply runtime grants, and prove each runtime identity cannot access the other database or alter `audit_logs`. Never substitute production or restored production data for this check.
+
+The workflows are:
+
+- `.github/workflows/release-candidate.yml` — `master` quick checks, one ZIP/checksum/manifest build, then full qualification;
+- `.github/workflows/full-qualification.yml` — full backend/frontend/advisory checks plus disposable MariaDB migrate/rollback/re-migrate.
+
+Until an Actions run on the exact current `master` commit passes, mark GitHub-hosted execution **Not verified**. Until Docker starts successfully, mark image, Nginx, Compose, and container health **Not verified**. Workflow source is not runtime evidence.
+
 ## Temporary Public Demo Tooling
 
 The repository includes self-contained contract/runtime tests for the demo launcher. Windows may block direct `.ps1` execution under the machine policy, so run the scripts in a child process with a process-scoped execution policy:

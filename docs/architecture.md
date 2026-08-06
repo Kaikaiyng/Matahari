@@ -156,7 +156,9 @@ No external business API, payment gateway, email provider, object storage servic
 
 ## Deployment Assumptions
 
-The repository contains no CI workflow, Docker image, Nginx configuration, infrastructure-as-code, production hosting configuration, or monitoring setup. A real deployment must separately provide HTTPS, secure cookie/proxy configuration, MariaDB, restricted runtime credentials, migrations, queues if used, backups, restore testing, logging, and monitoring.
+The repository now contains GitHub Actions qualification source, a pinned PHP-FPM image, an internal Nginx application configuration, generic Docker Compose definitions for a private MariaDB service and isolated staging/production application stacks, non-secret environment contracts, and immutable release tooling. The implemented topology is described in [Deployment Foundation](deployment-foundation.md).
+
+No real VPS, Docker runtime, edge TLS/Basic Auth, remote release directories, production database, backup destination, restore drill, or monitoring service is verified. A real deployment must still provide HTTPS and exact proxy trust, private secret files, migrations with separate identities, automatic staging delivery, manual exact-artifact production promotion, backup/recovery, logging, and alerts.
 
 **Not verified:** Any deployed environment or production readiness.
 
@@ -167,3 +169,4 @@ The repository contains no CI workflow, Docker image, Nginx configuration, infra
 - [Database](database.md)
 - [Permissions](permissions.md)
 - [Current Status](current-status.md)
+- [Deployment Foundation](deployment-foundation.md)
