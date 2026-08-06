@@ -1,0 +1,90 @@
+name: Full qualification
+
+on:
+  workflow_call:
+    inputs:
+      commit:
+        description: Exact Git commit to qualify
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: Exact 40-character Git commit to qualify
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    name: Full application and MariaDB qualification
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    services:
+      mariadb:
+        image: mariadb:11.4.8
+        env:
+          MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: '1'
+          MARIADB_DATABASE: matahari_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
+    env:
+      APP_ENV: testing
+      APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.commit }}
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: bcmath, intl, pdo_mysql, pdo_sqlite, zip
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install backend dependencies
+        working-directory: backend
+        run: composer install --prefer-dist --no-interaction --no-progress
+      - name: Run complete backend validation
+        working-directory: backend
+        run: |
+          php artisan test
+          vendor/bin/pint --test
+          php artisan route:list --path=api --except-vendor
+          php artisan route:list --path=health --except-vendor
+          composer audit --locked
+      - name: Verify disposable MariaDB migration lifecycle
+        working-directory: backend
+        env:
+          DB_CONNECTION: mariadb
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: matahari_test
+          DB_USERNAME: root
+          DB_PASSWORD: ''
+        run: |
+          php artisan config:clear
+          php artisan migrate --force
+          php artisan migrate:rollback --force
+          php artisan migrate --force
+      - name: Run complete frontend validation
+        working-directory: frontend
+        run: |
+          npm ci
+          npm test
+          npm run lint
+          npm run build
+          npm audit --omit=dev --audit-level=moderate
+          npm audit --audit-level=moderate
+      - name: Run deployment contract suite
+        run: node --test deploy/tests/*.test.mjs

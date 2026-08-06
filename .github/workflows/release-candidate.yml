@@ -1,0 +1,117 @@
+name: Release candidate
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  quick-checks:
+    name: Quick checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: bcmath, intl, pdo_sqlite, zip
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install backend development dependencies
+        working-directory: backend
+        run: composer install --prefer-dist --no-interaction --no-progress
+      - name: Validate backend and focused behavior
+        working-directory: backend
+        run: |
+          composer validate --strict --no-check-publish
+          vendor/bin/pint --test
+          php artisan test tests/Feature/HealthEndpointTest.php tests/Feature/DeploymentInfoEndpointTest.php tests/Feature/AuthApiTest.php
+          php artisan route:list --path=api --except-vendor
+          php artisan route:list --path=health --except-vendor
+      - name: Install and validate frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm test -- src/components/DeploymentBanner.test.tsx src/api.test.ts
+          npm run lint
+      - name: Validate deployment contracts
+        run: node --test deploy/tests/*.test.mjs
+      - name: Reject secret-bearing tracked files
+        shell: bash
+        run: |
+          if git ls-files | grep -E '(^|/)(\.env|htpasswd|id_rsa|id_ed25519)$|\.(sqlite|sqlite3|pem|key)$'; then
+            echo 'Secret-bearing filename is tracked.' >&2
+            exit 1
+          fi
+          if git grep -n -I -E 'BEGIN (RSA |OPENSSH )?PRIVATE KEY' -- ':!docs/**'; then
+            echo 'Private key material is tracked.' >&2
+            exit 1
+          fi
+
+  build-release:
+    name: Build immutable ZIP
+    needs: quick-checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: bcmath, intl, pdo_mysql, zip
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install production backend dependencies
+        working-directory: backend
+        run: composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader
+      - name: Build frontend once
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+      - name: Stage and package release
+        shell: bash
+        run: |
+          build_time="$(date -u +'%Y-%m-%dT%H:%M:%S.000Z')"
+          php_version="$(php -r 'echo PHP_VERSION;')"
+          node_version="$(node -p 'process.versions.node')"
+          node deploy/scripts/create-release.mjs \
+            --source . \
+            --output deploy/.build/release \
+            --commit "${GITHUB_SHA}" \
+            --build-time "$build_time" \
+            --infrastructure-version 1 \
+            --php-version "$php_version" \
+            --node-version "$node_version"
+          deploy/scripts/package-release.sh deploy/.build/release deploy/artifacts "${GITHUB_SHA}"
+          cd deploy/artifacts
+          sha256sum --check matahari-"${GITHUB_SHA}".zip.sha256
+      - name: Upload the only release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: matahari-${{ github.sha }}
+          path: |
+            deploy/artifacts/matahari-${{ github.sha }}.zip
+            deploy/artifacts/matahari-${{ github.sha }}.zip.sha256
+            deploy/.build/release/release-manifest.json
+          if-no-files-found: error
+          retention-days: 30
+
+  full-qualification:
+    name: Full qualification (staging deployment pending)
+    needs: build-release
+    uses: ./.github/workflows/full-qualification.yml
+    with:
+      commit: ${{ github.sha }}
