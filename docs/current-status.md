@@ -161,7 +161,7 @@ Deployment-foundation local validation on 2026-08-06:
 - API and health route loading: 39 API routes plus the `/health` route loaded; exit 0.
 - `npm.cmd test -- --run`: 15 files and 158 tests passed; exit 0.
 - `npm.cmd run lint` and `npm.cmd run build`: exit 0; TypeScript and Vite production build completed with 75 transformed modules.
-- `node --test deploy/tests/*.test.mjs`: 14 deployment contract tests passed; exit 0.
+- `node --test deploy/tests/*.test.mjs`: 15 deployment contract tests passed, including the cross-platform npm lockfile guard; exit 0.
 - Bash syntax validation passed for the release packager, PHP entrypoint, database initializer, and runtime-grant scripts.
 - Tracked secret-bearing filename and private-key-content scans returned no findings.
 - Docker is not installed on this workstation. Image build, Nginx syntax, Compose rendering/startup, container health, and real MariaDB identity/grant behavior remain **Not verified** locally and must be checked by GitHub/VPS execution.
