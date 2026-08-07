@@ -39,6 +39,7 @@ function renderShell() {
 
 describe('AdminShell', () => {
   beforeEach(() => {
+    window.localStorage.clear()
     vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined)
   })
 
@@ -62,6 +63,23 @@ describe('AdminShell', () => {
 
     expect(onSelectPage).toHaveBeenCalledWith('students')
     expect(onLogout).toHaveBeenCalledOnce()
+  })
+
+  it('collapses the desktop sidebar and persists the preference', async () => {
+    const user = userEvent.setup()
+    renderShell()
+
+    const sidebar = document.querySelector<HTMLElement>('.admin-sidebar')
+    if (!sidebar) throw new Error('Sidebar was not rendered')
+
+    const collapseButton = screen.getByRole('button', { name: 'Collapse sidebar' })
+    expect(sidebar).not.toHaveClass('collapsed')
+
+    await user.click(collapseButton)
+
+    expect(sidebar).toHaveClass('collapsed')
+    expect(screen.getByRole('button', { name: 'Expand sidebar' })).toHaveAttribute('aria-expanded', 'false')
+    expect(window.localStorage.getItem('matahari-admin-sidebar-collapsed')).toBe('true')
   })
 
   it('opens the navigation drawer and restores menu focus after Escape', async () => {

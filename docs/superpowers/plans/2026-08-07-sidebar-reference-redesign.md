@@ -161,10 +161,12 @@ Set the shell and aside class names from the two independent states:
 
   <footer className="sidebar-footer">
     <div className="sidebar-portal" title={isCollapsed ? 'Admin Portal' : undefined}>
-      <BrandMark className="sidebar-portal-mark" size={15} />
+      <span className="sidebar-portal-mark" aria-hidden="true">
+        <School size={15} />
+      </span>
       <div className="sidebar-label">
         <strong>Admin Portal</strong>
-        <small>{productBrand.productDescriptor}</small>
+        <small>School operations</small>
       </div>
     </div>
     <button

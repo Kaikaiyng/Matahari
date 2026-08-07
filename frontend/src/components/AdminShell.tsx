@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { LucideIcon } from 'lucide-react'
-import { LogOut, Menu, X } from 'lucide-react'
+import { LogOut, Menu, PanelLeftClose, PanelLeftOpen, School, X } from 'lucide-react'
 import { productBrand } from '../branding'
 import { BrandMark } from './BrandMark'
 import './AdminShell.css'
+
+const SIDEBAR_COLLAPSED_KEY = 'matahari-admin-sidebar-collapsed'
 
 export type NavigationItem<PageKey extends string> = {
   key: PageKey
@@ -45,6 +47,13 @@ export function AdminShell<PageKey extends string>({
   children,
 }: AdminShellProps<PageKey>) {
   const [isOpen, setIsOpen] = useState(false)
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    try {
+      return window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true'
+    } catch {
+      return false
+    }
+  })
   const [isNarrowViewport, setIsNarrowViewport] = useState(() =>
     window.matchMedia('(max-width: 1023px)').matches,
   )
@@ -56,6 +65,20 @@ export function AdminShell<PageKey extends string>({
     shouldRestoreFocusRef.current = restoreFocus
     setIsOpen(false)
   }, [])
+
+  const toggleCollapsed = () => {
+    setIsCollapsed((current) => {
+      const next = !current
+
+      try {
+        window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(next))
+      } catch {
+        // The visual state can still change when storage is unavailable.
+      }
+
+      return next
+    })
+  }
 
   useEffect(() => {
     document.body.classList.toggle('nav-open', isOpen)
@@ -114,7 +137,7 @@ export function AdminShell<PageKey extends string>({
   const initial = user.name.trim().charAt(0).toUpperCase() || 'U'
 
   return (
-    <div className="admin-shell">
+    <div className={isCollapsed ? 'admin-shell sidebar-collapsed' : 'admin-shell'}>
       <button
         className="sidebar-backdrop"
         aria-label="Close navigation backdrop"
@@ -124,14 +147,14 @@ export function AdminShell<PageKey extends string>({
       />
 
       <aside
-        className={isOpen ? 'admin-sidebar open' : 'admin-sidebar'}
+        className={`admin-sidebar${isOpen ? ' open' : ''}${isCollapsed ? ' collapsed' : ''}`}
         id="main-navigation"
         aria-hidden={isNarrowViewport && !isOpen ? true : undefined}
         inert={isNarrowViewport && !isOpen ? true : undefined}
       >
         <div className="admin-brand">
           <BrandMark className="admin-brand-mark" size={27} />
-          <div>
+          <div className="admin-brand-copy">
             <strong>{productBrand.productShortName}</strong>
             <span>{productBrand.productDescriptor}</span>
           </div>
@@ -145,25 +168,60 @@ export function AdminShell<PageKey extends string>({
           </button>
         </div>
 
+        <button
+          type="button"
+          className="sidebar-collapse"
+          aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          aria-expanded={!isCollapsed}
+          onClick={toggleCollapsed}
+        >
+          {isCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+        </button>
+
         <nav aria-label="Main navigation">
           {navGroups.map((group) => (
-            <section className="nav-group" key={group.label}>
-              <h2>{group.label}</h2>
+            <section className="nav-group" aria-label={group.label} key={group.label}>
+              <h2 className="nav-group-title">{group.label}</h2>
               {group.items.map(({ key, label, icon: Icon }) => (
                 <button
                   key={key}
                   aria-current={key === activePage ? 'page' : undefined}
                   aria-label={label}
+                  title={isCollapsed ? label : undefined}
                   className={key === activePage ? 'nav-item active' : 'nav-item'}
                   onClick={() => selectPage(key)}
                 >
                   <Icon size={18} />
-                  <span>{label}</span>
+                  <span className="sidebar-label">{label}</span>
                 </button>
               ))}
             </section>
           ))}
         </nav>
+
+        <footer className="sidebar-footer">
+          <div className="sidebar-portal" title={isCollapsed ? 'Admin Portal' : undefined}>
+            <span className="sidebar-portal-mark" aria-hidden="true">
+              <School size={15} />
+            </span>
+            <div className="sidebar-label">
+              <strong>Admin Portal</strong>
+              <small>School operations</small>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="sidebar-logout"
+            aria-label="Logout"
+            title={isCollapsed ? 'Logout' : undefined}
+            onClick={onLogout}
+          >
+            <span className="sidebar-footer-icon">
+              <LogOut size={17} />
+            </span>
+            <span className="sidebar-label">Log out</span>
+          </button>
+        </footer>
       </aside>
 
       <div className="admin-workspace" inert={isNarrowViewport && isOpen ? true : undefined}>
@@ -197,9 +255,6 @@ export function AdminShell<PageKey extends string>({
                 <small>{user.username}</small>
               </div>
             </div>
-            <button className="icon-button" aria-label="Logout" onClick={onLogout}>
-              <LogOut size={19} />
-            </button>
           </div>
         </header>
 
