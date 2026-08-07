@@ -167,6 +167,13 @@ Deployment-foundation local validation on 2026-08-06:
 - Tracked secret-bearing filename and private-key-content scans returned no findings.
 - Docker is not installed on this workstation. Image build, Nginx syntax, Compose rendering/startup, container health, and real MariaDB identity/grant behavior remain **Not verified** locally and must be checked by GitHub/VPS execution.
 
+Dependency security refresh on 2026-08-07:
+
+- CommonMark was updated from 2.8.2 to 2.9.0 after three newly published advisories caused the full GitHub qualification job to fail closed.
+- Composer 2.10.2 `audit --locked`: 0 security vulnerability advisories; exit 0.
+- `node --test deploy/tests/*.test.mjs`: 17 deployment contract tests passed, including the new CommonMark minimum-version guard; exit 0.
+- The complete backend suite remained at 224 tests, 216 passed, 8 MariaDB-only skipped, and 1,147 assertions; Pint passed.
+
 ## Deployment Status
 
 - No production environment or production database is evidenced in the repository.
