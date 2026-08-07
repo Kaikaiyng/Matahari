@@ -79,7 +79,7 @@ describe('AdminShell', () => {
 
     expect(sidebar).toHaveClass('collapsed')
     expect(screen.getByRole('button', { name: 'Expand sidebar' })).toHaveAttribute('aria-expanded', 'false')
-    expect(window.localStorage.getItem('matahari-admin-sidebar-collapsed')).toBe('true')
+    expect(window.localStorage.getItem('admin-sidebar-collapsed')).toBe('true')
   })
 
   it('opens the navigation drawer and restores menu focus after Escape', async () => {

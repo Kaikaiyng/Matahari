@@ -12,7 +12,7 @@
 
 - Preserve every existing navigation item, permission filter, page key, and page-selection callback.
 - Expanded desktop width is 256 pixels; collapsed desktop width is 80 pixels.
-- Store only the collapse preference, under `matahari-admin-sidebar-collapsed`; store no user or session data.
+- Store only the collapse preference, under the brand-neutral key `admin-sidebar-collapsed`; store no user or session data.
 - Mobile retains backdrop, Escape, focus restoration, inert content, scroll lock, and close-on-navigation behavior.
 - Keep school context, page title, API warning, and user identity in the utility header.
 - Move the single logout control into the sidebar footer; do not duplicate logout in the header.
@@ -28,7 +28,7 @@
 
 **Interfaces:**
 - Consumes: existing `AdminShellProps`, `navGroups`, `onSelectPage`, and `onLogout` contracts.
-- Produces: desktop `.collapsed` shell/sidebar state and the local-storage key `matahari-admin-sidebar-collapsed`.
+- Produces: desktop `.collapsed` shell/sidebar state and the local-storage key `admin-sidebar-collapsed`.
 
 - [ ] **Step 1: Write the failing collapse behavior test**
 
@@ -49,7 +49,7 @@ it('collapses the desktop sidebar and persists the preference', async () => {
 
   expect(sidebar).toHaveClass('collapsed')
   expect(screen.getByRole('button', { name: 'Expand sidebar' })).toHaveAttribute('aria-expanded', 'false')
-  expect(window.localStorage.getItem('matahari-admin-sidebar-collapsed')).toBe('true')
+  expect(window.localStorage.getItem('admin-sidebar-collapsed')).toBe('true')
 })
 ```
 
@@ -80,7 +80,7 @@ In `AdminShell.tsx`, import `PanelLeftClose` and `PanelLeftOpen`, define the key
 ```tsx
 import { LogOut, Menu, PanelLeftClose, PanelLeftOpen, X } from 'lucide-react'
 
-const SIDEBAR_COLLAPSED_KEY = 'matahari-admin-sidebar-collapsed'
+const SIDEBAR_COLLAPSED_KEY = 'admin-sidebar-collapsed'
 
 const [isCollapsed, setIsCollapsed] = useState(() => {
   try {

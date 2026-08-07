@@ -6,7 +6,7 @@ import { productBrand } from '../branding'
 import { BrandMark } from './BrandMark'
 import './AdminShell.css'
 
-const SIDEBAR_COLLAPSED_KEY = 'matahari-admin-sidebar-collapsed'
+const SIDEBAR_COLLAPSED_KEY = 'admin-sidebar-collapsed'
 
 export type NavigationItem<PageKey extends string> = {
   key: PageKey
@@ -211,7 +211,7 @@ export function AdminShell<PageKey extends string>({
           </div>
           <button
             type="button"
-            className="sidebar-logout"
+            className="sidebar-logout destructive-action"
             aria-label="Logout"
             title={isCollapsed ? 'Logout' : undefined}
             onClick={onLogout}

@@ -45,7 +45,7 @@ const approvedRootPalette = {
   '--danger': '#b42318',
   '--danger-dark': '#7a271a',
   '--danger-soft': '#fef3f2',
-  '--sidebar': '#172033',
+  '--sidebar': '#ffffff',
   '--canvas': '#f4f7fb',
   '--surface': '#ffffff',
   '--text': '#172033',
