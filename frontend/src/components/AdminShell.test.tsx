@@ -65,23 +65,35 @@ describe('AdminShell', () => {
     expect(onLogout).toHaveBeenCalledOnce()
   })
 
-  it('collapses the desktop sidebar and persists the preference', async () => {
+  it('collapses the desktop layout while preserving the sidebar icons', async () => {
     const user = userEvent.setup()
     renderShell()
 
+    const shell = document.querySelector<HTMLElement>('.admin-shell')
     const sidebar = document.querySelector<HTMLElement>('.admin-sidebar')
-    if (!sidebar) throw new Error('Sidebar was not rendered')
+    const workspace = document.querySelector<HTMLElement>('.admin-workspace')
+    if (!shell || !sidebar || !workspace) throw new Error('Admin shell was not rendered')
 
     const collapseButton = screen.getByRole('button', { name: 'Collapse sidebar' })
+    const dashboardIcon = screen.getByRole('button', { name: 'Dashboard' }).querySelector('svg')
+    expect(shell).toHaveClass('admin-shell')
+    expect(shell).not.toHaveClass('sidebar-collapsed')
     expect(sidebar).not.toHaveClass('collapsed')
-    expect(collapseButton.querySelector('.lucide-chevron-left')).toBeInTheDocument()
+    const directionIcon = collapseButton.querySelector('svg')
+    expect(directionIcon).toBeInTheDocument()
+    expect(dashboardIcon).toBeInTheDocument()
 
     await user.click(collapseButton)
 
     expect(sidebar).toHaveClass('collapsed')
+    expect(shell).toHaveClass('admin-shell')
+    expect(shell).toHaveClass('sidebar-collapsed')
+    expect(document.querySelector('.admin-workspace')).toBe(workspace)
+    expect(screen.getByRole('button', { name: 'Dashboard' }).querySelector('svg')).toBe(dashboardIcon)
     const expandButton = screen.getByRole('button', { name: 'Expand sidebar' })
     expect(expandButton).toHaveAttribute('aria-expanded', 'false')
-    expect(expandButton.querySelector('.lucide-chevron-right')).toBeInTheDocument()
+    expect(expandButton.querySelector('svg')).toBe(directionIcon)
+    expect(directionIcon).toHaveClass('sidebar-collapse-icon', 'reversed')
     expect(window.localStorage.getItem('admin-sidebar-collapsed')).toBe('true')
   })
 

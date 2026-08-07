@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { LucideIcon } from 'lucide-react'
-import { ChevronLeft, ChevronRight, LogOut, Menu, School, X } from 'lucide-react'
+import { ChevronLeft, LogOut, Menu, School, X } from 'lucide-react'
 import { productBrand } from '../branding'
 import { BrandMark } from './BrandMark'
 import './AdminShell.css'
@@ -175,7 +175,10 @@ export function AdminShell<PageKey extends string>({
           aria-expanded={!isCollapsed}
           onClick={toggleCollapsed}
         >
-          {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+          <ChevronLeft
+            className={`sidebar-collapse-icon${isCollapsed ? ' reversed' : ''}`}
+            size={16}
+          />
         </button>
 
         <nav aria-label="Main navigation">
