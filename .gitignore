@@ -1,4 +1,6 @@
 /.demo-public/
+.codex-bin/
 .gstack/
 /deploy/.build/
 /deploy/artifacts/
+/frontend/test-results/
