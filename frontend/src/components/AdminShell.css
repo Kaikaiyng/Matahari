@@ -53,18 +53,18 @@
     transform 140ms ease;
 }
 
-.admin-brand strong,
-.admin-brand span {
+.admin-brand-copy strong,
+.admin-brand-copy span {
   display: block;
 }
 
-.admin-brand strong {
+.admin-brand-copy strong {
   color: #1e293b;
   font-size: 17px;
   line-height: 1.2;
 }
 
-.admin-brand span {
+.admin-brand-copy span {
   margin-top: 3px;
   color: #64748b;
   font-size: 11px;

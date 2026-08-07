@@ -179,7 +179,8 @@ Sidebar reference refresh on 2026-08-07:
 - The authenticated desktop shell now uses a white reference-style sidebar with a 256-pixel expanded state, an 80-pixel collapsed state, a light-blue active item, and a compact footer. The collapse preference is stored locally under the brand-neutral `admin-sidebar-collapsed` key.
 - Existing page keys, navigation items, permission filtering, page-selection callbacks, and logout behavior remain unchanged. Logout moved from the utility header to the sidebar footer so there is one clear control.
 - Mobile retains the existing drawer, backdrop, focus, Escape, scroll-lock, and close-on-navigation behavior. A 390-by-844 browser check confirmed that labels remain visible in the drawer even when the desktop preference is collapsed.
-- `npm.cmd test -- --run`: 15 files and 159 tests passed; `npm.cmd run lint` and `npm.cmd run build` exited 0, with 77 production modules transformed.
+- A follow-up contrast fix narrowed sidebar brand-copy selectors so the shared white school mark is no longer overridden by muted text color.
+- `npm.cmd test -- --run`: 15 files and 160 tests passed; `npm.cmd run lint` and `npm.cmd run build` exited 0, with 77 production modules transformed.
 - In-app browser checks covered expanded desktop, collapsed desktop, collapse persistence after reload, and the mobile drawer. Backend and database suites were not rerun because this change is limited to the frontend shell and presentation token.
 
 ## Deployment Status

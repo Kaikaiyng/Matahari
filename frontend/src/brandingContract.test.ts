@@ -433,4 +433,11 @@ describe('runtime branding contract', () => {
       /\.modal-danger-action:focus-visible\s*\{\s*outline-color:\s*var\(--danger-dark\);\s*\}/,
     )
   })
+
+  it('keeps sidebar brand text styling from overriding the mark foreground', () => {
+    const adminShellStyles = readFileSync(resolve(frontendRoot, 'src', 'components', 'AdminShell.css'), 'utf8')
+
+    expect(adminShellStyles).not.toMatch(/\.admin-brand\s+span\b/)
+    expect(adminShellStyles).toMatch(/\.admin-brand-copy\s+span\s*\{[^}]*color:\s*#64748b;/s)
+  })
 })
