@@ -4398,12 +4398,21 @@ function DashboardPage({
 }) {
   const canViewFeeRecord = hasPermission(user, 'fee_record.view')
   const canViewStudents = hasPermission(user, 'students.view')
+  const canViewCalendar = hasPermission(user, 'calendar.view')
   const unavailableValue = apiState === 'loading' ? 'Loading...' : 'Unavailable'
+  const formattedDate = useMemo(
+    () => new Intl.DateTimeFormat('en-MY', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date()),
+    [],
+  )
+  const todayShare = dashboard && dashboard.metrics.monthly_collection > 0
+    ? Math.min(100, Math.round((dashboard.metrics.today_collection / dashboard.metrics.monthly_collection) * 100))
+    : 0
   const metrics = useMemo<Array<{
     label: string
     value: string
     tone: 'neutral' | 'positive' | 'warning'
     icon: ReactNode
+    meta: string
     onClick?: () => void
     actionLabel?: string
   }>>(
@@ -4413,12 +4422,14 @@ function DashboardPage({
         value: dashboard ? formatCurrency(dashboard.metrics.today_collection) : unavailableValue,
         tone: 'positive',
         icon: <CreditCard size={20} />,
+        meta: 'Collected today',
       },
       {
         label: 'Monthly Collection',
         value: dashboard ? formatCurrency(dashboard.metrics.monthly_collection) : unavailableValue,
         tone: 'neutral',
         icon: <BarChart3 size={20} />,
+        meta: 'Current calendar month',
       },
       {
         label: 'Outstanding Fees',
@@ -4429,6 +4440,7 @@ function DashboardPage({
             : unavailableValue,
         tone: 'warning',
         icon: <AlertTriangle size={20} />,
+        meta: canViewFeeRecord ? 'Open Fee Record balance' : 'Permission required',
         onClick: canViewFeeRecord ? () => setActivePage('fee-record') : undefined,
         actionLabel: canViewFeeRecord ? 'Open Fee Record' : undefined,
       },
@@ -4437,6 +4449,7 @@ function DashboardPage({
         value: dashboard ? String(dashboard.metrics.active_students) : unavailableValue,
         tone: 'neutral',
         icon: <GraduationCap size={20} />,
+        meta: 'Currently enrolled',
       },
     ],
     [canViewFeeRecord, dashboard, setActivePage, unavailableValue],
@@ -4444,23 +4457,24 @@ function DashboardPage({
 
   return (
     <section className="page-stack dashboard-page">
-      <PageHeader
-        eyebrow="Overview"
-        title="School overview"
-        description="Review student accounts, fee agreements, collections, and outstanding balances."
-        action={canViewStudents ? (
-          <button className="primary-action compact" onClick={() => setActivePage('students')}>
-            <GraduationCap size={18} />
-            Open Students
-          </button>
-        ) : undefined}
-      />
+      <header className="dashboard-hero">
+        <div className="dashboard-hero-copy">
+          <p className="eyebrow">Dashboard</p>
+          <h2>School overview</h2>
+          <p>Monitor collections, student accounts, and the work that needs attention today.</p>
+        </div>
+        <div className="dashboard-date" aria-label={`Today is ${formattedDate}`}>
+          <CalendarDays size={20} aria-hidden="true" />
+          <span>Today</span>
+          <strong>{formattedDate}</strong>
+        </div>
+      </header>
 
       {apiState === 'demo' && (
         <Message tone="error">Dashboard data could not be loaded. Please reload the page to try again.</Message>
       )}
 
-      <section className="stats-grid" aria-label="Dashboard metrics">
+      <section className="stats-grid dashboard-metrics" aria-label="Dashboard metrics">
         {metrics.map((metric) => (
           <StatCard
             key={metric.label}
@@ -4468,10 +4482,107 @@ function DashboardPage({
             value={metric.value}
             tone={metric.tone as 'neutral' | 'positive' | 'warning'}
             icon={metric.icon}
+            meta={metric.meta}
             onClick={metric.onClick}
             actionLabel={metric.actionLabel}
           />
         ))}
+      </section>
+
+      <section className="dashboard-management-grid">
+        <section className="dashboard-financial-card" aria-label="Financial snapshot">
+          <div className="dashboard-section-heading">
+            <div>
+              <p className="eyebrow">Financial snapshot</p>
+              <h2>Collection overview</h2>
+            </div>
+            <span className={`dashboard-live-badge ${apiState}`}>
+              <span aria-hidden="true" />
+              {apiState === 'live' ? 'Live data' : apiState === 'loading' ? 'Loading' : 'Unavailable'}
+            </span>
+          </div>
+
+          <div className="dashboard-financial-summary">
+            <strong className="dashboard-financial-total">
+              {dashboard ? formatCurrency(dashboard.metrics.monthly_collection) : unavailableValue}
+            </strong>
+            <span className="dashboard-financial-caption">Collected this month</span>
+          </div>
+
+          <div
+            className="dashboard-progress"
+            role="img"
+            aria-label={dashboard
+              ? `Today's collections are ${todayShare}% of this month's collections`
+              : 'Collection progress unavailable'}
+          >
+            <span style={{ width: `${todayShare}%` }} />
+          </div>
+          <p className="dashboard-progress-label">
+            {dashboard ? `${todayShare}% of this month's collections received today` : 'Waiting for collection data'}
+          </p>
+
+          <div className="dashboard-financial-details">
+            <div>
+              <span>Collected today</span>
+              <strong>{dashboard ? formatCurrency(dashboard.metrics.today_collection) : unavailableValue}</strong>
+            </div>
+            <div>
+              <span>Outstanding balance</span>
+              <strong>
+                {!canViewFeeRecord
+                  ? 'No access'
+                  : dashboard
+                    ? formatCurrency(dashboard.metrics.outstanding_fees)
+                    : unavailableValue}
+              </strong>
+            </div>
+          </div>
+        </section>
+
+        <section className="dashboard-quick-card" aria-label="Quick actions">
+          <div className="dashboard-section-heading">
+            <div>
+              <p className="eyebrow">Shortcuts</p>
+              <h2>Quick actions</h2>
+            </div>
+          </div>
+          <div className="dashboard-quick-list">
+            {canViewStudents && (
+              <button type="button" aria-label="Go to Students" onClick={() => setActivePage('students')}>
+                <span className="dashboard-quick-icon"><GraduationCap size={19} /></span>
+                <span className="dashboard-quick-copy">
+                  <strong>Students</strong>
+                  <small>Profiles and enrolment</small>
+                </span>
+                <span className="dashboard-quick-arrow" aria-hidden="true">›</span>
+              </button>
+            )}
+            {canViewFeeRecord && (
+              <button type="button" aria-label="Go to Fee Record" onClick={() => setActivePage('fee-record')}>
+                <span className="dashboard-quick-icon"><ClipboardList size={19} /></span>
+                <span className="dashboard-quick-copy">
+                  <strong>Fee Record</strong>
+                  <small>Balances and collections</small>
+                </span>
+                <span className="dashboard-quick-arrow" aria-hidden="true">›</span>
+              </button>
+            )}
+            {canViewCalendar && (
+              <button type="button" aria-label="Go to Calendar" onClick={() => setActivePage('calendar')}>
+                <span className="dashboard-quick-icon"><CalendarDays size={19} /></span>
+                <span className="dashboard-quick-copy">
+                  <strong>Calendar</strong>
+                  <small>School events and meetings</small>
+                </span>
+                <span className="dashboard-quick-arrow" aria-hidden="true">›</span>
+              </button>
+            )}
+            {!canViewStudents && !canViewFeeRecord && !canViewCalendar && (
+              <p className="dashboard-quick-empty">No shortcuts are available for this account.</p>
+            )}
+          </div>
+        </section>
       </section>
 
       <section className="dashboard-grid">
@@ -4485,12 +4596,20 @@ function DashboardPage({
           ) : dashboard.recent_payments.length > 0 ? (
             <div className="dashboard-list">
               {dashboard.recent_payments.slice(0, 5).map((payment) => (
-                <div key={payment.id}>
-                  <span>
-                    <strong>{payment.student}</strong>
-                    <small>{payment.method} / {payment.payment_date}</small>
-                  </span>
-                  <strong>{formatCurrency(payment.amount)}</strong>
+                <div className="dashboard-list-row" key={payment.id}>
+                  <div className="dashboard-list-person">
+                    <span className="dashboard-list-avatar" aria-hidden="true">
+                      {payment.student.charAt(0).toUpperCase()}
+                    </span>
+                    <span className="dashboard-list-copy">
+                      <strong>{payment.student}</strong>
+                      <small>{formatStatus(payment.method)} · {payment.payment_date}</small>
+                    </span>
+                  </div>
+                  <div className="dashboard-list-amount">
+                    <strong>{formatCurrency(payment.amount)}</strong>
+                    <span className="dashboard-status positive">Collected</span>
+                  </div>
                 </div>
               ))}
             </div>
@@ -4503,7 +4622,15 @@ function DashboardPage({
           )}
         </DataPanel>
 
-        <DataPanel eyebrow="Attention needed" title="Outstanding accounts">
+        <DataPanel
+          eyebrow="Attention needed"
+          title="Outstanding accounts"
+          action={canViewFeeRecord ? (
+            <button type="button" className="secondary-action dashboard-panel-action" onClick={() => setActivePage('fee-record')}>
+              Review balances
+            </button>
+          ) : undefined}
+        >
           {!dashboard ? (
             <div className="empty-state compact">
               <AlertTriangle size={23} />
@@ -4513,12 +4640,20 @@ function DashboardPage({
           ) : dashboard.outstanding_students.length > 0 ? (
             <div className="dashboard-list">
               {dashboard.outstanding_students.slice(0, 5).map((student) => (
-                <div key={student.invoice_id}>
-                  <span>
-                    <strong>{student.student}</strong>
-                    <small>{student.class_name} / due {student.due_date}</small>
-                  </span>
-                  <strong>{formatCurrency(student.amount)}</strong>
+                <div className="dashboard-list-row" key={student.invoice_id}>
+                  <div className="dashboard-list-person">
+                    <span className="dashboard-list-avatar warning" aria-hidden="true">
+                      {student.student.charAt(0).toUpperCase()}
+                    </span>
+                    <span className="dashboard-list-copy">
+                      <strong>{student.student}</strong>
+                      <small>{student.class_name} · due {student.due_date}</small>
+                    </span>
+                  </div>
+                  <div className="dashboard-list-amount">
+                    <strong>{formatCurrency(student.amount)}</strong>
+                    <span className="dashboard-status warning">Follow up</span>
+                  </div>
                 </div>
               ))}
             </div>

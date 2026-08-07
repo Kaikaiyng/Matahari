@@ -447,17 +447,32 @@ describe('demo shell', () => {
     expect(await screen.findAllByText('The provided credentials are incorrect.')).toHaveLength(1)
   })
 
-  it('uses a compact Dashboard header and shared metric cards', async () => {
+  it('presents a management overview with operational quick actions', async () => {
     await renderAuthenticatedApp()
 
     const utilityHeader = document.querySelector<HTMLElement>('.utility-header')
     if (!utilityHeader) throw new Error('Utility header was not rendered')
     expect(within(utilityHeader).getByText('Demo International School')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'School overview' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Open Students' })).toBeInTheDocument()
     expect(screen.getByRole('region', { name: 'Dashboard metrics' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Financial snapshot' })).toBeInTheDocument()
+
+    const actions = screen.getByRole('region', { name: 'Quick actions' })
+    expect(within(actions).getByRole('button', { name: 'Go to Students' })).toBeInTheDocument()
+    expect(within(actions).getByRole('button', { name: 'Go to Fee Record' })).toBeInTheDocument()
+    expect(within(actions).getByRole('button', { name: 'Go to Calendar' })).toBeInTheDocument()
     expect(document.querySelector('.hero-strip')).not.toBeInTheDocument()
     expect(document.querySelectorAll('.stat-card')).toHaveLength(4)
+  })
+
+  it('limits Dashboard quick actions to modules the user can view', async () => {
+    installApiUser(financeDialogUser)
+    await renderAuthenticatedApp()
+
+    const actions = screen.getByRole('region', { name: 'Quick actions' })
+    expect(within(actions).getByRole('button', { name: 'Go to Students' })).toBeInTheDocument()
+    expect(within(actions).getByRole('button', { name: 'Go to Fee Record' })).toBeInTheDocument()
+    expect(within(actions).queryByRole('button', { name: 'Go to Calendar' })).not.toBeInTheDocument()
   })
 
   it('shows loading values instead of fallback metrics while the dashboard request is pending', async () => {
@@ -521,10 +536,11 @@ describe('demo shell', () => {
     const user = userEvent.setup()
     await renderAuthenticatedApp()
 
-    expect(screen.getByText('RM 800')).toBeInTheDocument()
+    const metrics = screen.getByRole('region', { name: 'Dashboard metrics' })
+    expect(within(metrics).getByText('RM 800')).toBeInTheDocument()
     expect(screen.queryByText('View Fee Record')).not.toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Open Fee Record' }))
+    await user.click(within(metrics).getByRole('button', { name: 'Open Fee Record' }))
 
     expect(await screen.findByRole('heading', { name: 'Admin Fee Record' })).toBeInTheDocument()
   })
