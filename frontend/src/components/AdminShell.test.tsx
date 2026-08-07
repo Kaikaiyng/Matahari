@@ -74,11 +74,14 @@ describe('AdminShell', () => {
 
     const collapseButton = screen.getByRole('button', { name: 'Collapse sidebar' })
     expect(sidebar).not.toHaveClass('collapsed')
+    expect(collapseButton.querySelector('.lucide-chevron-left')).toBeInTheDocument()
 
     await user.click(collapseButton)
 
     expect(sidebar).toHaveClass('collapsed')
-    expect(screen.getByRole('button', { name: 'Expand sidebar' })).toHaveAttribute('aria-expanded', 'false')
+    const expandButton = screen.getByRole('button', { name: 'Expand sidebar' })
+    expect(expandButton).toHaveAttribute('aria-expanded', 'false')
+    expect(expandButton.querySelector('.lucide-chevron-right')).toBeInTheDocument()
     expect(window.localStorage.getItem('admin-sidebar-collapsed')).toBe('true')
   })
 

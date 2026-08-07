@@ -29,7 +29,7 @@
 - Consumes: existing `isCollapsed`, `toggleCollapsed`, and `.sidebar-collapse` contracts.
 - Produces: unchanged toggle behavior with `ChevronLeft` / `ChevronRight` visuals and midpoint CSS positioning.
 
-- [ ] **Step 1: Write failing icon and position tests**
+- [x] **Step 1: Write failing icon and position tests**
 
 Extend the collapse behavior test in `AdminShell.test.tsx`:
 
@@ -54,13 +54,13 @@ it('centers the desktop sidebar toggle on the outer edge', () => {
 })
 ```
 
-- [ ] **Step 2: Run the focused tests and verify RED**
+- [x] **Step 2: Run the focused tests and verify RED**
 
 Run: `npm.cmd test -- src/components/AdminShell.test.tsx src/brandingContract.test.ts`
 
 Expected: FAIL because the component still renders panel icons and `.sidebar-collapse` still uses `top: 82px` without the midpoint transform.
 
-- [ ] **Step 3: Implement the minimal component and CSS changes**
+- [x] **Step 3: Implement the minimal component and CSS changes**
 
 In `AdminShell.tsx`, replace the panel icon imports and render branches:
 
@@ -78,7 +78,7 @@ right: -14px;
 transform: translateY(-50%);
 ```
 
-- [ ] **Step 4: Verify GREEN and local quality checks**
+- [x] **Step 4: Verify GREEN and local quality checks**
 
 Run:
 
@@ -90,11 +90,11 @@ npm.cmd run build
 
 Expected: all focused tests pass; lint and build exit 0.
 
-- [ ] **Step 5: Check the local desktop page**
+- [x] **Step 5: Check the local desktop page**
 
 Open `http://127.0.0.1:5173`, confirm the toggle is centered on the sidebar edge, and exercise expand/collapse once. Confirm the mobile hiding rule is unchanged.
 
-- [ ] **Step 6: Commit locally without pushing**
+- [x] **Step 6: Commit locally without pushing**
 
 ```powershell
 git add frontend/src/components/AdminShell.test.tsx frontend/src/brandingContract.test.ts frontend/src/components/AdminShell.tsx frontend/src/components/AdminShell.css docs/superpowers/plans/2026-08-07-sidebar-toggle-center.md

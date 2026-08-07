@@ -440,4 +440,12 @@ describe('runtime branding contract', () => {
     expect(adminShellStyles).not.toMatch(/\.admin-brand\s+span\b/)
     expect(adminShellStyles).toMatch(/\.admin-brand-copy\s+span\s*\{[^}]*color:\s*#64748b;/s)
   })
+
+  it('centers the desktop sidebar toggle on the outer edge', () => {
+    const adminShellStyles = readFileSync(resolve(frontendRoot, 'src', 'components', 'AdminShell.css'), 'utf8')
+
+    expect(adminShellStyles).toMatch(
+      /\.sidebar-collapse\s*\{[^}]*top:\s*50%;[^}]*transform:\s*translateY\(-50%\);/s,
+    )
+  })
 })
