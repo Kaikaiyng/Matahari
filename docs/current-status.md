@@ -1,8 +1,8 @@
 # Current Status
 
-**Snapshot date:** 2026-08-04
+**Snapshot date:** 2026-08-07
 
-**Inspected implementation commit:** `faee84d72a7e75cbac967774446235a571a734de`
+**Inspected implementation commit:** `d4c5171`
 
 **Default branch:** `master`
 
@@ -173,6 +173,14 @@ Dependency security refresh on 2026-08-07:
 - Composer 2.10.2 `audit --locked`: 0 security vulnerability advisories; exit 0.
 - `node --test deploy/tests/*.test.mjs`: 17 deployment contract tests passed, including the new CommonMark minimum-version guard; exit 0.
 - The complete backend suite remained at 224 tests, 216 passed, 8 MariaDB-only skipped, and 1,147 assertions; Pint passed.
+
+Sidebar reference refresh on 2026-08-07:
+
+- The authenticated desktop shell now uses a white reference-style sidebar with a 256-pixel expanded state, an 80-pixel collapsed state, a light-blue active item, and a compact footer. The collapse preference is stored locally under the brand-neutral `admin-sidebar-collapsed` key.
+- Existing page keys, navigation items, permission filtering, page-selection callbacks, and logout behavior remain unchanged. Logout moved from the utility header to the sidebar footer so there is one clear control.
+- Mobile retains the existing drawer, backdrop, focus, Escape, scroll-lock, and close-on-navigation behavior. A 390-by-844 browser check confirmed that labels remain visible in the drawer even when the desktop preference is collapsed.
+- `npm.cmd test -- --run`: 15 files and 159 tests passed; `npm.cmd run lint` and `npm.cmd run build` exited 0, with 77 production modules transformed.
+- In-app browser checks covered expanded desktop, collapsed desktop, collapse persistence after reload, and the mobile drawer. Backend and database suites were not rerun because this change is limited to the frontend shell and presentation token.
 
 ## Deployment Status
 
