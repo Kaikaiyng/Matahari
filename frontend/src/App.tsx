@@ -553,10 +553,6 @@ function paymentStatusClass(status: PaymentStatus) {
   return 'partial'
 }
 
-function receiptStatusClass(status: ReceiptStatus) {
-  return status === 'issued' ? 'paid' : 'danger'
-}
-
 function hasPermission(user: CurrentUser, permission: string) {
   return user.permissions.includes(permission)
 }
@@ -912,7 +908,7 @@ function StudentsPage({
   const [voidErrors, setVoidErrors] = useState<ValidationErrors>()
   const [isVoidingPayment, setIsVoidingPayment] = useState(false)
   const [receipts, setReceipts] = useState<StudentReceipt[]>([])
-  const [isLoadingReceipts, setIsLoadingReceipts] = useState(false)
+  const [, setIsLoadingReceipts] = useState(false)
   const [selectedReceipt, setSelectedReceipt] = useState<StudentReceipt | null>(null)
   const [printedAt, setPrintedAt] = useState('')
   const [generatingPaymentId, setGeneratingPaymentId] = useState<number | null>(null)
@@ -988,6 +984,7 @@ function StudentsPage({
     voidingPaymentId === null
       ? null
       : payments.find((payment) => payment.id === voidingPaymentId) ?? null
+  const voidedReceipts = receipts.filter((receipt) => receipt.status === 'voided')
   const receiptToVoid =
     voidingReceiptId === null
       ? null
@@ -3723,18 +3720,17 @@ function StudentsPage({
             )}
           </section>
 
-          <section className="panel receipt-workspace">
-            <div className="panel-header no-print">
-              <div>
-                <p className="eyebrow">Receipts</p>
-                <h2>Receipt History</h2>
+          {(voidedReceipts.length > 0 || receiptToVoid || selectedReceipt) && (
+            <section className="panel receipt-workspace">
+            {canViewReceipts && voidedReceipts.length > 0 && (
+              <>
+              <div className="panel-header no-print">
+                <div>
+                  <p className="eyebrow">Receipts</p>
+                  <h2>Voided Receipt Archive</h2>
+                </div>
+                <span className="badge neutral">{voidedReceipts.length} voided</span>
               </div>
-              {!canViewReceipts && <span className="permission-note">No receipt access</span>}
-            </div>
-
-            {!canViewReceipts && <Message tone="info">You do not have permission to view receipts.</Message>}
-
-            {canViewReceipts && (
               <div className="table-wrap receipt-history no-print">
                 <table className="receipt-history-table">
                   <thead>
@@ -3742,34 +3738,21 @@ function StudentsPage({
                       <th>Receipt No</th>
                       <th>Date</th>
                       <th>Amount</th>
-                      <th>Status</th>
                       <th>Paid By</th>
-                      <th>Issued By</th>
                       <th>Void Details</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {isLoadingReceipts && (
-                      <tr className="history-state-row">
-                        <td colSpan={8}>Loading receipts...</td>
-                      </tr>
-                    )}
-                    {!isLoadingReceipts && receipts.map((receipt) => (
+                    {voidedReceipts.map((receipt) => (
                       <Fragment key={receipt.id}>
                         <tr>
                           <td data-label="Receipt No">{receipt.receipt_no}</td>
                           <td data-label="Date">{receipt.receipt_date}</td>
                           <td data-label="Amount">{formatCurrency(receipt.amount)}</td>
-                          <td data-label="Status">
-                            <span className={`badge ${receiptStatusClass(receipt.status)}`}>{formatStatus(receipt.status)}</span>
-                          </td>
                           <td data-label="Paid By">{receipt.paid_by}</td>
-                          <td data-label="Issued By">{receipt.issued_by?.name ?? 'Not recorded'}</td>
                           <td data-label="Void Details">
-                            {receipt.status === 'voided'
-                              ? `${receipt.voided_by?.name ?? 'Not recorded'} / ${receipt.void_reason ?? 'No reason'}`
-                              : 'Not voided'}
+                            {receipt.voided_by?.name ?? 'Not recorded'} / {receipt.void_reason ?? 'No reason'}
                           </td>
                           <td data-label="Actions">
                             <div className="payment-actions">
@@ -3783,24 +3766,15 @@ function StudentsPage({
                                   Print
                                 </button>
                               )}
-                              {canVoidReceipts && receipt.status === 'issued' && (
-                                <button className="table-action danger-action" onClick={() => beginVoidReceipt(receipt.id)}>
-                                  Void
-                                </button>
-                              )}
                             </div>
                           </td>
                         </tr>
                       </Fragment>
                     ))}
-                    {!isLoadingReceipts && receipts.length === 0 && (
-                      <tr className="history-state-row">
-                        <td colSpan={8}>No receipts generated for this student yet.</td>
-                      </tr>
-                    )}
                   </tbody>
                 </table>
               </div>
+              </>
             )}
 
             {receiptToVoid && (
@@ -4008,7 +3982,8 @@ function StudentsPage({
                 </div>
               </article>
             )}
-          </section>
+            </section>
+          )}
         </article>
       )}
     </section>
