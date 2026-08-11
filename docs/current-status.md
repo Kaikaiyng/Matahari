@@ -38,6 +38,7 @@ The confirmed earlier technology direction named Laravel 10, but this repository
 - Payment record/allocation/verification/void reversal/history with tenant-owned input validation and transactional audit events.
 - Receipt issue/snapshot/display/browser print/void/regenerate/history with stable sequence behavior and transactional audit events.
 - School calendar CRUD.
+- Calendar Year, Month, and Week views, including a 12-month overview, upcoming-event month layout, and a school-hours week timeline.
 - Backend permission and school-scope enforcement for the dashboard and legacy monthly invoice generation.
 - Secure audit schema/logger/sanitizer/request IDs/model immutability, best-effort authentication audit, read-only Super Admin API, and Audit Trail frontend.
 - Responsive admin UI and temporary local/public demo tooling.

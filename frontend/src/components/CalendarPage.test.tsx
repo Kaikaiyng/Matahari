@@ -137,6 +137,51 @@ describe('CalendarPage', () => {
     expect(screen.getByRole('button', { name: /Staff Training/ })).toHaveTextContent('Training')
   })
 
+  it('switches between Year, Month, and Week views', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    renderCalendar()
+    await screen.findByRole('heading', { name: 'July 2026' })
+
+    await user.click(screen.getByRole('button', { name: 'Year' }))
+    expect(screen.getByRole('button', { name: 'July 2026' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'July 2026' }))
+    expect(screen.getByRole('button', { name: 'Month' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('complementary', { name: 'Upcoming events' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Week' }))
+    expect(screen.getByRole('heading', { name: '13–19 July 2026' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Week schedule' })).toBeInTheDocument()
+  })
+
+  it('keeps Add event permission-aware in every view', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    renderCalendar(['calendar.view'])
+    await screen.findByRole('heading', { name: 'July 2026' })
+
+    await user.click(screen.getByRole('button', { name: 'Week' }))
+    expect(screen.queryByRole('button', { name: 'Add event' })).not.toBeInTheDocument()
+  })
+
+  it('keeps a timed event spanning multiple dates out of the hourly week grid', async () => {
+    const overnightTrip = {
+      ...appointment,
+      id: 91,
+      title: 'Overnight Trip',
+      starts_at: '2026-07-18T10:00:00.000Z',
+      ends_at: '2026-07-19T02:00:00.000Z',
+    }
+    vi.mocked(globalThis.fetch).mockImplementation(() => json({ data: [overnightTrip] }))
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    renderCalendar()
+
+    await user.click(await screen.findByRole('button', { name: 'Week' }))
+    await screen.findAllByText('Overnight Trip')
+
+    expect(document.querySelector('.calendar-all-day-row')).toHaveTextContent('Overnight Trip')
+    expect(document.querySelector('.calendar-week-event')).toBeNull()
+  })
+
   it('renders an all-day event on every date from its start through its end', async () => {
     const schoolHoliday = {
       ...training,
@@ -355,7 +400,7 @@ describe('CalendarPage', () => {
       return json({ data: [appointment] })
     })
     const { rerenderCalendar } = renderCalendar()
-    expect(await screen.findByText('Parent Appointment')).toBeInTheDocument()
+    expect(await screen.findAllByText('Parent Appointment')).not.toHaveLength(0)
 
     rerenderCalendar(8)
 
@@ -415,7 +460,7 @@ describe('CalendarPage', () => {
     })
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     renderCalendar()
-    expect(await screen.findByText('Parent Appointment')).toBeInTheDocument()
+    expect(await screen.findAllByText('Parent Appointment')).not.toHaveLength(0)
 
     await user.click(screen.getByRole('button', { name: 'Next month' }))
 
@@ -456,7 +501,7 @@ describe('CalendarPage', () => {
     await user.click(screen.getByRole('button', { name: 'Add event' }))
     await user.type(screen.getByLabelText('Title'), 'New Calendar Event')
     await user.click(screen.getByRole('button', { name: 'Create event' }))
-    expect(await screen.findByText('New Calendar Event')).toBeInTheDocument()
+    expect(await screen.findAllByText('New Calendar Event')).not.toHaveLength(0)
 
     await act(async () => {
       resolveGet(
@@ -467,7 +512,7 @@ describe('CalendarPage', () => {
       )
     })
 
-    expect(screen.getByText('New Calendar Event')).toBeInTheDocument()
+    expect(screen.getAllByText('New Calendar Event')).not.toHaveLength(0)
   })
 
   it('keeps a future month empty when a new event defaults outside its visible range', async () => {
@@ -487,7 +532,7 @@ describe('CalendarPage', () => {
     })
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     renderCalendar()
-    await screen.findByText('Parent Appointment')
+    await screen.findAllByText('Parent Appointment')
 
     await user.click(screen.getByRole('button', { name: 'Next month' }))
     expect(await screen.findByRole('heading', { name: 'August 2026' })).toBeInTheDocument()
@@ -552,7 +597,7 @@ describe('CalendarPage', () => {
     await waitFor(() => expect(mutationRequest('PATCH')).toBeDefined())
 
     rerenderCalendar(8)
-    expect(await screen.findByText('School Eight Meeting')).toBeInTheDocument()
+    expect(await screen.findAllByText('School Eight Meeting')).not.toHaveLength(0)
 
     await act(async () => {
       resolvePatch(
@@ -565,7 +610,7 @@ describe('CalendarPage', () => {
       )
     })
 
-    expect(screen.getByText('School Eight Meeting')).toBeInTheDocument()
+    expect(screen.getAllByText('School Eight Meeting')).not.toHaveLength(0)
     expect(screen.queryByText('Stale School Update')).not.toBeInTheDocument()
   })
 
@@ -609,7 +654,7 @@ describe('CalendarPage', () => {
   it('gates create, update, and delete controls by their matching permissions', async () => {
     renderCalendar(['calendar.view'])
 
-    expect(await screen.findByText('Parent Appointment')).toBeInTheDocument()
+    expect(await screen.findAllByText('Parent Appointment')).not.toHaveLength(0)
     expect(screen.queryByRole('button', { name: 'Add event' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Parent Appointment/ })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Delete event' })).not.toBeInTheDocument()

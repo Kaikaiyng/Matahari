@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { CalendarDays, ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import { ApiError, apiRequest } from '../api'
@@ -12,6 +12,14 @@ import {
   fieldErrorProps,
   focusFirstDialogError,
 } from './AdminUi'
+import {
+  MonthCalendarView,
+  WeekCalendarView,
+  YearCalendarView,
+  calendarRange,
+  calendarTitle,
+} from './CalendarViews'
+import type { CalendarView } from './CalendarViews'
 import './CalendarPage.css'
 
 export type CalendarEvent = {
@@ -51,11 +59,6 @@ type CalendarPageProps = {
 }
 
 const SCHOOL_TIME_ZONE = 'Asia/Kuala_Lumpur'
-const monthFormatter = new Intl.DateTimeFormat('en-MY', {
-  month: 'long',
-  year: 'numeric',
-  timeZone: 'UTC',
-})
 const timeFormatter = new Intl.DateTimeFormat('en-MY', {
   hour: 'numeric',
   minute: '2-digit',
@@ -71,36 +74,18 @@ const schoolDateTimeFormatter = new Intl.DateTimeFormat('en-GB', {
   hourCycle: 'h23',
   timeZone: SCHOOL_TIME_ZONE,
 })
-const weekdayFormatter = new Intl.DateTimeFormat('en-MY', {
-  weekday: 'short',
-  timeZone: 'UTC',
-})
 const calendarDateFormatter = new Intl.DateTimeFormat('en-MY', {
   day: 'numeric',
   month: 'long',
   year: 'numeric',
   timeZone: 'UTC',
 })
-const eventTypeLabels: Record<CalendarEvent['event_type'], string> = {
-  appointment: 'Appointment',
-  training: 'Training',
-  meeting: 'Meeting',
-  school_event: 'School event',
-  other: 'Other',
-}
 const EVENT_TYPE_ERROR_ID = 'calendar-event-type-errors'
 const IS_ALL_DAY_ERROR_ID = 'calendar-is-all-day-errors'
 
 function validationMessage(errors: ApiValidationErrors, ...keys: string[]) {
   const messages = keys.flatMap((key) => errors[key] ?? [])
   return messages.length ? messages.join(' ') : undefined
-}
-
-function dateKey(date: Date) {
-  const year = date.getUTCFullYear()
-  const month = String(date.getUTCMonth() + 1).padStart(2, '0')
-  const day = String(date.getUTCDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
 }
 
 function schoolDateTimeParts(date: Date) {
@@ -126,23 +111,8 @@ function schoolDateKey(date: Date) {
 }
 
 function calendarMonthFor(date: Date) {
-  const { year, month } = schoolDateTimeParts(date)
-  return new Date(Date.UTC(year, month - 1, 1, 12))
-}
-
-function startOfCalendarGrid(month: Date) {
-  const first = new Date(Date.UTC(month.getUTCFullYear(), month.getUTCMonth(), 1, 12))
-  first.setUTCDate(first.getUTCDate() - first.getUTCDay())
-  return first
-}
-
-function visibleDates(month: Date) {
-  const start = startOfCalendarGrid(month)
-  return Array.from({ length: 42 }, (_, index) => {
-    const date = new Date(start)
-    date.setUTCDate(start.getUTCDate() + index)
-    return date
-  })
+  const { year, month, day } = schoolDateTimeParts(date)
+  return new Date(Date.UTC(year, month - 1, day, 12))
 }
 
 function eventDateKey(event: CalendarEvent) {
@@ -156,26 +126,8 @@ function eventEndDateKey(event: CalendarEvent) {
   return schoolDateKey(new Date(event.ends_at))
 }
 
-function eventOccursOnDate(event: CalendarEvent, date: string) {
-  return date >= eventDateKey(event) && date <= eventEndDateKey(event)
-}
-
 function eventIsInRange(event: CalendarEvent, rangeStart: string, rangeEnd: string) {
   return eventDateKey(event) <= rangeEnd && eventEndDateKey(event) >= rangeStart
-}
-
-function eventLabel(event: CalendarEvent) {
-  return (
-    <>
-      {!event.is_all_day && (
-        <span className="calendar-event-time">
-          {timeFormatter.format(new Date(event.starts_at)).toUpperCase()}
-        </span>
-      )}
-      <span className="calendar-event-title">{event.title}</span>
-      <span className="calendar-event-type">{eventTypeLabels[event.event_type]}</span>
-    </>
-  )
 }
 
 function eventScheduleLabel(event: CalendarEvent) {
@@ -289,6 +241,7 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
   const [displayedMonth, setDisplayedMonth] = useState(
     () => calendarMonthFor(new Date()),
   )
+  const [selectedView, setSelectedView] = useState<CalendarView>('month')
   const [events, setEvents] = useState<CalendarEvent[]>([])
   const [loadedScope, setLoadedScope] = useState<string | null>(null)
   const [loadState, setLoadState] = useState<{
@@ -304,16 +257,14 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
   const [eventToDelete, setEventToDelete] = useState<CalendarEvent | null>(null)
   const [deleteError, setDeleteError] = useState('')
   const [isDeleting, setIsDeleting] = useState(false)
-  const dates = useMemo(() => visibleDates(displayedMonth), [displayedMonth])
   const canView = permissions.includes('calendar.view')
   const canCreate = permissions.includes('calendar.create')
   const canUpdate = permissions.includes('calendar.update')
   const canDelete = permissions.includes('calendar.delete')
   const canOpenEvent = canUpdate || canDelete
   const todayKey = schoolDateKey(new Date())
-  const rangeStart = dateKey(dates[0])
-  const rangeEnd = dateKey(dates[dates.length - 1])
-  const scopeKey = `${canView ? 'view' : 'hidden'}:${schoolId}:${rangeStart}:${rangeEnd}`
+  const { start: rangeStart, end: rangeEnd } = calendarRange(selectedView, displayedMonth)
+  const scopeKey = `${canView ? 'view' : 'hidden'}:${schoolId}:${selectedView}:${rangeStart}:${rangeEnd}`
   const activeScopeRef = useRef(scopeKey)
   const previousScopeRef = useRef(scopeKey)
   const requestGenerationRef = useRef(0)
@@ -401,9 +352,19 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
     return () => controller.abort()
   }, [canView, rangeEnd, rangeStart, schoolId, scopeKey])
 
-  const changeMonth = (offset: number) => {
+  const changePeriod = (offset: number) => {
     setDisplayedMonth(
-      (month) => new Date(Date.UTC(month.getUTCFullYear(), month.getUTCMonth() + offset, 1, 12)),
+      (anchor) => {
+        if (selectedView === 'year') {
+          return new Date(Date.UTC(anchor.getUTCFullYear() + offset, anchor.getUTCMonth(), 1, 12))
+        }
+        if (selectedView === 'week') {
+          const next = new Date(anchor)
+          next.setUTCDate(next.getUTCDate() + offset * 7)
+          return next
+        }
+        return new Date(Date.UTC(anchor.getUTCFullYear(), anchor.getUTCMonth() + offset, 1, 12))
+      },
     )
   }
 
@@ -559,21 +520,25 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
         eyebrow="School operations"
         title="Calendar"
         description="Plan appointments, training, meetings, and school events."
-        action={
-          canCreate ? (
-            <button className="primary-action compact" type="button" onClick={openCreate}>
-              <Plus size={17} />
-              Add event
-            </button>
-          ) : undefined
-        }
       />
 
       <section className="calendar-panel" aria-label="School calendar">
         <header className="calendar-toolbar">
           <div className="calendar-title">
             <CalendarDays size={20} aria-hidden="true" />
-            <h2>{monthFormatter.format(displayedMonth)}</h2>
+            <h2>{calendarTitle(selectedView, displayedMonth)}</h2>
+          </div>
+          <div className="calendar-view-switcher" aria-label="Calendar view">
+            {(['year', 'month', 'week'] as CalendarView[]).map((view) => (
+              <button
+                type="button"
+                key={view}
+                aria-pressed={selectedView === view}
+                onClick={() => setSelectedView(view)}
+              >
+                {view[0].toUpperCase()}{view.slice(1)}
+              </button>
+            ))}
           </div>
           <div className="calendar-navigation">
             <button className="secondary-action calendar-today-action" type="button" onClick={goToToday}>
@@ -582,19 +547,25 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
             <button
               className="icon-button"
               type="button"
-              aria-label="Previous month"
-              onClick={() => changeMonth(-1)}
+              aria-label={`Previous ${selectedView}`}
+              onClick={() => changePeriod(-1)}
             >
               <ChevronLeft size={19} />
             </button>
             <button
               className="icon-button"
               type="button"
-              aria-label="Next month"
-              onClick={() => changeMonth(1)}
+              aria-label={`Next ${selectedView}`}
+              onClick={() => changePeriod(1)}
             >
               <ChevronRight size={19} />
             </button>
+            {canCreate && (
+              <button className="primary-action compact calendar-add-action" type="button" onClick={openCreate}>
+                <Plus size={17} />
+                Add event
+              </button>
+            )}
           </div>
         </header>
 
@@ -615,52 +586,43 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
           <InlineMessage tone="info">You do not have permission to view calendar events.</InlineMessage>
         )}
 
-        <div className="calendar-weekdays" aria-hidden="true">
-          {dates.slice(0, 7).map((date) => (
-            <span key={dateKey(date)}>{weekdayFormatter.format(date)}</span>
-          ))}
-        </div>
-        <div className="calendar-grid">
-          {dates.map((date) => {
-            const dayEvents = visibleEvents.filter((event) =>
-              eventOccursOnDate(event, dateKey(date)),
-            )
-            const isCurrentMonth = date.getUTCMonth() === displayedMonth.getUTCMonth()
-            const isToday = dateKey(date) === todayKey
-
-            return (
-              <section
-                key={dateKey(date)}
-                className={`calendar-day${isCurrentMonth ? '' : ' outside-month'}${isCurrentMonth || dayEvents.length ? ' calendar-mobile-day' : ''}${isToday ? ' calendar-today' : ''}`}
-                aria-current={isToday ? 'date' : undefined}
-                aria-label={calendarDateFormatter.format(date)}
-              >
-                <span className="calendar-day-number">{date.getUTCDate()}</span>
-                <div className="calendar-day-events">
-                  {dayEvents.map((event) =>
-                    canOpenEvent ? (
-                      <button
-                        className={`calendar-event calendar-event-${event.event_type}`}
-                        type="button"
-                        key={event.id}
-                        onClick={() => openEdit(event)}
-                      >
-                        {eventLabel(event)}
-                      </button>
-                    ) : (
-                      <div
-                        className={`calendar-event calendar-event-readonly calendar-event-${event.event_type}`}
-                        key={event.id}
-                      >
-                        {eventLabel(event)}
-                      </div>
-                    ),
-                  )}
-                </div>
-              </section>
-            )
-          })}
-        </div>
+        {selectedView === 'year' && (
+          <YearCalendarView
+            anchor={displayedMonth}
+            events={visibleEvents}
+            todayKey={todayKey}
+            canOpenEvent={canOpenEvent}
+            onOpenEvent={openEdit}
+            onSelectMonth={(month) => {
+              const today = calendarMonthFor(new Date())
+              setDisplayedMonth(
+                month.getUTCFullYear() === today.getUTCFullYear() &&
+                  month.getUTCMonth() === today.getUTCMonth()
+                  ? today
+                  : month,
+              )
+              setSelectedView('month')
+            }}
+          />
+        )}
+        {selectedView === 'month' && (
+          <MonthCalendarView
+            anchor={displayedMonth}
+            events={visibleEvents}
+            todayKey={todayKey}
+            canOpenEvent={canOpenEvent}
+            onOpenEvent={openEdit}
+          />
+        )}
+        {selectedView === 'week' && (
+          <WeekCalendarView
+            anchor={displayedMonth}
+            events={visibleEvents}
+            todayKey={todayKey}
+            canOpenEvent={canOpenEvent}
+            onOpenEvent={openEdit}
+          />
+        )}
       </section>
 
       {editingEvent !== undefined && !eventToDelete && (
