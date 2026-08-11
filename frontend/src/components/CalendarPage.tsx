@@ -741,36 +741,44 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
                 <Users size={19} aria-hidden="true" />
                 <div className="calendar-participant-picker">
                   <span className="calendar-participant-label">Participants</span>
-                  {selectedParticipantNames.length > 0 && (
-                    <div className="calendar-participant-chips" aria-label="Selected participants">
-                      {selectedParticipantNames.map((name) => (
-                        <span className="calendar-participant-chip" key={name}>
-                          <span>{name}</span>
-                          <button
-                            type="button"
-                            aria-label={`Remove ${name}`}
-                            onClick={() => toggleParticipant(name)}
-                          >
-                            <X size={13} />
-                          </button>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  <button
-                    className="calendar-participant-trigger"
-                    type="button"
-                    aria-label="Add participants"
-                    aria-expanded={participantPickerOpen}
-                    onClick={() => setParticipantPickerOpen((open) => !open)}
-                    {...fieldErrorProps(
-                      'calendar-participants-error',
-                      validationMessage(fieldErrors, 'participants'),
+                  <div className="calendar-participant-selection">
+                    {selectedParticipantNames.length > 0 && (
+                      <div className="calendar-participant-chips" aria-label="Selected participants">
+                        {selectedParticipantNames.map((name) => (
+                          <span className="calendar-participant-chip" key={name}>
+                            <span>{name}</span>
+                            <button
+                              type="button"
+                              aria-label={`Remove ${name}`}
+                              onClick={() => toggleParticipant(name)}
+                            >
+                              <X size={12} />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
                     )}
-                  >
-                    <span>{selectedParticipantNames.length ? 'Add more staff' : 'Select staff'}</span>
-                    <ChevronDown size={16} aria-hidden="true" />
-                  </button>
+                    <button
+                      className={`calendar-participant-trigger${selectedParticipantNames.length ? ' is-compact' : ''}`}
+                      type="button"
+                      aria-label="Add participants"
+                      aria-expanded={participantPickerOpen}
+                      onClick={() => setParticipantPickerOpen((open) => !open)}
+                      {...fieldErrorProps(
+                        'calendar-participants-error',
+                        validationMessage(fieldErrors, 'participants'),
+                      )}
+                    >
+                      {selectedParticipantNames.length ? (
+                        <Plus size={16} aria-hidden="true" />
+                      ) : (
+                        <>
+                          <span>Select staff</span>
+                          <ChevronDown size={16} aria-hidden="true" />
+                        </>
+                      )}
+                    </button>
+                  </div>
                   {participantPickerOpen && (
                     <div className="calendar-participant-options" role="listbox" aria-label="Staff" aria-multiselectable="true">
                       {visibleStaffOptions.length ? visibleStaffOptions.map((staff) => {
