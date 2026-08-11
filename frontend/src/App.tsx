@@ -880,6 +880,7 @@ function StudentsPage({
   const [isSavingPaymentOneTimeCharge, setIsSavingPaymentOneTimeCharge] = useState(false)
   const [outstandingCharges, setOutstandingCharges] = useState<OutstandingChargeCell[]>([])
   const [outstandingChargesYear, setOutstandingChargesYear] = useState('')
+  const [showOutstandingCharges, setShowOutstandingCharges] = useState(false)
   const [isLoadingOutstandingCharges, setIsLoadingOutstandingCharges] = useState(false)
   const [outstandingChargeError, setOutstandingChargeError] = useState('')
   const [studentListFeeRecordSummaries, setStudentListFeeRecordSummaries] = useState<FeeRecordSummaryRow[]>([])
@@ -999,12 +1000,14 @@ function StudentsPage({
       feeRecordPreview.charges.length > 0 &&
       !previewBlockedByWarnings,
   )
-  const outstandingStatusLabel =
-    outstandingChargesYear === feeRecordAcademicYear
-      ? `${outstandingCharges.length} outstanding charge cell${outstandingCharges.length === 1 ? '' : 's'}`
-      : 'Outstanding charge status not loaded'
   const currentFeeRecordSummary =
     studentFeeRecordSummaryYear === feeRecordAcademicYear ? studentFeeRecordSummary : null
+  const feeRecordIsActivated = currentFeeRecordSummary !== null
+  const outstandingStatusLabel = isLoadingStudentFeeRecordSummary
+    ? 'Loading charge status'
+    : feeRecordIsActivated
+      ? `${outstandingCharges.length} outstanding charge${outstandingCharges.length === 1 ? '' : 's'}`
+      : 'Not activated'
   const studentListFeeRecordSummaryByStudentId = useMemo(() => {
     if (studentListFeeRecordSummaryYear !== feeRecordAcademicYear) {
       return new Map<number, FeeRecordSummaryRow>()
@@ -1144,6 +1147,7 @@ function StudentsPage({
 
   const loadStudentDetail = async (studentId: number) => {
     setError('')
+    setShowOutstandingCharges(false)
     setIsLoadingFeeAgreementEditorData(true)
     setFeeItems([])
     setFeeAgreements([])
@@ -1338,7 +1342,7 @@ function StudentsPage({
         },
       )
       await loadOutstandingCharges(selectedStudent.id, feeRecordAcademicYear)
-      await previewFeeRecordCharges()
+      setShowOutstandingCharges(true)
       setMessage(`Activated ${response.created_count} Fee Record charge cells.`)
     } catch (activateError) {
       if (activateError instanceof ApiError && activateError.status === 422) {
@@ -2871,13 +2875,13 @@ function StudentsPage({
             <div className="panel-header">
               <div>
                 <p className="eyebrow">Fee Record</p>
-                <h2>Charge Preview and Activation</h2>
+                <h2>{feeRecordIsActivated ? 'Charges and Outstanding' : 'Preview and Activate Charges'}</h2>
               </div>
-              <span className={`badge ${outstandingCharges.length > 0 ? 'partial' : 'neutral'}`}>{outstandingStatusLabel}</span>
+              <span className={`badge ${feeRecordIsActivated && outstandingCharges.length > 0 ? 'partial' : 'neutral'}`}>{outstandingStatusLabel}</span>
             </div>
 
             {!canViewFeeRecord && <Message tone="info">You do not have permission to view Fee Record charges.</Message>}
-            {feeRecordPreviewError && <Message tone="error">{feeRecordPreviewError}</Message>}
+            {!feeRecordIsActivated && feeRecordPreviewError && <Message tone="error">{feeRecordPreviewError}</Message>}
 
             {canViewFeeRecord && (
               <>
@@ -2886,51 +2890,67 @@ function StudentsPage({
                     Academic Year
                     <input
                       value={feeRecordAcademicYear}
-                      onChange={(event) => {
-                        setFeeRecordAcademicYear(event.target.value)
-                        setFeeRecordPreview(null)
-                        setFeeRecordPreviewError('')
-                      }}
+                      readOnly
                     />
                   </label>
                   <div className="fee-record-action-group">
-                    <button className="secondary-action" onClick={() => void previewFeeRecordCharges()} disabled={isPreviewingFeeRecord}>
-                      {isPreviewingFeeRecord ? 'Previewing...' : 'Preview Charges'}
-                    </button>
-                    {canActivateFeeRecord && (
-                      <button
-                        className="primary-action compact"
-                        onClick={() => void activateFeeRecordCharges()}
-                        disabled={!canActivateCurrentPreview || isActivatingFeeRecord}
-                      >
-                        {isActivatingFeeRecord ? 'Activating...' : 'Activate Charges'}
-                      </button>
-                    )}
-                    <button
-                      className="table-action"
-                      onClick={() => selectedStudent && void loadOutstandingCharges(selectedStudent.id, feeRecordAcademicYear)}
-                    >
-                      View Outstanding
-                    </button>
-                    {canManageFeeRecord && (
-                      <button
-                        className="table-action"
-                        onClick={() => {
-                          setShowManualChargeForm((value) => !value)
-                          setManualChargeErrors(undefined)
-                        }}
-                      >
-                        {showManualChargeForm ? 'Close One-time Charge' : 'Add One-time Charge'}
-                      </button>
+                    {feeRecordIsActivated ? (
+                      <>
+                        <button
+                          className="primary-action compact"
+                          onClick={() => {
+                            if (showOutstandingCharges) {
+                              setShowOutstandingCharges(false)
+                              return
+                            }
+                            if (selectedStudent) {
+                              void loadOutstandingCharges(selectedStudent.id, feeRecordAcademicYear).then(() => setShowOutstandingCharges(true))
+                            }
+                          }}
+                          disabled={isLoadingOutstandingCharges}
+                        >
+                          {isLoadingOutstandingCharges
+                            ? 'Loading...'
+                            : showOutstandingCharges
+                              ? 'Hide Outstanding'
+                              : 'View Outstanding'}
+                        </button>
+                        {canManageFeeRecord && (
+                          <button
+                            className="secondary-action"
+                            onClick={() => {
+                              setShowManualChargeForm(true)
+                              setManualChargeErrors(undefined)
+                            }}
+                          >
+                            Add One-time Charge
+                          </button>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <button className={feeRecordPreview ? 'secondary-action' : 'primary-action compact'} onClick={() => void previewFeeRecordCharges()} disabled={isPreviewingFeeRecord}>
+                          {isPreviewingFeeRecord ? 'Previewing...' : 'Preview Charges'}
+                        </button>
+                        {feeRecordPreview && canActivateFeeRecord && (
+                          <button
+                            className="primary-action compact"
+                            onClick={() => void activateFeeRecordCharges()}
+                            disabled={!canActivateCurrentPreview || isActivatingFeeRecord}
+                          >
+                            {isActivatingFeeRecord ? 'Activating...' : 'Activate Charges'}
+                          </button>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
 
-                {!canActivateFeeRecord && (
+                {!feeRecordIsActivated && !canActivateFeeRecord && (
                   <Message tone="info">Activation is hidden for this role. Users need fee_record.generate.</Message>
                 )}
 
-                {showManualChargeForm && canManageFeeRecord && (
+                {feeRecordIsActivated && showManualChargeForm && canManageFeeRecord && (
                   <ModalFrame
                     title="One-time Charge"
                     description="Add a one-time charge to this student account."
@@ -3070,7 +3090,7 @@ function StudentsPage({
                   </ModalFrame>
                 )}
 
-                {feeRecordPreview?.warnings.length ? (
+                {!feeRecordIsActivated && feeRecordPreview?.warnings.length ? (
                   <div className="fee-record-warning-list">
                     <div className="payment-subheader">
                       <div>
@@ -3088,7 +3108,7 @@ function StudentsPage({
                   </div>
                 ) : null}
 
-                {feeRecordPreview && (
+                {!feeRecordIsActivated && feeRecordPreview && (
                   <div className="fee-record-preview-block">
                     <div className="payment-subheader">
                       <div>
@@ -3156,10 +3176,29 @@ function StudentsPage({
                   </div>
                 )}
 
-                {outstandingChargesYear === feeRecordAcademicYear && (
-                  <div className="fee-record-outstanding-strip">
-                    <strong>{outstandingCharges.length}</strong>
-                    <span>outstanding charge cells available for payment allocation in {feeRecordAcademicYear}</span>
+                {feeRecordIsActivated && showOutstandingCharges && outstandingChargesYear === feeRecordAcademicYear && (
+                  <div className="fee-record-outstanding-panel">
+                    <div className="payment-subheader">
+                      <div>
+                        <h3>Outstanding Charges</h3>
+                        <p>{outstandingCharges.length} charge{outstandingCharges.length === 1 ? '' : 's'} awaiting payment.</p>
+                      </div>
+                    </div>
+                    {outstandingCharges.length ? (
+                      <div className="fee-record-outstanding-list">
+                        {outstandingCharges.map((charge) => (
+                          <div className="fee-record-outstanding-row" key={charge.id}>
+                            <div>
+                              <strong>{charge.description}</strong>
+                              <span>{formatBillingMonth(charge.billing_month)} · {charge.fee_code ?? charge.fee_record_category}</span>
+                            </div>
+                            <b>{formatCurrency(charge.outstanding_amount)}</b>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="empty-state">No outstanding charges for {feeRecordAcademicYear}.</div>
+                    )}
                   </div>
                 )}
               </>
