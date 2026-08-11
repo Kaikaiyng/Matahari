@@ -15,6 +15,7 @@ import {
   Phone,
   RefreshCw,
   Search,
+  Settings2,
   School,
   ShieldCheck,
   UserPlus,
@@ -80,6 +81,7 @@ type PageKey =
   | 'fees'
   | 'fee-record'
   | 'audit'
+  | 'settings'
 
 type CurrentUser = {
   id: number
@@ -380,6 +382,7 @@ const navGroups: NavigationGroup<PageKey>[] = [
     label: 'Administration',
     items: [
       { key: 'audit', label: 'Audit Trail', icon: History, requiredPermission: 'audit.view' },
+      { key: 'settings', label: 'Settings', icon: Settings2 },
     ],
   },
 ]
@@ -4027,6 +4030,71 @@ function ParentsPage() {
   )
 }
 
+function SettingsPage({
+  user,
+  dashboard,
+  apiState,
+}: {
+  user: CurrentUser
+  dashboard: DashboardResponse | null
+  apiState: 'live' | 'demo' | 'loading'
+}) {
+  return (
+    <section className="page-stack">
+      <PageHeader
+        eyebrow="Administration"
+        title="Settings"
+        description="Review the active school context and your account access."
+      />
+
+      <div className="settings-grid">
+        <DataPanel eyebrow="School" title="School Context">
+          <dl className="settings-summary">
+            <div>
+              <dt>Current school</dt>
+              <dd>{dashboard?.school.name ?? 'Matahari International School'}</dd>
+            </div>
+            <div>
+              <dt>School ID</dt>
+              <dd>{dashboard?.school.id ?? user.school_id ?? 'Not assigned'}</dd>
+            </div>
+            <div>
+              <dt>School code</dt>
+              <dd>{dashboard?.school.code ?? 'Not loaded'}</dd>
+            </div>
+            <div>
+              <dt>Mode</dt>
+              <dd><StatusBadge tone="info">Single school</StatusBadge></dd>
+            </div>
+          </dl>
+          <p className="settings-note">School selection will be added here when multi-school support is introduced.</p>
+        </DataPanel>
+
+        <DataPanel eyebrow="Account" title="Account & Access">
+          <dl className="settings-summary">
+            <div>
+              <dt>Name</dt>
+              <dd>{user.name}</dd>
+            </div>
+            <div>
+              <dt>Username</dt>
+              <dd>@{user.username}</dd>
+            </div>
+            <div>
+              <dt>Roles</dt>
+              <dd>{user.roles.map(formatStatus).join(', ') || 'No role assigned'}</dd>
+            </div>
+            <div>
+              <dt>API status</dt>
+              <dd><StatusBadge tone={apiState === 'live' ? 'positive' : apiState === 'loading' ? 'info' : 'warning'}>{formatStatus(apiState)}</StatusBadge></dd>
+            </div>
+          </dl>
+        </DataPanel>
+      </div>
+    </section>
+  )
+}
+
 function FeesPage() {
   return (
     <section className="page-stack">
@@ -4880,6 +4948,10 @@ function App() {
 
     if (activePage === 'audit') {
       return <AuditTrailPage onUnauthorized={handleUnauthorized} />
+    }
+
+    if (activePage === 'settings') {
+      return <SettingsPage user={user} dashboard={dashboard} apiState={apiState} />
     }
 
     return (
