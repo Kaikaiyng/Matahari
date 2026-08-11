@@ -300,6 +300,42 @@ describe('CalendarPage', () => {
     )
   })
 
+  it('selects multiple active staff as event participants', async () => {
+    vi.mocked(globalThis.fetch).mockImplementation((input, init) => {
+      const url = new URL(String(input), window.location.origin)
+      if (url.pathname.endsWith('/calendar-events') && !init?.method) {
+        return json({
+          data: [],
+          staff: [
+            { id: 10, name: 'Kristin Lee', username: 'kristin' },
+            { id: 11, name: 'Cody Tan', username: 'cody' },
+          ],
+        })
+      }
+      if (url.pathname.endsWith('/calendar-events') && init?.method === 'POST') {
+        const body = JSON.parse(String(init.body))
+        return json({ calendar_event: { ...training, ...body, id: 12 } }, 201)
+      }
+      return json({ message: 'Unhandled request' }, 404)
+    })
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    renderCalendar()
+    await screen.findByText('No events')
+    await user.click(screen.getByRole('button', { name: 'Add event' }))
+
+    await user.click(screen.getByRole('button', { name: 'Add participants' }))
+    await user.click(screen.getByRole('option', { name: /Kristin Lee/ }))
+    await user.click(screen.getByRole('option', { name: /Cody Tan/ }))
+
+    expect(screen.getByRole('button', { name: 'Remove Kristin Lee' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Remove Cody Tan' })).toBeInTheDocument()
+
+    await user.type(screen.getByLabelText('Title'), 'Staff planning')
+    await user.click(screen.getByRole('button', { name: 'Create event' }))
+
+    await waitFor(() => expect(requestBody('POST')?.participants).toBe('Kristin Lee, Cody Tan'))
+  })
+
   it('navigates months and fetches the complete visible date range', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     renderCalendar()

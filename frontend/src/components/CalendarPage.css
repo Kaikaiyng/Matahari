@@ -576,19 +576,158 @@
   margin-top: 13px;
 }
 
-.calendar-participants-row .calendar-form-field > span {
-  width: 1px;
-  height: 1px;
+.calendar-participant-picker {
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+  position: relative;
+}
+
+.calendar-participant-label {
+  color: #777280;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.calendar-participant-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.calendar-participant-chip {
+  min-width: 0;
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 5px 4px 10px;
+  border: 1px solid #dedbe9;
+  border-radius: 999px;
+  background: #f7f5fc;
+  color: #4f4a5d;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.calendar-participant-chip > span {
   overflow: hidden;
-  position: absolute;
-  clip: rect(0 0 0 0);
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.calendar-participants-row textarea {
-  min-height: 44px;
-  padding: 11px 12px;
-  resize: none;
+.calendar-participant-chip button {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #807a8c;
+  cursor: pointer;
+}
+
+.calendar-participant-chip button:hover {
+  background: #e9e5f6;
+  color: #5147b3;
+}
+
+.calendar-participant-trigger {
+  width: 100%;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 11px;
+  border: 1px solid #dedbe5;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #716b7e;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.calendar-participant-options {
+  width: 100%;
+  max-height: 220px;
+  overflow-y: auto;
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 6px);
+  left: 0;
+  padding: 6px;
+  border: 1px solid #dedbe7;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 14px 34px rgb(35 31 53 / 16%);
+}
+
+.calendar-participant-options > button {
+  width: 100%;
+  min-height: 48px;
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) 18px;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 9px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #494453;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.calendar-participant-options > button:hover,
+.calendar-participant-options > button[aria-selected='true'] {
+  background: #f2effc;
+}
+
+.calendar-participant-options > button > span:nth-child(2) {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.calendar-participant-options strong,
+.calendar-participant-options small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.calendar-participant-options strong {
+  font-size: 12px;
+}
+
+.calendar-participant-options small,
+.calendar-participant-options > p {
+  color: #8b8594;
+  font-size: 10px;
+}
+
+.calendar-participant-options > p {
+  margin: 0;
+  padding: 12px;
+  text-align: center;
+}
+
+.calendar-participant-avatar {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #e9e5fb;
+  color: #5c50c7;
+  font-size: 11px;
+  font-weight: 900;
 }
 
 .calendar-form-section {

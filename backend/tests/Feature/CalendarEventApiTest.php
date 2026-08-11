@@ -120,6 +120,39 @@ class CalendarEventApiTest extends TestCase
             ->assertJsonPath('data.0.id', $event->id);
     }
 
+    public function test_calendar_list_returns_only_active_staff_from_the_current_school(): void
+    {
+        $school = $this->school('MIS');
+        $otherSchool = $this->school('OTH');
+        $user = $this->userWithPermissions($school, ['calendar.view']);
+        $activeStaff = User::factory()->create([
+            'school_id' => $school->id,
+            'name' => 'Active Staff',
+            'status' => 'active',
+        ]);
+        User::factory()->create([
+            'school_id' => $school->id,
+            'name' => 'Inactive Staff',
+            'status' => 'inactive',
+        ]);
+        User::factory()->create([
+            'school_id' => $otherSchool->id,
+            'name' => 'Other School Staff',
+            'status' => 'active',
+        ]);
+
+        $this->actingAs($user)
+            ->getJson('/api/calendar-events?start=2026-07-01&end=2026-07-31')
+            ->assertOk()
+            ->assertJsonFragment([
+                'id' => $activeStaff->id,
+                'name' => 'Active Staff',
+                'username' => $activeStaff->username,
+            ])
+            ->assertJsonMissing(['name' => 'Inactive Staff'])
+            ->assertJsonMissing(['name' => 'Other School Staff']);
+    }
+
     public function test_school_user_cannot_view_update_or_delete_another_schools_event(): void
     {
         $school = $this->school('MIS');

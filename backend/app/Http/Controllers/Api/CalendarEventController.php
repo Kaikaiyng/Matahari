@@ -7,6 +7,7 @@ use App\Http\Requests\StoreCalendarEventRequest;
 use App\Http\Requests\UpdateCalendarEventRequest;
 use App\Models\CalendarEvent;
 use App\Models\School;
+use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -24,10 +25,11 @@ class CalendarEventController extends Controller
         ]);
         $rangeStart = CarbonImmutable::parse($validated['start'])->startOfDay();
         $rangeEnd = CarbonImmutable::parse($validated['end'])->endOfDay();
+        $schoolId = $this->schoolId($request);
 
         $events = CalendarEvent::query()
             ->with(['creator:id,name', 'updater:id,name'])
-            ->where('school_id', $this->schoolId($request))
+            ->where('school_id', $schoolId)
             ->where('starts_at', '<=', $rangeEnd)
             ->where(function (Builder $query) use ($rangeStart): void {
                 $query->where('ends_at', '>=', $rangeStart)
@@ -40,7 +42,13 @@ class CalendarEventController extends Controller
             ->get()
             ->map(fn (CalendarEvent $event) => $this->serialize($event));
 
-        return response()->json(['data' => $events]);
+        $staff = User::query()
+            ->where('school_id', $schoolId)
+            ->where('status', 'active')
+            ->orderBy('name')
+            ->get(['id', 'name', 'username']);
+
+        return response()->json(['data' => $events, 'staff' => $staff]);
     }
 
     public function store(StoreCalendarEventRequest $request): JsonResponse

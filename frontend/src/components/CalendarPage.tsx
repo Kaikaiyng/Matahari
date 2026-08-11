@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
-import { CalendarDays, ChevronLeft, ChevronRight, Clock3, FileText, MapPin, Plus, Tag, Users } from 'lucide-react'
+import { CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, Clock3, FileText, MapPin, Plus, Tag, Users, X } from 'lucide-react'
 import { ApiError, apiRequest } from '../api'
 import type { ApiValidationErrors } from '../api'
 import {
@@ -50,6 +50,12 @@ export type CalendarEventForm = {
   location: string
   participants: string
   notes: string
+}
+
+type CalendarStaff = {
+  id: number
+  name: string
+  username: string
 }
 
 type CalendarPageProps = {
@@ -113,6 +119,10 @@ function schoolDateKey(date: Date) {
 function calendarMonthFor(date: Date) {
   const { year, month, day } = schoolDateTimeParts(date)
   return new Date(Date.UTC(year, month - 1, day, 12))
+}
+
+function participantNames(value: string) {
+  return value.split(',').map((name) => name.trim()).filter(Boolean)
 }
 
 function eventDateKey(event: CalendarEvent) {
@@ -242,6 +252,8 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
   )
   const [selectedView, setSelectedView] = useState<CalendarView>('month')
   const [events, setEvents] = useState<CalendarEvent[]>([])
+  const [staffOptions, setStaffOptions] = useState<CalendarStaff[]>([])
+  const [staffSchoolId, setStaffSchoolId] = useState<number | null>(null)
   const [loadedScope, setLoadedScope] = useState<string | null>(null)
   const [loadState, setLoadState] = useState<{
     scope: string | null
@@ -256,6 +268,7 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
   const [eventToDelete, setEventToDelete] = useState<CalendarEvent | null>(null)
   const [deleteError, setDeleteError] = useState('')
   const [isDeleting, setIsDeleting] = useState(false)
+  const [participantPickerOpen, setParticipantPickerOpen] = useState(false)
   const canView = permissions.includes('calendar.view')
   const canCreate = permissions.includes('calendar.create')
   const canUpdate = permissions.includes('calendar.update')
@@ -281,6 +294,8 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
   const viewCloseRef = useRef<HTMLButtonElement>(null)
   const deleteCancelRef = useRef<HTMLButtonElement>(null)
   const visibleEvents = loadedScope === scopeKey ? events : []
+  const visibleStaffOptions = staffSchoolId === schoolId ? staffOptions : []
+  const selectedParticipantNames = participantNames(form.participants)
   const visibleLoadState =
     loadState.scope === scopeKey
       ? loadState
@@ -324,7 +339,7 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
       end: rangeEnd,
     })
 
-    apiRequest<{ data: CalendarEvent[] }>(`/calendar-events?${params.toString()}`, {
+    apiRequest<{ data: CalendarEvent[]; staff?: CalendarStaff[] }>(`/calendar-events?${params.toString()}`, {
       signal: controller.signal,
     })
       .then((response) => {
@@ -334,6 +349,8 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
           requestGenerationRef.current === generation
         ) {
           setEvents(response.data)
+          setStaffOptions(response.staff ?? [])
+          setStaffSchoolId(schoolId)
           setLoadedScope(scopeKey)
           setLoadState({ scope: scopeKey, status: 'success', error: '' })
         }
@@ -382,6 +399,7 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
     setForm(emptyForm())
     setFormError('')
     setFieldErrors({})
+    setParticipantPickerOpen(false)
     setEditingEvent(null)
   }
 
@@ -389,11 +407,23 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
     setForm(formFromEvent(event))
     setFormError('')
     setFieldErrors({})
+    setParticipantPickerOpen(false)
     setEditingEvent(event)
   }
 
   const closeForm = () => {
-    if (!isSaving) setEditingEvent(undefined)
+    if (!isSaving) {
+      setParticipantPickerOpen(false)
+      setEditingEvent(undefined)
+    }
+  }
+
+  const toggleParticipant = (name: string) => {
+    const current = participantNames(form.participants)
+    const next = current.includes(name)
+      ? current.filter((participant) => participant !== name)
+      : [...current, name]
+    updateForm('participants', next.join(', '))
   }
 
   const updateForm = <Key extends keyof CalendarEventForm>(
@@ -709,23 +739,70 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
 
               <div className="calendar-setting-row calendar-participants-row">
                 <Users size={19} aria-hidden="true" />
-                <label className="calendar-form-field">
-                  <span>Participants</span>
-                  <textarea
-                    aria-label="Participants"
-                    placeholder="Add participants"
-                    value={form.participants}
-                    onChange={(event) => updateForm('participants', event.target.value)}
+                <div className="calendar-participant-picker">
+                  <span className="calendar-participant-label">Participants</span>
+                  {selectedParticipantNames.length > 0 && (
+                    <div className="calendar-participant-chips" aria-label="Selected participants">
+                      {selectedParticipantNames.map((name) => (
+                        <span className="calendar-participant-chip" key={name}>
+                          <span>{name}</span>
+                          <button
+                            type="button"
+                            aria-label={`Remove ${name}`}
+                            onClick={() => toggleParticipant(name)}
+                          >
+                            <X size={13} />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <button
+                    className="calendar-participant-trigger"
+                    type="button"
+                    aria-label="Add participants"
+                    aria-expanded={participantPickerOpen}
+                    onClick={() => setParticipantPickerOpen((open) => !open)}
                     {...fieldErrorProps(
                       'calendar-participants-error',
                       validationMessage(fieldErrors, 'participants'),
                     )}
-                  />
-                </label>
+                  >
+                    <span>{selectedParticipantNames.length ? 'Add more staff' : 'Select staff'}</span>
+                    <ChevronDown size={16} aria-hidden="true" />
+                  </button>
+                  {participantPickerOpen && (
+                    <div className="calendar-participant-options" role="listbox" aria-label="Staff" aria-multiselectable="true">
+                      {visibleStaffOptions.length ? visibleStaffOptions.map((staff) => {
+                        const selected = selectedParticipantNames.includes(staff.name)
+                        return (
+                          <button
+                            type="button"
+                            role="option"
+                            aria-selected={selected}
+                            key={staff.id}
+                            onClick={() => toggleParticipant(staff.name)}
+                          >
+                            <span className="calendar-participant-avatar" aria-hidden="true">
+                              {staff.name.slice(0, 1).toUpperCase()}
+                            </span>
+                            <span>
+                              <strong>{staff.name}</strong>
+                              <small>@{staff.username}</small>
+                            </span>
+                            {selected && <Check size={16} aria-hidden="true" />}
+                          </button>
+                        )
+                      }) : (
+                        <p>No active staff available.</p>
+                      )}
+                    </div>
+                  )}
                 <FieldError
                   id="calendar-participants-error"
                   message={validationMessage(fieldErrors, 'participants')}
                 />
+                </div>
               </div>
 
               <section className="calendar-form-section" aria-labelledby="calendar-date-time-heading">
