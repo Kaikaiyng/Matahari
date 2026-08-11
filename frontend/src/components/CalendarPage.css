@@ -578,6 +578,23 @@
   margin-top: 12px;
 }
 
+.calendar-participants-row {
+  align-items: center;
+  padding-block: 7px;
+}
+
+.calendar-participant-add {
+  width: 24px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #7c7788;
+  cursor: pointer;
+}
+
 .calendar-date-time-row > svg {
   margin-top: 18px;
 }
@@ -682,16 +699,6 @@
   font-size: 13px;
   font-weight: 750;
   cursor: pointer;
-}
-
-.calendar-participant-trigger.is-compact {
-  width: 28px;
-  min-height: 28px;
-  justify-content: center;
-  padding: 0;
-  border-radius: 50%;
-  background: #f2effb;
-  color: #5c50c7;
 }
 
 .calendar-participant-options {

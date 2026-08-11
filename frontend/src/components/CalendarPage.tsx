@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
-import { CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, Clock3, FileText, MapPin, Plus, Tag, Users, X } from 'lucide-react'
+import { CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, Clock3, FileText, MapPin, Plus, Tag, UserPlus, X } from 'lucide-react'
 import { ApiError, apiRequest } from '../api'
 import type { ApiValidationErrors } from '../api'
 import {
@@ -738,7 +738,15 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
               </label>
 
               <div className="calendar-setting-row calendar-participants-row">
-                <Users size={19} aria-hidden="true" />
+                <button
+                  className="calendar-participant-add"
+                  type="button"
+                  aria-label="Add participants"
+                  aria-expanded={participantPickerOpen}
+                  onClick={() => setParticipantPickerOpen((open) => !open)}
+                >
+                  <UserPlus size={18} aria-hidden="true" />
+                </button>
                 <div className="calendar-participant-picker">
                   <span className="calendar-participant-label">Participants</span>
                   <div className="calendar-participant-selection">
@@ -758,26 +766,22 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
                         ))}
                       </div>
                     )}
-                    <button
-                      className={`calendar-participant-trigger${selectedParticipantNames.length ? ' is-compact' : ''}`}
-                      type="button"
-                      aria-label="Add participants"
-                      aria-expanded={participantPickerOpen}
-                      onClick={() => setParticipantPickerOpen((open) => !open)}
-                      {...fieldErrorProps(
-                        'calendar-participants-error',
-                        validationMessage(fieldErrors, 'participants'),
-                      )}
-                    >
-                      {selectedParticipantNames.length ? (
-                        <Plus size={16} aria-hidden="true" />
-                      ) : (
-                        <>
-                          <span>Select staff</span>
-                          <ChevronDown size={16} aria-hidden="true" />
-                        </>
-                      )}
-                    </button>
+                    {selectedParticipantNames.length === 0 && (
+                      <button
+                        className="calendar-participant-trigger"
+                        type="button"
+                        aria-label="Add participants"
+                        aria-expanded={participantPickerOpen}
+                        onClick={() => setParticipantPickerOpen((open) => !open)}
+                        {...fieldErrorProps(
+                          'calendar-participants-error',
+                          validationMessage(fieldErrors, 'participants'),
+                        )}
+                      >
+                        <span>Select staff</span>
+                        <ChevronDown size={16} aria-hidden="true" />
+                      </button>
+                    )}
                   </div>
                   {participantPickerOpen && (
                     <div className="calendar-participant-options" role="listbox" aria-label="Staff" aria-multiselectable="true">
