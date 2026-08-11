@@ -293,6 +293,7 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
   const titleInputRef = useRef<HTMLInputElement>(null)
   const viewCloseRef = useRef<HTMLButtonElement>(null)
   const deleteCancelRef = useRef<HTMLButtonElement>(null)
+  const participantPickerRef = useRef<HTMLDivElement>(null)
   const visibleEvents = loadedScope === scopeKey ? events : []
   const visibleStaffOptions = staffSchoolId === schoolId ? staffOptions : []
   const selectedParticipantNames = participantNames(form.participants)
@@ -307,6 +308,30 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
       ? 'Edit Calendar Event'
       : 'View Calendar Event'
     : 'Add Calendar Event'
+
+  useEffect(() => {
+    if (!participantPickerOpen) {
+      return
+    }
+
+    const closeOnOutsideClick = (event: PointerEvent) => {
+      if (!participantPickerRef.current?.contains(event.target as Node)) {
+        setParticipantPickerOpen(false)
+      }
+    }
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setParticipantPickerOpen(false)
+      }
+    }
+
+    document.addEventListener('pointerdown', closeOnOutsideClick)
+    document.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutsideClick)
+      document.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [participantPickerOpen])
 
   useEffect(() => {
     const scopeChanged = previousScopeRef.current !== scopeKey
@@ -737,7 +762,7 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
                 />
               </label>
 
-              <div className="calendar-setting-row calendar-participants-row">
+              <div ref={participantPickerRef} className="calendar-setting-row calendar-participants-row">
                 <button
                   className="calendar-participant-add"
                   type="button"
