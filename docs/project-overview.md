@@ -50,7 +50,7 @@ Do not describe the system as unlimited or use the historical cost estimate as p
 
 ### Partially Implemented
 
-- Dashboard: API-backed metrics are available to `fee_record.view`. School-bound users are forced to their own school; global Super Admin must provide an explicit valid school. The frontend does not yet provide a school selector, so a global account receives a scope-required state instead of an assumed school.
+- Dashboard: API-backed metrics are available to `fee_record.view`. School-bound users are forced to their own school. The seeded Super Admin is currently bound to the single seeded school; a multi-school selector is planned but not implemented.
 - Students: backend profile update exists, but the frontend does not expose a complete student-profile edit workflow; guardian data is read-only in Student Detail.
 - Parents: schema, relationships, and seed data exist; the top-level frontend is static and there are no parent CRUD APIs.
 - Fee catalogue: read API and schema exist; the top-level page is static and no management API/UI exists.

@@ -132,21 +132,23 @@ class ApiWorkflowTest extends TestCase
         ])->assertForbidden();
     }
 
-    public function test_global_super_admin_must_select_an_existing_school(): void
+    public function test_seeded_super_admin_defaults_to_the_single_school_and_rejects_another_scope(): void
     {
         $this->seed();
 
         $superAdmin = User::query()->where('username', 'superadmin')->firstOrFail();
+        $school = School::query()->where('code', 'DEMO')->firstOrFail();
+
+        $this->assertSame($school->id, $superAdmin->school_id);
 
         $this->actingAs($superAdmin)
             ->getJson('/api/dashboard/school?academic_year=2026')
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors(['school_id']);
+            ->assertOk()
+            ->assertJsonPath('school.id', $school->id);
 
         $this->actingAs($superAdmin)
             ->getJson('/api/dashboard/school?school_id=999999&academic_year=2026')
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors(['school_id']);
+            ->assertForbidden();
     }
 
     public function test_invoice_generation_rejects_a_class_from_another_school(): void

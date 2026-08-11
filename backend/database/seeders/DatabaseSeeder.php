@@ -47,7 +47,7 @@ class DatabaseSeeder extends Seeder
         $superAdmin = User::query()->updateOrCreate(
             ['username' => 'superadmin'],
             [
-                'school_id' => null,
+                'school_id' => $school->id,
                 'name' => 'Demo Super Admin',
                 'password' => Hash::make('password'),
                 'status' => 'active',

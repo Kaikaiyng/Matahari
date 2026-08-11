@@ -45,7 +45,7 @@ The confirmed earlier technology direction named Laravel 10, but this repository
 
 ## Partially Implemented
 
-- Global Super Admin school scope: the backend accepts an explicit valid school, but the frontend has no school selector and shows a scope-required state instead of assuming school `1`.
+- The seeded Super Admin currently defaults to the single seeded school. Multi-school selection remains planned and is not exposed in the frontend yet.
 - Student profile update exists only on the backend; parent records are read-only in the real Student Detail flow.
 - Fee item catalogue has a read API; the top-level page is static and management is absent.
 - Discount definitions are stored as snapshots, but approved formulas and eligibility rules do not exist. Charge preview/activation is blocked for non-zero discounts.
