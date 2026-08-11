@@ -4033,11 +4033,9 @@ function ParentsPage() {
 function SettingsPage({
   user,
   dashboard,
-  apiState,
 }: {
   user: CurrentUser
   dashboard: DashboardResponse | null
-  apiState: 'live' | 'demo' | 'loading'
 }) {
   return (
     <section className="page-stack">
@@ -4056,11 +4054,11 @@ function SettingsPage({
             </div>
             <div>
               <dt>School ID</dt>
-              <dd>{dashboard?.school.id ?? user.school_id ?? 'Not assigned'}</dd>
+              <dd>{dashboard?.school.id ?? user.school_id ?? '—'}</dd>
             </div>
             <div>
               <dt>School code</dt>
-              <dd>{dashboard?.school.code ?? 'Not loaded'}</dd>
+              <dd>{dashboard?.school.code ?? '—'}</dd>
             </div>
             <div>
               <dt>Mode</dt>
@@ -4085,8 +4083,8 @@ function SettingsPage({
               <dd>{user.roles.map(formatStatus).join(', ') || 'No role assigned'}</dd>
             </div>
             <div>
-              <dt>API status</dt>
-              <dd><StatusBadge tone={apiState === 'live' ? 'positive' : apiState === 'loading' ? 'info' : 'warning'}>{formatStatus(apiState)}</StatusBadge></dd>
+              <dt>Permissions</dt>
+              <dd>{user.permissions.length} granted</dd>
             </div>
           </dl>
         </DataPanel>
@@ -4951,7 +4949,7 @@ function App() {
     }
 
     if (activePage === 'settings') {
-      return <SettingsPage user={user} dashboard={dashboard} apiState={apiState} />
+      return <SettingsPage user={user} dashboard={dashboard} />
     }
 
     return (

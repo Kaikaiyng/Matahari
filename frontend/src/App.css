@@ -1544,7 +1544,12 @@ th {
 .settings-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
   gap: 18px;
+}
+
+.settings-grid .data-panel-body {
+  padding: 8px 20px 20px;
 }
 
 .settings-summary {
@@ -1553,9 +1558,9 @@ th {
 }
 
 .settings-summary > div {
-  min-height: 54px;
+  min-height: 50px;
   display: grid;
-  grid-template-columns: minmax(120px, 0.45fr) minmax(0, 1fr);
+  grid-template-columns: 130px minmax(0, 1fr);
   align-items: center;
   gap: 16px;
   padding: 10px 0;
@@ -1581,7 +1586,7 @@ th {
 }
 
 .settings-note {
-  margin: 14px 0 0;
+  margin: 12px 0 0;
   padding: 12px;
   border-radius: 8px;
   background: #f5f7fb;
@@ -1593,6 +1598,10 @@ th {
 @media (max-width: 800px) {
   .settings-grid {
     grid-template-columns: 1fr;
+  }
+
+  .settings-summary > div {
+    grid-template-columns: 110px minmax(0, 1fr);
   }
 }
 
