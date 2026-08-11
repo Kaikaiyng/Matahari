@@ -1000,6 +1000,7 @@ h2 {
   min-width: 0;
   overflow-x: auto;
   overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
   scrollbar-gutter: stable;
 }
 
@@ -2475,6 +2476,17 @@ th {
     align-items: center;
   }
 
+  .primary-action,
+  .primary-action.compact,
+  .secondary-action,
+  .table-action {
+    max-width: 100%;
+    min-width: 0;
+    height: auto;
+    padding-block: 10px;
+    white-space: normal;
+  }
+
 }
 
 .modal-body > .agreement-form,
@@ -2596,7 +2608,7 @@ th {
   padding: 8px 0 12px;
 }
 
-@media screen and (max-width: 1023px) {
+@media screen and (max-width: 1180px) {
   .payment-basics-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -2821,7 +2833,7 @@ th {
 
 }
 
-@media screen and (min-width: 768px) and (max-width: 1023px) {
+@media screen and (min-width: 768px) and (max-width: 1180px) {
   .fee-record-filters,
   .fee-record-filters.has-category {
     grid-template-columns: repeat(2, minmax(0, 1fr));

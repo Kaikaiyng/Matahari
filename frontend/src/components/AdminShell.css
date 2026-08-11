@@ -1,9 +1,10 @@
 .admin-shell {
-  min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
   grid-template-columns: 256px minmax(0, 1fr);
   background: var(--canvas, #f4f7fb);
   color: var(--text, #25272d);
+  overflow-x: clip;
   transition: grid-template-columns 160ms ease;
 }
 
@@ -18,7 +19,7 @@
   top: 0;
   z-index: 40;
   min-width: 0;
-  height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   overflow: visible;
@@ -116,6 +117,8 @@
   padding: 14px 10px 18px;
   overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
   scrollbar-color: #cbd5e1 transparent;
   scrollbar-width: thin;
 }
@@ -276,7 +279,8 @@
 
 .admin-workspace {
   min-width: 0;
-  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: clip;
   display: grid;
   grid-template-rows: 64px minmax(0, 1fr);
 }
@@ -422,7 +426,8 @@
 .admin-main {
   min-width: 0;
   max-width: 100%;
-  padding: 28px 32px 36px;
+  overflow-x: clip;
+  padding: 28px 32px max(36px, env(safe-area-inset-bottom));
 }
 
 .sidebar-backdrop {
@@ -444,7 +449,7 @@ body.nav-open {
   box-shadow: 0 0 0 3px rgb(37 99 235 / 24%);
 }
 
-@media (max-width: 1023px) {
+@media (max-width: 1180px) {
   .admin-shell {
     display: block;
   }
@@ -454,12 +459,16 @@ body.nav-open {
     position: fixed;
     inset: 0 auto 0 0;
     z-index: 70;
-    width: min(300px, calc(100vw - 40px));
-    height: 100vh;
+    width: min(320px, calc(100vw - 40px));
+    max-width: calc(100vw - 24px);
+    height: 100dvh;
     overflow: hidden;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
     transform: translateX(-102%);
     transition: transform 180ms ease;
     box-shadow: 24px 0 50px rgb(15 23 42 / 24%);
+    will-change: transform;
   }
 
   .admin-sidebar.open {
@@ -513,6 +522,8 @@ body.nav-open {
     opacity: 0;
     pointer-events: none;
     transition: opacity 180ms ease;
+    touch-action: none;
+    will-change: opacity;
   }
 
   .sidebar-backdrop[aria-hidden='false'] {
@@ -530,7 +541,11 @@ body.nav-open {
   }
 
   .admin-main {
-    padding: 24px;
+    padding: 24px 24px max(32px, env(safe-area-inset-bottom));
+  }
+
+  .utility-header {
+    backdrop-filter: none;
   }
 }
 

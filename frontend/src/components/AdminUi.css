@@ -583,14 +583,24 @@ button.stat-card {
   }
 }
 
-@media screen and (max-width: 1023px) {
+@media screen and (max-width: 1180px) {
   .modal-footer {
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
   }
 
   .modal-footer .primary-action {
     width: auto;
-    min-width: 160px;
+    min-width: 0;
+    flex: 1 1 180px;
+  }
+
+  .modal-footer .secondary-action {
+    min-width: 0;
+    flex: 1 1 120px;
+  }
+
+  .modal-backdrop {
+    backdrop-filter: none;
   }
 }
 

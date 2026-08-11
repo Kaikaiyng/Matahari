@@ -7,6 +7,7 @@ import { BrandMark } from './BrandMark'
 import './AdminShell.css'
 
 const SIDEBAR_COLLAPSED_KEY = 'admin-sidebar-collapsed'
+const TABLET_NAV_QUERY = '(max-width: 1180px)'
 
 export type NavigationItem<PageKey extends string> = {
   key: PageKey
@@ -55,7 +56,7 @@ export function AdminShell<PageKey extends string>({
     }
   })
   const [isNarrowViewport, setIsNarrowViewport] = useState(() =>
-    window.matchMedia('(max-width: 1023px)').matches,
+    window.matchMedia(TABLET_NAV_QUERY).matches,
   )
   const menuRef = useRef<HTMLButtonElement>(null)
   const closeRef = useRef<HTMLButtonElement>(null)
@@ -87,7 +88,7 @@ export function AdminShell<PageKey extends string>({
   }, [isOpen])
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia('(max-width: 1023px)')
+    const mediaQuery = window.matchMedia(TABLET_NAV_QUERY)
     const handleChange = (event: MediaQueryListEvent) => {
       setIsNarrowViewport(event.matches)
       if (!event.matches) {
