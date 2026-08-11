@@ -212,6 +212,12 @@ export function ModalFrame({
 
     root?.setAttribute('inert', '')
     root?.setAttribute('aria-hidden', 'true')
+    const documentWidth = document.documentElement.clientWidth
+    const scrollbarWidth = documentWidth > 0 ? Math.max(0, window.innerWidth - documentWidth) : 0
+    if (scrollbarWidth > 0) {
+      const currentPadding = Number.parseFloat(window.getComputedStyle(document.body).paddingRight) || 0
+      document.body.style.paddingRight = `${currentPadding + scrollbarWidth}px`
+    }
     document.body.style.overflow = 'hidden'
     ;(initialFocusRef?.current ?? closeButtonRef.current)?.focus()
 
