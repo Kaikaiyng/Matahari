@@ -555,8 +555,15 @@
   display: grid;
   grid-template-columns: 24px minmax(0, 1fr);
   gap: 11px;
-  padding: 2px 0;
+  padding: 11px 12px;
+  border: 1px solid #e2e0e8;
+  border-radius: 12px;
+  background: #ffffff;
   color: #7c7788;
+}
+
+.calendar-setting-row:focus-within {
+  border-color: #aaa2da;
 }
 
 .calendar-setting-row > svg {
@@ -577,6 +584,17 @@
 
 .calendar-date-time-row .calendar-form-section {
   width: 100%;
+  border: 0;
+  border-radius: 0;
+}
+
+.calendar-setting-row:not(.calendar-date-time-row) input,
+.calendar-setting-row:not(.calendar-date-time-row) select,
+.calendar-setting-row:not(.calendar-date-time-row) textarea,
+.calendar-setting-row .calendar-participant-trigger {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .calendar-participant-picker {
