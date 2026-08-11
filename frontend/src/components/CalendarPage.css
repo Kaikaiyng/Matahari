@@ -192,6 +192,27 @@
   text-overflow: ellipsis;
 }
 
+.calendar-upcoming-participants {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 7px;
+  color: #777287;
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.calendar-upcoming-participants > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.calendar-upcoming-participants > svg {
+  flex: 0 0 auto;
+}
+
 .calendar-upcoming-card .calendar-event-title {
   margin: 4px 0;
   font-size: 13px;

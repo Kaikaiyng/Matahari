@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react'
+import { Users } from 'lucide-react'
 import type { CalendarEvent } from './CalendarPage'
 
 export type CalendarView = 'year' | 'month' | 'week'
@@ -280,6 +281,12 @@ export function MonthCalendarView({
               <span className="calendar-upcoming-date">{calendarDateFormatter.format(new Date(`${eventDateKey(event)}T12:00:00Z`))}</span>
               <EventLabel event={event} />
               {event.location && <span className="calendar-upcoming-location">{event.location}</span>}
+              {event.participants?.trim() && (
+                <span className="calendar-upcoming-participants" title={event.participants}>
+                  <Users size={12} aria-hidden="true" />
+                  <span>{event.participants}</span>
+                </span>
+              )}
             </EventCard>
           )) : <p className="calendar-upcoming-empty">No upcoming events in this calendar range.</p>}
         </div>
