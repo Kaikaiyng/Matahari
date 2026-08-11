@@ -146,7 +146,7 @@
   padding: 0 21px;
   overflow: hidden;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: 12px;
   background: transparent;
   color: #475569;
   font: inherit;
@@ -434,10 +434,14 @@ body.nav-open {
 }
 
 .sidebar-collapse:focus-visible,
-.nav-item:focus-visible,
 .sidebar-logout:focus-visible {
   outline: 3px solid rgb(37 99 235 / 24%);
   outline-offset: 2px;
+}
+
+.nav-item:focus-visible {
+  outline: 0;
+  box-shadow: 0 0 0 3px rgb(37 99 235 / 24%);
 }
 
 @media (max-width: 1023px) {
