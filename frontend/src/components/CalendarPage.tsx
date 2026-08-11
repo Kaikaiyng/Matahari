@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
-import { CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, Clock3, MapPin, Plus, Tag, Users, X } from 'lucide-react'
+import { CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, Clock3, FileText, MapPin, Plus, Tag, Users, X } from 'lucide-react'
 import { ApiError, apiRequest } from '../api'
 import type { ApiValidationErrors } from '../api'
 import {
@@ -805,10 +805,11 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
                 </div>
               </div>
 
-              <section className="calendar-form-section" aria-labelledby="calendar-date-time-heading">
+              <div className="calendar-setting-row calendar-date-time-row">
+                <Clock3 size={19} aria-hidden="true" />
+                <section className="calendar-form-section" aria-labelledby="calendar-date-time-heading">
                 <header>
                   <div>
-                    <Clock3 size={19} aria-hidden="true" />
                     <h3 id="calendar-date-time-heading">Date and time</h3>
                   </div>
                   <label className="calendar-checkbox-field calendar-all-day-toggle">
@@ -911,7 +912,8 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
                     </label>
                   )}
                 </div>
-              </section>
+                </section>
+              </div>
 
               <div className="calendar-setting-row">
                 <Tag size={19} aria-hidden="true" />
@@ -964,7 +966,9 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
                 </label>
               </div>
 
-              <label className="calendar-form-field calendar-notes-field">
+              <div className="calendar-setting-row calendar-notes-row">
+                <FileText size={19} aria-hidden="true" />
+                <label className="calendar-form-field calendar-notes-field">
                   <span>Notes</span>
                   <textarea
                     aria-label="Notes"
@@ -980,7 +984,8 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
                     id="calendar-notes-error"
                     message={validationMessage(fieldErrors, 'notes')}
                   />
-              </label>
+                </label>
+              </div>
             </fieldset>
           </form>
         </ModalFrame>

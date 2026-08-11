@@ -560,7 +560,7 @@
 }
 
 .calendar-setting-row > svg {
-  margin-top: 23px;
+  margin-top: 12px;
 }
 
 .calendar-setting-row > .field-error {
@@ -568,7 +568,15 @@
 }
 
 .calendar-participants-row > svg {
-  margin-top: 13px;
+  margin-top: 12px;
+}
+
+.calendar-date-time-row > svg {
+  margin-top: 18px;
+}
+
+.calendar-date-time-row .calendar-form-section {
+  width: 100%;
 }
 
 .calendar-participant-picker {
@@ -800,6 +808,10 @@
   padding: 14px;
   border-radius: 11px;
   resize: vertical;
+}
+
+.calendar-notes-row > svg {
+  margin-top: 13px;
 }
 
 .modal-backdrop:has(.calendar-event-drawer) {
