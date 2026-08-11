@@ -280,6 +280,26 @@ describe('CalendarPage', () => {
     )
   })
 
+  it('uses the start time when an end date is entered without an end time', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    renderCalendar()
+    await user.click(screen.getByRole('button', { name: 'Add event' }))
+    await user.type(screen.getByLabelText('Title'), 'Monday to Friday event')
+
+    ;(screen.getByLabelText('Start date') as HTMLInputElement).value = '2026-07-20'
+    ;(screen.getByLabelText('Start time') as HTMLInputElement).value = '09:00'
+    ;(screen.getByLabelText('End date') as HTMLInputElement).value = '2026-07-24'
+
+    await user.click(screen.getByRole('button', { name: 'Create event' }))
+
+    await waitFor(() =>
+      expect(requestBody('POST')).toMatchObject({
+        starts_at: '2026-07-20T01:00:00.000Z',
+        ends_at: '2026-07-24T01:00:00.000Z',
+      }),
+    )
+  })
+
   it('navigates months and fetches the complete visible date range', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     renderCalendar()

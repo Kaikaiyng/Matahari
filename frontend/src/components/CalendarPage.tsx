@@ -215,9 +215,8 @@ function toUtcMidnightIso(date: string) {
 }
 
 function eventPayload(form: CalendarEventForm) {
-  const hasEnd = form.is_all_day
-    ? Boolean(form.end_date)
-    : Boolean(form.end_date && form.end_time)
+  const hasEnd = Boolean(form.end_date)
+  const resolvedEndTime = form.end_time || form.start_time
 
   return {
     title: form.title.trim(),
@@ -229,7 +228,7 @@ function eventPayload(form: CalendarEventForm) {
     ends_at: hasEnd
       ? form.is_all_day
         ? toUtcMidnightIso(form.end_date)
-        : toSchoolIso(form.end_date, form.end_time)
+        : toSchoolIso(form.end_date, resolvedEndTime)
       : null,
     location: form.location.trim() || null,
     participants: form.participants.trim() || null,
