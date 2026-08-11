@@ -2776,7 +2776,6 @@ function StudentsPage({
                     : 'Create a new version and review every change before it takes effect.'
                 }
                 size="workflow"
-                placement="drawer"
                 initialFocusRef={feeAgreementPaymentPlanRef}
                 onClose={() => closeFeeAgreementEditor()}
                 footer={
@@ -3189,7 +3188,6 @@ function StudentsPage({
                 title="Record Payment"
                 description="Record the amount, choose the fees it clears, and confirm the balance."
                 size="workflow"
-                placement="drawer"
                 initialFocusRef={paymentAmountRef}
                 onClose={() => setShowPaymentForm(false)}
                 footer={
