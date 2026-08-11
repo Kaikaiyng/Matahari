@@ -85,6 +85,14 @@
   margin-left: 4px;
 }
 
+.calendar-today-action:disabled {
+  border-color: #eceaf2;
+  background: #f5f4f8;
+  color: #b9b5c3;
+  cursor: default;
+  opacity: 0.75;
+}
+
 .calendar-weekdays,
 .calendar-grid {
   display: grid;
@@ -669,10 +677,6 @@
     width: 100%;
     justify-content: center;
     flex-wrap: wrap;
-  }
-
-  .calendar-today-action {
-    margin-right: auto;
   }
 
   .calendar-weekdays {

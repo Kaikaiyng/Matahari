@@ -264,6 +264,15 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
   const canOpenEvent = canUpdate || canDelete
   const todayKey = schoolDateKey(new Date())
   const { start: rangeStart, end: rangeEnd } = calendarRange(selectedView, displayedMonth)
+  const todayAnchor = calendarMonthFor(new Date())
+  const todayRange = calendarRange(selectedView, todayAnchor)
+  const isCurrentPeriod =
+    selectedView === 'year'
+      ? displayedMonth.getUTCFullYear() === todayAnchor.getUTCFullYear()
+      : selectedView === 'month'
+        ? displayedMonth.getUTCFullYear() === todayAnchor.getUTCFullYear() &&
+          displayedMonth.getUTCMonth() === todayAnchor.getUTCMonth()
+        : rangeStart === todayRange.start
   const scopeKey = `${canView ? 'view' : 'hidden'}:${schoolId}:${selectedView}:${rangeStart}:${rangeEnd}`
   const activeScopeRef = useRef(scopeKey)
   const previousScopeRef = useRef(scopeKey)
@@ -541,9 +550,6 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
                 </button>
               ))}
             </div>
-            <button className="secondary-action calendar-today-action" type="button" onClick={goToToday}>
-              Today
-            </button>
             <button
               className="icon-button"
               type="button"
@@ -551,6 +557,16 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
               onClick={() => changePeriod(-1)}
             >
               <ChevronLeft size={19} />
+            </button>
+            <button
+              className="icon-button calendar-today-action"
+              type="button"
+              aria-label="Back to today"
+              title="Back to today"
+              onClick={goToToday}
+              disabled={isCurrentPeriod}
+            >
+              <CalendarDays size={17} />
             </button>
             <button
               className="icon-button"

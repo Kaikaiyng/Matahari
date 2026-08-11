@@ -308,13 +308,15 @@ describe('CalendarPage', () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     renderCalendar()
 
+    expect(screen.getByRole('button', { name: 'Back to today' })).toBeDisabled()
     const today = screen.getByRole('region', { name: '19 July 2026' })
     expect(today).toHaveClass('calendar-today')
     expect(today).toHaveAttribute('aria-current', 'date')
 
     await user.click(screen.getByRole('button', { name: 'Next month' }))
     expect(await screen.findByRole('heading', { name: 'August 2026' })).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Today' }))
+    expect(screen.getByRole('button', { name: 'Back to today' })).toBeEnabled()
+    await user.click(screen.getByRole('button', { name: 'Back to today' }))
 
     expect(await screen.findByRole('heading', { name: 'July 2026' })).toBeInTheDocument()
     expect(screen.getByRole('region', { name: '19 July 2026' })).toHaveAttribute(
