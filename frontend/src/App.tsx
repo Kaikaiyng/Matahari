@@ -412,7 +412,7 @@ const emptyStudentForm: StudentForm = {
   full_name: '',
   level_group: 'primary',
   class_id: '',
-  gender: '',
+  gender: 'male',
   dob: '',
   registration_date: '',
   status: 'active',
@@ -2434,7 +2434,10 @@ function StudentsPage({
 
             <label className="form-field">
               Gender
-              <input value={form.gender} onChange={(event) => updateForm('gender', event.target.value)} />
+              <select value={form.gender} onChange={(event) => updateForm('gender', event.target.value)}>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+              </select>
             </label>
 
             <label className="form-field">
