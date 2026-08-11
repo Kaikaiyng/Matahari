@@ -12,6 +12,7 @@ export function createViteConfig(env: NodeJS.ProcessEnv = process.env): ViteUser
       css: true,
     },
     server: {
+      allowedHosts: ['.trycloudflare.com'],
       proxy: {
         '/api': apiProxyTarget,
       },
