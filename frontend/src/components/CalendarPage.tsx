@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
-import { CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, Clock3, FileText, MapPin, Plus, Tag, Users, X } from 'lucide-react'
+import { CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, Clock3, MapPin, Plus, Tag, Users, X } from 'lucide-react'
 import { ApiError, apiRequest } from '../api'
 import type { ApiValidationErrors } from '../api'
 import {
@@ -964,13 +964,11 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
                 </label>
               </div>
 
-              <div className="calendar-notes-field">
-                <FileText size={19} aria-hidden="true" />
-                <label className="calendar-form-field">
+              <label className="calendar-form-field calendar-notes-field">
                   <span>Notes</span>
                   <textarea
                     aria-label="Notes"
-                    placeholder="Add notes…"
+                    placeholder="Add note"
                     value={form.notes}
                     onChange={(event) => updateForm('notes', event.target.value)}
                     {...fieldErrorProps(
@@ -982,8 +980,7 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
                     id="calendar-notes-error"
                     message={validationMessage(fieldErrors, 'notes')}
                   />
-                </label>
-              </div>
+              </label>
             </fieldset>
           </form>
         </ModalFrame>
