@@ -699,6 +699,7 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
         <ModalFrame
           title={calendarDialogTitle}
           className="calendar-event-drawer"
+          placement="drawer"
           size="standard"
           initialFocusRef={editingEvent && !canUpdate ? viewCloseRef : titleInputRef}
           onClose={closeForm}

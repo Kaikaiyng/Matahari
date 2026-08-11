@@ -344,6 +344,42 @@ button.stat-card {
   border-color: var(--danger);
 }
 
+.modal-backdrop:has(.modal-frame--drawer) {
+  z-index: 1000;
+  place-items: stretch end;
+  padding: 0;
+  background: rgb(21 22 30 / 34%);
+  backdrop-filter: blur(1px);
+}
+
+.modal-frame--drawer {
+  --modal-width: 620px;
+  --modal-max-height: 100dvh;
+  height: 100dvh;
+  max-height: 100dvh;
+  border: 0;
+  border-left: 1px solid #e7e5ee;
+  border-radius: 16px 0 0 16px;
+  box-shadow: -22px 0 54px rgb(24 22 38 / 18%);
+  animation: modal-drawer-enter 180ms ease-out;
+}
+
+.modal-frame--drawer.modal-frame--workflow {
+  --modal-width: 860px;
+}
+
+@keyframes modal-drawer-enter {
+  from {
+    transform: translateX(32px);
+    opacity: 0.7;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
 .modal-header,
 .modal-footer {
   display: flex;
@@ -610,6 +646,12 @@ button.stat-card {
     border-radius: 14px 14px 10px 10px;
   }
 
+  .modal-backdrop:has(.modal-frame--drawer) .modal-frame--drawer {
+    width: 100%;
+    border-left: 0;
+    border-radius: 0;
+  }
+
   .modal-footer {
     align-items: stretch;
     flex-direction: column;
@@ -629,6 +671,10 @@ button.stat-card {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .modal-frame--drawer {
+    animation: none;
+  }
+
   .session-progress span {
     width: 100%;
     animation: none;

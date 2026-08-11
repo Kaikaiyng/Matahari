@@ -103,12 +103,14 @@ export function DataPanel({ title, eyebrow, action, children, className = '' }: 
 
 export type ModalSize = 'compact' | 'standard' | 'workflow'
 export type ModalTone = 'default' | 'danger'
+export type ModalPlacement = 'center' | 'drawer'
 
 type ModalFrameProps = {
   title: string
   description?: string
   size?: ModalSize
   tone?: ModalTone
+  placement?: ModalPlacement
   onClose: () => void
   footer: ReactNode
   children: ReactNode
@@ -150,6 +152,7 @@ export function ModalFrame({
   description,
   size = 'standard',
   tone = 'default',
+  placement = 'center',
   onClose,
   footer,
   children,
@@ -266,6 +269,7 @@ export function ModalFrame({
           'modal-frame',
           `modal-frame--${size}`,
           `modal-frame--${tone}`,
+          `modal-frame--${placement}`,
           className,
         ].filter(Boolean).join(' ')}
         role="dialog"
