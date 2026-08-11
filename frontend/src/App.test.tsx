@@ -369,6 +369,7 @@ async function openSelectedStudentPayments(user: ReturnType<typeof userEvent.set
 
 describe('demo shell', () => {
   beforeEach(() => {
+    window.localStorage.clear()
     vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined)
     installApiMock()
   })
@@ -403,6 +404,7 @@ describe('demo shell', () => {
     const password = screen.getByLabelText('Password')
     expect(username).toHaveValue('')
     expect(password).toHaveValue('')
+    expect(screen.getByRole('checkbox', { name: 'Remember me' })).not.toBeChecked()
     expect(screen.queryByLabelText('Email')).not.toBeInTheDocument()
 
     await user.type(username, 'admin')
@@ -416,6 +418,34 @@ describe('demo shell', () => {
         body: JSON.stringify({ username: 'admin', password: 'password' }),
       }),
     ))
+  })
+
+  it('remembers only the username after a successful login', async () => {
+    const user = userEvent.setup()
+    window.localStorage.setItem('matahari.rememberedUsername', 'superadmin')
+    vi.mocked(globalThis.fetch).mockImplementation((input) => {
+      const url = new URL(String(input), window.location.origin)
+
+      if (url.pathname.endsWith('/csrf-cookie')) return noContent()
+      if (url.pathname.endsWith('/me')) return json({ message: 'Unauthenticated.' }, 401)
+      if (url.pathname.endsWith('/login')) return json({ user: currentUser })
+
+      return json({ message: `Unhandled test endpoint: ${url.pathname}` }, 404)
+    })
+
+    render(<App />)
+
+    expect(await screen.findByLabelText('Username')).toHaveValue('superadmin')
+    expect(screen.getByRole('checkbox', { name: 'Remember me' })).toBeChecked()
+    expect(screen.getByLabelText('Password')).toHaveValue('')
+
+    await user.clear(screen.getByLabelText('Username'))
+    await user.type(screen.getByLabelText('Username'), 'admin')
+    await user.type(screen.getByLabelText('Password'), 'password')
+    await user.click(screen.getByRole('button', { name: 'Login' }))
+
+    await waitFor(() => expect(window.localStorage.getItem('matahari.rememberedUsername')).toBe(currentUser.username))
+    expect(window.localStorage.getItem('password')).toBeNull()
   })
 
   it('shows an invalid-credentials message only once', async () => {

@@ -744,13 +744,24 @@ function Message({
   )
 }
 
+const REMEMBERED_USERNAME_KEY = 'matahari.rememberedUsername'
+
+function rememberedUsername() {
+  try {
+    return window.localStorage.getItem(REMEMBERED_USERNAME_KEY) ?? ''
+  } catch {
+    return ''
+  }
+}
+
 function LoginScreen({
   onLogin,
 }: {
   onLogin: (user: CurrentUser) => void
 }) {
-  const [username, setUsername] = useState('')
+  const [username, setUsername] = useState(rememberedUsername)
   const [password, setPassword] = useState('')
+  const [rememberMe, setRememberMe] = useState(() => Boolean(rememberedUsername()))
   const [error, setError] = useState('')
   const [errors, setErrors] = useState<ValidationErrors>()
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -766,6 +777,15 @@ function LoginScreen({
         method: 'POST',
         body: { username, password },
       })
+      try {
+        if (rememberMe) {
+          window.localStorage.setItem(REMEMBERED_USERNAME_KEY, response.user.username)
+        } else {
+          window.localStorage.removeItem(REMEMBERED_USERNAME_KEY)
+        }
+      } catch {
+        // Login still works when browser storage is unavailable.
+      }
       onLogin(response.user)
     } catch (loginError) {
       if (loginError instanceof ApiError) {
@@ -811,6 +831,25 @@ function LoginScreen({
           {formatValidationError(errors, 'password') && (
             <small>{formatValidationError(errors, 'password')}</small>
           )}
+        </label>
+
+        <label className="login-remember">
+          <input
+            type="checkbox"
+            checked={rememberMe}
+            onChange={(event) => {
+              const checked = event.target.checked
+              setRememberMe(checked)
+              if (!checked) {
+                try {
+                  window.localStorage.removeItem(REMEMBERED_USERNAME_KEY)
+                } catch {
+                  // The checkbox remains usable when browser storage is unavailable.
+                }
+              }
+            }}
+          />
+          <span>Remember me</span>
         </label>
 
         <button className="primary-action full-width" disabled={isSubmitting}>

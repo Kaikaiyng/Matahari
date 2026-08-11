@@ -1354,6 +1354,25 @@ th {
   height: 72px;
 }
 
+.login-remember {
+  width: fit-content;
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #4c515c;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.login-remember input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--brand-primary);
+}
+
 .message-card {
   min-height: 42px;
   display: flex;
