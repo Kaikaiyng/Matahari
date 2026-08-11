@@ -51,6 +51,10 @@
   background: #f4f2fb;
 }
 
+.calendar-navigation .calendar-view-switcher {
+  margin-right: 4px;
+}
+
 .calendar-view-switcher button {
   min-width: 68px;
   min-height: 36px;
@@ -654,6 +658,7 @@
   .calendar-view-switcher {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
+    width: 100%;
   }
 
   .calendar-view-switcher button {
@@ -771,11 +776,6 @@
 
   .calendar-title {
     flex: 1 1 auto;
-  }
-
-  .calendar-view-switcher {
-    order: 3;
-    margin-right: auto;
   }
 
   .calendar-month-layout {

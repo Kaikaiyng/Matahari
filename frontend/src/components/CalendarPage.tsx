@@ -528,19 +528,19 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
             <CalendarDays size={20} aria-hidden="true" />
             <h2>{calendarTitle(selectedView, displayedMonth)}</h2>
           </div>
-          <div className="calendar-view-switcher" aria-label="Calendar view">
-            {(['year', 'month', 'week'] as CalendarView[]).map((view) => (
-              <button
-                type="button"
-                key={view}
-                aria-pressed={selectedView === view}
-                onClick={() => setSelectedView(view)}
-              >
-                {view[0].toUpperCase()}{view.slice(1)}
-              </button>
-            ))}
-          </div>
           <div className="calendar-navigation">
+            <div className="calendar-view-switcher" aria-label="Calendar view">
+              {(['year', 'month', 'week'] as CalendarView[]).map((view) => (
+                <button
+                  type="button"
+                  key={view}
+                  aria-pressed={selectedView === view}
+                  onClick={() => setSelectedView(view)}
+                >
+                  {view[0].toUpperCase()}{view.slice(1)}
+                </button>
+              ))}
+            </div>
             <button className="secondary-action calendar-today-action" type="button" onClick={goToToday}>
               Today
             </button>
