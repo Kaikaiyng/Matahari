@@ -643,6 +643,7 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
       {editingEvent !== undefined && !eventToDelete && (
         <ModalFrame
           title={calendarDialogTitle}
+          className="calendar-event-drawer"
           description={
             editingEvent
               ? canUpdate

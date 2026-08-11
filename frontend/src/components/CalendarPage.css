@@ -520,6 +520,56 @@
   gap: 16px;
 }
 
+.modal-backdrop:has(.calendar-event-drawer) {
+  z-index: 1000;
+  place-items: stretch end;
+  padding: 0;
+  background: rgb(21 22 30 / 34%);
+  backdrop-filter: blur(1px);
+}
+
+.modal-backdrop:has(.calendar-event-drawer) .calendar-event-drawer {
+  --modal-width: 520px;
+  --modal-max-height: 100dvh;
+  height: 100dvh;
+  max-height: 100dvh;
+  border: 0;
+  border-left: 1px solid #e7e5ee;
+  border-radius: 16px 0 0 16px;
+  box-shadow: -22px 0 54px rgb(24 22 38 / 18%);
+  animation: calendar-drawer-enter 180ms ease-out;
+}
+
+.calendar-event-drawer .modal-header {
+  padding: 22px 24px;
+}
+
+.calendar-event-drawer .modal-body {
+  padding: 22px 24px 28px;
+}
+
+.calendar-event-drawer .modal-footer {
+  padding: 16px 24px;
+}
+
+@keyframes calendar-drawer-enter {
+  from {
+    transform: translateX(32px);
+    opacity: 0.7;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-backdrop:has(.calendar-event-drawer) .calendar-event-drawer {
+    animation: none;
+  }
+}
+
 .calendar-event-form > .modal-context-summary {
   margin-bottom: 2px;
 }
@@ -770,6 +820,12 @@
   .calendar-event.calendar-agenda-event {
     padding: 10px;
     white-space: normal;
+  }
+
+  .modal-backdrop:has(.calendar-event-drawer) .calendar-event-drawer {
+    width: 100%;
+    border-left: 0;
+    border-radius: 0;
   }
 }
 
