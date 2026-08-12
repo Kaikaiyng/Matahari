@@ -22,6 +22,7 @@ return new class extends Migration
         'teaching_assignments.manage' => 'Manage teaching assignments',
         'teaching_scope.view' => 'View own teaching scope',
         'portal_links.manage' => 'Manage portal identity and guardian access links',
+        'foundation_accounts.manage' => 'Manage teacher, parent, and student role assignments',
         'parent.self_service' => 'Access parent self-service',
         'student.self_service' => 'Access student academic self-service',
     ];
@@ -31,19 +32,23 @@ return new class extends Migration
         $now = now();
 
         foreach (self::ROLES as $slug => $name) {
-            DB::table('roles')->updateOrInsert(['slug' => $slug], [
+            DB::table('roles')->insertOrIgnore([
+                'slug' => $slug,
                 'name' => $name,
                 'created_at' => $now,
                 'updated_at' => $now,
             ]);
+            DB::table('roles')->where('slug', $slug)->update(['name' => $name, 'updated_at' => $now]);
         }
 
         foreach (self::PERMISSIONS as $slug => $name) {
-            DB::table('permissions')->updateOrInsert(['slug' => $slug], [
+            DB::table('permissions')->insertOrIgnore([
+                'slug' => $slug,
                 'name' => $name,
                 'created_at' => $now,
                 'updated_at' => $now,
             ]);
+            DB::table('permissions')->where('slug', $slug)->update(['name' => $name, 'updated_at' => $now]);
         }
 
         $this->assign('super-admin', array_keys(self::PERMISSIONS), $now);
@@ -53,6 +58,7 @@ return new class extends Migration
             'subjects.view', 'subjects.manage',
             'teaching_assignments.view', 'teaching_assignments.manage',
             'portal_links.manage',
+            'foundation_accounts.manage',
         ], $now);
         $this->assign('teacher', [
             'academic_years.view', 'subjects.view', 'teaching_scope.view',

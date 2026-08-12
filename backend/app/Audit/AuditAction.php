@@ -32,4 +32,16 @@ enum AuditAction: string
     case ReportExported = 'report.exported';
     case ReportPrinted = 'report.printed';
     case BatchChanged = 'batch.changed';
+    case AcademicYearCreated = 'academic_year.created';
+    case AcademicYearUpdated = 'academic_year.updated';
+    case AcademicYearActivated = 'academic_year.activated';
+    case SubjectCreated = 'subject.created';
+    case SubjectUpdated = 'subject.updated';
+    case ClassEnrolmentCreated = 'class_enrolment.created';
+    case ClassEnrolmentEnded = 'class_enrolment.ended';
+    case TeachingAssignmentCreated = 'teaching_assignment.created';
+    case TeachingAssignmentEnded = 'teaching_assignment.ended';
+    case GuardianPortalUserLinked = 'guardian.portal_user_linked';
+    case StudentPortalUserLinked = 'student.portal_user_linked';
+    case GuardianAccessUpdated = 'guardian.access_updated';
 }

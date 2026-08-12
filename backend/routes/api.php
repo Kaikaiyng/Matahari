@@ -14,6 +14,13 @@ use App\Http\Controllers\Api\SchoolClassController;
 use App\Http\Controllers\Api\StudentController;
 use App\Http\Controllers\Api\StudentFeeAgreementController;
 use App\Http\Controllers\Api\StudentStatusController;
+use App\Http\Controllers\Api\V1\AcademicYearController;
+use App\Http\Controllers\Api\V1\ClassEnrolmentController;
+use App\Http\Controllers\Api\V1\FoundationAccountController;
+use App\Http\Controllers\Api\V1\PortalLinkController;
+use App\Http\Controllers\Api\V1\SubjectController;
+use App\Http\Controllers\Api\V1\TeacherScopeController;
+use App\Http\Controllers\Api\V1\TeachingAssignmentController;
 use App\Http\Controllers\DeploymentInfoController;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -118,4 +125,35 @@ Route::middleware([...$sessionMiddleware, 'auth', 'active'])->group(function ():
         ->middleware('permission:receipts.print');
     Route::post('/receipts/{receipt}/void', [ReceiptController::class, 'void'])
         ->middleware('permission:receipts.void');
+});
+
+Route::prefix('v1')->middleware([...$sessionMiddleware, 'auth', 'active', 'school.context'])->group(function (): void {
+    Route::prefix('admin')->group(function (): void {
+        Route::get('/academic-years', [AcademicYearController::class, 'index'])->middleware('permission:academic_years.view');
+        Route::post('/academic-years', [AcademicYearController::class, 'store'])->middleware('permission:academic_years.manage');
+        Route::patch('/academic-years/{academicYear}', [AcademicYearController::class, 'update'])->middleware('permission:academic_years.manage');
+        Route::post('/academic-years/{academicYear}/activate', [AcademicYearController::class, 'activate'])->middleware('permission:academic_years.manage');
+
+        Route::get('/subjects', [SubjectController::class, 'index'])->middleware('permission:subjects.view');
+        Route::post('/subjects', [SubjectController::class, 'store'])->middleware('permission:subjects.manage');
+        Route::patch('/subjects/{subject}', [SubjectController::class, 'update'])->middleware('permission:subjects.manage');
+
+        Route::get('/class-enrolments', [ClassEnrolmentController::class, 'index'])->middleware('permission:class_enrolments.view');
+        Route::post('/class-enrolments', [ClassEnrolmentController::class, 'store'])->middleware('permission:class_enrolments.manage');
+        Route::post('/class-enrolments/{classEnrolment}/end', [ClassEnrolmentController::class, 'end'])->middleware('permission:class_enrolments.manage');
+
+        Route::get('/teaching-assignments', [TeachingAssignmentController::class, 'index'])->middleware('permission:teaching_assignments.view');
+        Route::post('/teaching-assignments', [TeachingAssignmentController::class, 'store'])->middleware('permission:teaching_assignments.manage');
+        Route::post('/teaching-assignments/{teachingAssignment}/end', [TeachingAssignmentController::class, 'end'])->middleware('permission:teaching_assignments.manage');
+
+        Route::patch('/parents/{guardian}/portal-user', [PortalLinkController::class, 'guardianUser'])->middleware('permission:portal_links.manage');
+        Route::patch('/students/{student}/portal-user', [PortalLinkController::class, 'studentUser'])->middleware('permission:portal_links.manage');
+        Route::patch('/student-parent-links/{studentParentLink}/portal-access', [PortalLinkController::class, 'guardianAccess'])->middleware('permission:portal_links.manage');
+        Route::patch('/users/{user}/foundation-roles', [FoundationAccountController::class, 'roles'])->middleware('permission:foundation_accounts.manage');
+    });
+
+    Route::prefix('teacher')->middleware('permission:teaching_scope.view')->group(function (): void {
+        Route::get('/teaching-assignments', [TeacherScopeController::class, 'assignments']);
+        Route::get('/classes/{schoolClass}/students', [TeacherScopeController::class, 'students']);
+    });
 });

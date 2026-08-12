@@ -14,4 +14,6 @@ enum AuditModule: string
     case Users = 'users';
     case Reports = 'reports';
     case Batch = 'batch';
+    case Academics = 'academics';
+    case PortalAccess = 'portal_access';
 }

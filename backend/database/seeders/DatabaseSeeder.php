@@ -117,6 +117,7 @@ class DatabaseSeeder extends Seeder
             'teaching_assignments.manage' => 'Manage teaching assignments',
             'teaching_scope.view' => 'View own teaching scope',
             'portal_links.manage' => 'Manage portal identity and guardian access links',
+            'foundation_accounts.manage' => 'Manage teacher, parent, and student role assignments',
             'parent.self_service' => 'Access parent self-service',
             'student.self_service' => 'Access student academic self-service',
         ])->mapWithKeys(fn (string $name, string $slug) => [
@@ -161,6 +162,7 @@ class DatabaseSeeder extends Seeder
             'teaching_assignments.view',
             'teaching_assignments.manage',
             'portal_links.manage',
+            'foundation_accounts.manage',
         ])->pluck('id')->all());
         $roles['finance']->permissions()->sync($permissions->only([
             'students.view',
