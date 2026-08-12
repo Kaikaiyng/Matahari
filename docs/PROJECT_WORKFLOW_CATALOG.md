@@ -2,7 +2,7 @@
 
 Status: Evidence-backed current-state catalog
 
-Last reviewed: 2026-07-22
+Last reviewed: 2026-08-12
 
 This catalog is the source checklist for the editable FigJam workflow board and the final Notion documentation. It distinguishes runtime behavior from approved-but-unimplemented design and historical/deferred scope.
 
@@ -46,7 +46,7 @@ Human and system actors:
 - MariaDB / SQLite test database
 - Browser print workflow
 
-Parent and student users are not authenticated actors. Parent Portal and Student Portal are deferred.
+Phase A now defines teacher, parent, and student roles plus explicit same-school portal links. Parent and student accounts are foundation actors at the backend level, but no Parent/Student self-service frontend is implemented. The approved Mobile Web, Parent Finance, notifications, Quiz, push, and native workflows remain future Phase B–F work; see [Mobile Product Architecture and Roadmap](mobile-product-roadmap.md).
 
 ## 3. Role and Permission Matrix
 

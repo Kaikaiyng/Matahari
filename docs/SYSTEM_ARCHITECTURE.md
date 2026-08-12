@@ -2,7 +2,9 @@
 
 Status: Current implementation reference
 
-Last updated: 2026-07-22
+Last updated: 2026-08-12
+
+This file describes the implemented Admin Web runtime. The approved Parent/Student mobile product is a separate future client sharing this Laravel API and MariaDB database; it is not represented by the responsive “Mobile Browser” layout below. See [Mobile Product Architecture and Roadmap](mobile-product-roadmap.md).
 
 ## 1. Runtime Topology
 
@@ -21,6 +23,8 @@ Laravel 13 application
               v
 SQLite repeatable demo / MariaDB development database
 ```
+
+The diagram above means the current Admin frontend is responsive. It does not claim that the Phase B Mobile Web client or a native app exists.
 
 SQLite remains available for new-contributor setup, test isolation, and rollback. `backend/phpunit.xml` uses SQLite `:memory:` so automated tests do not modify the active demo database.
 

@@ -2,7 +2,7 @@
 
 **Status:** Seeded role matrix and verified enforcement map
 
-**Repository baseline:** `8b65469e96a81551d9c7cac4cf10c44ab6342761`
+**Repository baseline:** Phase A delivery branch through `a5f4fb4`
 
 ## Labels
 
@@ -12,7 +12,7 @@
 - **Not implemented:** No usable backend operation exists, even if a permission slug or placeholder appears.
 - **Needs confirmation:** Approved access policy is not established.
 
-Super Admin receives all 29 seeded permissions. The other seeded assignments are School Admin 23, Finance 16, and CEO 2. Stored slugs are `super-admin`, `school-admin`, `finance`, and `ceo`.
+Super Admin receives all seeded permissions. Stored role slugs now also include `teacher`, `parent`, and `student`; a user may hold multiple roles. Existing Finance and CEO grants remain unchanged.
 
 ## Role Matrix
 
@@ -53,6 +53,19 @@ Super Admin receives all 29 seeded permissions. The other seeded assignments are
 | Perform generic audit correction | Not implemented | Not implemented | Not implemented | Not implemented | Super Admin has `audit.correct_generic`, but no correction workflow exists |
 | Change system settings | Not implemented | Not implemented | Not implemented | Not implemented | Settings page is a placeholder |
 
+Phase A permission defaults:
+
+- Super Admin: all Phase A permissions.
+- School Admin: academic year, subject, enrolment, teaching-assignment, portal-link, and foundation-role management.
+- Teacher: academic-year/subject read plus `teaching_scope.view`.
+- Parent: `parent.self_service` only; no Parent Finance API exists yet.
+- Student: `student.self_service` only; no student-finance permission.
+- Finance and CEO: no new Phase A permissions.
+
+Foundation role management synchronizes only `teacher`, `parent`, and `student`; it preserves existing roles such as Finance or School Admin.
+
+`foundation_accounts.manage` also permits creation of a same-school active account with one or more foundation roles. It does not permit assigning existing administrative/finance roles, changing school ownership, deactivating accounts, or resetting passwords.
+
 ## CEO Intended Versus Implemented Access
 
 Confirmed intended context describes CEO or print-only management access. Current code grants CEO only:
@@ -71,12 +84,15 @@ It does not grant receipt view/print, student view, payment view, or a general r
 | Authentication | Laravel `web` session guard and `auth` middleware |
 | Permission slugs | `permission:<slug>` route middleware using `EnsureUserHasPermission` |
 | Role-to-permission mapping | `roles`, `permissions`, `user_roles`, `role_permissions`; seeded in `DatabaseSeeder` |
-| School scope | Distributed controller/request/service checks; no global tenant middleware |
+| School scope | Legacy distributed checks plus `SchoolContext`/`ResolveSchoolContext` for new Phase A modules |
+| Resource policies | Phase A policies/access services enforce academic, teacher-assignment, and portal-link scope |
 | Mutation validation | Laravel Form Requests plus service invariants |
 | Frontend actions | `permissions.includes(...)` checks for many pages/buttons; not authoritative |
 | Frontend navigation | Each visible entry declares a required permission; absent groups are removed. This is a usability layer only. |
 
-No Laravel policies are present.
+Phase A policies are present for new foundation resources. Legacy modules retain their existing route/controller/request/service enforcement until migrated deliberately.
+
+Future mobile navigation must not treat `parent.self_service`, `student.self_service`, or `teaching_scope.view` as sufficient resource authorization by itself. Each API must also validate the active guardian-child, student-self, or teaching-assignment relationship and same-school ownership. Parent Finance and notification permissions will be defined in their own approved phases; they are not implied by the Phase A role slugs.
 
 ## Legacy Endpoint Enforcement
 

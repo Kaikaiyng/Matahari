@@ -12,6 +12,7 @@ class Guardian extends Model
 
     protected $fillable = [
         'school_id',
+        'user_id',
         'full_name',
         'phone',
         'email',
@@ -25,10 +26,18 @@ class Guardian extends Model
         return $this->belongsTo(School::class);
     }
 
+    public function portalUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
     public function students(): BelongsToMany
     {
         return $this->belongsToMany(Student::class, 'student_parent_links', 'parent_id', 'student_id')
-            ->withPivot(['school_id', 'relationship', 'is_primary_contact'])
+            ->withPivot([
+                'school_id', 'relationship', 'status', 'is_primary_contact', 'can_view_finance',
+                'can_view_academics', 'starts_on', 'ended_on', 'current_slot',
+            ])
             ->withTimestamps();
     }
 }

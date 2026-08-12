@@ -11,6 +11,7 @@ class Student extends Model
 {
     protected $fillable = [
         'school_id',
+        'user_id',
         'class_id',
         'level_group',
         'student_no',
@@ -35,6 +36,11 @@ class Student extends Model
         return $this->belongsTo(School::class);
     }
 
+    public function portalUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
     public function class(): BelongsTo
     {
         return $this->belongsTo(SchoolClass::class, 'class_id');
@@ -43,8 +49,21 @@ class Student extends Model
     public function parents(): BelongsToMany
     {
         return $this->belongsToMany(Guardian::class, 'student_parent_links', 'student_id', 'parent_id')
-            ->withPivot(['school_id', 'relationship', 'is_primary_contact'])
+            ->withPivot([
+                'school_id', 'relationship', 'status', 'is_primary_contact', 'can_view_finance',
+                'can_view_academics', 'starts_on', 'ended_on', 'current_slot',
+            ])
             ->withTimestamps();
+    }
+
+    public function parentLinks(): HasMany
+    {
+        return $this->hasMany(StudentParentLink::class);
+    }
+
+    public function classEnrolments(): HasMany
+    {
+        return $this->hasMany(ClassEnrolment::class);
     }
 
     public function feeAssignments(): HasMany

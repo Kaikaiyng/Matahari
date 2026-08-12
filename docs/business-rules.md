@@ -2,7 +2,7 @@
 
 **Status:** Verified current behavior plus confirmed intended policy
 
-**Repository baseline:** `8b65469e96a81551d9c7cac4cf10c44ab6342761`
+**Repository baseline:** Phase A delivery branch through `a5f4fb4`
 
 This document separates policy from implementation. A confirmed intended rule is not described as enforced unless the backend or schema proves it.
 
@@ -27,6 +27,27 @@ Current enforcement:
 - Several foreign keys from finance records use restricted deletion for students.
 
 **Needs confirmation:** Who may move a student between each status, whether transitions are restricted by a state machine, and whether any status change requires a reason or approval. The current endpoint accepts any verified status value and does not store a status-change reason.
+
+## Academic Foundation and Portal Links
+
+- `students.class_id` remains the legacy compatibility value. `class_enrolments` is the new academic-year history source for new academic modules; Phase A does not rewrite the legacy value.
+- At most one current class enrolment exists per school, academic year, and student. Ending an enrolment preserves the row and allows a later current enrolment.
+- Teaching access is derived from active/current teaching assignments for a teacher, academic year, class, and subject. Teacher APIs do not expose unrelated class rosters.
+- Parent and student portal user references are nullable and must be assigned explicitly. Email, phone, and name matching are never used to guess an identity link.
+- Existing guardian relationships upgrade as `unreviewed`; finance/academic access flags and current-slot values remain `NULL` until an authorized operator links a reviewed parent user and explicitly activates access.
+- Student self-service is academic-only in this phase. Student finance access is not granted.
+
+Future mobile/self-service policy:
+
+- Admin Web and mobile surfaces must use the same user, parent, student, school, academic, and finance records.
+- A reviewed guardian may have multiple children, and a student may have multiple guardians. Access is evaluated per active relationship and capability flag.
+- A guardian with future finance access sees the student's account payment history, not only payments physically made by that guardian.
+- Parent outstanding amounts must come from the existing Fee Record and payment-allocation domain logic. A mobile balance ledger or client-side authoritative calculation is forbidden.
+- Parent receipt access must reuse the existing authoritative receipt resource/output; mobile must not create a second receipt definition.
+- Manual payment reminders are the V1 requirement. Laravel must recheck current outstanding data before resolving guardian recipients and creating notifications; automatic scheduling is later work.
+- Notification amount snapshots, if approved for display/audit, never become the financial source of truth.
+
+These future rules are approved product constraints but are not implemented Parent Finance or notification behavior.
 
 ## Fee Agreements
 

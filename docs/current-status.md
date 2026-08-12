@@ -1,14 +1,16 @@
 # Current Status
 
-**Snapshot date:** 2026-08-07
+**Snapshot date:** 2026-08-12
 
-**Inspected implementation commit:** `d4c5171`
+**Inspected Phase A implementation commit:** `ecaa0a1f177292ae99c9338e255a1f93312971f5`
 
 **Default branch:** `master`
 
+**Current delivery branch:** `phase-a-academic-foundation` (not merged)
+
 **Overall status:** White-labelled neutral administration-finance demo MVP with application hardening in place; production operations and several business policies remain incomplete
 
-The commit above is the final white-label feature head delivered through [pull request #8](https://github.com/Kaikaiyng/Matahari/pull/8). GitHub merged it into `master` as `2f4c6bd199a7fae149658d3993aba370203746de` on 2026-08-04.
+The Phase A commit above is on the unmerged delivery branch. The earlier white-label feature was delivered through [pull request #8](https://github.com/Kaikaiyng/Matahari/pull/8) and merged into `master` as `2f4c6bd199a7fae149658d3993aba370203746de` on 2026-08-04.
 
 ## Runtime Demo Identity
 
@@ -28,6 +30,10 @@ Later school-specific branding requires explicit approval and a controlled updat
 The confirmed earlier technology direction named Laravel 10, but this repository is already on Laravel 13. This is a verified implementation difference, not a pending upgrade.
 
 ## Implemented Features
+
+- Phase A academic foundation: additive academic-year, class-enrolment, subject, teaching-assignment, and nullable parent/student portal-link schema; `/api/v1` school context; scoped admin/teacher APIs; teacher assignment access; and transactional audit events.
+- Teacher, parent, and student role definitions coexist with the existing many-to-many RBAC. Existing Admin/Finance assignments are preserved, and foundation role management changes only those three new roles.
+- School Admin/Super Admin can create minimum active foundation accounts with teacher/parent/student roles and can later change only those foundation roles. Full account lifecycle and password recovery remain incomplete.
 
 - Session username authentication, CSRF-protected mutations, username-plus-IP login throttling, logout, `/me`, active-user request checks, roles, and permissions.
 - Permission-filtered navigation backed by authoritative route permissions.
@@ -55,6 +61,9 @@ The confirmed earlier technology direction named Laravel 10, but this repository
 - Audit covers implemented critical authentication, student, agreement, Fee Record, payment, and receipt actions. Generic correction, recovery, and export are not implemented.
 
 ## Known Incomplete Features
+
+- Existing guardian links remain `unreviewed` with nullable access flags, and no live parent/student user association or enrolment history is inferred. Portal activation and production backfill require a separately approved workflow.
+- Mobile Web, Parent Finance, notifications, payment reminders, quiz, AI, Firebase, Capacitor, and native authentication remain unimplemented. Mobile is now an approved Phase B–F product direction, not a current repository capability; see [Mobile Product Architecture and Roadmap](mobile-product-roadmap.md).
 
 - Parent CRUD, fee catalogue management, user/role management, password reset, and a global school selector.
 - Reports beyond Fee Record views, exports, statements, reminders, parent portal, and server-side PDF.
@@ -114,6 +123,19 @@ Remaining limitations:
 - Supporting uppercase/historical documents may contain stale counts or pre-hardening descriptions; the canonical lowercase documents linked from the root README take precedence.
 
 ## Test Status
+
+Phase A validation on 2026-08-12:
+
+- Full backend PHPUnit: 242 tests total, 234 passed, 8 MariaDB-only skipped, and 1,254 assertions; exit 0.
+- Phase A against disposable MariaDB 10.4.32: 17 tests and 103 assertions passed. The existing MariaDB group also passed independently with 8 tests and 33 assertions.
+- SQLite and MariaDB fresh migration, rollback of all three Phase A migrations, and re-migration passed.
+- The existing-data upgrade test passed with 12 assertions and confirmed that academic dates/history, identity associations, and guardian access are not inferred.
+- MariaDB foreign-key and index inspection passed for nullable current-slot uniqueness, portal-user uniqueness, and the intended `RESTRICT`/`SET NULL` actions.
+- Pint and API route loading passed; 59 API routes loaded.
+- Frontend lint exited 0 with 9 pre-existing `react(only-export-components)` warnings. The TypeScript/Vite production build passed with 83 transformed modules.
+- Frontend Vitest is **Not passed**: 160 tests passed and 8 failed across 15 files. The failures are existing branding-contract, navigation/finance expectation, and duplicate-control-query failures; Phase A has no frontend diff from its base. A fully green regression suite therefore cannot yet be claimed.
+
+Complete scope and evidence are recorded in [Phase A Academic Foundation Delivery](phase-a-academic-foundation.md).
 
 Focused hardening evidence completed before this documentation refresh includes:
 
@@ -201,12 +223,12 @@ The repository must not be described as production-ready.
 
 ## Immediate Recommended Priorities
 
-1. Confirm discount formulas/eligibility and the approved correction/reconciliation policy before enabling discounted or retroactive billing.
-2. Define refund, credit, overpayment, write-off, and audit-driven correction/recovery workflows.
-3. Add the global Super Admin school selector and remove remaining static prototype data from operational pages.
-4. Run and stabilize the new CI on `master`, then implement remote staging/production release operations, execute least-privilege database grants, monitoring, backups, and a verified restore/reconciliation drill.
-5. Add pagination, load targets, and MariaDB concurrency testing for the intended operating scale.
-6. Decompose the frontend application and add URL routing/browser E2E coverage.
+1. Obtain explicit review before merging Phase A, then plan controlled academic-year, enrolment, and portal-link production-data gates without inferred backfill.
+2. Define and approve Phase B as a separate mobile-first web-client slice, including workspace location, browser authentication topology, role-aware navigation, and its own test/build commands.
+3. Confirm discount formulas/eligibility and the approved correction/reconciliation policy before enabling discounted or retroactive billing.
+4. Define refund, credit, overpayment, write-off, and audit-driven correction/recovery workflows.
+5. Run and stabilize CI on `master`, then verify remote staging/production operations, least-privilege database grants, monitoring, backups, and restore/reconciliation.
+6. Add the global Super Admin school selector, pagination/load targets, MariaDB concurrency tests, and browser E2E coverage as the relevant product phases require them.
 
 ## Needs Confirmation
 

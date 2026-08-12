@@ -2,7 +2,7 @@
 
 **Status:** Repository command and release reference
 
-**Repository baseline:** `8b65469e96a81551d9c7cac4cf10c44ab6342761`
+**Repository baseline:** Phase A delivery branch through `a5f4fb4`
 
 Run commands from a clean feature branch/worktree. Record the exact command, exit code, counts, skipped cases, and limitations. Never convert a skipped or unavailable check into a pass.
 
@@ -77,6 +77,20 @@ npm.cmd run build
 - `lint` runs Oxlint.
 - `build` runs `tsc -b` and then Vite production build, so it is also the configured TypeScript check.
 - No browser E2E command is configured.
+
+The commands above validate the current Admin frontend only. A future mobile workspace must define and document its own install, unit/component test, lint, type-check, and production-build commands before Phase B can be called complete.
+
+## Future Mobile Validation Gates
+
+Mobile work requires evidence beyond narrow viewport checks of the current Admin UI:
+
+- Phase B: role-aware Parent/Student shell, loading/empty/error/offline behavior, session/CSRF preservation, direct API denial, accessibility, responsive browser QA, and staging topology.
+- Phase C: Admin-versus-Parent finance parity, guardian relationship/capability enforcement, cross-school/IDOR denial, and reuse of authoritative receipt output.
+- Phase D: authoritative balance recheck, recipient resolution, transactional audit/history, duplicate suppression, and durable notification behavior independent of push delivery.
+- Phase E: teacher assignment scope, class and direct-student targeting, recipient deduplication, server-side scoring, attempt concurrency, and historical enrolment behavior.
+- Phase F: native credential/token storage and revocation, device-token privacy, deep links, signed Android build, real-device push behavior, and platform-specific release checks.
+
+Do not claim Firebase, Capacitor, APK/iOS delivery, or native authentication passed until those dependencies exist and the relevant real-device checks have run.
 
 ## Formatting and Static Analysis
 
@@ -166,6 +180,8 @@ For a schema-changing release, also run explicit MariaDB lifecycle checks agains
 ```
 
 Validate any migration-specific rollback, foreign keys, exact indexes, JSON behavior, row locking, and concurrent financial paths relevant to the change. Stop on any unexpected schema definition or data loss.
+
+For Phase A, the MariaDB lifecycle must additionally inspect the exact nullable current-slot unique indexes, portal-user unique indexes, and all academic/portal foreign-key delete rules. The existing-data upgrade test must prove that no academic dates, enrolment history, identity association, or guardian access is inferred.
 
 ## Documentation Validation
 

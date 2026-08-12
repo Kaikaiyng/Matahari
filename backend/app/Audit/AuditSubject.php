@@ -12,4 +12,10 @@ enum AuditSubject: string
     case User = 'user';
     case Report = 'report';
     case Batch = 'batch';
+    case AcademicYear = 'academic_year';
+    case Subject = 'subject';
+    case ClassEnrolment = 'class_enrolment';
+    case TeachingAssignment = 'teaching_assignment';
+    case Guardian = 'guardian';
+    case StudentParentLink = 'student_parent_link';
 }
