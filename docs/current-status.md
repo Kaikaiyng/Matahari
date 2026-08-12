@@ -6,11 +6,11 @@
 
 **Default branch:** `master`
 
-**Current delivery branch:** `feature/split-admin-mobile-app` (not merged)
+**Current delivery branch:** `feature/split-admin-mobile-app` (release source branch)
 
 **Overall status:** MIS-branded administration-finance demo MVP with Phase A foundations, separately built Admin and multi-role Community App clients, and a first scoped daily-attendance slice; native/store delivery, production operations, and several product modules remain incomplete
 
-The Phase A commit above is on the unmerged delivery branch. The earlier white-label feature was delivered through [pull request #8](https://github.com/Kaikaiyng/Matahari/pull/8) and merged into `master` as `2f4c6bd199a7fae149658d3993aba370203746de` on 2026-08-04.
+The Phase A commit above remains in the delivery history. The earlier white-label feature was delivered through [pull request #8](https://github.com/Kaikaiyng/Matahari/pull/8) and merged into `master` as `2f4c6bd199a7fae149658d3993aba370203746de` on 2026-08-04.
 
 ## Runtime Demo Identity
 
