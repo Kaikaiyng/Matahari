@@ -51,15 +51,16 @@ beforeEach(() => {
 describe('MobileShell & Portal Views', () => {
   it('renders mobile shell with brand logo, environment badge, and user avatar', () => {
     render(
-      <MobileShell activeTab="home" onTabChange={() => {}} userRole="parent" allowedRoles={['parent']} onLogout={() => {}} userName="Sarah Tan" environment="staging">
+      <MobileShell activeTab="home" onTabChange={() => {}} userRole="parent" allowedRoles={['parent']} userName="Sarah Tan" environment="staging">
         <div>Content</div>
       </MobileShell>,
     )
 
     expect(screen.getByText('Preview environment')).toBeDefined()
     expect(screen.getByText('Sarah')).toBeDefined()
-    expect(screen.getByText('Home')).toBeDefined()
-    expect(screen.getByText('Children')).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Home' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('button', { name: 'Children' })).not.toHaveAttribute('aria-current')
+    expect(screen.queryByRole('button', { name: 'Logout' })).not.toBeInTheDocument()
   })
 
   it('renders ParentPortalView home tab with welcome message (loading state)', () => {
@@ -86,18 +87,17 @@ describe('MobileShell & Portal Views', () => {
   it('triggers onTabChange when bottom navigation item is clicked', () => {
     const handleTabChange = vi.fn()
     render(
-      <MobileShell activeTab="home" onTabChange={handleTabChange} userRole="parent" allowedRoles={['parent']} onLogout={() => {}} userName="Sarah Tan">
+      <MobileShell activeTab="home" onTabChange={handleTabChange} userRole="parent" allowedRoles={['parent']} userName="Sarah Tan">
         <div>Content</div>
       </MobileShell>,
     )
 
-    fireEvent.click(screen.getByText('Finance'))
+    fireEvent.click(screen.getByRole('button', { name: 'Finance' }))
     expect(handleTabChange).toHaveBeenCalledWith('finance')
   })
 
-  it('offers only roles held by a multi-role portal user and logs out explicitly', () => {
+  it('offers only roles held by a multi-role portal user', () => {
     const changeRole = vi.fn()
-    const logout = vi.fn()
     render(
       <MobileShell
         activeTab="home"
@@ -105,7 +105,6 @@ describe('MobileShell & Portal Views', () => {
         userRole="parent"
         allowedRoles={['parent', 'student']}
         onRoleChange={changeRole}
-        onLogout={logout}
         userName="Sarah Tan"
       >
         <div>Content</div>
@@ -114,7 +113,21 @@ describe('MobileShell & Portal Views', () => {
 
     fireEvent.change(screen.getByRole('combobox'), { target: { value: 'student' } })
     expect(changeRole).toHaveBeenCalledWith('student')
-    fireEvent.click(screen.getByRole('button', { name: 'Logout' }))
-    expect(logout).toHaveBeenCalledTimes(1)
+  })
+
+  it.each([
+    ['parent', 'Finance', 'Quiz'],
+    ['student', 'Quiz', 'Finance'],
+    ['teacher', 'Attendance', 'Finance'],
+    ['staff', 'Review', 'Attendance'],
+  ] as const)('renders %s destinations without leaking another role navigation', (role, visible, hidden) => {
+    render(
+      <MobileShell activeTab="home" onTabChange={() => {}} userRole={role} allowedRoles={[role]} userName="MIS User">
+        <div>Content</div>
+      </MobileShell>,
+    )
+
+    expect(screen.getByRole('button', { name: visible })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: hidden })).not.toBeInTheDocument()
   })
 })
