@@ -1,14 +1,16 @@
 # Current Status
 
-**Snapshot date:** 2026-08-07
+**Snapshot date:** 2026-08-12
 
-**Inspected implementation commit:** `d4c5171`
+**Inspected Phase A implementation commit:** `ecaa0a1f177292ae99c9338e255a1f93312971f5`
 
 **Default branch:** `master`
 
+**Current delivery branch:** `phase-a-academic-foundation` (not merged)
+
 **Overall status:** White-labelled neutral administration-finance demo MVP with application hardening in place; production operations and several business policies remain incomplete
 
-The commit above is the final white-label feature head delivered through [pull request #8](https://github.com/Kaikaiyng/Matahari/pull/8). GitHub merged it into `master` as `2f4c6bd199a7fae149658d3993aba370203746de` on 2026-08-04.
+The Phase A commit above is on the unmerged delivery branch. The earlier white-label feature was delivered through [pull request #8](https://github.com/Kaikaiyng/Matahari/pull/8) and merged into `master` as `2f4c6bd199a7fae149658d3993aba370203746de` on 2026-08-04.
 
 ## Runtime Demo Identity
 
@@ -121,6 +123,19 @@ Remaining limitations:
 - Supporting uppercase/historical documents may contain stale counts or pre-hardening descriptions; the canonical lowercase documents linked from the root README take precedence.
 
 ## Test Status
+
+Phase A validation on 2026-08-12:
+
+- Full backend PHPUnit: 242 tests total, 234 passed, 8 MariaDB-only skipped, and 1,254 assertions; exit 0.
+- Phase A against disposable MariaDB 10.4.32: 17 tests and 103 assertions passed. The existing MariaDB group also passed independently with 8 tests and 33 assertions.
+- SQLite and MariaDB fresh migration, rollback of all three Phase A migrations, and re-migration passed.
+- The existing-data upgrade test passed with 12 assertions and confirmed that academic dates/history, identity associations, and guardian access are not inferred.
+- MariaDB foreign-key and index inspection passed for nullable current-slot uniqueness, portal-user uniqueness, and the intended `RESTRICT`/`SET NULL` actions.
+- Pint and API route loading passed; 59 API routes loaded.
+- Frontend lint exited 0 with 9 pre-existing `react(only-export-components)` warnings. The TypeScript/Vite production build passed with 83 transformed modules.
+- Frontend Vitest is **Not passed**: 160 tests passed and 8 failed across 15 files. The failures are existing branding-contract, navigation/finance expectation, and duplicate-control-query failures; Phase A has no frontend diff from its base. A fully green regression suite therefore cannot yet be claimed.
+
+Complete scope and evidence are recorded in [Phase A Academic Foundation Delivery](phase-a-academic-foundation.md).
 
 Focused hardening evidence completed before this documentation refresh includes:
 
