@@ -4,24 +4,21 @@ Status: Current implementation reference
 
 Last updated: 2026-08-12
 
-This file describes the implemented Admin Web runtime. The approved Parent/Student mobile product is a separate future client sharing this Laravel API and MariaDB database; it is not represented by the responsive “Mobile Browser” layout below. See [Mobile Product Architecture and Roadmap](mobile-product-roadmap.md).
+This file primarily describes the implemented Admin Web runtime. The independent `app/` workspace now provides the mobile-first Parent/Student web client; it shares this Laravel API and authoritative database but has its own domain and build. Native store packaging is not implemented. See [Mobile Product Architecture and Roadmap](mobile-product-roadmap.md).
 
 ## 1. Runtime Topology
 
 ```text
-Desktop / iPad / Mobile Browser
-              |
-              | HTTP + Laravel session cookie
-              v
-React + TypeScript frontend (Vite)
-              |
-              | JSON API
-              v
-Laravel 13 application
-              |
-              | Eloquent / transactions
-              v
-SQLite repeatable demo / MariaDB development database
+Admin domain                 Parent/Student App domain
+frontend/ build              app/ build
+          \                    /
+           \ same-origin /api /
+            v                v
+                Laravel 13
+                     |
+                     | Eloquent / transactions
+                     v
+        SQLite repeatable demo / MariaDB production direction
 ```
 
 The diagram above means the current Admin frontend is responsive. It does not claim that the Phase B Mobile Web client or a native app exists.

@@ -24,6 +24,16 @@ test('application Nginx serves the SPA and only forwards controlled Laravel entr
   assert.doesNotMatch(nginx, /autoindex on|server_tokens on/)
 })
 
+test('mobile App Nginx serves the independent App build and shared Laravel API', async () => {
+  const nginx = await readFile('deploy/docker/nginx/mobile-app.conf', 'utf8')
+
+  assert.match(nginx, /root \/var\/www\/matahari\/current\/app\/dist/)
+  assert.match(nginx, /location \/api\//)
+  assert.match(nginx, /fastcgi_pass php:9000/)
+  assert.match(nginx, /try_files \$uri \$uri\/ \/index\.html/)
+  assert.match(nginx, /location ~ \\.php\$/)
+})
+
 test('production PHP configuration suppresses details and secures sessions', async () => {
   const php = await readFile('deploy/docker/php/php.ini', 'utf8')
   const opcache = await readFile('deploy/docker/php/opcache.ini', 'utf8')

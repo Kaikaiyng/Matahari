@@ -1,6 +1,6 @@
 # Matahari International School Administration System
 
-This repository is the Matahari International School (MIS) administration and finance system under incremental development. It currently delivers an Admin/Finance web MVP, the Phase A academic/identity foundation, and an experimental mobile-shaped Parent/Student portal preview inside the existing React application. It is not yet a complete academic ERP, a native mobile application, or a production deployment package.
+This repository is the Matahari International School (MIS) administration and finance system under incremental development. It contains an Admin/Finance web MVP, the Phase A academic/identity foundation, and an independent mobile-first Parent/Student web application. Both clients use the same Laravel API and authoritative database, but have separate workspaces, builds, and domain boundaries. It is not yet a complete academic ERP or native store release.
 
 MIS branding is now the approved runtime and disposable-demo identity. Branding changes do not authorize rewriting an existing tenant, student number, invoice number, receipt number, or other historical record.
 
@@ -15,14 +15,14 @@ Implemented workflows include:
 - Payment allocation, verification, void safeguards, receipt generation, browser printing, and receipt void/regeneration.
 - Shared school calendar CRUD.
 - Phase A academic foundation APIs for academic years, class enrolments, subjects, teaching assignments, and reviewed portal identity links.
-- Experimental `/portal` Parent/Student web views, self-service identity endpoints, personal in-app notifications, and MIS demo personas. These are test previews, not completed product phases.
+- Independent `app/` Parent/Student web views, self-service identity endpoints, personal in-app notifications, and MIS demo personas. These remain development previews, not completed product phases.
 - Permission-filtered navigation and a Super Admin-only, read-only Audit Trail with filters and event detail.
 - Responsive desktop, tablet, and mobile administration UI.
 - CSRF-protected session mutations, login throttling, active-session rechecks, request IDs, and transactional audit events for implemented critical workflows.
 
 Important boundaries:
 
-- The current `/portal` route is an experimental responsive preview within `frontend/`, not a released mobile product. Some academic cards and timetable/attendance content are explicitly labelled demo data.
+- `frontend/` is Admin-only. `app/` is the separate Parent/Student product surface. Some App academic cards and timetable/attendance content are explicitly labelled demo data.
 - Parent finance is read-only in this preview and its payment notice interaction deliberately persists nothing. Payment reminders, Quiz, native authentication, Firebase, Capacitor, and app-store packaging remain unimplemented. See [Mobile Product Architecture and Roadmap](docs/mobile-product-roadmap.md).
 
 - Payments and receipts are implemented inside Student Detail; unimplemented top-level placeholder navigation has been removed.
@@ -35,26 +35,27 @@ Important boundaries:
 | Area | Repository version or implementation |
 | --- | --- |
 | Backend | PHP `^8.3`, Laravel Framework `13.17.0` from `composer.lock` |
-| Frontend | React `19.2.7`, TypeScript `6.0.x`, Vite `8.1.0` |
+| Admin and App frontends | Separate React `19.2.7`, TypeScript `6.0.x`, Vite `8.1.0` workspaces |
 | Authentication | Laravel `web` guard with session cookies |
 | Production database direction | MariaDB/MySQL-compatible |
 | Local demo and default tests | SQLite; PHPUnit uses SQLite `:memory:` |
 | Backend tests | PHPUnit `12.5.30` |
 | Frontend tests/lint | Vitest, Testing Library, Oxlint |
 
-The repository does not use Laravel 10. The separate React application is under `frontend/`; the npm manifest under `backend/` is Laravel scaffold tooling, not the main frontend.
+The repository does not use Laravel 10. Admin is under `frontend/`, Parent/Student App is under `app/`, and the npm manifest under `backend/` is Laravel scaffold tooling.
 
 ## Repository Structure
 
 ```text
 backend/             Laravel API, domain services, schema, seeders, tests
 frontend/            React application, components, feature models, tests
+app/                 Independent Parent/Student mobile-first React application
 docs/                Current documentation and historical delivery records
 tools/php/           Windows PHP launchers and local SQLite demo helpers
 tools/public-demo/   Temporary Cloudflare Quick Tunnel demo tooling
 ```
 
-No native or separate `mobile/` workspace exists. The experimental `/portal` surface currently shares the React build; whether it remains isolated there or moves to a separate workspace is still an architectural gate.
+No native workspace exists yet. `app/` is a separate web workspace designed to become the source for later approved store packaging; Capacitor/native authentication/Firebase are not installed.
 
 Future coding agents must also read [AGENTS.md](AGENTS.md).
 
@@ -104,6 +105,16 @@ cd frontend
 npm.cmd run dev
 ```
 
+Start the Parent/Student App in a third terminal:
+
+```powershell
+cd app
+npm.cmd ci
+npm.cmd run dev
+```
+
+Local URLs are Admin `http://localhost:5173`, App `http://127.0.0.1:5174`, and shared API `http://127.0.0.1:8000`. Using `localhost` and `127.0.0.1` as distinct local hosts keeps their host-only session cookies separate. Production uses two real domains, each reverse-proxying `/api` to the same Laravel backend.
+
 The frontend defaults to the same-origin `/api` path. Vite development and preview proxy that path to `http://127.0.0.1:8000` by default. To use another local backend target without changing the browser API origin, create an untracked `frontend/.env.local`:
 
 ```dotenv
@@ -149,6 +160,8 @@ npm.cmd test
 npm.cmd run lint
 npm.cmd run build
 ```
+
+Parent/Student App uses the same three commands from `app/`.
 
 `npm.cmd run build` runs `tsc -b` before the Vite production build. No PHP static-analysis command is currently configured. GitHub Actions now defines quick checks, one immutable ZIP build, full application validation, dependency audits, and a disposable MariaDB migration lifecycle; its current execution result must still be checked in GitHub. See [Testing and Release](docs/testing-and-release.md) and [Deployment Foundation](docs/deployment-foundation.md).
 

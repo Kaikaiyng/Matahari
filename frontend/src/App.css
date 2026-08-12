@@ -3308,3 +3308,22 @@ th {
     grid-template-columns: 1fr;
   }
 }
+.admin-access-unavailable {
+  width: min(100% - 32px, 480px);
+  min-height: 100vh;
+  margin: 0 auto;
+  display: grid;
+  place-content: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.admin-access-unavailable h1,
+.admin-access-unavailable p {
+  margin: 0;
+}
+
+.admin-access-unavailable p {
+  color: var(--muted);
+  line-height: 1.5;
+}

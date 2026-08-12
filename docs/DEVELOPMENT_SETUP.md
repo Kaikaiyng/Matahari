@@ -2,13 +2,13 @@
 
 Status: Current local-development guide
 
-Last verified for the current Admin Web stack: 2026-07-22
+Last verified for the current Admin and Parent/Student web stacks: 2026-08-12
 
-There is currently no separate mobile-client workspace or native toolchain to install. Do not install Capacitor, Firebase, Sanctum, Android, or iOS dependencies from this guide. Phase B must add explicit setup commands when the approved mobile-first web client is implemented; see [Mobile Product Architecture and Roadmap](mobile-product-roadmap.md).
+The repository now has separate `frontend/` (Admin) and `app/` (Parent/Student) web workspaces. There is still no native toolchain: do not install Capacitor, Firebase, Sanctum, Android, or iOS dependencies from this guide. See [Mobile Product Architecture and Roadmap](mobile-product-roadmap.md).
 
 ## 1. Local Stack
 
-- Frontend: React 19, TypeScript 6, Vite 8, Node.js, and `npm.cmd`
+- Admin and Parent/Student App: separate React 19, TypeScript 6, Vite 8, Node.js, and `npm.cmd` workspaces
 - Backend: Laravel 13 on PHP 8.4
 - Local database: SQLite for the repeatable demo; MariaDB remains available for development environments
 - Test database: SQLite `:memory:` through `backend/phpunit.xml`
@@ -28,7 +28,7 @@ Temporary HTTPS demo helpers and their tests live under `tools/public-demo/`. Th
 
 Plain `php` on this machine does not automatically load `tools/php/php.ini`. Prefer the provided launcher.
 
-## 2. Frontend Setup
+## 2. Admin Setup
 
 ```powershell
 cd frontend
@@ -39,13 +39,13 @@ npm.cmd run dev
 Default URL:
 
 ```text
-http://127.0.0.1:5173
+http://localhost:5173
 ```
 
 The API defaults to `http://127.0.0.1:8000/api`. Override it in `frontend/.env.local`:
 
 ```dotenv
-VITE_API_BASE_URL=http://127.0.0.1:8000/api
+VITE_API_PROXY_TARGET=http://127.0.0.1:8000
 ```
 
 Production verification:
@@ -56,7 +56,19 @@ npm.cmd run lint
 npm.cmd run build
 ```
 
-## 3. Demo Backend Setup
+## 3. Parent/Student App Setup
+
+In a second terminal:
+
+```powershell
+cd app
+npm.cmd install
+npm.cmd run dev
+```
+
+Open `http://127.0.0.1:5174`. Keep Admin on `http://localhost:5173`; the distinct local hosts isolate host-only browser session cookies while both Vite servers proxy `/api` to the same Laravel backend. Validate this workspace independently with `npm.cmd test`, `npm.cmd run lint`, and `npm.cmd run build`.
+
+## 4. Demo Backend Setup
 
 From the repository root:
 
@@ -67,7 +79,7 @@ tools\php\serve-demo-backend.cmd
 
 `reset-demo-sqlite.cmd` hard-pins Laravel to `backend/database/database.sqlite` before running `migrate:fresh --seed`. It never resets MariaDB or changes `backend/.env`. The seeded demo includes unpaid, fully paid with receipt, partially paid, and not-yet-configured student accounts.
 
-## 4. General Backend Development
+## 5. General Backend Development
 
 From `backend/`:
 
@@ -87,7 +99,7 @@ Run tests:
 ..\tools\php\php-local.cmd vendor\bin\phpunit
 ```
 
-## 5. Database Options
+## 6. Database Options
 
 ### SQLite
 
@@ -123,13 +135,13 @@ Do not publish database or phpMyAdmin credentials. phpMyAdmin is an optional loc
 
 Fresh MariaDB schema creation has one known migration-order caveat. Read [Database Design](DATABASE_DESIGN.md) before running a clean MariaDB migration.
 
-## 6. Seeded Local Accounts
+## 7. Seeded Local Accounts
 
 The seeder creates local `.test` users for Super Admin, School Admin, and Finance roles. Their development password is defined in `backend/database/seeders/DatabaseSeeder.php`.
 
 Seeded credentials are local-only. Do not reuse them in any deployed environment.
 
-## 7. iPad and LAN Demo
+## 8. iPad and LAN Demo
 
 Connect the computer and iPad to the same trusted network. Find the computer's IPv4 address, then start the backend and frontend with host access.
 
@@ -161,7 +173,7 @@ http://YOUR_LAN_IP:5173
 
 The backend CORS configuration must allow that exact frontend origin. Keep MariaDB port `3306` and phpMyAdmin bound to `127.0.0.1`; the iPad only needs the frontend and API ports.
 
-## 8. Responsive QA Sizes
+## 9. Responsive QA Sizes
 
 - Desktop: 1440x900
 - iPad landscape: 1180x820
@@ -172,7 +184,7 @@ Follow [Demo Review Script](DEMO_REVIEW_SCRIPT.md) for the test sequence.
 
 For repository ownership, API layering, files that must change together, and the publish checklist, use the [Maintenance Guide](MAINTENANCE_GUIDE.md).
 
-## 9. Troubleshooting
+## 10. Troubleshooting
 
 ### PHP reports missing extensions
 
@@ -196,7 +208,7 @@ Check:
 
 Use `npm.cmd` rather than `npm`.
 
-## 10. Verified Baseline
+## 11. Verified Baseline
 
 As of 2026-07-22:
 

@@ -1,6 +1,6 @@
 # MIS Administration System Frontend
 
-The frontend is the MIS React and TypeScript administration/finance demo. It uses Vite, Lucide/custom icons, and focused project CSS. The main surface is a data-dense Admin application; `/portal` is an experimental mobile-shaped Parent/Student preview in the same build. Runtime product copy is centralized in `src/branding.ts`; a fresh disposable backend demo seed supplies the MIS tenant.
+The frontend is the Admin-only MIS React and TypeScript administration/finance workspace. Parent/Student functionality lives in the separate root `app/` workspace and is not routed or built from this application. Runtime product copy is centralized in `src/branding.ts`; a fresh disposable backend demo seed supplies the MIS tenant.
 
 Do not use presentation changes to rename existing tenant data or historical receipt identifiers. Portal attendance, timetable, and payment-method interactions labelled as demo previews are not authoritative persisted workflows.
 

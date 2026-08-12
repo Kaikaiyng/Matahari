@@ -16,6 +16,7 @@ Matahari is a school administration and finance MVP for Matahari International S
 
 - `backend/`: Laravel application, API routes, domain services, migrations, seeders, and PHPUnit tests.
 - `frontend/`: React application, shared components, feature editors, Vitest tests, and Vite configuration.
+- `app/`: Independent mobile-first Parent/Student React application with its own build, tests, and deployment surface.
 - `docs/`: canonical current documentation plus historical plans and decision records.
 - `tools/php/`: Windows PHP launchers and local SQLite demo helpers.
 - `tools/public-demo/`: temporary demo tunnel tooling; it is not production deployment infrastructure.
@@ -58,14 +59,14 @@ Matahari is a school administration and finance MVP for Matahari International S
 - Make the smallest complete change and avoid unrelated refactoring.
 - Follow existing controller/request/service/model boundaries. Financial mutations belong in transactions and should use row locks where concurrent updates matter.
 - Do not add a package without a concrete justification and lockfile update.
-- Keep the separate `frontend/` React application distinct from the Laravel scaffold assets in `backend/`.
+- Keep `frontend/` (Admin), `app/` (Parent/Student), and Laravel scaffold assets in `backend/` as separate runtime/build boundaries.
 - Update relevant canonical documentation in the same change when behavior, permissions, schema, commands, or status changes.
 
 ## Testing Requirements
 
 - Add or update focused tests before changing behavior, then run the full relevant suite.
 - Backend minimum: PHPUnit, route loading, Pint check, and database migration/rollback checks appropriate to the change.
-- Frontend minimum: Vitest, Oxlint, and `npm.cmd run build` (which includes TypeScript checking).
+- Admin and App frontend minimum, run separately in `frontend/` and `app/`: Vitest, Oxlint, and `npm.cmd run build` (which includes TypeScript checking).
 - Database-sensitive work requires a disposable MariaDB run in addition to SQLite. Record any unavailable external dependency as a limitation; never claim an unexecuted check passed.
 - Follow [Testing and Release](docs/testing-and-release.md) for exact commands and release evidence.
 

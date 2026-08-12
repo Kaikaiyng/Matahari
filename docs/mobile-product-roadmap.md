@@ -12,7 +12,7 @@ This document uses three distinct states:
 - **Approved, not implemented:** a product or architecture decision that constrains future work.
 - **Needs confirmation:** a decision that still requires product, operational, or security approval.
 
-The current `frontend/` application is a responsive Admin/Finance web interface. It is not the new Parent/Student mobile product. No separate mobile frontend directory, native package, push integration, or token-authentication stack exists yet.
+The `frontend/` application is the responsive Admin/Finance interface. The separate root `app/` workspace is now the mobile-first Parent/Student web product and has its own build and tests. No native package, push integration, or token-authentication stack exists yet.
 
 ## Target Product Architecture
 
@@ -42,7 +42,7 @@ The mobile experience is developed and validated first as a mobile-first web app
 | --- | --- | --- |
 | A — Backend Foundation | Implemented on the unmerged Phase A branch | School context, foundation roles, explicit portal links, academic years, enrolments, subjects, teaching assignments, minimum management APIs, policies/access services, audit, constraints, and tests |
 | B — Mobile Web Shell | Approved, not implemented | Mobile-first client, localhost/staging runtime, login shell, role-aware navigation, Parent home, Student home, optional basic Teacher mode, and API-client structure |
-| C — Parent Finance | Experimental preview, not complete | `/portal` has guarded read-only balance/payment/receipt queries and a non-persisting payment notice preview; download/share, production UX, and release validation remain open |
+| C — Parent Finance | Experimental preview, not complete | `app/` has guarded read-only balance/payment/receipt queries and a non-persisting payment notice preview; download/share, production UX, and release validation remain open |
 | D — Notifications and Manual Payment Reminder | Approved, not implemented | In-app notification centre, manual Admin/Finance reminder action, recipient resolution, audit/history, and a future-push-ready boundary |
 | E — Teacher and Quiz | Approved, not implemented | Teacher classes, quiz authoring, class and direct-student targets, materialized recipients, attempts, server-side scoring, and result visibility |
 | F — Push and Native Packaging | Approved, not implemented | Device registration, FCM, Capacitor Android/APK, followed later by iOS/TestFlight evaluation |
@@ -121,7 +121,7 @@ Attendance, academic transcripts, official examinations/gradebook, chat, homewor
 
 ## Open Decisions
 
-- Whether Phase B is a separate React workspace or an intentionally isolated application within a workspace/monorepo structure.
+- The independent `app/` React workspace is fixed; remaining decisions concern its native wrapper/store strategy and production domain configuration.
 - Exact native authentication and credential-revocation design.
 - Supported Android/iOS versions and device matrix.
 - Push-provider project ownership, environments, credentials, privacy policy, and operational monitoring.

@@ -13,24 +13,20 @@ export function createViteConfig(env: Record<string, string | undefined> = proce
       css: true,
     },
     server: {
-      allowedHosts: ['localhost', '.trycloudflare.com'],
-      proxy: {
-        '/api': apiProxyTarget,
-      },
+      host: '127.0.0.1',
+      port: 5174,
+      strictPort: true,
+      allowedHosts: ['127.0.0.1'],
+      proxy: { '/api': apiProxyTarget },
     },
     preview: {
       host: '127.0.0.1',
-      port: 4175,
+      port: 4176,
       strictPort: true,
-      allowedHosts: ['localhost', '.trycloudflare.com'],
-      proxy: {
-        '/api': apiProxyTarget,
-      },
+      allowedHosts: ['127.0.0.1'],
+      proxy: { '/api': apiProxyTarget },
     },
   }
 }
 
-export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode || 'development', process.cwd(), '')
-  return createViteConfig(env)
-})
+export default defineConfig(({ mode }) => createViteConfig(loadEnv(mode || 'development', process.cwd(), '')))

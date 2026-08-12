@@ -637,6 +637,21 @@ describe('demo shell', () => {
     expect(within(navigation).queryByRole('button', { name: 'Audit Trail' })).not.toBeInTheDocument()
   })
 
+  it('rejects a parent-only account from the Admin Panel', async () => {
+    installApiUser({
+      ...currentUser,
+      name: 'Rachel Wong',
+      username: 'rachel.wong',
+      roles: ['parent'],
+      permissions: ['parent.self_service'],
+    })
+
+    render(<App />)
+
+    expect(await screen.findByRole('heading', { name: 'Admin access unavailable' })).toBeInTheDocument()
+    expect(screen.queryByRole('navigation', { name: 'Main navigation' })).not.toBeInTheDocument()
+  })
+
   it('opens Calendar with the active school context', async () => {
     const user = userEvent.setup()
     await renderAuthenticatedApp()

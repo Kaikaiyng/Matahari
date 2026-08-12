@@ -51,7 +51,9 @@ jobs:
         with:
           node-version: '24'
           cache: npm
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: |
+            frontend/package-lock.json
+            app/package-lock.json
       - name: Install backend dependencies
         working-directory: backend
         run: composer install --prefer-dist --no-interaction --no-progress
@@ -79,6 +81,15 @@ jobs:
           php artisan migrate --force
       - name: Run complete frontend validation
         working-directory: frontend
+        run: |
+          npm ci
+          npm test
+          npm run lint
+          npm run build
+          npm audit --omit=dev --audit-level=moderate
+          npm audit --audit-level=moderate
+      - name: Run complete Parent/Student App validation
+        working-directory: app
         run: |
           npm ci
           npm test

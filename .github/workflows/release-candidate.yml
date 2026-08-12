@@ -24,7 +24,9 @@ jobs:
         with:
           node-version: '24'
           cache: npm
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: |
+            frontend/package-lock.json
+            app/package-lock.json
       - name: Install backend development dependencies
         working-directory: backend
         run: composer install --prefer-dist --no-interaction --no-progress
@@ -41,6 +43,12 @@ jobs:
         run: |
           npm ci
           npm test -- src/components/DeploymentBanner.test.tsx src/api.test.ts
+          npm run lint
+      - name: Install and validate Parent/Student App
+        working-directory: app
+        run: |
+          npm ci
+          npm test
           npm run lint
       - name: Validate deployment contracts
         run: node --test deploy/tests/*.test.mjs
@@ -72,12 +80,19 @@ jobs:
         with:
           node-version: '24'
           cache: npm
-          cache-dependency-path: frontend/package-lock.json
+          cache-dependency-path: |
+            frontend/package-lock.json
+            app/package-lock.json
       - name: Install production backend dependencies
         working-directory: backend
         run: composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader
       - name: Build frontend once
         working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+      - name: Build Parent/Student App once
+        working-directory: app
         run: |
           npm ci
           npm run build

@@ -13,3 +13,4 @@ backend/composer.json
 backend/composer.lock
 backend/vendor
 frontend/dist
+app/dist

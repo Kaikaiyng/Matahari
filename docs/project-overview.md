@@ -21,7 +21,7 @@ The seeded implementation contains these stored role slugs:
 
 The intended CEO concept has been described as management or print-only access, but the current seed grants only Fee Record view and Calendar view permissions. It does not grant receipt printing. See [Permissions](permissions.md).
 
-Phase A also adds the `teacher`, `parent`, and `student` role slugs without replacing existing assignments. A user may hold multiple roles. An experimental `/portal` web preview now exercises parent/student identities, but this does not make the later mobile phases or a native application complete.
+Phase A also adds the `teacher`, `parent`, and `student` role slugs without replacing existing assignments. A user may hold multiple roles. The independent `app/` web workspace exercises parent/student identities, but this does not make later mobile phases or a native application complete.
 
 ## Intended Scale
 
@@ -50,7 +50,7 @@ Do not describe the system as unlimited or use the historical cost estimate as p
 - Backend permission and authenticated-school enforcement for the legacy dashboard and monthly invoice endpoints.
 - Database guards for one current Fee Agreement per school/student/year and one scheduled charge per agreement item/month.
 - Phase A teacher/parent/student roles, reviewed nullable portal links, academic years, enrolment history, subjects, teaching assignments, scoped `/api/v1` management/teacher APIs, policies/access services, and transactional foundation audit events.
-- MIS-branded demo identities for Admin, Teacher, Parent, and Student; an experimental role-filtered `/portal` web shell; self-profile/enrolment endpoints; and user-scoped in-app notification storage.
+- MIS-branded demo identities for Admin, Teacher, Parent, and Student; an independent role-filtered `app/` web shell; self-profile/enrolment endpoints; and user-scoped in-app notification storage.
 
 ### Partially Implemented
 
@@ -85,9 +85,9 @@ Unless a future approved specification adds them, do not infer these from naviga
 
 ## System Boundaries
 
-- The current React client presents administration workflows plus an isolated `/portal` preview. It is not a native client and its demo-only cards are not backend business-rule evidence.
+- `frontend/` presents Admin workflows and rejects Parent/Student-only accounts. `app/` presents Parent/Student workflows and rejects Admin-only accounts. The App is not native, and its demo-only cards are not backend business-rule evidence.
 - Laravel is authoritative for authentication, authorization, validation, school scoping, state transitions, numbering, and persisted finance effects.
-- Admin Web and future mobile clients share one Laravel backend, one MariaDB database, one RBAC/identity system, and the existing finance source of truth.
+- Admin Web and the Parent/Student App share one Laravel backend, one MariaDB database, one RBAC/identity system, and the existing finance source of truth.
 - MariaDB/MySQL-compatible behavior is the production direction. SQLite supports the local demo and default automated tests only.
 - The application models school ownership with `school_id`. New Phase A modules use `SchoolContext`, middleware, policies/access services, and school-scoped queries; legacy checks remain distributed and can migrate incrementally.
 - No third-party business system integration is present. The public demo tunnel is temporary transport, not a domain service.

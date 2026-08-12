@@ -145,6 +145,7 @@ export async function createRelease({
 
   const composerLockPath = join(sourceRoot, 'backend', 'composer.lock')
   const npmLockPath = join(sourceRoot, 'frontend', 'package-lock.json')
+  const appNpmLockPath = join(sourceRoot, 'app', 'package-lock.json')
   const composerLock = JSON.parse(await readFile(composerLockPath, 'utf8'))
   const laravelPackage = [...(composerLock.packages ?? []), ...(composerLock['packages-dev'] ?? [])]
     .find((dependency) => dependency.name === 'laravel/framework')
@@ -173,6 +174,7 @@ export async function createRelease({
     lockfiles: {
       composer_sha256: await hashFile(composerLockPath),
       npm_sha256: await hashFile(npmLockPath),
+      app_npm_sha256: await hashFile(appNpmLockPath),
     },
     migrations,
     files,

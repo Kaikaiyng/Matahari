@@ -104,6 +104,37 @@ services:
       timeout: 5s
       retries: 3
 
+  app-web:
+    image: nginx:1.28.0-alpine
+    restart: unless-stopped
+    depends_on:
+      php:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${MOBILE_APP_HTTP_PORT}:8080"
+    volumes:
+      - ${RELEASE_ROOT}/current:/var/www/matahari/current:ro
+      - ../docker/nginx/mobile-app.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - application
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx:size=32m
+      - /var/run:size=8m
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://127.0.0.1:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
 volumes:
   runtime_storage:
     name: ${COMPOSE_PROJECT_NAME}_runtime_storage

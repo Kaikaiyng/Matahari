@@ -9,7 +9,7 @@
 ```mermaid
 flowchart LR
     Browser["Browser: React 19 + TypeScript"]
-    Mobile["Experimental /portal Parent / Student web preview"]
+    Mobile["Independent app/ Parent / Student web client"]
     Vite["Vite dev server or Preview"]
     API["Laravel 13 JSON API"]
     DB["SQLite demo/tests or MariaDB direction"]
@@ -29,7 +29,7 @@ flowchart LR
     API -.->|"test sessions"| Memory
 ```
 
-The current frontend and backend are separate applications. Laravel is the security and persistence boundary; React is not authoritative for permissions or financial state. The mobile node is an approved target, not implemented code. It will reuse the same API, database, identity/RBAC, and finance domain rather than create a mobile backend.
+The Admin frontend, Parent/Student App, and backend are separate applications. Laravel remains the shared security and persistence boundary; neither React client is authoritative for permissions or financial state. Both clients reuse the same API, database, identity/RBAC, and domain services rather than creating a second mobile backend.
 
 ## Backend Structure
 
@@ -64,7 +64,7 @@ Legacy authorization remains primarily route middleware plus distributed scope c
 
 The application does not use React Router, Redux, React Query, or another global data layer. Page selection is component state, so there are no deep links or browser-history routes. Data fetching uses local state/effects and the shared API wrapper.
 
-No native or separate mobile-client workspace currently exists. The experimental `/portal` surface is isolated by route and components but shares the existing React build. Its long-term workspace/build boundary remains a reviewed architecture decision.
+`frontend/` and `app/` are independent React workspaces. Admin and Parent/Student App are built and deployed separately on different domains, while each domain reverse-proxies its own `/api` path to the same Laravel backend. This same-origin browser topology preserves the existing session-cookie and CSRF model. A native workspace and store packaging do not exist yet.
 
 ## Authentication Flow
 

@@ -34,7 +34,7 @@ The database service has no host port. It creates these fixed boundaries from pr
 
 Migration identities receive schema privileges only for their own database. Runtime identities receive no privileges during first initialization. After migrations, `apply-runtime-grants.sh` enumerates the actual tables and grants normal CRUD per table, except `audit_logs`, which receives only `SELECT` and `INSERT`.
 
-Staging and production run with different Compose project names, release roots, Laravel `.env` files, storage/cache volumes, ports, database credentials, `APP_KEY`, session settings, and `DEPLOYMENT_MODE`. The application ports bind only to host loopback; a later edge-proxy plan will provide TLS, host routing, and Basic Auth.
+Staging and production run with different Compose project names, release roots, Laravel `.env` files, storage/cache volumes, ports, database credentials, `APP_KEY`, session settings, and `DEPLOYMENT_MODE`. Each environment exposes separate loopback-only Admin and Parent/Student App ports. The edge proxy must route two HTTPS hostnames to those ports; both internal Nginx services proxy `/api` to the same Laravel service and database.
 
 ## Runtime Deployment Label
 
@@ -51,7 +51,7 @@ Laravel maps the mode to an allowlisted label and never returns environment valu
 
 ## Release Artifact
 
-`deploy/release-files.txt` is the only source allowlist. The release contains Laravel runtime code, migration files, production `backend/vendor`, and built `frontend/dist`. It excludes environment files, SQLite data, source dependency directories, test results, credentials, key files, and local tooling state.
+`deploy/release-files.txt` is the only source allowlist. The release contains Laravel runtime code, migration files, production `backend/vendor`, built Admin `frontend/dist`, and built Parent/Student `app/dist`. It excludes environment files, SQLite data, source dependency directories, test results, credentials, key files, and local tooling state.
 
 `release-manifest.json` records:
 
@@ -90,7 +90,16 @@ npm.cmd run lint
 npm.cmd run build
 ```
 
-The release staging tree can be rehearsed on Windows after `backend/vendor` and `frontend/dist` exist:
+Parent/Student App:
+
+```powershell
+cd app
+npm.cmd test
+npm.cmd run lint
+npm.cmd run build
+```
+
+The release staging tree can be rehearsed on Windows after `backend/vendor`, `frontend/dist`, and `app/dist` exist:
 
 ```powershell
 $releaseCommit = git rev-parse HEAD
