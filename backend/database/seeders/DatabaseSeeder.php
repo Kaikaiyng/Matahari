@@ -40,6 +40,9 @@ class DatabaseSeeder extends Seeder
             'ceo' => 'CEO',
             'school-admin' => 'School Admin',
             'finance' => 'Finance',
+            'teacher' => 'Teacher',
+            'parent' => 'Parent',
+            'student' => 'Student',
         ])->mapWithKeys(fn (string $name, string $slug) => [
             $slug => Role::query()->updateOrCreate(['slug' => $slug], ['name' => $name]),
         ]);
@@ -104,6 +107,18 @@ class DatabaseSeeder extends Seeder
             'calendar.delete' => 'Delete calendar events',
             'audit.view' => 'View global audit logs',
             'audit.correct_generic' => 'Correct approved low-risk fields from audit history',
+            'academic_years.view' => 'View academic years',
+            'academic_years.manage' => 'Manage academic years',
+            'class_enrolments.view' => 'View class enrolments',
+            'class_enrolments.manage' => 'Manage class enrolments',
+            'subjects.view' => 'View subjects',
+            'subjects.manage' => 'Manage subjects',
+            'teaching_assignments.view' => 'View teaching assignments',
+            'teaching_assignments.manage' => 'Manage teaching assignments',
+            'teaching_scope.view' => 'View own teaching scope',
+            'portal_links.manage' => 'Manage portal identity and guardian access links',
+            'parent.self_service' => 'Access parent self-service',
+            'student.self_service' => 'Access student academic self-service',
         ])->mapWithKeys(fn (string $name, string $slug) => [
             $slug => Permission::query()->updateOrCreate(['slug' => $slug], ['name' => $name]),
         ]);
@@ -137,6 +152,15 @@ class DatabaseSeeder extends Seeder
             'calendar.create',
             'calendar.update',
             'calendar.delete',
+            'academic_years.view',
+            'academic_years.manage',
+            'class_enrolments.view',
+            'class_enrolments.manage',
+            'subjects.view',
+            'subjects.manage',
+            'teaching_assignments.view',
+            'teaching_assignments.manage',
+            'portal_links.manage',
         ])->pluck('id')->all());
         $roles['finance']->permissions()->sync($permissions->only([
             'students.view',
@@ -155,6 +179,18 @@ class DatabaseSeeder extends Seeder
             'calendar.create',
             'calendar.update',
             'calendar.delete',
+        ])->pluck('id')->all());
+
+        $roles['teacher']->permissions()->sync($permissions->only([
+            'academic_years.view',
+            'subjects.view',
+            'teaching_scope.view',
+        ])->pluck('id')->all());
+        $roles['parent']->permissions()->sync($permissions->only([
+            'parent.self_service',
+        ])->pluck('id')->all());
+        $roles['student']->permissions()->sync($permissions->only([
+            'student.self_service',
         ])->pluck('id')->all());
 
         $superAdmin->roles()->sync([$roles['super-admin']->id]);
