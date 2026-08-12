@@ -77,13 +77,12 @@ function App() {
       userRole={activeRole}
       allowedRoles={allowedRoles}
       onRoleChange={(role) => { setSelectedRole(role); setActiveTab('home') }}
-      onLogout={() => void logout()}
       userName={user.name}
       environment={environment}
     >
-      {activeRole === 'student' && <StudentPortalView studentName={user.name} activeTab={activeTab} />}
-      {activeRole === 'parent' && <ParentPortalView parentName={user.name} activeTab={activeTab} onTabChange={setActiveTab} />}
-      {(activeRole === 'teacher' || activeRole === 'staff') && <TeacherPortalView teacherName={user.name} activeTab={activeTab} onTabChange={setActiveTab} staffMode={activeRole === 'staff'} />}
+      {activeRole === 'student' && <StudentPortalView studentName={user.name} activeTab={activeTab} onLogout={() => void logout()} />}
+      {activeRole === 'parent' && <ParentPortalView parentName={user.name} activeTab={activeTab} onTabChange={setActiveTab} onLogout={() => void logout()} />}
+      {(activeRole === 'teacher' || activeRole === 'staff') && <TeacherPortalView teacherName={user.name} activeTab={activeTab} onTabChange={setActiveTab} onLogout={() => void logout()} staffMode={activeRole === 'staff'} />}
     </MobileShell>
   )
 }

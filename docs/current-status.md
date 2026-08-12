@@ -1,16 +1,16 @@
 # Current Status
 
-**Snapshot date:** 2026-08-12
+**Snapshot date:** 2026-08-13
 
 **Inspected Phase A implementation commit:** `ecaa0a1f177292ae99c9338e255a1f93312971f5`
 
 **Default branch:** `master`
 
-**Current delivery branch:** `feature/split-admin-mobile-app` (not merged)
+**Current delivery branch:** `feature/split-admin-mobile-app` (release source branch)
 
 **Overall status:** MIS-branded administration-finance demo MVP with Phase A foundations, separately built Admin and multi-role Community App clients, and a first scoped daily-attendance slice; native/store delivery, production operations, and several product modules remain incomplete
 
-The Phase A commit above is on the unmerged delivery branch. The earlier white-label feature was delivered through [pull request #8](https://github.com/Kaikaiyng/Matahari/pull/8) and merged into `master` as `2f4c6bd199a7fae149658d3993aba370203746de` on 2026-08-04.
+The Phase A commit above remains in the delivery history. The earlier white-label feature was delivered through [pull request #8](https://github.com/Kaikaiyng/Matahari/pull/8) and merged into `master` as `2f4c6bd199a7fae149658d3993aba370203746de` on 2026-08-04.
 
 ## Runtime Demo Identity
 
@@ -44,6 +44,16 @@ The App is approved as a private school-community product: a relationship-scoped
 The current working slice redesigns the Admin staff login and all App role surfaces. Daily Attendance is connected end to end: assigned Teachers load current rosters, submit `present`, `late`, `absent`, or `excused`, and must provide a reason for corrections; authorized Parents and the linked Student can read the resulting record. Attendance writes and their audit events share one transaction. Community persistence/media, Assessment results, formal Quiz, Practice Quiz generation, and Schedule remain clearly labelled UI previews rather than implemented backend modules. See [MIS App Product Specification](mobile-app-product-spec.md) and the root [Design System](../DESIGN.md).
 
 Later school-specific branding requires explicit approval and a controlled update to the presentation configuration and, if needed, a fresh disposable demo seed. It must not rename existing tenant data or rewrite financial history.
+
+## 2026-08-13 Mobile App Visual Refinement
+
+- The App shell now uses a compact MIS Community header and a role-aware floating liquid-glass navigation capsule. The active destination shows icon and label; inactive destinations retain icons with accessible names.
+- Parent, Student, Teacher, and authorized Staff receive distinct five-item navigation sets. Sign out moved from the persistent header into each role's More/Profile page.
+- Feed and record surfaces use calmer phone-first spacing, fewer nested borders, stronger content hierarchy, and at least 44px interactive targets. The Feed remains a clearly labelled preview where publishing is not connected.
+- Automated browser checks covered 39 representative role/page/viewport combinations at 360x800, 390x844, and 430x932. No horizontal overflow or undersized visible interactive target remained after correction.
+- The browser helper's packaged Windows server lacked its Playwright dependency; validation used a cached Playwright runner with installed Chrome and did not add a project dependency.
+- App validation passed with 3 files and 16 tests, clean Oxlint, and a TypeScript/Vite production build with 76 transformed modules. Existing Admin regression passed with 15 files and 169 tests, Oxlint exit 0 with the 9 known Fast Refresh organization warnings, and an 83-module production build.
+- Backend regression passed with 255 tests discovered, 247 passed, 8 opt-in MariaDB tests skipped, and 1,314 assertions. Pint passed and 74 API routes loaded. No backend schema changed in this visual-refinement branch, so a new MariaDB lifecycle was not run for this branch.
 
 ## Technology Snapshot
 

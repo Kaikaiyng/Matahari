@@ -3,6 +3,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { MobileShell } from './MobileShell'
 import { ParentPortalView } from './ParentPortalView'
 import { StudentPortalView } from './StudentPortalView'
+import { TeacherPortalView } from './TeacherPortalView'
 
 // Mock the portalApi so components don't make real HTTP calls in tests
 vi.mock('../api/portalApi', () => ({
@@ -51,53 +52,56 @@ beforeEach(() => {
 describe('MobileShell & Portal Views', () => {
   it('renders mobile shell with brand logo, environment badge, and user avatar', () => {
     render(
-      <MobileShell activeTab="home" onTabChange={() => {}} userRole="parent" allowedRoles={['parent']} onLogout={() => {}} userName="Sarah Tan" environment="staging">
+      <MobileShell activeTab="home" onTabChange={() => {}} userRole="parent" allowedRoles={['parent']} userName="Sarah Tan" environment="staging">
         <div>Content</div>
       </MobileShell>,
     )
 
     expect(screen.getByText('Preview environment')).toBeDefined()
     expect(screen.getByText('Sarah')).toBeDefined()
-    expect(screen.getByText('Home')).toBeDefined()
-    expect(screen.getByText('Children')).toBeDefined()
+    expect(screen.getByRole('button', { name: 'Home' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('button', { name: 'Children' })).not.toHaveAttribute('aria-current')
+    expect(screen.queryByRole('button', { name: 'Logout' })).not.toBeInTheDocument()
   })
 
   it('renders ParentPortalView home tab with welcome message (loading state)', () => {
-    render(<ParentPortalView parentName="Rachel Wong" activeTab="home" onTabChange={() => {}} />)
+    render(<ParentPortalView parentName="Rachel Wong" activeTab="home" onTabChange={() => {}} onLogout={() => {}} />)
 
     // Welcome greeting includes first name.
     expect(screen.getByText(/Rachel/)).toBeDefined()
-    expect(screen.getByText('Community design preview · audience rules will be enforced by Laravel')).toBeDefined()
+    expect(screen.getByText('Preview · community publishing is not connected')).toBeDefined()
+    expect(document.querySelector('.context-card')).toBeTruthy()
+    expect(document.querySelector('.feed-post-meta')).toBeTruthy()
+    expect(document.querySelector('.preview-note')).toBeTruthy()
   })
 
   it('renders ParentPortalView finance tab in loading state', () => {
-    render(<ParentPortalView parentName="Rachel Wong" activeTab="finance" onTabChange={() => {}} />)
+    render(<ParentPortalView parentName="Rachel Wong" activeTab="finance" onTabChange={() => {}} onLogout={() => {}} />)
 
     expect(document.querySelector('.app-skeleton')).toBeTruthy()
   })
 
   it('renders StudentPortalView overview tab with welcome message (loading state)', () => {
-    render(<StudentPortalView studentName="Alyssa Tan" activeTab="home" />)
+    render(<StudentPortalView studentName="Alyssa Tan" activeTab="home" onLogout={() => {}} />)
 
     expect(screen.getByText(/Hello, Alyssa/)).toBeDefined()
-    expect(screen.getByText('Community design preview · audience rules will be enforced by Laravel')).toBeDefined()
+    expect(screen.getByText('Preview · community publishing is not connected')).toBeDefined()
   })
 
   it('triggers onTabChange when bottom navigation item is clicked', () => {
     const handleTabChange = vi.fn()
     render(
-      <MobileShell activeTab="home" onTabChange={handleTabChange} userRole="parent" allowedRoles={['parent']} onLogout={() => {}} userName="Sarah Tan">
+      <MobileShell activeTab="home" onTabChange={handleTabChange} userRole="parent" allowedRoles={['parent']} userName="Sarah Tan">
         <div>Content</div>
       </MobileShell>,
     )
 
-    fireEvent.click(screen.getByText('Finance'))
+    fireEvent.click(screen.getByRole('button', { name: 'Finance' }))
     expect(handleTabChange).toHaveBeenCalledWith('finance')
   })
 
-  it('offers only roles held by a multi-role portal user and logs out explicitly', () => {
+  it('offers only roles held by a multi-role portal user', () => {
     const changeRole = vi.fn()
-    const logout = vi.fn()
     render(
       <MobileShell
         activeTab="home"
@@ -105,7 +109,6 @@ describe('MobileShell & Portal Views', () => {
         userRole="parent"
         allowedRoles={['parent', 'student']}
         onRoleChange={changeRole}
-        onLogout={logout}
         userName="Sarah Tan"
       >
         <div>Content</div>
@@ -114,7 +117,40 @@ describe('MobileShell & Portal Views', () => {
 
     fireEvent.change(screen.getByRole('combobox'), { target: { value: 'student' } })
     expect(changeRole).toHaveBeenCalledWith('student')
-    fireEvent.click(screen.getByRole('button', { name: 'Logout' }))
-    expect(logout).toHaveBeenCalledTimes(1)
+  })
+
+  it.each([
+    ['parent', 'Finance', 'Quiz'],
+    ['student', 'Quiz', 'Finance'],
+    ['teacher', 'Attendance', 'Finance'],
+    ['staff', 'Review', 'Attendance'],
+  ] as const)('renders %s destinations without leaking another role navigation', (role, visible, hidden) => {
+    render(
+      <MobileShell activeTab="home" onTabChange={() => {}} userRole={role} allowedRoles={[role]} userName="MIS User">
+        <div>Content</div>
+      </MobileShell>,
+    )
+
+    expect(screen.getByRole('button', { name: visible })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: hidden })).not.toBeInTheDocument()
+  })
+
+  it('places logout in each role More page', async () => {
+    const parentLogout = vi.fn()
+    const studentLogout = vi.fn()
+    const teacherLogout = vi.fn()
+    const { unmount } = render(<ParentPortalView parentName="Rachel Wong" activeTab="more" onTabChange={() => {}} onLogout={parentLogout} />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Sign out' }))
+    expect(parentLogout).toHaveBeenCalledTimes(1)
+    unmount()
+
+    const student = render(<StudentPortalView studentName="Alyssa Tan" activeTab="more" onLogout={studentLogout} />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Sign out' }))
+    expect(studentLogout).toHaveBeenCalledTimes(1)
+    student.unmount()
+
+    render(<TeacherPortalView teacherName="Teacher Lim" activeTab="more" onTabChange={() => {}} onLogout={teacherLogout} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Sign out' }))
+    expect(teacherLogout).toHaveBeenCalledTimes(1)
   })
 })

@@ -67,26 +67,26 @@ export function CommunityFeed({ role, userName, onOpenFinance, onCreatePost }: C
       </section>
 
       {role === 'parent' && (
-        <button type="button" className="attention-strip" onClick={onOpenFinance}>
+        <button type="button" className="attention-strip context-card" onClick={onOpenFinance}>
           <span className="attention-icon">RM</span><span><strong>RM 1,240 outstanding</strong><small>Alyssa Tan · account updated today</small></span><b>View</b>
         </button>
       )}
       {(role === 'teacher' || role === 'staff') && (
-        <button type="button" className="create-strip" onClick={onCreatePost}><span>Share a school moment</span><b>Create post</b></button>
+        <button type="button" className="create-strip context-card" onClick={onCreatePost}><span>Share a school moment</span><b>Create post</b></button>
       )}
 
       <div className="feed-filter" aria-label="Feed filters">
         {['For you', 'School', 'My classes', 'Events'].map((item) => <button key={item} type="button" className={filter === item ? 'active' : ''} onClick={() => setFilter(item)}>{item}</button>)}
       </div>
 
-      <div className="preview-label"><ShieldCheck size={14} /> Community design preview · audience rules will be enforced by Laravel</div>
+      <div className="preview-label preview-note"><ShieldCheck size={14} /> Preview · community publishing is not connected</div>
 
       <section className="feed-list" aria-label="School community posts">
         {samplePosts.map((post) => {
           const isLiked = liked.includes(post.id)
           return (
             <article className="feed-post" key={post.id}>
-              <header className="feed-post-header"><span className="feed-avatar">{post.initials}</span><span className="feed-author"><strong>{post.author}</strong><small>{post.meta}</small></span><span className="feed-scope">{post.scope}</span><button type="button" className="plain-icon" aria-label={`More options for ${post.title}`}><MoreHorizontal size={20} /></button></header>
+              <header className="feed-post-header"><span className="feed-avatar">{post.initials}</span><span className="feed-author"><strong>{post.author}</strong><span className="feed-post-meta"><small>{post.meta}</small><span className="feed-scope">{post.scope}</span></span></span><button type="button" className="plain-icon" aria-label={`More options for ${post.title}`}><MoreHorizontal size={20} /></button></header>
               <div className="feed-copy"><h2>{post.title}</h2><p>{post.body}</p></div>
               {post.media === 'photos' && <div className="feed-media school-garden"><span>4 classroom photos</span></div>}
               {post.media === 'video' && <div className="feed-media science-lab"><button type="button" aria-label="Play classroom video"><Play size={21} fill="currentColor" /></button><span>1:18 classroom video</span></div>}

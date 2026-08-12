@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
-import { BookOpen, CalendarDays, ChevronRight, Clock3, GraduationCap, Lightbulb, LockKeyhole, PlayCircle, Sparkles, UserRound } from 'lucide-react'
+import { BookOpen, CalendarDays, ChevronRight, Clock3, GraduationCap, Lightbulb, LockKeyhole, LogOut, PlayCircle, Sparkles, UserRound } from 'lucide-react'
 import { portalApi, type AttendanceRecord, type StudentEnrolment, type StudentMe } from '../api/portalApi'
 import { CommunityFeed } from './CommunityFeed'
 
-export function StudentPortalView({ studentName, activeTab }: { studentName: string; activeTab: string }) {
+export function StudentPortalView({ studentName, activeTab, onLogout }: { studentName: string; activeTab: string; onLogout: () => void }) {
   const [student, setStudent] = useState<StudentMe['data']>(null)
   const [enrolments, setEnrolments] = useState<StudentEnrolment[]>([])
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([])
@@ -14,7 +14,7 @@ export function StudentPortalView({ studentName, activeTab }: { studentName: str
   if (activeTab === 'learn') return <StudentLearn student={student} enrolments={enrolments} attendance={attendance} />
   if (activeTab === 'quiz') return <StudentQuiz />
   if (activeTab === 'schedule') return <StudentSchedule />
-  return <StudentMore student={student} fallbackName={studentName} />
+  return <StudentMore student={student} fallbackName={studentName} onLogout={onLogout} />
 }
 
 function Title({ eyebrow, title, copy }: { eyebrow: string; title: string; copy: string }) { return <header className="record-page-title"><p>{eyebrow}</p><h1>{title}</h1><span>{copy}</span></header> }
@@ -40,4 +40,4 @@ function StudentQuiz() {
 function StudentSchedule() { return <div className="record-page"><Title eyebrow="Schedule" title="Your school day" copy="Classes, events, and due dates in one timeline." /><div className="date-switcher"><button type="button">‹</button><span><strong>Tuesday</strong><small>12 August 2026</small></span><button type="button">›</button></div><section className="timeline"><ScheduleItem time="08:00" title="Mathematics" detail="Ms Lim · Room 3" active /><ScheduleItem time="09:15" title="English" detail="Ms Wong · Library" /><ScheduleItem time="10:30" title="Break" detail="30 minutes" muted /><ScheduleItem time="11:00" title="Science" detail="Mr Arif · Lab 1" /><ScheduleItem time="13:30" title="Art Club" detail="Studio · Bring sketchbook" /></section><div className="calendar-note"><CalendarDays /><span><strong>Family Sports Evening</strong><small>Friday · 5:00 PM · Main field</small></span></div></div> }
 function ScheduleItem({ time, title, detail, active, muted }: { time: string; title: string; detail: string; active?: boolean; muted?: boolean }) { return <div className={`timeline-row ${active ? 'active' : ''} ${muted ? 'muted' : ''}`}><time>{time}</time><i /><span><strong>{title}</strong><small>{detail}</small></span>{active && <b>Now</b>}</div> }
 
-function StudentMore({ student, fallbackName }: { student: StudentMe['data']; fallbackName: string }) { const name = student?.full_name ?? fallbackName; return <div className="record-page"><Title eyebrow="Account" title="Profile and settings" copy="Your private student access." /><section className="profile-card"><span className="profile-avatar">{name.split(' ').map((part) => part[0]).slice(0, 2).join('')}</span><h2>{name}</h2><p>{student?.student_no ?? 'Student account'} · {student?.class?.name ?? 'No class'}</p></section><section className="settings-list"><div><UserRound /><span><small>Role</small><strong>Student self-service</strong></span></div><button type="button"><span><small>Notifications</small><strong>School and class updates</strong></span><ChevronRight /></button><button type="button"><span><small>Privacy</small><strong>Community visibility information</strong></span><ChevronRight /></button></section></div> }
+function StudentMore({ student, fallbackName, onLogout }: { student: StudentMe['data']; fallbackName: string; onLogout: () => void }) { const name = student?.full_name ?? fallbackName; return <div className="record-page"><Title eyebrow="Account" title="Profile and settings" copy="Your private student access." /><section className="profile-card"><span className="profile-avatar">{name.split(' ').map((part) => part[0]).slice(0, 2).join('')}</span><h2>{name}</h2><p>{student?.student_no ?? 'Student account'} · {student?.class?.name ?? 'No class'}</p></section><section className="settings-list"><div><UserRound /><span><small>Role</small><strong>Student self-service</strong></span></div><button type="button"><span><small>Notifications</small><strong>School and class updates</strong></span><ChevronRight /></button><button type="button"><span><small>Privacy</small><strong>Community visibility information</strong></span><ChevronRight /></button></section><button type="button" className="logout-action" aria-label="Sign out" onClick={onLogout}><LogOut /><span><strong>Sign out</strong><small>End this session on this device</small></span></button></div> }

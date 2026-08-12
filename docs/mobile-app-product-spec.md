@@ -12,6 +12,8 @@ Home is a relationship-scoped school and classroom Feed inspired by the useful c
 
 ## Roles and Navigation
 
+The App uses a compact sticky identity header plus a role-aware floating liquid-glass navigation capsule. The active destination displays its icon and label; inactive destinations display icons with accessible names. The navigation respects device safe areas and every interactive target is at least 44px. Sign out is intentionally placed in More/Profile so the header stays focused on identity and notifications.
+
 ### Parent
 
 - **Home:** School and linked-class posts, reactions, controlled comments, announcements, and event cards.
@@ -97,7 +99,7 @@ An authorized guardian sees the account records of an explicitly linked child wh
 
 ## Delivery Slices
 
-1. Design system, App shell, role-specific navigation, Feed presentation, record-page redesign, and Admin login restoration. **Implemented in the current working slice.**
+1. Design system, compact App header, role-specific liquid-glass navigation, Feed presentation, calmer phone-first record pages, profile sign out, and Admin login restoration. **Implemented in the current working slice.**
 2. Community publishing/reactions/comments and moderation foundation.
 3. Daily Attendance schema, Teacher marking, Parent/Student history, and correction audit. **Implemented in the current working slice.**
 4. Assessment entry/publication and Parent/Student result views.
