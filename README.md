@@ -14,11 +14,14 @@ Implemented workflows include:
 - Fee Record preview, activation, manual charges, outstanding balances, summary, and category/month views.
 - Payment allocation, verification, void safeguards, receipt generation, browser printing, and receipt void/regeneration.
 - Shared school calendar CRUD.
+- Phase A academic foundation APIs for academic years, class enrolments, subjects, teaching assignments, and reviewed portal identity links.
 - Permission-filtered navigation and a Super Admin-only, read-only Audit Trail with filters and event detail.
 - Responsive desktop, tablet, and mobile administration UI.
 - CSRF-protected session mutations, login throttling, active-session rechecks, request IDs, and transactional audit events for implemented critical workflows.
 
 Important boundaries:
+
+- Quiz, notifications, payment reminders, mobile/native authentication, Firebase, and Capacitor remain out of scope.
 
 - Payments and receipts are implemented inside Student Detail; unimplemented top-level placeholder navigation has been removed.
 - The parent directory and fee catalogue top-level pages remain display-only; parent mutations, fee catalogue management, reports, exports, settings, user management, password reset, and production deployment are incomplete or not implemented.

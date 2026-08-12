@@ -28,6 +28,15 @@ Current enforcement:
 
 **Needs confirmation:** Who may move a student between each status, whether transitions are restricted by a state machine, and whether any status change requires a reason or approval. The current endpoint accepts any verified status value and does not store a status-change reason.
 
+## Academic Foundation and Portal Links
+
+- `students.class_id` remains the legacy compatibility value. `class_enrolments` is the new academic-year history source for new academic modules; Phase A does not rewrite the legacy value.
+- At most one current class enrolment exists per school, academic year, and student. Ending an enrolment preserves the row and allows a later current enrolment.
+- Teaching access is derived from active/current teaching assignments for a teacher, academic year, class, and subject. Teacher APIs do not expose unrelated class rosters.
+- Parent and student portal user references are nullable and must be assigned explicitly. Email, phone, and name matching are never used to guess an identity link.
+- Existing guardian relationships upgrade as `unreviewed`; finance/academic access flags and current-slot values remain `NULL` until an authorized operator links a reviewed parent user and explicitly activates access.
+- Student self-service is academic-only in this phase. Student finance access is not granted.
+
 ## Fee Agreements
 
 Verified rules:

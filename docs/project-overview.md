@@ -61,6 +61,8 @@ Do not describe the system as unlimited or use the historical cost estimate as p
 
 ### Planned, Not Implemented
 
+Phase A foundation now defines teacher/parent/student roles, scoped academic records, and explicitly reviewed nullable portal identity links; it does not activate a portal or add native/mobile authentication.
+
 - User/role administration, account status management, and password reset.
 - General reports, exports, statements, reminders, and server-generated PDF documents.
 - Parent portal and communications.

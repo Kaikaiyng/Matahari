@@ -90,6 +90,10 @@ cookie/session middleware
 
 `User::hasPermissionTo()` resolves permissions through the user's roles. Frontend navigation and actions use the returned permission slugs for usability, while backend middleware remains authoritative. Dashboard and monthly invoice routes now require `fee_record.view` and `fee_record.generate` respectively and resolve school/actor from trusted context.
 
+New Phase A modules use a consistent chain under `/api/v1`: authenticated active user, permission middleware, `ResolveSchoolContext`, resource policy/access service, school-scoped query, and transactional domain service. Self-service callers do not provide their own school scope. Legacy endpoints retain their current distributed checks and can migrate incrementally.
+
+Teacher roster access requires an active/current teaching assignment matching the authenticated teacher, school, academic year, class, and subject. Portal identity linking requires exact same-school users with the required role; it never uses guessed personal-data matching.
+
 ## Request and Validation Flow
 
 - Form Requests validate most mutation payloads and normalize selected values.

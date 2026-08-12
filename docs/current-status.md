@@ -29,6 +29,9 @@ The confirmed earlier technology direction named Laravel 10, but this repository
 
 ## Implemented Features
 
+- Phase A academic foundation: additive academic-year, class-enrolment, subject, teaching-assignment, and nullable parent/student portal-link schema; `/api/v1` school context; scoped admin/teacher APIs; teacher assignment access; and transactional audit events.
+- Teacher, parent, and student role definitions coexist with the existing many-to-many RBAC. Existing Admin/Finance assignments are preserved, and foundation role management changes only those three new roles.
+
 - Session username authentication, CSRF-protected mutations, username-plus-IP login throttling, logout, `/me`, active-user request checks, roles, and permissions.
 - Permission-filtered navigation backed by authoritative route permissions.
 - Student list/search/filter/create/detail/backend update/status, with transactional audit events.
@@ -55,6 +58,9 @@ The confirmed earlier technology direction named Laravel 10, but this repository
 - Audit covers implemented critical authentication, student, agreement, Fee Record, payment, and receipt actions. Generic correction, recovery, and export are not implemented.
 
 ## Known Incomplete Features
+
+- Existing guardian links remain `unreviewed` with nullable access flags, and no live parent/student user association or enrolment history is inferred. Portal activation and production backfill require a separately approved workflow.
+- Mobile Web, Parent Finance, notifications, payment reminders, quiz, AI, Firebase, Capacitor, and native authentication remain unimplemented.
 
 - Parent CRUD, fee catalogue management, user/role management, password reset, and a global school selector.
 - Reports beyond Fee Record views, exports, statements, reminders, parent portal, and server-side PDF.

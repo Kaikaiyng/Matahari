@@ -27,9 +27,12 @@ return new class extends Migration
         });
 
         Schema::table('student_parent_links', function (Blueprint $table): void {
-            $table->dropUnique('student_parent_links_student_id_parent_id_relationship_unique');
             $table->unique(['student_id', 'parent_id', 'current_slot'], 'student_parent_links_current_unique');
             $table->index(['school_id', 'status'], 'student_parent_links_status_idx');
+        });
+
+        Schema::table('student_parent_links', function (Blueprint $table): void {
+            $table->dropUnique('student_parent_links_student_id_parent_id_relationship_unique');
         });
     }
 
@@ -46,9 +49,18 @@ return new class extends Migration
         }
 
         Schema::table('student_parent_links', function (Blueprint $table): void {
+            $table->unique(['student_id', 'parent_id', 'relationship']);
+        });
+
+        if (! in_array('student_parent_links_school_fk_idx', Schema::getIndexListing('student_parent_links'), true)) {
+            Schema::table('student_parent_links', function (Blueprint $table): void {
+                $table->index('school_id', 'student_parent_links_school_fk_idx');
+            });
+        }
+
+        Schema::table('student_parent_links', function (Blueprint $table): void {
             $table->dropIndex('student_parent_links_status_idx');
             $table->dropUnique('student_parent_links_current_unique');
-            $table->unique(['student_id', 'parent_id', 'relationship']);
         });
 
         Schema::table('student_parent_links', function (Blueprint $table): void {
@@ -63,11 +75,19 @@ return new class extends Migration
         });
 
         Schema::table('students', function (Blueprint $table): void {
-            $table->dropConstrainedForeignId('user_id');
+            $table->dropForeign(['user_id']);
+        });
+        Schema::table('students', function (Blueprint $table): void {
+            $table->dropUnique(['user_id']);
+            $table->dropColumn('user_id');
         });
 
         Schema::table('parents', function (Blueprint $table): void {
-            $table->dropConstrainedForeignId('user_id');
+            $table->dropForeign(['user_id']);
+        });
+        Schema::table('parents', function (Blueprint $table): void {
+            $table->dropUnique(['user_id']);
+            $table->dropColumn('user_id');
         });
     }
 };

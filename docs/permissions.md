@@ -12,7 +12,7 @@
 - **Not implemented:** No usable backend operation exists, even if a permission slug or placeholder appears.
 - **Needs confirmation:** Approved access policy is not established.
 
-Super Admin receives all 29 seeded permissions. The other seeded assignments are School Admin 23, Finance 16, and CEO 2. Stored slugs are `super-admin`, `school-admin`, `finance`, and `ceo`.
+Super Admin receives all seeded permissions. Stored role slugs now also include `teacher`, `parent`, and `student`; a user may hold multiple roles. Existing Finance and CEO grants remain unchanged.
 
 ## Role Matrix
 
@@ -52,6 +52,17 @@ Super Admin receives all 29 seeded permissions. The other seeded assignments are
 | View audit records | Allowed | Denied | Denied | Denied | `audit.view` on read-only list/detail routes; permission-filtered Audit Trail UI |
 | Perform generic audit correction | Not implemented | Not implemented | Not implemented | Not implemented | Super Admin has `audit.correct_generic`, but no correction workflow exists |
 | Change system settings | Not implemented | Not implemented | Not implemented | Not implemented | Settings page is a placeholder |
+
+Phase A permission defaults:
+
+- Super Admin: all Phase A permissions.
+- School Admin: academic year, subject, enrolment, teaching-assignment, portal-link, and foundation-role management.
+- Teacher: academic-year/subject read plus `teaching_scope.view`.
+- Parent: `parent.self_service` only; no Parent Finance API exists yet.
+- Student: `student.self_service` only; no student-finance permission.
+- Finance and CEO: no new Phase A permissions.
+
+Foundation role management synchronizes only `teacher`, `parent`, and `student`; it preserves existing roles such as Finance or School Admin.
 
 ## CEO Intended Versus Implemented Access
 

@@ -167,6 +167,8 @@ For a schema-changing release, also run explicit MariaDB lifecycle checks agains
 
 Validate any migration-specific rollback, foreign keys, exact indexes, JSON behavior, row locking, and concurrent financial paths relevant to the change. Stop on any unexpected schema definition or data loss.
 
+For Phase A, the MariaDB lifecycle must additionally inspect the exact nullable current-slot unique indexes, portal-user unique indexes, and all academic/portal foreign-key delete rules. The existing-data upgrade test must prove that no academic dates, enrolment history, identity association, or guardian access is inferred.
+
 ## Documentation Validation
 
 For documentation changes:

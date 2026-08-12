@@ -17,7 +17,7 @@ The schema has no currency column and amount-to-words currently assumes Ringgit.
 
 ## Schema Inventory
 
-The migrated schema contains 36 tables.
+The migrated schema contains 40 tables.
 
 | Area | Tables |
 | --- | --- |
@@ -29,6 +29,7 @@ The migrated schema contains 36 tables.
 | Fee Record and legacy invoices | `fee_record_charges`, `invoice_sequences`, `invoices`, `invoice_items` |
 | Payments and receipts | `payments`, `payment_allocations`, `receipt_sequences`, `receipts`, `receipt_items` |
 | School operations | `calendar_events` |
+| Academic foundation | `academic_years`, `class_enrolments`, `subjects`, `teaching_assignments` |
 
 ## Main Relationships
 
@@ -87,6 +88,8 @@ Verified uniqueness includes:
 - `(school_id, fee_agreement_item_id, billing_month)` for scheduled agreement-item Fee Record charges. Nullable agreement-item IDs keep separate manual charges possible.
 
 Important lookup indexes cover student status/class/level, agreement current lookup, Fee Record student/category/agreement-item month, payment date/student/status/reference, payment allocation targets, receipt payment/student/date/status, audit request/batch/module/action/time, and calendar school/start.
+
+Phase A adds nullable unique `parents.user_id` and `students.user_id` references without backfill. Guardian access/history fields are nullable for existing unreviewed links. The current enrolment unique key is `(school_id, academic_year_id, student_id, current_slot)`; historical rows use `NULL`. Teaching assignments use the equivalent nullable-current-slot pattern across school/year/class/subject/teacher.
 
 Known integrity gaps:
 
