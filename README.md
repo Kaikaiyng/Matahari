@@ -194,6 +194,8 @@ Parent/Student App uses the same three commands from `app/`.
 - [Testing and Release](docs/testing-and-release.md)
 - [Phase A Academic Foundation Delivery](docs/phase-a-academic-foundation.md)
 - [Mobile Product Architecture and Roadmap](docs/mobile-product-roadmap.md)
+- [MIS App Product Specification](docs/mobile-app-product-spec.md)
+- [MIS App Design System](DESIGN.md)
 - [Deployment Foundation](docs/deployment-foundation.md)
 - [Staging and Production Deployment Design](docs/superpowers/specs/2026-08-06-staging-production-deployment-design.md) — approved direction; repository foundation partially implemented
 - [Documentation Index](docs/README.md)

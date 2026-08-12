@@ -3,6 +3,8 @@ import { ApiError, apiRequest } from './api'
 import { MobileShell } from './components/MobileShell'
 import { ParentPortalView } from './components/ParentPortalView'
 import { StudentPortalView } from './components/StudentPortalView'
+import { TeacherPortalView } from './components/TeacherPortalView'
+import type { AppRole } from './components/MobileShell'
 import { PortalLogin } from './PortalLogin'
 
 export type CurrentUser = {
@@ -14,13 +16,11 @@ export type CurrentUser = {
   permissions: string[]
 }
 
-type PortalRole = 'parent' | 'student'
-
 function App() {
   const [authState, setAuthState] = useState<'checking' | 'guest' | 'authenticated'>('checking')
   const [user, setUser] = useState<CurrentUser | null>(null)
   const [activeTab, setActiveTab] = useState('home')
-  const [selectedRole, setSelectedRole] = useState<PortalRole | null>(null)
+  const [selectedRole, setSelectedRole] = useState<AppRole | null>(null)
 
   useEffect(() => {
     apiRequest<{ user: CurrentUser }>('/me')
@@ -36,11 +36,13 @@ function App() {
       })
   }, [])
 
-  const allowedRoles = useMemo<PortalRole[]>(() => {
+  const allowedRoles = useMemo<AppRole[]>(() => {
     if (!user) return []
     return [
       ...(user.roles.includes('parent') ? ['parent' as const] : []),
       ...(user.roles.includes('student') ? ['student' as const] : []),
+      ...(user.roles.includes('teacher') ? ['teacher' as const] : []),
+      ...(user.roles.some((role) => ['super-admin', 'school-admin'].includes(role)) ? ['staff' as const] : []),
     ]
   }, [user])
   const activeRole = selectedRole && allowedRoles.includes(selectedRole) ? selectedRole : allowedRoles[0]
@@ -79,9 +81,9 @@ function App() {
       userName={user.name}
       environment={environment}
     >
-      {activeRole === 'student'
-        ? <StudentPortalView studentName={user.name} activeTab={activeTab} />
-        : <ParentPortalView parentName={user.name} activeTab={activeTab} />}
+      {activeRole === 'student' && <StudentPortalView studentName={user.name} activeTab={activeTab} />}
+      {activeRole === 'parent' && <ParentPortalView parentName={user.name} activeTab={activeTab} onTabChange={setActiveTab} />}
+      {(activeRole === 'teacher' || activeRole === 'staff') && <TeacherPortalView teacherName={user.name} activeTab={activeTab} onTabChange={setActiveTab} staffMode={activeRole === 'staff'} />}
     </MobileShell>
   )
 }

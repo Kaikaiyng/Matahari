@@ -18,4 +18,5 @@ enum AuditSubject: string
     case TeachingAssignment = 'teaching_assignment';
     case Guardian = 'guardian';
     case StudentParentLink = 'student_parent_link';
+    case AttendanceSession = 'attendance_session';
 }

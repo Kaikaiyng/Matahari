@@ -37,9 +37,9 @@ export function PortalLogin({ onLogin }: { onLogin: (user: CurrentUser) => void 
     <main className="portal-login-page">
       <section className="portal-login-card" aria-labelledby="portal-login-title">
         <img src="/logo.jpeg" alt="Matahari International School" className="portal-login-logo" />
-        <p className="portal-login-eyebrow">Parent & Student App</p>
+        <p className="portal-login-eyebrow">MIS School Community</p>
         <h1 id="portal-login-title">Welcome to MIS</h1>
-        <p className="portal-login-copy">Sign in to view your linked school information.</p>
+        <p className="portal-login-copy">School life, learning, and family records in one private App.</p>
 
         <div className="portal-demo-accounts" aria-label="Demo accounts">
           <button type="button" onClick={() => selectDemo('rachel.wong')}>
@@ -47,6 +47,9 @@ export function PortalLogin({ onLogin }: { onLogin: (user: CurrentUser) => void 
           </button>
           <button type="button" onClick={() => selectDemo('alyssa.tan')}>
             <strong>Student demo</strong><span>Alyssa Tan</span>
+          </button>
+          <button type="button" onClick={() => selectDemo('teacher.lim')}>
+            <strong>Teacher demo</strong><span>Ms Lim</span>
           </button>
         </div>
 

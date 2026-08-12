@@ -31,14 +31,20 @@ describe('separate MIS portal app', () => {
     render(<App />)
 
     expect(await screen.findByRole('navigation', { name: 'Mobile Navigation' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'My Kids' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Children' })).toBeInTheDocument()
     expect(screen.queryByText('Admin Panel')).not.toBeInTheDocument()
   })
 
-  it('rejects an admin-only account from the portal surface', async () => {
+  it('renders the staff publishing shell for a school administrator', async () => {
     vi.spyOn(globalThis, 'fetch').mockImplementation(() => json({ user: { id: 1, name: 'Admin', username: 'admin', school_id: 1, roles: ['school-admin'], permissions: [] } }))
     render(<App />)
 
+    expect(await screen.findByRole('button', { name: 'Create' })).toBeInTheDocument()
+  })
+
+  it('rejects a finance-only account from the community App', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(() => json({ user: { id: 2, name: 'Finance', username: 'finance', school_id: 1, roles: ['finance'], permissions: [] } }))
+    render(<App />)
     expect(await screen.findByRole('heading', { name: 'App access unavailable' })).toBeInTheDocument()
   })
 })

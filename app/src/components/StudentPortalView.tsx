@@ -1,297 +1,43 @@
-import React, { useEffect, useState, useCallback } from 'react'
-import './ParentPortalView.css'
-import { portalApi, type StudentMe, type StudentEnrolment } from '../api/portalApi'
-import {
-  IconlyGraduationCap,
-  IconlyUsers,
-  IconlyCheck,
-} from './icons/IconlyIcons'
+import { useEffect, useState } from 'react'
+import { BookOpen, CalendarDays, ChevronRight, Clock3, GraduationCap, Lightbulb, LockKeyhole, PlayCircle, Sparkles, UserRound } from 'lucide-react'
+import { portalApi, type AttendanceRecord, type StudentEnrolment, type StudentMe } from '../api/portalApi'
+import { CommunityFeed } from './CommunityFeed'
 
-export interface StudentPortalViewProps {
-  studentName: string
-  activeTab: string
-}
-
-function LoadingSkeleton({ lines = 3 }: { lines?: number }) {
-  return (
-    <div className="portal-skeleton-wrap">
-      {Array.from({ length: lines }).map((_, i) => (
-        <div key={i} className="portal-skeleton-row" style={{ width: i === 0 ? '80%' : '60%' }} />
-      ))}
-    </div>
-  )
-}
-
-function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
-  return (
-    <div className="portal-error-state">
-      <span>⚠️</span>
-      <p>{message}</p>
-      <button onClick={onRetry} className="portal-retry-btn">Retry</button>
-    </div>
-  )
-}
-
-export const StudentPortalView: React.FC<StudentPortalViewProps> = ({ studentName, activeTab }) => {
-  const [studentData, setStudentData] = useState<StudentMe['data'] | null>(null)
+export function StudentPortalView({ studentName, activeTab }: { studentName: string; activeTab: string }) {
+  const [student, setStudent] = useState<StudentMe['data']>(null)
   const [enrolments, setEnrolments] = useState<StudentEnrolment[]>([])
+  const [attendance, setAttendance] = useState<AttendanceRecord[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [selectedDay, setSelectedDay] = useState<'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri'>('Tue')
-
-  const load = useCallback(async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      const [meResp, enrolResp] = await Promise.all([
-        portalApi.getStudentMe(),
-        portalApi.getStudentEnrolments(),
-      ])
-      setStudentData(meResp.data)
-      setEnrolments(enrolResp.data)
-    } catch {
-      setError('Unable to load student profile. Please try again.')
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    void load()
-  }, [load])
-
-  const displayName = studentData?.full_name ?? studentName
-
-  if (activeTab === 'academics') {
-    return (
-      <div className="parent-portal-view">
-        <h2 className="portal-section-title">My Subjects & Courses</h2>
-        {loading && <LoadingSkeleton lines={4} />}
-        {error && <ErrorState message={error} onRetry={load} />}
-        {!loading && !error && (
-          <>
-            {enrolments.map((enrolment) => (
-              <div key={enrolment.id}>
-                <div className="portal-balance-card" style={{ marginBottom: '12px' }}>
-                  <div className="child-name" style={{ fontSize: '15px' }}>
-                    {enrolment.academic_year?.name ?? enrolment.academic_year?.code ?? 'Academic Year'}
-                  </div>
-                  <div className="child-class">
-                    Class: {enrolment.class?.name ?? '—'} • {enrolment.status}
-                  </div>
-                </div>
-                {enrolment.subjects.length === 0 ? (
-                  <div className="portal-empty-state">No subjects assigned to this class yet.</div>
-                ) : (
-                  <div className="child-cards-container">
-                    {enrolment.subjects.map((sub, i) => (
-                      <div key={i} className="child-card" style={{ padding: '16px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                          <div style={{
-                            width: '42px', height: '42px', borderRadius: '12px',
-                            background: 'var(--brand-primary-soft, #fff1f2)',
-                            color: 'var(--brand-primary, #e11d48)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            flexShrink: 0,
-                          }}>
-                            <IconlyGraduationCap size={22} color="var(--brand-primary, #e11d48)" />
-                          </div>
-                          <div>
-                            <div className="child-name">{sub.subject_name ?? '—'}</div>
-                            <div className="child-class">
-                              {sub.subject_code ?? ''}{sub.teacher_name ? ` • Teacher: ${sub.teacher_name}` : ''}
-                            </div>
-                          </div>
-                        </div>
-                        <span
-                          style={{
-                            fontSize: '11px',
-                            background: '#dcfce7',
-                            color: '#15803d',
-                            padding: '3px 10px',
-                            borderRadius: '20px',
-                            fontWeight: 800,
-                          }}
-                        >
-                          Enrolled
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-            {enrolments.length === 0 && (
-              <div className="portal-empty-state">No active enrolments found.</div>
-            )}
-          </>
-        )}
-      </div>
-    )
-  }
-
-  if (activeTab === 'schedule') {
-    const scheduleDays: Array<{ day: 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri'; num: string }> = [
-      { day: 'Mon', num: '18' },
-      { day: 'Tue', num: '19' },
-      { day: 'Wed', num: '20' },
-      { day: 'Thu', num: '21' },
-      { day: 'Fri', num: '22' },
-    ]
-
-    return (
-      <div className="parent-portal-view">
-        <h2 className="portal-section-title">My Schedule</h2>
-        <div className="portal-demo-notice">
-          Demo timetable preview. Schedule records are not yet provided by the backend.
-        </div>
-
-        {/* Interactive Day Selector Chips */}
-        <div className="schedule-day-row">
-          {scheduleDays.map((d) => (
-            <div
-              key={d.day}
-              className={`schedule-day-chip ${selectedDay === d.day ? 'active' : ''}`}
-              onClick={() => setSelectedDay(d.day)}
-              style={{ cursor: 'pointer' }}
-            >
-              <span className="day-name">{d.day}</span>
-              <span className="day-num">{d.num}</span>
-            </div>
-          ))}
-        </div>
-
-        {loading && <LoadingSkeleton lines={4} />}
-
-        {!loading && (
-          <div className="schedule-timeline">
-            {/* Slot 1 */}
-            <div className="schedule-card-row">
-              <div className="schedule-time-col">
-                <span className="time-start">08:30 AM</span>
-                <span className="time-end">10:00 AM</span>
-              </div>
-              <div className="schedule-card">
-                <div className="schedule-subject">{selectedDay === 'Mon' ? 'Mathematics' : selectedDay === 'Wed' ? 'Physics' : 'Social Studies'}</div>
-                <div className="schedule-room">Building B3, Room 124</div>
-                <div className="schedule-teacher">
-                  <div className="teacher-avatar" style={{ background: '#f1f5f9', color: '#475569', display: 'grid', placeItems: 'center' }}>
-                    <IconlyUsers size={14} color="#475569" />
-                  </div>
-                  <span>Mrs. Goodman</span>
-                </div>
-              </div>
-            </div>
-
-            {/* NOW Banner Divider */}
-            {selectedDay === 'Tue' && (
-              <div className="schedule-now-divider">
-                <span>Now</span>
-                <div className="now-line" />
-              </div>
-            )}
-
-            {/* Slot 2 */}
-            <div className="schedule-card-row">
-              <div className="schedule-time-col">
-                <span className="time-start" style={{ color: selectedDay === 'Tue' ? 'var(--brand-primary, #e11d48)' : 'inherit' }}>10:30 AM</span>
-                <span className="time-end">12:00 PM</span>
-              </div>
-              <div className={`schedule-card ${selectedDay === 'Tue' ? 'schedule-card-now' : ''}`}>
-                <div className="schedule-subject">{selectedDay === 'Tue' ? 'English Literature' : 'Chemistry Lab'}</div>
-                <div className="schedule-room">Building B2, Room 158</div>
-                <div className="schedule-teacher">
-                  <div className="teacher-avatar" style={{ background: '#fff1f2', color: '#e11d48', display: 'grid', placeItems: 'center' }}>
-                    <IconlyUsers size={14} color="#e11d48" />
-                  </div>
-                  <span>Mrs. Melton</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Slot 3 */}
-            <div className="schedule-card-row">
-              <div className="schedule-time-col">
-                <span className="time-start">12:15 PM</span>
-                <span className="time-end">01:45 PM</span>
-              </div>
-              <div className="schedule-card">
-                <div className="schedule-subject">Computer Science</div>
-                <div className="schedule-room">Lab B3, Room 310</div>
-                <div className="schedule-teacher">
-                  <div className="teacher-avatar" style={{ background: '#f1f5f9', color: '#475569', display: 'grid', placeItems: 'center' }}>
-                    <IconlyUsers size={14} color="#475569" />
-                  </div>
-                  <span>Mr. Hodge</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    )
-  }
-
-  if (activeTab === 'profile') {
-    return (
-      <div className="parent-portal-view">
-        <div className="portal-welcome-card" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', position: 'relative', zIndex: 1 }}>
-            <div style={{
-              width: 56, height: 56, borderRadius: 18,
-              background: 'linear-gradient(135deg, #818cf8, #a78bfa)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 22, fontWeight: 800, color: '#fff',
-            }}>
-              {displayName.charAt(0)}
-            </div>
-            <div>
-              <div className="portal-welcome-title">{displayName}</div>
-              <div className="portal-welcome-sub">Student Portal Account</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="child-card" style={{ flexDirection: 'column', gap: '12px' }}>
-          <div style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>Student Enrolment Details</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px', color: '#475569' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <IconlyGraduationCap size={16} color="#64748b" /> Student No: {studentData?.student_no ?? 'MIS-2026-001'}
-            </span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <IconlyCheck size={16} color="#16a34a" /> Status: Enrolled & Active
-            </span>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // Home / Overview Tab
-  return (
-    <div className="parent-portal-view">
-      <div className="portal-welcome-card">
-        <div className="portal-welcome-title">Hello, {displayName}!</div>
-        <div className="portal-welcome-sub">Matahari Student Mobile Portal</div>
-      </div>
-
-      <h2 className="portal-section-title">My Current Class & Enrolments</h2>
-      {loading && <LoadingSkeleton lines={3} />}
-      {!loading && (
-        <div className="child-card" style={{ flexDirection: 'column', gap: '12px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ fontWeight: 700, fontSize: '15px', color: '#0f172a' }}>
-              {enrolments[0]?.class?.name ?? 'Class MB1'}
-            </div>
-            <span style={{ fontSize: '11px', background: '#dcfce7', color: '#15803d', padding: '2px 8px', borderRadius: '12px', fontWeight: 700 }}>
-              ACTIVE
-            </span>
-          </div>
-          <div style={{ fontSize: '12px', color: '#64748b' }}>
-            {enrolments[0]?.subjects.length ?? 3} Active Subjects Enrolled
-          </div>
-        </div>
-      )}
-    </div>
-  )
+  useEffect(() => { Promise.all([portalApi.getStudentMe(), portalApi.getStudentEnrolments(), portalApi.getStudentAttendance()]).then(([self, history, attendanceResponse]) => { setStudent(self.data); setEnrolments(history.data); setAttendance(attendanceResponse.data) }).finally(() => setLoading(false)) }, [])
+  if (activeTab === 'home') return <CommunityFeed role="student" userName={student?.full_name ?? studentName} />
+  if (loading) return <div className="record-page"><div className="app-skeleton large" /><div className="app-skeleton" /><div className="app-skeleton" /></div>
+  if (activeTab === 'learn') return <StudentLearn student={student} enrolments={enrolments} attendance={attendance} />
+  if (activeTab === 'quiz') return <StudentQuiz />
+  if (activeTab === 'schedule') return <StudentSchedule />
+  return <StudentMore student={student} fallbackName={studentName} />
 }
+
+function Title({ eyebrow, title, copy }: { eyebrow: string; title: string; copy: string }) { return <header className="record-page-title"><p>{eyebrow}</p><h1>{title}</h1><span>{copy}</span></header> }
+
+function StudentLearn({ student, enrolments, attendance }: { student: StudentMe['data']; enrolments: StudentEnrolment[]; attendance: AttendanceRecord[] }) {
+  const current = enrolments.find((item) => item.status === 'active') ?? enrolments[0]
+  const subjects = current?.subjects ?? []
+  const counts = { present: attendance.filter((item) => item.status === 'present').length, late: attendance.filter((item) => item.status === 'late').length, absent: attendance.filter((item) => item.status === 'absent').length }
+  return <div className="record-page"><Title eyebrow="My learning" title="Progress at a glance" copy={`${student?.class?.name ?? current?.class?.name ?? 'Current class'} · Published school records`} /><section className="student-progress-banner"><span><small>Recorded attendance</small><strong>{attendance.length}</strong><em>{counts.present} present · {counts.late} late · {counts.absent} absent</em></span><CalendarDays /></section><div className="section-heading"><span><b>My subjects</b><small>{subjects.length || 4} active subjects</small></span></div><div className="subject-list">{(subjects.length ? subjects : demoSubjects).map((subject, index) => <button type="button" key={`${subject.subject_id ?? index}-${subject.subject_name}`}><span className={`subject-mark mark-${index % 4}`}><BookOpen /></span><span><strong>{subject.subject_name}</strong><small>{subject.teacher_name ?? 'Teacher to be confirmed'}</small></span><span className="subject-score">{['A', 'A', 'B+', 'A-'][index % 4]}<small>Preview</small></span><ChevronRight /></button>)}</div><div className="section-heading"><span><b>Recent feedback</b><small>Design preview · not connected</small></span></div><article className="feedback-card"><Lightbulb /><div><strong>Example teacher feedback</strong><p>You connected each stage of the water cycle clearly. Next time, add one example from daily life.</p><small>Example content only</small></div></article></div>
+}
+
+const demoSubjects = [
+  { subject_id: 1, subject_code: 'MAT', subject_name: 'Mathematics', teacher_name: 'Ms Lim' },
+  { subject_id: 2, subject_code: 'SCI', subject_name: 'Science', teacher_name: 'Mr Arif' },
+  { subject_id: 3, subject_code: 'ENG', subject_name: 'English', teacher_name: 'Ms Wong' },
+  { subject_id: 4, subject_code: 'BM', subject_name: 'Bahasa Melayu', teacher_name: 'Cikgu Nadia' },
+]
+
+function StudentQuiz() {
+  return <div className="record-page"><Title eyebrow="Quiz" title="Test what you know" copy="Formal assignments and personal practice stay separate." /><section className="quiz-callout"><span className="quiz-icon"><GraduationCap /></span><div><small>Assigned by Ms Lim</small><h2>Fractions checkpoint</h2><p>10 questions · Multiple choice · Due Friday</p><span className="status-label warning">Not started</span></div><button type="button">Start quiz <ChevronRight /></button></section><div className="section-heading"><span><b>Assigned quizzes</b><small>Formal school work</small></span></div><button type="button" className="quiz-row"><span className="quiz-row-icon blue"><PlayCircle /></span><span><strong>Water cycle review</strong><small>Science · 8 questions</small></span><span className="status-label success">82%</span><ChevronRight /></button><button type="button" className="quiz-row"><span className="quiz-row-icon amber"><Clock3 /></span><span><strong>Grammar: past tense</strong><small>English · Due 19 August</small></span><span className="status-label neutral">Upcoming</span><ChevronRight /></button><div className="section-heading"><span><b>Practice quiz</b><small>Private · never part of formal grades</small></span></div><section className="practice-builder"><Sparkles /><h2>Build a personal practice</h2><p>Choose a subject, topic, difficulty, and question count. AI generation is not active.</p><div className="practice-options"><button type="button">Mathematics</button><button type="button">Science</button><button type="button">English</button></div><button type="button" className="secondary-action" disabled><LockKeyhole /> Practice generator coming later</button></section></div>
+}
+
+function StudentSchedule() { return <div className="record-page"><Title eyebrow="Schedule" title="Your school day" copy="Classes, events, and due dates in one timeline." /><div className="date-switcher"><button type="button">‹</button><span><strong>Tuesday</strong><small>12 August 2026</small></span><button type="button">›</button></div><section className="timeline"><ScheduleItem time="08:00" title="Mathematics" detail="Ms Lim · Room 3" active /><ScheduleItem time="09:15" title="English" detail="Ms Wong · Library" /><ScheduleItem time="10:30" title="Break" detail="30 minutes" muted /><ScheduleItem time="11:00" title="Science" detail="Mr Arif · Lab 1" /><ScheduleItem time="13:30" title="Art Club" detail="Studio · Bring sketchbook" /></section><div className="calendar-note"><CalendarDays /><span><strong>Family Sports Evening</strong><small>Friday · 5:00 PM · Main field</small></span></div></div> }
+function ScheduleItem({ time, title, detail, active, muted }: { time: string; title: string; detail: string; active?: boolean; muted?: boolean }) { return <div className={`timeline-row ${active ? 'active' : ''} ${muted ? 'muted' : ''}`}><time>{time}</time><i /><span><strong>{title}</strong><small>{detail}</small></span>{active && <b>Now</b>}</div> }
+
+function StudentMore({ student, fallbackName }: { student: StudentMe['data']; fallbackName: string }) { const name = student?.full_name ?? fallbackName; return <div className="record-page"><Title eyebrow="Account" title="Profile and settings" copy="Your private student access." /><section className="profile-card"><span className="profile-avatar">{name.split(' ').map((part) => part[0]).slice(0, 2).join('')}</span><h2>{name}</h2><p>{student?.student_no ?? 'Student account'} · {student?.class?.name ?? 'No class'}</p></section><section className="settings-list"><div><UserRound /><span><small>Role</small><strong>Student self-service</strong></span></div><button type="button"><span><small>Notifications</small><strong>School and class updates</strong></span><ChevronRight /></button><button type="button"><span><small>Privacy</small><strong>Community visibility information</strong></span><ChevronRight /></button></section></div> }

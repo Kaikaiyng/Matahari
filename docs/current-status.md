@@ -8,7 +8,7 @@
 
 **Current delivery branch:** `feature/split-admin-mobile-app` (not merged)
 
-**Overall status:** MIS-branded administration-finance demo MVP with Phase A foundations and separately built Admin and Parent/Student web clients; native/store delivery, production operations, and several business policies remain incomplete
+**Overall status:** MIS-branded administration-finance demo MVP with Phase A foundations, separately built Admin and multi-role Community App clients, and a first scoped daily-attendance slice; native/store delivery, production operations, and several product modules remain incomplete
 
 The Phase A commit above is on the unmerged delivery branch. The earlier white-label feature was delivered through [pull request #8](https://github.com/Kaikaiyng/Matahari/pull/8) and merged into `master` as `2f4c6bd199a7fae149658d3993aba370203746de` on 2026-08-04.
 
@@ -36,6 +36,12 @@ The reset command never runs automatically and must not be adapted to a database
 - Deployment contracts: 18 tests passed, covering both compiled clients in the release manifest and separate Admin/App Nginx services pointing at the shared backend.
 - Local HTTP checks passed for Admin `http://localhost:5173`, App `http://127.0.0.1:5174`, and both clients' proxied `/api/deployment-info` endpoint.
 - No migration or database schema changed in this split. MariaDB lifecycle was therefore not rerun; the earlier Phase A MariaDB evidence remains the applicable schema result.
+
+## 2026-08-12 Community App Direction
+
+The App is approved as a private school-community product: a relationship-scoped Feed with Teacher/Staff publishing, reactions and controlled comments; daily Attendance on a general session schema; published Assessment results; formal Teacher-assigned Quiz plus separate Student Practice Quiz; and read-only Parent Finance without a payment interface.
+
+The current working slice redesigns the Admin staff login and all App role surfaces. Daily Attendance is connected end to end: assigned Teachers load current rosters, submit `present`, `late`, `absent`, or `excused`, and must provide a reason for corrections; authorized Parents and the linked Student can read the resulting record. Attendance writes and their audit events share one transaction. Community persistence/media, Assessment results, formal Quiz, Practice Quiz generation, and Schedule remain clearly labelled UI previews rather than implemented backend modules. See [MIS App Product Specification](mobile-app-product-spec.md) and the root [Design System](../DESIGN.md).
 
 Later school-specific branding requires explicit approval and a controlled update to the presentation configuration and, if needed, a fresh disposable demo seed. It must not rename existing tenant data or rewrite financial history.
 

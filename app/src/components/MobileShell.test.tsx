@@ -24,6 +24,7 @@ vi.mock('../api/portalApi', () => ({
     getChildOutstanding: vi.fn().mockResolvedValue({ data: [] }),
     getChildPayments: vi.fn().mockResolvedValue({ data: [] }),
     getChildReceipts: vi.fn().mockResolvedValue({ data: [] }),
+    getChildAttendance: vi.fn().mockResolvedValue({ data: [] }),
     getStudentMe: vi.fn().mockResolvedValue({
       data: {
         id: 1,
@@ -36,6 +37,7 @@ vi.mock('../api/portalApi', () => ({
       },
     }),
     getStudentEnrolments: vi.fn().mockResolvedValue({ data: [] }),
+    getStudentAttendance: vi.fn().mockResolvedValue({ data: [] }),
     getNotifications: vi.fn().mockResolvedValue({ data: [], meta: { unread_count: 0 } }),
     markNotificationRead: vi.fn(),
     markAllNotificationsRead: vi.fn(),
@@ -54,34 +56,31 @@ describe('MobileShell & Portal Views', () => {
       </MobileShell>,
     )
 
-    expect(screen.getByText('staging')).toBeDefined()
-    expect(screen.getByText('S')).toBeDefined()
+    expect(screen.getByText('Preview environment')).toBeDefined()
+    expect(screen.getByText('Sarah')).toBeDefined()
     expect(screen.getByText('Home')).toBeDefined()
-    expect(screen.getByText('My Kids')).toBeDefined()
+    expect(screen.getByText('Children')).toBeDefined()
   })
 
   it('renders ParentPortalView home tab with welcome message (loading state)', () => {
-    render(<ParentPortalView parentName="Rachel Wong" activeTab="home" />)
+    render(<ParentPortalView parentName="Rachel Wong" activeTab="home" onTabChange={() => {}} />)
 
-    // Welcome greeting includes first name (format: "Good Morning/Afternoon/Evening, Rachel 👋")
+    // Welcome greeting includes first name.
     expect(screen.getByText(/Rachel/)).toBeDefined()
-    // Loading skeleton is shown while API is pending
-    expect(document.querySelector('.portal-skeleton-wrap')).toBeTruthy()
+    expect(screen.getByText('Community design preview · audience rules will be enforced by Laravel')).toBeDefined()
   })
 
   it('renders ParentPortalView finance tab in loading state', () => {
-    render(<ParentPortalView parentName="Rachel Wong" activeTab="finance" />)
+    render(<ParentPortalView parentName="Rachel Wong" activeTab="finance" onTabChange={() => {}} />)
 
-    // In loading state, shows a skeleton instead of 'Finance & Billing'
-    expect(document.querySelector('.portal-skeleton-wrap')).toBeTruthy()
+    expect(document.querySelector('.app-skeleton')).toBeTruthy()
   })
 
   it('renders StudentPortalView overview tab with welcome message (loading state)', () => {
     render(<StudentPortalView studentName="Alyssa Tan" activeTab="home" />)
 
-    expect(screen.getByText(/Hello, Alyssa Tan/)).toBeDefined()
-    // Loading skeleton is shown while API is pending
-    expect(document.querySelector('.portal-skeleton-wrap')).toBeTruthy()
+    expect(screen.getByText(/Hello, Alyssa/)).toBeDefined()
+    expect(screen.getByText('Community design preview · audience rules will be enforced by Laravel')).toBeDefined()
   })
 
   it('triggers onTabChange when bottom navigation item is clicked', () => {

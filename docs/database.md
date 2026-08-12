@@ -99,6 +99,10 @@ Parent Finance must continue to derive outstanding amounts from `fee_record_char
 
 The experimental portal adds `portal_notifications`, scoped by `school_id` and `recipient_user_id`, with JSON context and nullable read time. It does not add device tokens or push delivery. Later phases may add device and quiz tables only through separately reviewed additive migrations. Planned Quiz concepts remain flexible class/direct-student targets and materialized quiz recipients; their final keys, retention, and rollback behavior require MariaDB-specific review before implementation.
 
+The first Attendance slice adds `attendance_sessions` and `attendance_records` through an additive migration. Sessions are school/year/class scoped and use a school-unique key such as `daily:2026-08-12:class:4`; the general columns also leave room for later `lesson` and `event` sessions. Records enforce one row per session/student, use `present`, `late`, `absent`, or `excused`, retain the original marker, and preserve correction actor/reason/time. No historical attendance is inferred or backfilled.
+
+Other approved future App data domains include community posts/audiences/media/reactions/comments and academic terms/assessments/published results. These still require additive migrations, explicit school/relationship constraints, tested rollback order, and no inferred historical backfill. Approval of the product model does not imply that those tables already exist.
+
 Known integrity gaps:
 
 - Most status columns are unconstrained strings rather than enums/checks.
@@ -131,6 +135,8 @@ Therefore, do not claim end-to-end decimal safety. New financial logic should us
 | Payment | `pending_verification`, `verified`, `voided` |
 | Receipt | `issued`, `voided` |
 | Calendar type | `appointment`, `training`, `meeting`, `school_event`, `other` |
+| Attendance session | current UI writes `daily`; schema is prepared for later `lesson`, `event` |
+| Attendance record | `present`, `late`, `absent`, `excused` |
 
 The `custom` demo payment plan cannot be submitted through the current agreement API. This is a known data/API inconsistency.
 

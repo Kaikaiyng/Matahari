@@ -1,565 +1,70 @@
-import React, { useEffect, useState, useCallback } from 'react'
-import './ParentPortalView.css'
-import {
-  portalApi,
-  type PortalChild,
-  type OutstandingCharge,
-  type PortalPayment,
-  type PortalReceipt,
-} from '../api/portalApi'
-import {
-  IconlyFees,
-  IconlyCheck,
-  IconlyPhone,
-  IconlyMail,
-  IconlyUsers,
-} from './icons/IconlyIcons'
+import { useEffect, useMemo, useState } from 'react'
+import { AlertCircle, BookOpenCheck, CalendarCheck2, ChevronRight, Download, Mail, Phone, ReceiptText, UserRound } from 'lucide-react'
+import { portalApi, type AttendanceRecord, type GuardianMe, type OutstandingCharge, type PortalPayment, type PortalReceipt } from '../api/portalApi'
+import { CommunityFeed } from './CommunityFeed'
 
-export interface ParentPortalViewProps {
-  parentName: string
-  activeTab: string
+export function ParentPortalView({ parentName, activeTab, onTabChange }: { parentName: string; activeTab: string; onTabChange: (tab: string) => void }) {
+  const [guardian, setGuardian] = useState<GuardianMe | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  useEffect(() => { portalApi.getGuardianMe().then(setGuardian).catch(() => setError('Unable to load your linked children.')).finally(() => setLoading(false)) }, [])
+
+  if (activeTab === 'home') return <CommunityFeed role="parent" userName={parentName} onOpenFinance={() => onTabChange('finance')} />
+  if (loading) return <PageLoading />
+  if (error) return <PageError message={error} />
+
+  const children = guardian?.children ?? []
+  if (activeTab === 'children') return <ChildrenPage children={children} />
+  if (activeTab === 'academics') return <ParentAcademics children={children} />
+  if (activeTab === 'finance') return <ParentFinance children={children} />
+  return <ParentMore name={guardian?.data?.full_name ?? parentName} phone={guardian?.data?.phone} email={guardian?.data?.email} childrenCount={children.length} />
 }
 
-const ACADEMIC_YEAR = new Date().getFullYear().toString()
-
-function formatMYR(amount: number): string {
-  return `RM ${amount.toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+function PageTitle({ eyebrow, title, copy }: { eyebrow: string; title: string; copy: string }) {
+  return <header className="record-page-title"><p>{eyebrow}</p><h1>{title}</h1><span>{copy}</span></header>
 }
 
-function LoadingSkeleton({ lines = 3 }: { lines?: number }) {
-  return (
-    <div className="portal-skeleton-wrap">
-      {Array.from({ length: lines }).map((_, i) => (
-        <div key={i} className="portal-skeleton-row" style={{ width: i === 0 ? '80%' : '60%' }} />
-      ))}
-    </div>
-  )
+function PageLoading() { return <div className="record-page"><div className="app-skeleton large" /><div className="app-skeleton" /><div className="app-skeleton" /></div> }
+function PageError({ message }: { message: string }) { return <div className="record-page"><div className="app-empty"><AlertCircle /><h2>We could not load this page</h2><p>{message}</p></div></div> }
+
+function ChildrenPage({ children }: { children: GuardianMe['children'] }) {
+  return <div className="record-page"><PageTitle eyebrow="Family" title="Your children" copy="School information for children linked to your account." />{children.length === 0 ? <div className="app-empty"><UserRound /><h2>No linked children</h2><p>Ask the school office to review your guardian link.</p></div> : children.map((child) => <article className="child-overview" key={child.id}><div className="child-identity"><span className="student-avatar">{child.full_name.split(' ').map((part) => part[0]).slice(0, 2).join('')}</span><span><strong>{child.full_name}</strong><small>{child.class?.name ?? 'Class not assigned'} · {child.student_no}</small></span><span className="status-label success">Active</span></div><div className="child-snapshot"><div><CalendarCheck2 /><span><small>Academics</small><strong>{child.can_view_academics ? 'Available' : 'Restricted'}</strong></span></div><div><ReceiptText /><span><small>Finance</small><strong>{child.can_view_finance ? 'Available' : 'Restricted'}</strong></span></div></div></article>)}</div>
 }
 
-function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
-  return (
-    <div className="portal-error-state">
-      <span>⚠️</span>
-      <p>{message}</p>
-      <button onClick={onRetry} className="portal-retry-btn">Retry</button>
-    </div>
-  )
+function ParentAcademics({ children }: { children: GuardianMe['children'] }) {
+  const academicChildren = useMemo(() => children.filter((child) => child.can_view_academics), [children])
+  const [selectedId, setSelectedId] = useState(academicChildren[0]?.id ?? 0)
+  const [attendance, setAttendance] = useState<AttendanceRecord[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const child = academicChildren.find((item) => item.id === selectedId)
+  useEffect(() => {
+    if (!selectedId) return
+    setLoading(true)
+    setError('')
+    portalApi.getChildAttendance(selectedId).then((response) => setAttendance(response.data)).catch(() => setError('Unable to load attendance records.')).finally(() => setLoading(false))
+  }, [selectedId])
+  const counts = countAttendance(attendance)
+  return <div className="record-page"><PageTitle eyebrow="Academics" title="Learning progress" copy="Attendance is live. Results below remain a clearly marked design preview." /><ChildSelector children={academicChildren} selectedId={selectedId} onChange={setSelectedId} />{child ? <>{loading ? <div className="app-skeleton" /> : <section className="attendance-hero"><div><small>Recorded sessions</small><strong>{attendance.length}</strong><span>Attendance</span></div><div className="attendance-bars" aria-label={`${counts.present} present, ${counts.late} late, ${counts.absent} absent`}><i className="present" style={{ width: `${percent(counts.present, attendance.length)}%` }} /><i className="late" style={{ width: `${percent(counts.late, attendance.length)}%` }} /><i className="absent" style={{ width: `${percent(counts.absent, attendance.length)}%` }} /></div><p><span>{counts.present} Present</span><span>{counts.late} Late</span><span>{counts.absent} Absent</span></p>{error && <small className="form-error">{error}</small>}</section>}<div className="section-heading"><span><b>Published results</b><small>Design preview · not connected</small></span></div><ResultRow subject="Science" assessment="Water Cycle Project" score="86 / 100" grade="A" /><ResultRow subject="Mathematics" assessment="Fractions Quiz" score="18 / 20" grade="A" /><ResultRow subject="English" assessment="Reading Response" score="42 / 50" grade="B+" /><div className="teacher-note"><strong>Teacher note · Design preview</strong><p>{child.full_name} explains ideas clearly and is growing more confident when presenting to the class.</p><small>Example content only</small></div></> : <div className="app-empty"><BookOpenCheck /><h2>No academic access</h2><p>No linked child with reviewed academic access is available.</p></div>}</div>
 }
 
-// ─── Finance Tab ──────────────────────────────────────────────────────────────
-function FinanceTab({ childrenList }: { childrenList: PortalChild[] }) {
-  const [selectedChild, setSelectedChild] = useState<PortalChild | null>(childrenList[0] ?? null)
-  const [outstanding, setOutstanding] = useState<OutstandingCharge[]>([])
+function ResultRow({ subject, assessment, score, grade }: { subject: string; assessment: string; score: string; grade: string }) { return <button type="button" className="result-row"><span><strong>{subject}</strong><small>{assessment}</small></span><b>{score}</b><i>{grade}</i><ChevronRight /></button> }
+
+function ChildSelector({ children, selectedId, onChange }: { children: GuardianMe['children']; selectedId: number; onChange: (id: number) => void }) { return children.length > 1 ? <label className="child-selector"><span>Viewing</span><select value={selectedId} onChange={(event) => onChange(Number(event.target.value))}>{children.map((child) => <option key={child.id} value={child.id}>{child.full_name} · {child.class?.name ?? 'No class'}</option>)}</select></label> : children[0] ? <div className="selected-child"><span className="student-avatar small">{children[0].full_name[0]}</span><span><strong>{children[0].full_name}</strong><small>{children[0].class?.name ?? 'No class'}</small></span></div> : null }
+
+function ParentFinance({ children }: { children: GuardianMe['children'] }) {
+  const financeChildren = useMemo(() => children.filter((child) => child.can_view_finance), [children])
+  const [selectedId, setSelectedId] = useState(financeChildren[0]?.id ?? 0)
+  const [charges, setCharges] = useState<OutstandingCharge[]>([])
   const [payments, setPayments] = useState<PortalPayment[]>([])
   const [receipts, setReceipts] = useState<PortalReceipt[]>([])
-  const [selectedReceipt, setSelectedReceipt] = useState<PortalReceipt | null>(null)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  // Payment Drawer Modal State
-  const [isPayModalOpen, setIsPayModalOpen] = useState(false)
-  const [paymentMethod, setPaymentMethod] = useState<'fpx' | 'card' | 'ewallet'>('fpx')
-  const [selectedBank, setSelectedBank] = useState('Maybank2u')
-  const [paying, setPaying] = useState(false)
-  const [paySuccessMsg, setPaySuccessMsg] = useState<string | null>(null)
-
-  const loadData = useCallback(async (child: PortalChild) => {
-    if (!child.can_view_finance) return
-    try {
-      setLoading(true)
-      setError(null)
-      const [outResp, payResp, recResp] = await Promise.all([
-        portalApi.getChildOutstanding(child.id, ACADEMIC_YEAR),
-        portalApi.getChildPayments(child.id),
-        portalApi.getChildReceipts(child.id),
-      ])
-      setOutstanding(outResp.data)
-      setPayments(payResp.data)
-      setReceipts(recResp.data)
-    } catch {
-      setError('Unable to load finance data. Please try again.')
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    if (selectedChild) void loadData(selectedChild)
-  }, [selectedChild, loadData])
-
-  const totalOutstanding = outstanding.reduce((sum, c) => sum + c.outstanding_amount, 0)
-  const financeChildren = childrenList.filter((c) => c.can_view_finance)
-
-  // Demo-only preview. No payment endpoint is called and no financial record is created.
-  const handleConfirmPayment = () => {
-    setPaying(true)
-    setTimeout(() => {
-      setPaying(false)
-      setIsPayModalOpen(false)
-
-      setPaySuccessMsg('Demo preview only: no payment or payment notice was submitted or saved.')
-
-      setTimeout(() => setPaySuccessMsg(null), 10000)
-    }, 1000)
-  }
-
-  return (
-    <div className="parent-portal-view">
-      <h2 className="portal-section-title">Finance & Billing</h2>
-
-      {paySuccessMsg && (
-        <div style={{
-          background: '#dcfce7',
-          color: '#15803d',
-          padding: '14px 16px',
-          borderRadius: '14px',
-          fontSize: '13px',
-          fontWeight: 700,
-          border: '1px solid #bbf7d0',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '10px'
-        }}>
-          <IconlyCheck size={18} color="#15803d" />
-          <span>{paySuccessMsg}</span>
-        </div>
-      )}
-
-      {financeChildren.length > 1 && (
-        <div className="portal-child-selector">
-          {financeChildren.map((c) => (
-            <button
-              key={c.id}
-              className={`portal-child-pill ${selectedChild?.id === c.id ? 'active' : ''}`}
-              onClick={() => setSelectedChild(c)}
-            >
-              {c.full_name.split(' ')[0]}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {!selectedChild?.can_view_finance && (
-        <div className="portal-info-card">
-          <span>🔒</span>
-          <p>Finance access is not enabled for this child.</p>
-        </div>
-      )}
-
-      {selectedChild?.can_view_finance && loading && <LoadingSkeleton lines={4} />}
-      {selectedChild?.can_view_finance && error && (
-        <ErrorState message={error} onRetry={() => selectedChild && void loadData(selectedChild)} />
-      )}
-
-      {selectedChild?.can_view_finance && !loading && !error && (
-        <>
-          <div className="portal-balance-card">
-            <div className="portal-balance-header">
-              <span>Outstanding Balance — {selectedChild.full_name}</span>
-              {totalOutstanding > 0 && (
-                <span className="portal-balance-badge-danger">Action Required</span>
-              )}
-            </div>
-            <div className="portal-balance-amount">{formatMYR(totalOutstanding)}</div>
-            {totalOutstanding === 0 ? (
-              <div style={{ fontSize: '13px', color: '#16a34a', marginTop: '6px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <IconlyCheck size={16} color="#16a34a" /> All fees are fully settled
-              </div>
-            ) : (
-              <button
-                type="button"
-                className="portal-pay-now-btn"
-                onClick={() => setIsPayModalOpen(true)}
-                style={{
-                  marginTop: '14px',
-                  width: '100%',
-                  background: 'var(--brand-primary, #e11d48)',
-                  color: '#ffffff',
-                  border: 'none',
-                  padding: '12px 16px',
-                  borderRadius: '12px',
-                  fontSize: '14px',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  boxShadow: '0 4px 12px rgba(225, 29, 72, 0.25)'
-                }}
-              >
-                <IconlyFees size={18} color="#fff" />
-                <span>Preview Payment Notice ({formatMYR(totalOutstanding)})</span>
-              </button>
-            )}
-          </div>
-
-          {outstanding.filter((c) => c.outstanding_amount > 0).length > 0 && (
-            <>
-              <h3 className="portal-section-title">Outstanding Charges</h3>
-              {outstanding
-                .filter((c) => c.outstanding_amount > 0)
-                .map((charge) => (
-                  <div key={charge.id} className="child-card">
-                    <div>
-                      <div className="child-name">{charge.description}</div>
-                      <div className="child-class">{charge.billing_month} • {charge.fee_code}</div>
-                    </div>
-                    <div style={{ fontWeight: 700, color: '#dc2626', fontSize: '13px' }}>
-                      {formatMYR(charge.outstanding_amount)}
-                    </div>
-                  </div>
-                ))}
-            </>
-          )}
-
-          <h3 className="portal-section-title">Payment Submissions & History</h3>
-          {payments.length === 0 ? (
-            <div className="portal-empty-state">No payment records found.</div>
-          ) : (
-            payments.map((payment) => (
-              <div key={payment.id} className="child-card">
-                <div>
-                  <div className="child-name" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span>{payment.issued_receipt?.receipt_no ?? `Payment Submission (${payment.payment_date})`}</span>
-                    {payment.status === 'pending' && (
-                      <span style={{ fontSize: '10px', background: '#fef3c7', color: '#92400e', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>
-                        ⏳ Pending Verification
-                      </span>
-                    )}
-                  </div>
-                  <div className="child-class">
-                    {payment.payment_date} • {payment.payment_method ?? '—'}
-                    {payment.paid_by ? ` • by ${payment.paid_by}` : ''}
-                  </div>
-                </div>
-                <div style={{ fontWeight: 700, color: payment.status === 'pending' ? '#d97706' : '#16a34a', fontSize: '13px' }}>
-                  {formatMYR(payment.amount)}
-                </div>
-              </div>
-            ))
-          )}
-
-          <h3 className="portal-section-title">Receipts</h3>
-          {receipts.length === 0 ? (
-            <div className="portal-empty-state">No receipts found.</div>
-          ) : (
-            receipts.map((receipt) => (
-              <div
-                key={receipt.id}
-                className="child-card child-card-clickable"
-                onClick={() => setSelectedReceipt(receipt)}
-              >
-                <div>
-                  <div className="child-name">{receipt.receipt_no}</div>
-                  <div className="child-class">{receipt.receipt_date} • {receipt.payment_method ?? '—'}</div>
-                </div>
-                <div style={{ fontWeight: 700, color: '#16a34a', fontSize: '13px' }}>
-                  {formatMYR(receipt.amount)} ›
-                </div>
-              </div>
-            ))
-          )}
-        </>
-      )}
-
-      {/* Pay Now Drawer Modal */}
-      {isPayModalOpen && (
-        <div className="portal-modal-overlay" onClick={() => setIsPayModalOpen(false)}>
-          <div className="portal-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '440px' }}>
-            <div className="portal-modal-header">
-              <h3>Payment Notice Preview — {selectedChild?.full_name}</h3>
-              <button onClick={() => setIsPayModalOpen(false)} className="portal-modal-close">✕</button>
-            </div>
-
-            <div style={{ padding: '16px 0' }}>
-              <div className="portal-demo-notice">
-                Demo only. Confirming this preview will not create a payment, upload proof, or change the balance.
-              </div>
-              <div style={{ background: '#f8fafc', padding: '12px 16px', borderRadius: '12px', marginBottom: '16px', border: '1px solid #e2e8f0' }}>
-                <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>Total Amount Due</div>
-                <div style={{ fontSize: '24px', fontWeight: 800, color: '#0f172a' }}>{formatMYR(totalOutstanding)}</div>
-              </div>
-
-              <div style={{ fontSize: '13px', fontWeight: 700, color: '#334155', marginBottom: '10px' }}>Select Payment Method:</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
-                <label style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px',
-                  borderRadius: '10px', border: paymentMethod === 'fpx' ? '2px solid var(--brand-primary, #e11d48)' : '1px solid #cbd5e1',
-                  background: paymentMethod === 'fpx' ? '#fff1f2' : '#fff', cursor: 'pointer'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', fontWeight: 600 }}>
-                    <input type="radio" name="payMethod" checked={paymentMethod === 'fpx'} onChange={() => setPaymentMethod('fpx')} />
-                    <span>🏦 FPX Online Banking</span>
-                  </div>
-                  {paymentMethod === 'fpx' && (
-                    <select
-                      value={selectedBank}
-                      onChange={(e) => setSelectedBank(e.target.value)}
-                      style={{ padding: '4px 8px', borderRadius: '6px', fontSize: '12px', border: '1px solid #cbd5e1' }}
-                    >
-                      <option value="Maybank2u">Maybank2u</option>
-                      <option value="CIMB Clicks">CIMB Clicks</option>
-                      <option value="Public Bank">Public Bank</option>
-                      <option value="RHB Online">RHB Online</option>
-                    </select>
-                  )}
-                </label>
-
-                <label style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px',
-                  borderRadius: '10px', border: paymentMethod === 'card' ? '2px solid var(--brand-primary, #e11d48)' : '1px solid #cbd5e1',
-                  background: paymentMethod === 'card' ? '#fff1f2' : '#fff', cursor: 'pointer'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', fontWeight: 600 }}>
-                    <input type="radio" name="payMethod" checked={paymentMethod === 'card'} onChange={() => setPaymentMethod('card')} />
-                    <span>💳 Credit / Debit Card (Visa / Mastercard)</span>
-                  </div>
-                </label>
-
-                <label style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px',
-                  borderRadius: '10px', border: paymentMethod === 'ewallet' ? '2px solid var(--brand-primary, #e11d48)' : '1px solid #cbd5e1',
-                  background: paymentMethod === 'ewallet' ? '#fff1f2' : '#fff', cursor: 'pointer'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', fontWeight: 600 }}>
-                    <input type="radio" name="payMethod" checked={paymentMethod === 'ewallet'} onChange={() => setPaymentMethod('ewallet')} />
-                    <span>📱 Touch 'n Go / GrabPay eWallet</span>
-                  </div>
-                </label>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleConfirmPayment}
-                disabled={paying}
-                style={{
-                  width: '100%',
-                  background: 'var(--brand-primary, #e11d48)',
-                  color: '#ffffff',
-                  border: 'none',
-                  padding: '14px',
-                  borderRadius: '12px',
-                  fontSize: '15px',
-                  fontWeight: 700,
-                  cursor: paying ? 'not-allowed' : 'pointer',
-                  opacity: paying ? 0.7 : 1
-                }}
-              >
-                {paying ? 'Preparing Preview...' : `Confirm Demo Preview (${formatMYR(totalOutstanding)})`}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Receipt detail modal */}
-      {selectedReceipt && (
-        <div className="portal-modal-overlay" onClick={() => setSelectedReceipt(null)}>
-          <div className="portal-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="portal-modal-header">
-              <h3>{selectedReceipt.receipt_no}</h3>
-              <button onClick={() => setSelectedReceipt(null)} className="portal-modal-close">✕</button>
-            </div>
-            <div className="portal-modal-meta">
-              <span>{selectedReceipt.receipt_date}</span>
-              <span>{selectedReceipt.payment_method ?? '—'}</span>
-              {selectedReceipt.paid_by && <span>Paid by: {selectedReceipt.paid_by}</span>}
-            </div>
-            <div className="portal-modal-items">
-              {selectedReceipt.items.map((item, i) => (
-                <div key={i} className="portal-modal-item">
-                  <div>
-                    <div className="child-name" style={{ fontSize: '13px' }}>{item.description}</div>
-                    <div className="child-class">{item.fee_code}</div>
-                  </div>
-                  <div style={{ fontWeight: 600, fontSize: '13px' }}>{formatMYR(item.amount)}</div>
-                </div>
-              ))}
-            </div>
-            <div className="portal-modal-total">
-              Total: <strong>{formatMYR(selectedReceipt.amount)}</strong>
-            </div>
-            <div className="portal-modal-status" style={{ color: selectedReceipt.status === 'void' ? '#dc2626' : '#16a34a' }}>
-              Status: {selectedReceipt.status.toUpperCase()}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  )
+  useEffect(() => { if (!selectedId) return; setLoading(true); Promise.all([portalApi.getChildOutstanding(selectedId, '2026'), portalApi.getChildPayments(selectedId), portalApi.getChildReceipts(selectedId)]).then(([chargeResponse, paymentResponse, receiptResponse]) => { setCharges(chargeResponse.data); setPayments(paymentResponse.data); setReceipts(receiptResponse.data) }).catch(() => { setCharges([]); setPayments([]); setReceipts([]) }).finally(() => setLoading(false)) }, [selectedId])
+  const total = charges.reduce((sum, charge) => sum + Number(charge.outstanding_amount), 0)
+  return <div className="record-page"><PageTitle eyebrow="Finance" title="School account" copy="Read-only records from the MIS finance ledger. No online payment is offered." /><ChildSelector children={financeChildren} selectedId={selectedId} onChange={setSelectedId} />{financeChildren.length === 0 ? <div className="app-empty"><ReceiptText /><h2>Finance access unavailable</h2><p>No reviewed guardian link grants finance access.</p></div> : loading ? <PageLoading /> : <><section className="finance-balance"><small>Outstanding balance</small><strong>{money(total)}</strong><span>{charges.length} open charge{charges.length === 1 ? '' : 's'}</span></section><section className="record-section"><div className="section-heading"><span><b>Outstanding items</b><small>Academic year 2026</small></span></div>{charges.length ? charges.map((charge) => <div className="finance-row" key={charge.id}><span><strong>{charge.description}</strong><small>{charge.billing_month} · {charge.fee_code}</small></span><b>{money(Number(charge.outstanding_amount))}</b></div>) : <p className="quiet-empty">No outstanding charges.</p>}</section><section className="record-section"><div className="section-heading"><span><b>Verified payments</b><small>{payments.length} records</small></span></div>{payments.slice(0, 3).map((payment) => <div className="finance-row" key={payment.id}><span><strong>{payment.issued_receipt?.receipt_no ?? 'Verified payment'}</strong><small>{payment.payment_date} · {payment.payment_method ?? 'Method not recorded'}</small></span><b>{money(Number(payment.amount))}</b></div>)}{payments.length === 0 && <p className="quiet-empty">No verified payments found.</p>}</section><section className="record-section"><div className="section-heading"><span><b>Receipts</b><small>Official MIS records</small></span></div>{receipts.slice(0, 3).map((receipt) => <button className="receipt-row" key={receipt.id} type="button"><ReceiptText /><span><strong>{receipt.receipt_no}</strong><small>{receipt.receipt_date}</small></span><b>{money(Number(receipt.amount))}</b><Download /></button>)}{receipts.length === 0 && <p className="quiet-empty">No receipts found.</p>}</section></>}</div>
 }
 
-// ─── Children Tab ──────────────────────────────────────────────────────────────
-function ChildrenTab({ childrenList }: { childrenList: PortalChild[] }) {
-  return (
-    <div className="parent-portal-view">
-      <h2 className="portal-section-title">My Children</h2>
-      {childrenList.length === 0 ? (
-        <div className="portal-empty-state">No linked children found.</div>
-      ) : (
-        <div className="child-cards-container">
-          {childrenList.map((child) => (
-            <div key={child.id} className="child-card" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '14px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div className="child-info">
-                  <div className="child-avatar-icon" style={{ background: 'var(--brand-primary-soft, #fff1f2)', color: 'var(--brand-primary, #e11d48)' }}>
-                    {child.full_name.charAt(0)}
-                  </div>
-                  <div>
-                    <div className="child-name" style={{ fontSize: '15px' }}>{child.full_name}</div>
-                    <div className="child-class">
-                      {child.class?.name ?? 'No class'} • {child.student_no}
-                    </div>
-                    <div className="portal-access-flags" style={{ marginTop: '4px' }}>
-                      {child.can_view_finance && <span className="portal-access-tag">💳 Finance</span>}
-                      {child.can_view_academics && <span className="portal-access-tag">📚 Academics</span>}
-                    </div>
-                  </div>
-                </div>
-                <span
-                  style={{
-                    fontSize: '11px',
-                    background: child.status === 'active' ? '#dcfce7' : '#f1f5f9',
-                    color: child.status === 'active' ? '#15803d' : '#64748b',
-                    padding: '3px 10px',
-                    borderRadius: '12px',
-                    fontWeight: 700,
-                  }}
-                >
-                  {child.status.toUpperCase()}
-                </span>
-              </div>
-
-              {/* Demo-only attendance and feedback until an approved attendance module exists. */}
-              <div style={{ background: '#f8fafc', padding: '12px 14px', borderRadius: '12px', border: '1px solid #f1f5f9' }}>
-                <div className="portal-demo-label">Demo academic preview</div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>
-                  <span style={{ color: '#475569' }}>Attendance Rate</span>
-                  <span style={{ color: '#16a34a' }}>98.5% (Excellent)</span>
-                </div>
-                <div style={{ width: '100%', height: '6px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden', marginBottom: '10px' }}>
-                  <div style={{ width: '98.5%', height: '100%', background: '#16a34a', borderRadius: '4px' }} />
-                </div>
-                <div style={{ fontSize: '12px', color: '#64748b', fontStyle: 'italic' }}>
-                  💬 "Showing excellent enthusiasm and active participation in class activities."
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ─── Main Component ───────────────────────────────────────────────────────────
-export const ParentPortalView: React.FC<ParentPortalViewProps> = ({ parentName, activeTab }) => {
-  const [guardianData, setGuardianData] = useState<{ full_name: string } | null>(null)
-  const [children, setChildren] = useState<PortalChild[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  const load = useCallback(async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      const resp = await portalApi.getGuardianMe()
-      setGuardianData(resp.data)
-      setChildren(resp.children)
-    } catch {
-      setError('Unable to load guardian profile. Please try again.')
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    void load()
-  }, [load])
-
-  if (activeTab === 'finance') {
-    if (loading) return <div className="parent-portal-view"><LoadingSkeleton lines={5} /></div>
-    if (error) return <div className="parent-portal-view"><ErrorState message={error} onRetry={load} /></div>
-    return <FinanceTab childrenList={children} />
-  }
-
-  if (activeTab === 'children') {
-    if (loading) return <div className="parent-portal-view"><LoadingSkeleton lines={4} /></div>
-    if (error) return <div className="parent-portal-view"><ErrorState message={error} onRetry={load} /></div>
-    return <ChildrenTab childrenList={children} />
-  }
-
-  if (activeTab === 'profile') {
-    const displayName = loading ? parentName : (guardianData?.full_name ?? parentName)
-    return (
-      <div className="parent-portal-view">
-        {/* Profile hero */}
-        <div className="portal-welcome-card" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', position: 'relative', zIndex: 1 }}>
-            <div style={{
-              width: 56, height: 56, borderRadius: 18,
-              background: 'linear-gradient(135deg, #818cf8, #a78bfa)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 22, fontWeight: 800, color: '#fff',
-            }}>
-              {displayName.charAt(0)}
-            </div>
-            <div>
-              <div className="portal-welcome-title">{displayName}</div>
-              <div className="portal-welcome-sub">Parent / Guardian Portal Account</div>
-            </div>
-          </div>
-        </div>
-
-        <div className="child-card" style={{ flexDirection: 'column', gap: '12px' }}>
-          <div style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>Account Information</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px', color: '#475569' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <IconlyPhone size={16} color="#64748b" /> +60 12-888 7777
-            </span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <IconlyMail size={16} color="#64748b" /> rachel.wong@example.com
-            </span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <IconlyUsers size={16} color="#64748b" /> {children.length} Linked Children
-            </span>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // Home Dashboard
-  const displayName = loading ? parentName : (guardianData?.full_name ?? parentName)
-  return (
-    <div className="parent-portal-view">
-      <div className="portal-welcome-card">
-        <div className="portal-welcome-title">Welcome back, {displayName}!</div>
-        <div className="portal-welcome-sub">MIS Parent & Guardian Mobile Portal</div>
-      </div>
-
-      <h2 className="portal-section-title">My Children</h2>
-      {loading && <LoadingSkeleton lines={3} />}
-      {!loading && children.length === 0 && (
-        <div className="portal-empty-state">No children linked to your account.</div>
-      )}
-      {!loading && children.length > 0 && (
-        <div className="child-cards-container">
-          {children.map((child) => (
-            <div key={child.id} className="child-card">
-              <div className="child-info">
-                <div className="child-avatar-icon">{child.full_name.charAt(0)}</div>
-                <div>
-                  <div className="child-name">{child.full_name}</div>
-                  <div className="child-class">{child.class?.name ?? 'No class'} • {child.student_no}</div>
-                </div>
-              </div>
-              <span className="child-status-badge">{child.status}</span>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
+function ParentMore({ name, phone, email, childrenCount }: { name: string; phone?: string | null; email?: string | null; childrenCount: number }) { return <div className="record-page"><PageTitle eyebrow="Account" title="Profile and settings" copy="Your private MIS App access." /><section className="profile-card"><span className="profile-avatar">{name.split(' ').map((part) => part[0]).slice(0, 2).join('')}</span><h2>{name}</h2><p>Parent · {childrenCount} linked child{childrenCount === 1 ? '' : 'ren'}</p></section><section className="settings-list"><div><Phone /><span><small>Phone</small><strong>{phone ?? 'Not provided'}</strong></span></div><div><Mail /><span><small>Email</small><strong>{email ?? 'Not provided'}</strong></span></div><button type="button"><span><small>Notifications</small><strong>App notification preferences</strong></span><ChevronRight /></button><button type="button"><span><small>Privacy</small><strong>Community and media information</strong></span><ChevronRight /></button></section></div> }
+function money(value: number) { return new Intl.NumberFormat('en-MY', { style: 'currency', currency: 'MYR' }).format(value) }
+function countAttendance(records: AttendanceRecord[]) { return { present: records.filter((item) => item.status === 'present').length, late: records.filter((item) => item.status === 'late').length, absent: records.filter((item) => item.status === 'absent').length } }
+function percent(value: number, total: number) { return total === 0 ? 0 : (value / total) * 100 }
