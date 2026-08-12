@@ -35,13 +35,13 @@ class DemoScenarioSeederTest extends TestCase
 
         $this->assertSame(1, School::query()->count());
         $this->assertSame([
-            'code' => 'DEMO',
-            'name' => 'Demo International School',
-            'receipt_prefix' => 'DEMO',
-            'invoice_prefix' => 'DEMO-INV',
-            'email' => 'admin@demo-school.test',
+            'code' => 'MIS',
+            'name' => 'Matahari International School',
+            'receipt_prefix' => 'MIS',
+            'invoice_prefix' => 'MIS-INV',
+            'email' => 'admin@matahari-school.test',
             'phone' => '+60 3-0000 0000',
-            'address' => 'Fictional demo school, Malaysia',
+            'address' => 'Matahari International School, Malaysia',
             'status' => 'active',
         ], School::query()->sole()->only([
             'code',
@@ -69,10 +69,10 @@ class DemoScenarioSeederTest extends TestCase
 
         $this->assertSame(0, Student::query()->where('full_name', 'like', 'QA%')->count());
 
-        $alyssa = Student::query()->where('student_no', 'DEMO-2026-001')->firstOrFail();
-        $daniel = Student::query()->where('student_no', 'DEMO-2026-002')->firstOrFail();
-        $mika = Student::query()->where('student_no', 'DEMO-2026-003')->firstOrFail();
-        $noor = Student::query()->where('student_no', 'DEMO-2026-004')->firstOrFail();
+        $alyssa = Student::query()->where('student_no', 'MIS-2026-001')->firstOrFail();
+        $daniel = Student::query()->where('student_no', 'MIS-2026-002')->firstOrFail();
+        $mika = Student::query()->where('student_no', 'MIS-2026-003')->firstOrFail();
+        $noor = Student::query()->where('student_no', 'MIS-2026-004')->firstOrFail();
 
         $this->assertTrue(FeeRecordCharge::query()
             ->where('student_id', $alyssa->id)

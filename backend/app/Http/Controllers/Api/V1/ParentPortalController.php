@@ -1,0 +1,171 @@
+<?php
+
+namespace App\Http\Controllers\Api\V1;
+
+use App\Http\Controllers\Controller;
+use App\Models\Guardian;
+use App\Models\Receipt;
+use App\Models\Student;
+use App\Services\Billing\FeeRecordChargeGenerationService;
+use App\Support\SchoolContext;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+
+class ParentPortalController extends Controller
+{
+    /**
+     * Return the authenticated user's linked guardian record and their accessible children.
+     */
+    public function me(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        SchoolContext::fromRequest($request);
+
+        $guardian = Guardian::where('user_id', $user->id)
+            ->where('school_id', $user->school_id)
+            ->first();
+
+        if (! $guardian) {
+            return response()->json(['data' => null, 'children' => []], 200);
+        }
+
+        $children = $guardian->students()
+            ->wherePivot('status', 'active')
+            ->get()
+            ->map(fn (Student $s) => $this->studentSummary($s));
+
+        return response()->json([
+            'data' => [
+                'id' => $guardian->id,
+                'full_name' => $guardian->full_name,
+                'phone' => $guardian->phone,
+                'email' => $guardian->email,
+            ],
+            'children' => $children,
+        ]);
+    }
+
+    /**
+     * Return outstanding charges for a specific child, enforcing active guardian-child link.
+     */
+    public function childOutstanding(
+        Request $request,
+        Student $student,
+        FeeRecordChargeGenerationService $service,
+    ): JsonResponse {
+        $this->assertGuardianAccess($request, $student, 'can_view_finance');
+
+        $data = $request->validate([
+            'academic_year' => ['required', 'string', 'regex:/^\d{4}$/'],
+        ]);
+
+        return response()->json(['data' => $service->outstanding($student, $data['academic_year'])]);
+    }
+
+    /**
+     * Return payment history for a specific child.
+     */
+    public function childPayments(Request $request, Student $student): JsonResponse
+    {
+        $this->assertGuardianAccess($request, $student, 'can_view_finance');
+
+        $payments = $student->payments()
+            ->with(['issuedReceipt'])
+            ->latest('payment_date')
+            ->latest('id')
+            ->get()
+            ->map(fn ($payment) => [
+                'id' => $payment->id,
+                'payment_date' => $payment->payment_date->toDateString(),
+                'amount' => (float) $payment->amount,
+                'paid_by' => $payment->paid_by,
+                'payment_method' => $payment->payment_method,
+                'status' => $payment->status,
+                'issued_receipt' => $payment->issuedReceipt ? [
+                    'id' => $payment->issuedReceipt->id,
+                    'receipt_no' => $payment->issuedReceipt->receipt_no,
+                    'receipt_date' => $payment->issuedReceipt->receipt_date->toDateString(),
+                    'status' => $payment->issuedReceipt->status,
+                ] : null,
+            ]);
+
+        return response()->json(['data' => $payments]);
+    }
+
+    /**
+     * Return receipts for a specific child.
+     */
+    public function childReceipts(Request $request, Student $student): JsonResponse
+    {
+        $this->assertGuardianAccess($request, $student, 'can_view_finance');
+
+        $receipts = $student->receipts()
+            ->with(['items'])
+            ->latest('receipt_date')
+            ->latest('id')
+            ->get()
+            ->map(fn (Receipt $receipt) => [
+                'id' => $receipt->id,
+                'receipt_no' => $receipt->receipt_no,
+                'receipt_date' => $receipt->receipt_date->toDateString(),
+                'amount' => (float) $receipt->amount,
+                'paid_by' => $receipt->paid_by,
+                'payment_method' => $receipt->payment_method,
+                'status' => $receipt->status,
+                'items' => $receipt->items->map(fn ($item) => [
+                    'fee_code' => $item->fee_code,
+                    'description' => $item->description,
+                    'amount' => (float) $item->amount,
+                ])->values(),
+            ]);
+
+        return response()->json(['data' => $receipts]);
+    }
+
+    /**
+     * Enforce that the authenticated user is an active guardian of the student
+     * with the required access flag.
+     */
+    private function assertGuardianAccess(Request $request, Student $student, string $flag): void
+    {
+        $user = $request->user();
+
+        if ((int) $student->school_id !== (int) $user->school_id) {
+            abort(403, 'Student belongs to a different school.');
+        }
+
+        $guardian = Guardian::where('user_id', $user->id)
+            ->where('school_id', $user->school_id)
+            ->first();
+
+        if (! $guardian) {
+            abort(403, 'No guardian record linked to this account.');
+        }
+
+        $link = $guardian->students()
+            ->where('students.id', $student->id)
+            ->wherePivot('status', 'active')
+            ->wherePivot($flag, true)
+            ->first();
+
+        if (! $link) {
+            abort(403, 'Access to this student record is not authorized.');
+        }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function studentSummary(Student $student): array
+    {
+        return [
+            'id' => $student->id,
+            'student_no' => $student->student_no,
+            'full_name' => $student->full_name,
+            'status' => $student->status,
+            'class' => $student->class ? ['id' => $student->class->id, 'name' => $student->class->name] : null,
+            'can_view_finance' => (bool) $student->pivot?->can_view_finance,
+            'can_view_academics' => (bool) $student->pivot?->can_view_academics,
+        ];
+    }
+}

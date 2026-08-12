@@ -2,6 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Models\AcademicYear;
+use App\Models\ClassEnrolment;
 use App\Models\DiscountItem;
 use App\Models\FeeItem;
 use App\Models\Guardian;
@@ -12,6 +14,8 @@ use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Models\StudentDiscountAssignment;
 use App\Models\StudentFeeAssignment;
+use App\Models\Subject;
+use App\Models\TeachingAssignment;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -21,14 +25,14 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $school = School::query()->updateOrCreate(
-            ['code' => 'DEMO'],
+            ['code' => 'MIS'],
             [
-                'name' => 'Demo International School',
-                'receipt_prefix' => 'DEMO',
-                'invoice_prefix' => 'DEMO-INV',
-                'email' => 'admin@demo-school.test',
+                'name' => 'Matahari International School',
+                'receipt_prefix' => 'MIS',
+                'invoice_prefix' => 'MIS-INV',
+                'email' => 'admin@matahari-school.test',
                 'phone' => '+60 3-0000 0000',
-                'address' => 'Fictional demo school, Malaysia',
+                'address' => 'Matahari International School, Malaysia',
                 'status' => 'active',
             ],
         );
@@ -51,7 +55,7 @@ class DatabaseSeeder extends Seeder
             ['username' => 'superadmin'],
             [
                 'school_id' => $school->id,
-                'name' => 'Demo Super Admin',
+                'name' => 'Super Admin',
                 'password' => Hash::make('password'),
                 'status' => 'active',
             ],
@@ -61,7 +65,7 @@ class DatabaseSeeder extends Seeder
             ['username' => 'admin'],
             [
                 'school_id' => $school->id,
-                'name' => 'Demo School Admin',
+                'name' => 'School Admin',
                 'password' => Hash::make('password'),
                 'status' => 'active',
             ],
@@ -71,7 +75,37 @@ class DatabaseSeeder extends Seeder
             ['username' => 'finance'],
             [
                 'school_id' => $school->id,
-                'name' => 'Demo Finance Admin',
+                'name' => 'Finance Admin',
+                'password' => Hash::make('password'),
+                'status' => 'active',
+            ],
+        );
+
+        $teacher = User::query()->updateOrCreate(
+            ['username' => 'teacher.lim'],
+            [
+                'school_id' => $school->id,
+                'name' => 'Teacher Lim',
+                'password' => Hash::make('password'),
+                'status' => 'active',
+            ],
+        );
+
+        $parentUser = User::query()->updateOrCreate(
+            ['username' => 'rachel.wong'],
+            [
+                'school_id' => $school->id,
+                'name' => 'Rachel Wong',
+                'password' => Hash::make('password'),
+                'status' => 'active',
+            ],
+        );
+
+        $studentUser = User::query()->updateOrCreate(
+            ['username' => 'alyssa.tan'],
+            [
+                'school_id' => $school->id,
+                'name' => 'Alyssa Tan',
                 'password' => Hash::make('password'),
                 'status' => 'active',
             ],
@@ -198,15 +232,23 @@ class DatabaseSeeder extends Seeder
         $superAdmin->roles()->sync([$roles['super-admin']->id]);
         $admin->roles()->sync([$roles['school-admin']->id]);
         $finance->roles()->sync([$roles['finance']->id]);
+        $teacher->roles()->sync([$roles['teacher']->id]);
+        $parentUser->roles()->sync([$roles['parent']->id]);
+        $studentUser->roles()->sync([$roles['student']->id]);
 
-        $yearTwo = SchoolClass::query()
+        $ma1 = SchoolClass::query()
+            ->where('school_id', $school->id)
+            ->where('name', 'MA1')
+            ->firstOrFail();
+
+        $mb1 = SchoolClass::query()
             ->where('school_id', $school->id)
             ->where('name', 'MB1')
             ->firstOrFail();
 
-        $yearFour = SchoolClass::query()
+        $mc1 = SchoolClass::query()
             ->where('school_id', $school->id)
-            ->where('name', 'MD1')
+            ->where('name', 'MC1')
             ->firstOrFail();
 
         $tuition = FeeItem::query()->updateOrCreate(
@@ -236,25 +278,25 @@ class DatabaseSeeder extends Seeder
 
         $students = [
             [
-                'student_no' => 'DEMO-2026-001',
+                'student_no' => 'MIS-2026-001',
                 'full_name' => 'Alyssa Tan',
-                'class_id' => $yearFour->id,
+                'class_id' => $mb1->id,
                 'parent' => 'Michelle Tan',
                 'phone' => '+60 12-100 0001',
                 'discount' => true,
             ],
             [
-                'student_no' => 'DEMO-2026-002',
+                'student_no' => 'MIS-2026-002',
                 'full_name' => 'Daniel Lim',
-                'class_id' => $yearTwo->id,
+                'class_id' => $mc1->id,
                 'parent' => 'Jonathan Lim',
                 'phone' => '+60 12-100 0002',
                 'discount' => false,
             ],
             [
-                'student_no' => 'DEMO-2026-003',
+                'student_no' => 'MIS-2026-003',
                 'full_name' => 'Mika Wong',
-                'class_id' => $yearFour->id,
+                'class_id' => $ma1->id,
                 'parent' => 'Rachel Wong',
                 'phone' => '+60 12-100 0003',
                 'discount' => false,
@@ -306,7 +348,7 @@ class DatabaseSeeder extends Seeder
                 );
             }
 
-            if ($student->student_no === 'DEMO-2026-001') {
+            if ($student->student_no === 'MIS-2026-001') {
                 StudentFeeAssignment::query()->updateOrCreate(
                     [
                         'school_id' => $school->id,
@@ -337,6 +379,76 @@ class DatabaseSeeder extends Seeder
                 );
             }
         }
+
+        $alyssa = Student::query()->where('school_id', $school->id)->where('student_no', 'MIS-2026-001')->firstOrFail();
+        $daniel = Student::query()->where('school_id', $school->id)->where('student_no', 'MIS-2026-002')->firstOrFail();
+        $mika = Student::query()->where('school_id', $school->id)->where('student_no', 'MIS-2026-003')->firstOrFail();
+        $alyssa->update(['user_id' => $studentUser->id]);
+
+        $rachel = Guardian::query()
+            ->where('school_id', $school->id)
+            ->where('full_name', 'Rachel Wong')
+            ->firstOrFail();
+        $rachel->update(['user_id' => $parentUser->id, 'email' => 'rachel.wong@example.test']);
+
+        foreach ([$alyssa, $daniel, $mika] as $child) {
+            $child->parents()->syncWithoutDetaching([
+                $rachel->id => [
+                    'school_id' => $school->id,
+                    'relationship' => 'guardian',
+                    'status' => 'active',
+                    'is_primary_contact' => $child->is($mika),
+                    'can_view_finance' => true,
+                    'can_view_academics' => true,
+                    'starts_on' => '2026-01-01',
+                    'current_slot' => 1,
+                ],
+            ]);
+        }
+
+        $academicYear = AcademicYear::query()->updateOrCreate(
+            ['school_id' => $school->id, 'code' => '2026'],
+            [
+                'name' => 'Demo Academic Year 2026',
+                'starts_on' => '2026-01-01',
+                'ends_on' => '2026-12-31',
+                'status' => 'active',
+                'current_slot' => 1,
+            ],
+        );
+        $english = Subject::query()->updateOrCreate(
+            ['school_id' => $school->id, 'code' => 'ENG'],
+            ['name' => 'English', 'status' => 'active'],
+        );
+        ClassEnrolment::query()->updateOrCreate(
+            [
+                'school_id' => $school->id,
+                'academic_year_id' => $academicYear->id,
+                'student_id' => $alyssa->id,
+                'current_slot' => 1,
+            ],
+            [
+                'class_id' => $mb1->id,
+                'starts_on' => '2026-01-01',
+                'status' => 'active',
+                'created_by' => $admin->id,
+            ],
+        );
+        TeachingAssignment::query()->updateOrCreate(
+            [
+                'school_id' => $school->id,
+                'academic_year_id' => $academicYear->id,
+                'class_id' => $mb1->id,
+                'subject_id' => $english->id,
+                'teacher_user_id' => $teacher->id,
+                'current_slot' => 1,
+            ],
+            [
+                'starts_on' => '2026-01-01',
+                'status' => 'active',
+                'created_by' => $admin->id,
+            ],
+        );
 
         if (! app()->environment('testing')) {
             $this->call(DemoScenarioSeeder::class);

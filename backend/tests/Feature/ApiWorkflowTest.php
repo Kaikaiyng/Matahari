@@ -20,7 +20,7 @@ class ApiWorkflowTest extends TestCase
         $this->seed();
         $this->seed(DemoScenarioSeeder::class);
 
-        $school = School::query()->where('code', 'DEMO')->firstOrFail();
+        $school = School::query()->where('code', 'MIS')->firstOrFail();
         $admin = User::query()->where('username', 'admin')->firstOrFail();
         $expectedOutstanding = (float) FeeRecordCharge::query()
             ->where('school_id', $school->id)
@@ -42,7 +42,7 @@ class ApiWorkflowTest extends TestCase
         $dashboardResponse = $this->actingAs($admin)
             ->getJson('/api/dashboard/school?school_id='.$school->id.'&invoice_month=2026-07&academic_year=2026')
             ->assertOk()
-            ->assertJsonPath('school.code', 'DEMO')
+            ->assertJsonPath('school.code', 'MIS')
             ->assertJsonPath('metrics.active_students', 4)
             ->assertJsonPath('metrics.invoices_this_month', 3);
 
@@ -53,7 +53,7 @@ class ApiWorkflowTest extends TestCase
     {
         $this->seed();
 
-        $school = School::query()->where('code', 'DEMO')->firstOrFail();
+        $school = School::query()->where('code', 'MIS')->firstOrFail();
         $admin = User::query()->where('username', 'admin')->firstOrFail();
 
         $this->actingAs($admin)->postJson('/api/invoices/generate-monthly', [
@@ -102,7 +102,7 @@ class ApiWorkflowTest extends TestCase
     {
         $this->seed();
 
-        $school = School::query()->where('code', 'DEMO')->firstOrFail();
+        $school = School::query()->where('code', 'MIS')->firstOrFail();
         $admin = User::query()->where('username', 'admin')->firstOrFail();
         $superAdmin = User::query()->where('username', 'superadmin')->firstOrFail();
 
@@ -121,7 +121,7 @@ class ApiWorkflowTest extends TestCase
     {
         $this->seed();
 
-        $school = School::query()->where('code', 'DEMO')->firstOrFail();
+        $school = School::query()->where('code', 'MIS')->firstOrFail();
         $finance = User::query()->where('username', 'finance')->firstOrFail();
 
         $this->actingAs($finance)->postJson('/api/invoices/generate-monthly', [
@@ -137,7 +137,7 @@ class ApiWorkflowTest extends TestCase
         $this->seed();
 
         $superAdmin = User::query()->where('username', 'superadmin')->firstOrFail();
-        $school = School::query()->where('code', 'DEMO')->firstOrFail();
+        $school = School::query()->where('code', 'MIS')->firstOrFail();
 
         $this->assertSame($school->id, $superAdmin->school_id);
 
@@ -155,7 +155,7 @@ class ApiWorkflowTest extends TestCase
     {
         $this->seed();
 
-        $school = School::query()->where('code', 'DEMO')->firstOrFail();
+        $school = School::query()->where('code', 'MIS')->firstOrFail();
         $otherSchool = School::query()->create([
             'code' => 'OTH',
             'name' => 'Other School',
