@@ -2,7 +2,7 @@
 
 **Status:** Current schema reference
 
-**Repository baseline:** `8b65469e96a81551d9c7cac4cf10c44ab6342761`
+**Repository baseline:** Phase A delivery branch through `a5f4fb4`
 
 ## Engines and Configuration
 
@@ -91,6 +91,14 @@ Important lookup indexes cover student status/class/level, agreement current loo
 
 Phase A adds nullable unique `parents.user_id` and `students.user_id` references without backfill. Guardian access/history fields are nullable for existing unreviewed links. The current enrolment unique key is `(school_id, academic_year_id, student_id, current_slot)`; historical rows use `NULL`. Teaching assignments use the equivalent nullable-current-slot pattern across school/year/class/subject/teacher.
 
+## Future Mobile Data Boundary
+
+The approved mobile product does not introduce a second database or duplicate parent, student, identity, finance, payment, or receipt tables. Future mobile APIs reuse the existing MariaDB records and domain services.
+
+Parent Finance must continue to derive outstanding amounts from `fee_record_charges` and verified payment allocations. A separate mobile balance table or `fee_installments` ledger is not approved for V1.
+
+Later phases may add notification/device and quiz tables only through separately reviewed additive migrations. Planned concepts include durable notifications, user devices, flexible quiz class/direct-student targets, and materialized quiz recipients. These tables do not exist in Phase A, and their final names, keys, foreign keys, retention, and rollback behavior require MariaDB-specific review before implementation.
+
 Known integrity gaps:
 
 - Most status columns are unconstrained strings rather than enums/checks.
@@ -172,4 +180,5 @@ Do not describe repository-wide rollback as safe. Releases that include schema c
 - [Business Rules](business-rules.md)
 - [Architecture](architecture.md)
 - [Testing and Release](testing-and-release.md)
+- [Mobile Product Architecture and Roadmap](mobile-product-roadmap.md)
 - [Audit Log Operations](AUDIT_LOG_OPERATIONS.md)

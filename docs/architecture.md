@@ -2,13 +2,14 @@
 
 **Status:** Current implementation reference
 
-**Repository baseline:** `8b65469e96a81551d9c7cac4cf10c44ab6342761`
+**Repository baseline:** Phase A delivery branch through `a5f4fb4`
 
 ## High-Level Architecture
 
 ```mermaid
 flowchart LR
     Browser["Browser: React 19 + TypeScript"]
+    Mobile["Future mobile-first Parent / Student client"]
     Vite["Vite dev server or Preview"]
     API["Laravel 13 JSON API"]
     DB["SQLite demo/tests or MariaDB direction"]
@@ -17,6 +18,7 @@ flowchart LR
     Tunnel["Optional temporary demo tunnel"]
 
     Browser <-->|"local assets"| Vite
+    Mobile -.->|"planned /api/v1 self-service APIs"| API
     Browser -->|"same-origin /api + session/CSRF cookies"| Vite
     Browser <-->|"temporary public HTTPS"| Tunnel
     Tunnel <-->|"forwards to Preview"| Vite
@@ -27,7 +29,7 @@ flowchart LR
     API -.->|"test sessions"| Memory
 ```
 
-The frontend and backend are separate applications. Laravel is the security and persistence boundary; React is not authoritative for permissions or financial state.
+The current frontend and backend are separate applications. Laravel is the security and persistence boundary; React is not authoritative for permissions or financial state. The mobile node is an approved target, not implemented code. It will reuse the same API, database, identity/RBAC, and finance domain rather than create a mobile backend.
 
 ## Backend Structure
 
@@ -37,6 +39,9 @@ The frontend and backend are separate applications. Laravel is the security and 
 - `app/Http/Middleware/EnsureUserHasPermission.php`: permission-slug enforcement.
 - `app/Http/Middleware/EnsureUserIsActive.php`: rechecks user status for every authenticated API request.
 - `app/Support/SchoolScopeResolver.php`: trusted school resolution for the dashboard and legacy invoice workflow.
+- `app/Support/SchoolContext.php` and `ResolveSchoolContext`: consistent school resolution for new Phase A `/api/v1` modules.
+- `app/Policies/`: Phase A academic and portal-link resource authorization.
+- `app/Services/Foundation/`: academic foundation, teacher scope, portal-link, and minimum foundation-account transactions.
 - `app/Services/FeeAgreements/`: agreement creation and superseding transactions.
 - `app/Services/Billing/`: Fee Record generation/summary, payment, receipt, numbering, and legacy invoice services.
 - `app/Services/Audit/` and `app/Audit/`: audit events, trusted context, sanitization, and persistence.
@@ -44,7 +49,7 @@ The frontend and backend are separate applications. Laravel is the security and 
 - `database/migrations/`: schema history and corrective migrations.
 - `database/seeders/`: demo school, users, roles, permissions, fees, and scenarios.
 
-There is no `app/Policies` directory. Authorization is primarily route middleware plus distributed school-scope checks in controllers, requests, and services.
+Legacy authorization remains primarily route middleware plus distributed scope checks. New Phase A modules use policies/access services and `SchoolContext`; this is the required pattern for future mobile/self-service modules.
 
 ## Frontend Structure
 
@@ -58,6 +63,8 @@ There is no `app/Policies` directory. Authorization is primarily route middlewar
 - `src/features/audit/`: read-only Audit Trail list, filters, cursor pagination, and detail view.
 
 The application does not use React Router, Redux, React Query, or another global data layer. Page selection is component state, so there are no deep links or browser-history routes. Data fetching uses local state/effects and the shared API wrapper.
+
+No mobile-client workspace currently exists. Its folder/build structure is a Phase B decision and must preserve a clear boundary from the existing Admin frontend.
 
 ## Authentication Flow
 
@@ -73,6 +80,8 @@ The application does not use React Router, Redux, React Query, or another global
 Configuration defaults include an eight-hour session lifetime, database sessions outside tests, `HttpOnly` cookies, SameSite `lax`, environment-controlled secure cookies, and no session payload encryption.
 
 Deployment limitations remain: secure-cookie flags, trusted proxy behavior, CORS, shared rate-limit/session storage, HTTPS termination, and multi-instance topology are environment-specific and **Not verified**.
+
+Mobile Web must initially preserve the reviewed browser session/CSRF model. Native authentication is a later security decision; Sanctum is only a candidate for separate evaluation and is not currently installed. Custom JWT authentication is not an approved direction.
 
 ## Authorization Flow
 
@@ -123,7 +132,7 @@ Controllers should not duplicate these invariants. New material financial mutati
 - Authentication failures use 401; permission/school-scope failures use 403; conflicting charge history uses 409; CSRF mismatch uses 419; login throttling uses 429.
 - Resource payloads frequently use a named top-level key; lists may use `data` plus metadata.
 - Route models and explicit integer IDs are both present; conventions are not completely uniform.
-- No API version prefix is implemented.
+- Existing legacy routes use `/api`; new foundation and future self-service modules use `/api/v1`.
 
 ## Error Handling
 
@@ -156,6 +165,8 @@ Model guards do not prevent query-builder/raw SQL/DBA mutation. Production least
 
 No external business API, payment gateway, email provider, object storage service, analytics service, or identity provider is integrated. Laravel mail defaults to logging in the example environment.
 
+Firebase/FCM, APNs, and device registration are approved only as later push-delivery concepts. No integration, credential, device-token storage, or delivery runtime is implemented.
+
 `tools/public-demo/` can download a pinned/checksummed `cloudflared` executable and expose Vite Preview through a temporary Quick Tunnel. This is demo-only and not a production dependency.
 
 ## Deployment Assumptions
@@ -174,3 +185,4 @@ No real VPS, Docker runtime, edge TLS/Basic Auth, remote release directories, pr
 - [Permissions](permissions.md)
 - [Current Status](current-status.md)
 - [Deployment Foundation](deployment-foundation.md)
+- [Mobile Product Architecture and Roadmap](mobile-product-roadmap.md)

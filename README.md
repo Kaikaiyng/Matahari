@@ -1,6 +1,6 @@
 # School Admin System
 
-School Admin System is a neutral administration and finance workflow MVP for independent demonstrations and continued development of student, fee, payment, receipt, and calendar workflows. Its seeded demo uses the fictional `Demo International School` tenant. It is not yet a complete academic ERP or a production deployment package.
+School Admin System is a neutral school administration platform under incremental development. The repository currently delivers an Admin/Finance web MVP and the Phase A academic/identity foundation; an approved Parent/Student mobile product roadmap follows in later phases. Its seeded demo uses the fictional `Demo International School` tenant. It is not yet a complete academic ERP, a mobile application release, or a production deployment package.
 
 This repository retains its internal Matahari project history and historical records as development evidence. The neutral runtime demo is not an affiliation with, or endorsement by, any school.
 
@@ -21,7 +21,8 @@ Implemented workflows include:
 
 Important boundaries:
 
-- Quiz, notifications, payment reminders, mobile/native authentication, Firebase, and Capacitor remain out of scope.
+- The approved target includes a separate mobile-first Parent/Student experience, followed later by optional native packaging. It is **planned, not implemented**; the existing responsive Admin UI is not that mobile product.
+- Quiz, notifications, payment reminders, Parent Finance, mobile/native authentication, Firebase, and Capacitor are not part of Phase A. See [Mobile Product Architecture and Roadmap](docs/mobile-product-roadmap.md).
 
 - Payments and receipts are implemented inside Student Detail; unimplemented top-level placeholder navigation has been removed.
 - The parent directory and fee catalogue top-level pages remain display-only; parent mutations, fee catalogue management, reports, exports, settings, user management, password reset, and production deployment are incomplete or not implemented.
@@ -51,6 +52,8 @@ docs/                Current documentation and historical delivery records
 tools/php/           Windows PHP launchers and local SQLite demo helpers
 tools/public-demo/   Temporary Cloudflare Quick Tunnel demo tooling
 ```
+
+No `mobile/` workspace exists yet. Its location and build boundary will be decided in Phase B without mixing it into the current Admin frontend by implication.
 
 Future coding agents must also read [AGENTS.md](AGENTS.md).
 
@@ -176,6 +179,7 @@ npm.cmd run build
 - [Current Status](docs/current-status.md)
 - [Testing and Release](docs/testing-and-release.md)
 - [Phase A Academic Foundation Delivery](docs/phase-a-academic-foundation.md)
+- [Mobile Product Architecture and Roadmap](docs/mobile-product-roadmap.md)
 - [Deployment Foundation](docs/deployment-foundation.md)
 - [Staging and Production Deployment Design](docs/superpowers/specs/2026-08-06-staging-production-deployment-design.md) — approved direction; repository foundation partially implemented
 - [Documentation Index](docs/README.md)
@@ -186,5 +190,5 @@ npm.cmd run build
 - The default automated backend suite uses SQLite and cannot prove MariaDB JSON, index, locking, foreign-key, or rollback behavior.
 - No stable hosting or production environment exists. CI and portable Docker/Compose source are included, but real container startup, remote deployment, monitoring, and backup/restore remain unverified.
 - User administration and password reset are not implemented.
-- General reports, exports, statements, reminders, parent portal, PDF generation, and academic ERP modules are not implemented.
+- General reports, exports, statements, reminders, Parent Finance/mobile self-service, PDF generation, and complete academic ERP modules are not implemented. The approved mobile direction is documented separately from implementation status.
 - Operational readiness remains incomplete: production hosting, remote release operations, monitoring, runtime grant execution, backups, restore drills, and approved discount/correction policies are not verified. See [Current Status](docs/current-status.md).

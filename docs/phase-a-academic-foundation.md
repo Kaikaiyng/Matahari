@@ -113,6 +113,8 @@ Each gate requires reviewed source data, explicit approval, a dry-run/reporting 
 
 Mobile Web, Parent Finance, notifications, payment reminders, Quiz, AI, Firebase, Capacitor, Sanctum, and native/mobile authentication are not implemented.
 
+These are deferred from Phase A rather than rejected as product direction. Their approved sequencing and shared-backend constraints are documented in [Mobile Product Architecture and Roadmap](mobile-product-roadmap.md).
+
 Future Quiz V1 must retain class targets, direct student targets, and materialized `quiz_assignment_recipients`. Its product types are `multiple_choice` and `true_false`; both may share the same option storage and scoring mechanism. This is a recorded future constraint, not Phase A schema or behavior.
 
 ## Delivery History

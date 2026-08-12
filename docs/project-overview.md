@@ -2,9 +2,9 @@
 
 **Status:** Current implementation and confirmed product context
 
-**Repository baseline:** `8b65469e96a81551d9c7cac4cf10c44ab6342761`
+**Repository baseline:** Phase A delivery branch through `a5f4fb4`
 
-**Reviewed:** 2026-08-03
+**Reviewed:** 2026-08-12
 
 ## Business Purpose
 
@@ -20,6 +20,8 @@ The seeded implementation contains these stored role slugs:
 - `ceo` — CEO.
 
 The intended CEO concept has been described as management or print-only access, but the current seed grants only Fee Record view and Calendar view permissions. It does not grant receipt printing. See [Permissions](permissions.md).
+
+Phase A also adds the `teacher`, `parent`, and `student` role slugs without replacing existing assignments. A user may hold multiple roles. These roles establish backend identity and access foundations; they do not mean the Parent/Student mobile experience is already available.
 
 ## Intended Scale
 
@@ -47,6 +49,7 @@ Do not describe the system as unlimited or use the historical cost estimate as p
 - Audit schema, logger, sanitizer, request IDs, model-level append-only guards, critical authentication/student/finance event integration, a read-only API, and a Super Admin Audit Trail UI.
 - Backend permission and authenticated-school enforcement for the legacy dashboard and monthly invoice endpoints.
 - Database guards for one current Fee Agreement per school/student/year and one scheduled charge per agreement item/month.
+- Phase A teacher/parent/student roles, reviewed nullable portal links, academic years, enrolment history, subjects, teaching assignments, scoped `/api/v1` management/teacher APIs, policies/access services, and transactional foundation audit events.
 
 ### Partially Implemented
 
@@ -59,32 +62,32 @@ Do not describe the system as unlimited or use the historical cost estimate as p
 - Invoices: legacy schema and a permission/school-scoped monthly-generation API remain, but the active Fee Record workflow does not use invoices as its source of truth and no invoice UI exists.
 - Audit: critical authentication, student, agreement, Fee Record activation/manual charge, payment, and receipt actions are covered. Calendar changes, exports, user management, generic correction, and recovery audit flows are not integrated because those features are lower-risk operational changes or absent from the current product.
 
-### Planned, Not Implemented
-
-Phase A foundation now defines teacher/parent/student roles, scoped academic records, and explicitly reviewed nullable portal identity links; it does not activate a portal or add native/mobile authentication.
+### Approved Product Direction, Not Implemented
 
 - Full user/role administration, account status management, and password reset. Phase A provides only minimum account creation and teacher/parent/student role assignment.
 - General reports, exports, statements, reminders, and server-generated PDF documents.
-- Parent portal and communications.
+- A mobile-first Parent/Student web client, with optional basic Teacher mode, using the existing Laravel API, MariaDB data, identity/RBAC, and finance services.
+- Parent Finance, in-app notifications, manual payment reminders, teacher Quiz, push delivery, and later native Android/iOS packaging in separately approved phases.
 - Generic audit corrections, audit export, and recovery workflows beyond read-only event review.
 - Refunds, credits, overpayments, write-offs, and approved financial correction workflows.
 - Stable production hosting, remote CD/promotion, monitoring, scheduled backups, and a verified restore process. Repository-owned CI and deployment configuration now exist but require current runner/container evidence.
 - Cross-school management reporting and complete multi-school tenant controls.
 
-## Explicitly Out of Current Scope
+## Explicitly Out of Current Implementation Scope
 
 Unless a future approved specification adds them, do not infer these from navigation labels or historical plans:
 
 - Attendance, grading, examinations, timetabling, learning management, admissions automation, HR/payroll, library, transport operations, and other complete academic ERP modules.
 - Provider-specific VPS provisioning, public domains, edge TLS/Basic Auth, Cloudflare, and live infrastructure state.
-- Mobile applications.
+- Mobile client code, native packaging, token authentication, Firebase, and app-store delivery. These are approved future product phases, not current repository capabilities.
 
 ## System Boundaries
 
-- React presents administration workflows and client-side usability checks.
+- The current React client presents administration workflows and responsive usability checks. A future mobile client will be a separate product surface, not a relabeling of the responsive Admin UI.
 - Laravel is authoritative for authentication, authorization, validation, school scoping, state transitions, numbering, and persisted finance effects.
+- Admin Web and future mobile clients share one Laravel backend, one MariaDB database, one RBAC/identity system, and the existing finance source of truth.
 - MariaDB/MySQL-compatible behavior is the production direction. SQLite supports the local demo and default automated tests only.
-- The application models school ownership with `school_id`. A shared resolver protects the dashboard and legacy invoice paths, while other scope checks remain distributed across controllers, requests, and services; there is no global tenant middleware.
+- The application models school ownership with `school_id`. New Phase A modules use `SchoolContext`, middleware, policies/access services, and school-scoped queries; legacy checks remain distributed and can migrate incrementally.
 - No third-party business system integration is present. The public demo tunnel is temporary transport, not a domain service.
 
 ## Operational Assumptions
@@ -102,3 +105,4 @@ Unless a future approved specification adds them, do not infer these from naviga
 - [Permissions](permissions.md)
 - [Current Status](current-status.md)
 - [Testing and Release](testing-and-release.md)
+- [Mobile Product Architecture and Roadmap](mobile-product-roadmap.md)

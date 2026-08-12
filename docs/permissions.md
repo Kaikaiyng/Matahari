@@ -2,7 +2,7 @@
 
 **Status:** Seeded role matrix and verified enforcement map
 
-**Repository baseline:** `8b65469e96a81551d9c7cac4cf10c44ab6342761`
+**Repository baseline:** Phase A delivery branch through `a5f4fb4`
 
 ## Labels
 
@@ -84,12 +84,15 @@ It does not grant receipt view/print, student view, payment view, or a general r
 | Authentication | Laravel `web` session guard and `auth` middleware |
 | Permission slugs | `permission:<slug>` route middleware using `EnsureUserHasPermission` |
 | Role-to-permission mapping | `roles`, `permissions`, `user_roles`, `role_permissions`; seeded in `DatabaseSeeder` |
-| School scope | Distributed controller/request/service checks; no global tenant middleware |
+| School scope | Legacy distributed checks plus `SchoolContext`/`ResolveSchoolContext` for new Phase A modules |
+| Resource policies | Phase A policies/access services enforce academic, teacher-assignment, and portal-link scope |
 | Mutation validation | Laravel Form Requests plus service invariants |
 | Frontend actions | `permissions.includes(...)` checks for many pages/buttons; not authoritative |
 | Frontend navigation | Each visible entry declares a required permission; absent groups are removed. This is a usability layer only. |
 
-No Laravel policies are present.
+Phase A policies are present for new foundation resources. Legacy modules retain their existing route/controller/request/service enforcement until migrated deliberately.
+
+Future mobile navigation must not treat `parent.self_service`, `student.self_service`, or `teaching_scope.view` as sufficient resource authorization by itself. Each API must also validate the active guardian-child, student-self, or teaching-assignment relationship and same-school ownership. Parent Finance and notification permissions will be defined in their own approved phases; they are not implied by the Phase A role slugs.
 
 ## Legacy Endpoint Enforcement
 

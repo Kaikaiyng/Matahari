@@ -63,7 +63,7 @@ The confirmed earlier technology direction named Laravel 10, but this repository
 ## Known Incomplete Features
 
 - Existing guardian links remain `unreviewed` with nullable access flags, and no live parent/student user association or enrolment history is inferred. Portal activation and production backfill require a separately approved workflow.
-- Mobile Web, Parent Finance, notifications, payment reminders, quiz, AI, Firebase, Capacitor, and native authentication remain unimplemented.
+- Mobile Web, Parent Finance, notifications, payment reminders, quiz, AI, Firebase, Capacitor, and native authentication remain unimplemented. Mobile is now an approved Phase B–F product direction, not a current repository capability; see [Mobile Product Architecture and Roadmap](mobile-product-roadmap.md).
 
 - Parent CRUD, fee catalogue management, user/role management, password reset, and a global school selector.
 - Reports beyond Fee Record views, exports, statements, reminders, parent portal, and server-side PDF.
@@ -223,12 +223,12 @@ The repository must not be described as production-ready.
 
 ## Immediate Recommended Priorities
 
-1. Confirm discount formulas/eligibility and the approved correction/reconciliation policy before enabling discounted or retroactive billing.
-2. Define refund, credit, overpayment, write-off, and audit-driven correction/recovery workflows.
-3. Add the global Super Admin school selector and remove remaining static prototype data from operational pages.
-4. Run and stabilize the new CI on `master`, then implement remote staging/production release operations, execute least-privilege database grants, monitoring, backups, and a verified restore/reconciliation drill.
-5. Add pagination, load targets, and MariaDB concurrency testing for the intended operating scale.
-6. Decompose the frontend application and add URL routing/browser E2E coverage.
+1. Obtain explicit review before merging Phase A, then plan controlled academic-year, enrolment, and portal-link production-data gates without inferred backfill.
+2. Define and approve Phase B as a separate mobile-first web-client slice, including workspace location, browser authentication topology, role-aware navigation, and its own test/build commands.
+3. Confirm discount formulas/eligibility and the approved correction/reconciliation policy before enabling discounted or retroactive billing.
+4. Define refund, credit, overpayment, write-off, and audit-driven correction/recovery workflows.
+5. Run and stabilize CI on `master`, then verify remote staging/production operations, least-privilege database grants, monitoring, backups, and restore/reconciliation.
+6. Add the global Super Admin school selector, pagination/load targets, MariaDB concurrency tests, and browser E2E coverage as the relevant product phases require them.
 
 ## Needs Confirmation
 

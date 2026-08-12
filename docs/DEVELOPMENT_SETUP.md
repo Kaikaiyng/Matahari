@@ -2,7 +2,9 @@
 
 Status: Current local-development guide
 
-Last verified: 2026-07-22
+Last verified for the current Admin Web stack: 2026-07-22
+
+There is currently no separate mobile-client workspace or native toolchain to install. Do not install Capacitor, Firebase, Sanctum, Android, or iOS dependencies from this guide. Phase B must add explicit setup commands when the approved mobile-first web client is implemented; see [Mobile Product Architecture and Roadmap](mobile-product-roadmap.md).
 
 ## 1. Local Stack
 

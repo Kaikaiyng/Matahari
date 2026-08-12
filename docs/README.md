@@ -1,6 +1,6 @@
 # Documentation Index
 
-Start with the canonical documents below. They describe the repository baseline inspected on 2026-08-03 and explicitly separate current behavior from intended or unverified policy.
+Start with the canonical documents below. They describe the repository through the Phase A delivery branch reviewed on 2026-08-12 and explicitly separate current behavior from approved future direction and unverified policy.
 
 ## Canonical Project Knowledge
 
@@ -14,6 +14,7 @@ Start with the canonical documents below. They describe the repository baseline 
 | [Current Status](current-status.md) | Commit snapshot, implemented/partial work, risks, test status, deployment state, and priorities |
 | [Testing and Release](testing-and-release.md) | Exact validation commands, database checks, security review, smoke tests, release, and rollback |
 | [Phase A Academic Foundation Delivery](phase-a-academic-foundation.md) | Delivered Phase A scope, APIs, authorization, audit, migration safety, validation evidence, and live-data gates |
+| [Mobile Product Architecture and Roadmap](mobile-product-roadmap.md) | Approved one-backend mobile direction, Phase B–F boundaries, security rules, and future validation gates |
 | [Staging and Production Deployment Design](superpowers/specs/2026-08-06-staging-production-deployment-design.md) | Approved VPS-first staging/production topology, exact-artifact promotion, database separation, backup, monitoring, and deferred infrastructure choices |
 
 The root [README](../README.md) is the human entry point. Future coding agents must also follow [AGENTS.md](../AGENTS.md).
