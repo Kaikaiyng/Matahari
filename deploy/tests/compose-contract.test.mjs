@@ -28,6 +28,8 @@ test('application Compose binds only to loopback and hardens release mounts', as
   const compose = await readFile('deploy/compose/application.yml', 'utf8')
 
   assert.match(compose, /127\.0\.0\.1:\$\{APP_HTTP_PORT\}:8080/)
+  assert.match(compose, /127\.0\.0\.1:\$\{MOBILE_APP_HTTP_PORT\}:8080/)
+  assert.match(compose, /mobile-app\.conf/)
   assert.match(compose, /\$\{RELEASE_ROOT\}\/current:\/var\/www\/matahari\/current:ro/)
   assert.match(compose, /read_only: true/)
   assert.match(compose, /no-new-privileges:true/)
@@ -46,9 +48,11 @@ test('environment examples preserve staging and production boundaries without va
   assert.match(database, /PRODUCTION_DB_DATABASE=matahari_production/)
   assert.match(staging, /COMPOSE_PROJECT_NAME=matahari_staging/)
   assert.match(staging, /DEPLOYMENT_MODE=staging/)
+  assert.match(staging, /MOBILE_APP_HTTP_PORT=18082/)
   assert.match(staging, /DB_USERNAME=matahari_staging_app/)
   assert.match(production, /COMPOSE_PROJECT_NAME=matahari_production/)
   assert.match(production, /DEPLOYMENT_MODE=prelaunch-production/)
+  assert.match(production, /MOBILE_APP_HTTP_PORT=18083/)
   assert.match(production, /DB_USERNAME=matahari_production_app/)
 
   for (const contents of [database, staging, production]) {

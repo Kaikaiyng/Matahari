@@ -78,7 +78,7 @@ npm.cmd run build
 - `build` runs `tsc -b` and then Vite production build, so it is also the configured TypeScript check.
 - No browser E2E command is configured.
 
-The commands above validate both the Admin UI and the experimental `/portal` components because they share one React workspace. A future separate/native mobile workspace must define its own install, unit/component test, lint, type-check, and production-build commands before that product phase can be called complete.
+The commands above validate only the Admin UI. Run the same install/test/lint/build lifecycle separately from `app/` for the Parent/Student application. A future native packaging workspace must add its own platform validation before a store release can be called complete.
 
 ## Future Mobile Validation Gates
 

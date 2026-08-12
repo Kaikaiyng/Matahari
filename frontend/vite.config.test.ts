@@ -11,13 +11,13 @@ describe('public demo preview config', () => {
       host: '127.0.0.1',
       port: 4175,
       strictPort: true,
-      allowedHosts: ['.trycloudflare.com'],
+      allowedHosts: ['localhost', '.trycloudflare.com'],
       proxy: { '/api': 'http://127.0.0.1:8002' },
     })
     expect(config.server?.proxy).toEqual({
       '/api': 'http://127.0.0.1:8002',
     })
-    expect(config.server?.allowedHosts).toEqual(['.trycloudflare.com'])
+    expect(config.server?.allowedHosts).toEqual(['localhost', '.trycloudflare.com'])
   })
 
   it('keeps the normal local API target when no override is supplied', () => {
@@ -26,6 +26,6 @@ describe('public demo preview config', () => {
     expect(config.server?.proxy).toEqual({
       '/api': 'http://127.0.0.1:8000',
     })
-    expect(config.server?.allowedHosts).toEqual(['.trycloudflare.com'])
+    expect(config.server?.allowedHosts).toEqual(['localhost', '.trycloudflare.com'])
   })
 })

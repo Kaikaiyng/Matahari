@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\V1\PortalNotificationController;
 use App\Http\Controllers\Api\V1\StaffController;
 use App\Http\Controllers\Api\V1\StudentPortalController;
 use App\Http\Controllers\Api\V1\SubjectController;
+use App\Http\Controllers\Api\V1\TeacherAttendanceController;
 use App\Http\Controllers\Api\V1\TeacherScopeController;
 use App\Http\Controllers\Api\V1\TeachingAssignmentController;
 use App\Http\Controllers\DeploymentInfoController;
@@ -162,6 +163,8 @@ Route::prefix('v1')->middleware([...$sessionMiddleware, 'auth', 'active', 'schoo
     Route::prefix('teacher')->middleware('permission:teaching_scope.view')->group(function (): void {
         Route::get('/teaching-assignments', [TeacherScopeController::class, 'assignments']);
         Route::get('/classes/{schoolClass}/students', [TeacherScopeController::class, 'students']);
+        Route::get('/attendance/daily', [TeacherAttendanceController::class, 'showDaily']);
+        Route::post('/attendance/daily', [TeacherAttendanceController::class, 'storeDaily']);
     });
 
     Route::prefix('portal')->group(function (): void {
@@ -171,12 +174,14 @@ Route::prefix('v1')->middleware([...$sessionMiddleware, 'auth', 'active', 'schoo
             Route::get('/children/{student}/outstanding', [ParentPortalController::class, 'childOutstanding']);
             Route::get('/children/{student}/payments', [ParentPortalController::class, 'childPayments']);
             Route::get('/children/{student}/receipts', [ParentPortalController::class, 'childReceipts']);
+            Route::get('/children/{student}/attendance', [ParentPortalController::class, 'childAttendance']);
         });
 
         // Student portal — requires active student-self link
         Route::prefix('student')->middleware('permission:student.self_service')->group(function (): void {
             Route::get('/me', [StudentPortalController::class, 'me']);
             Route::get('/enrolments', [StudentPortalController::class, 'enrolments']);
+            Route::get('/attendance', [StudentPortalController::class, 'attendance']);
         });
 
         // In-app notifications — available to both parent and student

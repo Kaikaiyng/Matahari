@@ -44,4 +44,6 @@ enum AuditAction: string
     case GuardianPortalUserLinked = 'guardian.portal_user_linked';
     case StudentPortalUserLinked = 'student.portal_user_linked';
     case GuardianAccessUpdated = 'guardian.access_updated';
+    case AttendanceRecorded = 'attendance.recorded';
+    case AttendanceCorrected = 'attendance.corrected';
 }

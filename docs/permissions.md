@@ -92,7 +92,9 @@ It does not grant receipt view/print, student view, payment view, or a general r
 
 Phase A policies are present for new foundation resources. Legacy modules retain their existing route/controller/request/service enforcement until migrated deliberately.
 
-Portal navigation must not treat `parent.self_service`, `student.self_service`, or `teaching_scope.view` as sufficient resource authorization by itself. Each API also validates the active guardian-child, student-self, or teaching-assignment relationship and same-school ownership. Notification reads and read-state updates are restricted to the authenticated recipient and school. Production Parent Finance and notification administration still require their own approved permission design.
+Portal navigation must not treat `parent.self_service`, `student.self_service`, or `teaching_scope.view` as sufficient resource authorization by itself. Each API also validates the active guardian-child, student-self, or teaching-assignment relationship and same-school ownership. Notification reads and read-state updates are restricted to the authenticated recipient and school. Daily Attendance currently reuses `teaching_scope.view` plus an active same-school assignment for Teacher writes; Parent reads additionally require `can_view_academics = true`, and Student reads resolve only the linked self record. Production Parent Finance and notification administration still require their own approved permission design.
+
+Approved App permissions must distinguish community view, community publish, community moderation, attendance manage, attendance self/guardian view, assessment manage, assessment result view, Quiz manage, assigned Quiz attempt, and Practice Quiz. Staff publishing does not imply school-wide academic access; Teacher mutation scope remains bounded by active teaching assignments. These slugs are planned until added by an implementation migration/seeder.
 
 ## Legacy Endpoint Enforcement
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\AttendanceRecord;
 use App\Models\Guardian;
 use App\Models\Receipt;
 use App\Models\Student;
@@ -122,6 +123,25 @@ class ParentPortalController extends Controller
         return response()->json(['data' => $receipts]);
     }
 
+    public function childAttendance(Request $request, Student $student): JsonResponse
+    {
+        $this->assertGuardianAccess($request, $student, 'can_view_academics');
+        $data = $request->validate([
+            'from' => ['nullable', 'date_format:Y-m-d'],
+            'to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from'],
+        ]);
+        $records = AttendanceRecord::query()
+            ->with(['session.schoolClass'])
+            ->where('school_id', $student->school_id)
+            ->where('student_id', $student->id)
+            ->when($data['from'] ?? null, fn ($query, $date) => $query->whereHas('session', fn ($session) => $session->whereDate('attendance_date', '>=', $date)))
+            ->when($data['to'] ?? null, fn ($query, $date) => $query->whereHas('session', fn ($session) => $session->whereDate('attendance_date', '<=', $date)))
+            ->latest('id')
+            ->get();
+
+        return response()->json(['data' => $this->attendanceResponse($records)]);
+    }
+
     /**
      * Enforce that the authenticated user is an active guardian of the student
      * with the required access flag.
@@ -167,5 +187,17 @@ class ParentPortalController extends Controller
             'can_view_finance' => (bool) $student->pivot?->can_view_finance,
             'can_view_academics' => (bool) $student->pivot?->can_view_academics,
         ];
+    }
+
+    private function attendanceResponse($records): array
+    {
+        return $records->map(fn (AttendanceRecord $record) => [
+            'id' => $record->id,
+            'attendance_date' => $record->session->attendance_date->toDateString(),
+            'session_type' => $record->session->session_type,
+            'status' => $record->status,
+            'public_note' => $record->public_note,
+            'class' => ['id' => $record->session->schoolClass->id, 'name' => $record->session->schoolClass->name],
+        ])->values()->all();
     }
 }

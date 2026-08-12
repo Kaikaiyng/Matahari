@@ -1,16 +1,16 @@
 # Current Status
 
-**Snapshot date:** 2026-08-12
+**Snapshot date:** 2026-08-13
 
 **Inspected Phase A implementation commit:** `ecaa0a1f177292ae99c9338e255a1f93312971f5`
 
 **Default branch:** `master`
 
-**Current delivery branch:** `phase-a-academic-foundation` (not merged)
+**Current delivery branch:** `feature/split-admin-mobile-app` (release source branch)
 
-**Overall status:** MIS-branded administration-finance demo MVP with Phase A foundations and an experimental Parent/Student portal preview; production operations and several business policies remain incomplete
+**Overall status:** MIS-branded administration-finance demo MVP with Phase A foundations, separately built Admin and multi-role Community App clients, and a first scoped daily-attendance slice; native/store delivery, production operations, and several product modules remain incomplete
 
-The Phase A commit above is on the unmerged delivery branch. The earlier white-label feature was delivered through [pull request #8](https://github.com/Kaikaiyng/Matahari/pull/8) and merged into `master` as `2f4c6bd199a7fae149658d3993aba370203746de` on 2026-08-04.
+The Phase A commit above remains in the delivery history. The earlier white-label feature was delivered through [pull request #8](https://github.com/Kaikaiyng/Matahari/pull/8) and merged into `master` as `2f4c6bd199a7fae149658d3993aba370203746de` on 2026-08-04.
 
 ## Runtime Demo Identity
 
@@ -27,13 +27,39 @@ The reset command never runs automatically and must not be adapted to a database
 - SQLite fresh migration with seed, repeated seed, latest rollback, re-migration, and API route loading passed on an explicit disposable database.
 - **Not verified in this environment:** MariaDB lifecycle/FK/index inspection. No local MariaDB server or Docker executable was available; SQLite results are not presented as MariaDB proof.
 
+## 2026-08-12 Admin/App Split
+
+- Admin remains in `frontend/`; the independent mobile-first Parent/Student client is now in `app/`. Both use the same Laravel API/database while keeping separate builds, intended domains, and role gates.
+- Admin Vitest: 15 files and 169 tests passed. Oxlint exited 0 with 9 existing Fast Refresh organization warnings; the production build passed with 83 modules transformed.
+- App Vitest: 3 files and 10 tests passed. Oxlint and the production build passed with 28 modules transformed.
+- Backend full regression: 250 tests discovered, 242 passed, 8 opt-in MariaDB tests skipped, and 1,292 assertions. Pint and 70-route API loading passed. The focused two-origin CORS contract passed with 5 assertions.
+- Deployment contracts: 18 tests passed, covering both compiled clients in the release manifest and separate Admin/App Nginx services pointing at the shared backend.
+- Local HTTP checks passed for Admin `http://localhost:5173`, App `http://127.0.0.1:5174`, and both clients' proxied `/api/deployment-info` endpoint.
+- No migration or database schema changed in this split. MariaDB lifecycle was therefore not rerun; the earlier Phase A MariaDB evidence remains the applicable schema result.
+
+## 2026-08-12 Community App Direction
+
+The App is approved as a private school-community product: a relationship-scoped Feed with Teacher/Staff publishing, reactions and controlled comments; daily Attendance on a general session schema; published Assessment results; formal Teacher-assigned Quiz plus separate Student Practice Quiz; and read-only Parent Finance without a payment interface.
+
+The current working slice redesigns the Admin staff login and all App role surfaces. Daily Attendance is connected end to end: assigned Teachers load current rosters, submit `present`, `late`, `absent`, or `excused`, and must provide a reason for corrections; authorized Parents and the linked Student can read the resulting record. Attendance writes and their audit events share one transaction. Community persistence/media, Assessment results, formal Quiz, Practice Quiz generation, and Schedule remain clearly labelled UI previews rather than implemented backend modules. See [MIS App Product Specification](mobile-app-product-spec.md) and the root [Design System](../DESIGN.md).
+
 Later school-specific branding requires explicit approval and a controlled update to the presentation configuration and, if needed, a fresh disposable demo seed. It must not rename existing tenant data or rewrite financial history.
+
+## 2026-08-13 Mobile App Visual Refinement
+
+- The App shell now uses a compact MIS Community header and a role-aware floating liquid-glass navigation capsule. The active destination shows icon and label; inactive destinations retain icons with accessible names.
+- Parent, Student, Teacher, and authorized Staff receive distinct five-item navigation sets. Sign out moved from the persistent header into each role's More/Profile page.
+- Feed and record surfaces use calmer phone-first spacing, fewer nested borders, stronger content hierarchy, and at least 44px interactive targets. The Feed remains a clearly labelled preview where publishing is not connected.
+- Automated browser checks covered 39 representative role/page/viewport combinations at 360x800, 390x844, and 430x932. No horizontal overflow or undersized visible interactive target remained after correction.
+- The browser helper's packaged Windows server lacked its Playwright dependency; validation used a cached Playwright runner with installed Chrome and did not add a project dependency.
+- App validation passed with 3 files and 16 tests, clean Oxlint, and a TypeScript/Vite production build with 76 transformed modules. Existing Admin regression passed with 15 files and 169 tests, Oxlint exit 0 with the 9 known Fast Refresh organization warnings, and an 83-module production build.
+- Backend regression passed with 255 tests discovered, 247 passed, 8 opt-in MariaDB tests skipped, and 1,314 assertions. Pint passed and 74 API routes loaded. No backend schema changed in this visual-refinement branch, so a new MariaDB lifecycle was not run for this branch.
 
 ## Technology Snapshot
 
 - Backend manifest: PHP `^8.3` and Laravel Framework `^13.8`; the resolved lockfile version is Laravel `13.17.0`.
 - Validation runtime: PHP `8.4.21`.
-- Frontend manifest: React `19.2.7`, TypeScript `~6.0.2`, and Vite `^8.1.0`.
+- Admin and App manifests: React `19.2.7`, TypeScript `~6.0.2`, and Vite `^8.1.0`.
 - Session-based authentication and a MariaDB/MySQL-compatible production direction; SQLite is used for the local demo and default tests.
 
 The confirmed earlier technology direction named Laravel 10, but this repository is already on Laravel 13. This is a verified implementation difference, not a pending upgrade.
@@ -72,7 +98,7 @@ The confirmed earlier technology direction named Laravel 10, but this repository
 ## Known Incomplete Features
 
 - Existing guardian links remain `unreviewed` with nullable access flags, and no live parent/student user association or enrolment history is inferred. Portal activation and production backfill require a separately approved workflow.
-- An experimental `/portal` web shell, user-scoped notifications, parent/student self endpoints, read-only guardian finance queries, and demo portal content now exist. They are not a completed mobile phase or production Parent Finance. Payment reminders, quiz, AI, Firebase, Capacitor, native authentication, and native packaging remain unimplemented; see [Mobile Product Architecture and Roadmap](mobile-product-roadmap.md).
+- An independent `app/` web workspace, user-scoped notifications, parent/student self endpoints, read-only guardian finance queries, and demo portal content now exist. Admin remains in `frontend/`; both clients share the backend/database but have independent local ports, builds, and intended domains. This is not completed production Parent Finance. Payment reminders, quiz, AI, Firebase, Capacitor, native authentication, and native packaging remain unimplemented.
 
 - Parent CRUD, fee catalogue management, user/role management, password reset, and a global school selector.
 - Reports beyond Fee Record views, exports, statements, reminders, parent portal, and server-side PDF.
@@ -233,7 +259,7 @@ The repository must not be described as production-ready.
 ## Immediate Recommended Priorities
 
 1. Obtain explicit review before merging Phase A, then plan controlled academic-year, enrolment, and portal-link production-data gates without inferred backfill.
-2. Define and approve Phase B as a separate mobile-first web-client slice, including workspace location, browser authentication topology, role-aware navigation, and its own test/build commands.
+2. Review and harden the independent Parent/Student App for real-device and school UAT, then separately approve native authentication and store packaging before adding any native dependency.
 3. Confirm discount formulas/eligibility and the approved correction/reconciliation policy before enabling discounted or retroactive billing.
 4. Define refund, credit, overpayment, write-off, and audit-driven correction/recovery workflows.
 5. Run and stabilize CI on `master`, then verify remote staging/production operations, least-privilege database grants, monitoring, backups, and restore/reconciliation.

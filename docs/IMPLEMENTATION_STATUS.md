@@ -4,7 +4,7 @@ Status: `RESPONSIVE_DEMO_READY_WITH_WARNINGS`
 
 Last verified for the responsive Admin delivery: 2026-07-22
 
-Phase A academic/identity foundation was subsequently implemented and validated on 2026-08-12. A separate Parent/Student mobile product is approved for later phases but has not been implemented. The responsive Admin UI described here must not be presented as that mobile product. See [Current Status](current-status.md), [Phase A Academic Foundation Delivery](phase-a-academic-foundation.md), and [Mobile Product Architecture and Roadmap](mobile-product-roadmap.md).
+Phase A academic/identity foundation was subsequently implemented and validated on 2026-08-12. The Parent/Student mobile-first web product now lives in the independent `app/` workspace and is separate from the responsive Admin UI. It is not yet a native/store build. See [Current Status](current-status.md), [Phase A Academic Foundation Delivery](phase-a-academic-foundation.md), and [Mobile Product Architecture and Roadmap](mobile-product-roadmap.md).
 
 ## 1. Product State
 

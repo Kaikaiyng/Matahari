@@ -1,6 +1,6 @@
 # Mobile Product Architecture and Roadmap
 
-**Status:** Approved product direction; Phase A foundation implemented; mobile clients not implemented
+**Status:** Approved community-first App direction; split client, visual redesign, and daily Attendance implemented; community persistence, assessment, and Quiz remain planned
 
 **Reviewed:** 2026-08-12
 
@@ -12,7 +12,7 @@ This document uses three distinct states:
 - **Approved, not implemented:** a product or architecture decision that constrains future work.
 - **Needs confirmation:** a decision that still requires product, operational, or security approval.
 
-The current `frontend/` application is a responsive Admin/Finance web interface. It is not the new Parent/Student mobile product. No separate mobile frontend directory, native package, push integration, or token-authentication stack exists yet.
+The `frontend/` application is the responsive Admin/Finance interface. The separate root `app/` workspace is now the mobile-first Parent/Student web product and has its own build and tests. No native package, push integration, or token-authentication stack exists yet.
 
 ## Target Product Architecture
 
@@ -41,10 +41,10 @@ The mobile experience is developed and validated first as a mobile-first web app
 | Phase | Status | Scope |
 | --- | --- | --- |
 | A — Backend Foundation | Implemented on the unmerged Phase A branch | School context, foundation roles, explicit portal links, academic years, enrolments, subjects, teaching assignments, minimum management APIs, policies/access services, audit, constraints, and tests |
-| B — Mobile Web Shell | Approved, not implemented | Mobile-first client, localhost/staging runtime, login shell, role-aware navigation, Parent home, Student home, optional basic Teacher mode, and API-client structure |
-| C — Parent Finance | Experimental preview, not complete | `/portal` has guarded read-only balance/payment/receipt queries and a non-persisting payment notice preview; download/share, production UX, and release validation remain open |
-| D — Notifications and Manual Payment Reminder | Approved, not implemented | In-app notification centre, manual Admin/Finance reminder action, recipient resolution, audit/history, and a future-push-ready boundary |
-| E — Teacher and Quiz | Approved, not implemented | Teacher classes, quiz authoring, class and direct-student targets, materialized recipients, attempts, server-side scoring, and result visibility |
+| B — Mobile Web Shell | Implemented | Independent `app/`, session login, role-aware Parent/Student/Teacher/Staff shell, separate build/domain, and community-first redesign |
+| C — Community and Parent Records | Approved for implementation | Relationship-scoped Feed, Teacher/Staff publishing, reactions, controlled comments, children, published academics, and read-only Finance |
+| D — Attendance and Assessments | Attendance implemented; Assessments planned | General attendance sessions with initial daily marking, scoped history and audit are present; academic terms, assessments, publication, and results remain planned |
+| E — Teacher and Quiz | Approved direction | Teacher classes, formal quiz authoring, class/direct-student targets, materialized recipients, attempts, server-side scoring, separate Practice Quiz, and result visibility |
 | F — Push and Native Packaging | Approved, not implemented | Device registration, FCM, Capacitor Android/APK, followed later by iOS/TestFlight evaluation |
 
 No later phase is implicitly authorized by completion of an earlier phase. Each phase requires its own reviewed implementation scope and release evidence.
@@ -117,11 +117,11 @@ Firebase, Capacitor, app-store delivery, and native authentication must remain *
 
 ## Current Non-Goals
 
-Attendance, academic transcripts, official examinations/gradebook, chat, homework upload, and AI quiz execution are outside the approved V1 mobile phases. AI quiz generation is a possible future draft-authoring adapter only; teachers must review generated content and normal quiz storage/scoring remains authoritative.
+Chat, homework upload, automatic term-total formulas, class ranking, full transcripts, payment processing, and AI quiz execution are outside the approved first implementation slices. AI quiz generation remains a future authoring adapter; teachers must review generated content and normal quiz storage/scoring remains authoritative.
 
 ## Open Decisions
 
-- Whether Phase B is a separate React workspace or an intentionally isolated application within a workspace/monorepo structure.
+- The independent `app/` React workspace is fixed; remaining decisions concern its native wrapper/store strategy and production domain configuration.
 - Exact native authentication and credential-revocation design.
 - Supported Android/iOS versions and device matrix.
 - Push-provider project ownership, environments, credentials, privacy policy, and operational monitoring.
@@ -130,3 +130,5 @@ Attendance, academic transcripts, official examinations/gradebook, chat, homewor
 - Production deployment topology for the Mobile Web client and cross-origin/session implications.
 
 These questions do not reopen the fixed decisions of one backend/database/RBAC system, authoritative finance reuse, explicit portal linking, class plus direct-student quiz targets, or manual-first payment reminders.
+
+The detailed approved role flows, Feed rules, attendance model, assessment boundary, Quiz separation, Finance boundary, and delivery order are recorded in [MIS App Product Specification](mobile-app-product-spec.md). Visual decisions are authoritative in the root [Design System](../DESIGN.md).

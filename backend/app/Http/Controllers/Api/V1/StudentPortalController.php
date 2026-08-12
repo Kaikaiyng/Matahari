@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\AttendanceRecord;
 use App\Models\ClassEnrolment;
 use App\Models\Student;
 use App\Models\TeachingAssignment;
@@ -88,6 +89,32 @@ class StudentPortalController extends Controller
         });
 
         return response()->json(['data' => $result->values()]);
+    }
+
+    public function attendance(Request $request): JsonResponse
+    {
+        SchoolContext::fromRequest($request);
+        $student = $this->resolveStudent($request);
+        if (! $student) {
+            return response()->json(['data' => []]);
+        }
+
+        $records = AttendanceRecord::query()
+            ->with(['session.schoolClass'])
+            ->where('school_id', $student->school_id)
+            ->where('student_id', $student->id)
+            ->latest('id')
+            ->get()
+            ->map(fn (AttendanceRecord $record) => [
+                'id' => $record->id,
+                'attendance_date' => $record->session->attendance_date->toDateString(),
+                'session_type' => $record->session->session_type,
+                'status' => $record->status,
+                'public_note' => $record->public_note,
+                'class' => ['id' => $record->session->schoolClass->id, 'name' => $record->session->schoolClass->name],
+            ])->values();
+
+        return response()->json(['data' => $records]);
     }
 
     private function resolveStudent(Request $request): ?Student

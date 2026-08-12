@@ -29,6 +29,7 @@ async function createFixture() {
     'backend/artisan',
     'backend/vendor/autoload.php',
     'frontend/dist/index.html',
+    'app/dist/index.html',
   ]
 
   await Promise.all(files.map((file) => writeFixture(root, file)))
@@ -40,6 +41,7 @@ async function createFixture() {
     JSON.stringify({ packages: [{ name: 'laravel/framework', version: 'v13.17.0' }] }),
   )
   await writeFixture(root, 'frontend/package-lock.json', '{"lockfileVersion":3}\n')
+  await writeFixture(root, 'app/package-lock.json', '{"lockfileVersion":3}\n')
   await writeFixture(root, 'backend/.env', 'DB_PASSWORD=secret\n')
   await writeFixture(root, 'backend/database/database.sqlite', 'private database')
 
@@ -73,6 +75,7 @@ test('creates a stable manifest from only deployable files', async (context) => 
   assert.deepEqual(manifest.migrations, ['2026_01_01_000001_example.php'])
   assert.ok(manifest.files.some((file) => file.path === 'backend/app/Example.php'))
   assert.ok(manifest.files.some((file) => file.path === 'frontend/dist/index.html'))
+  assert.ok(manifest.files.some((file) => file.path === 'app/dist/index.html'))
   assert.ok(manifest.files.every((file) => /^[a-f0-9]{64}$/.test(file.sha256)))
   await assert.rejects(readFile(join(output, 'backend', '.env')), /ENOENT/)
   await assert.rejects(readFile(join(output, 'backend', 'database', 'database.sqlite')), /ENOENT/)

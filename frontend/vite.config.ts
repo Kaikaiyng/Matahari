@@ -13,7 +13,7 @@ export function createViteConfig(env: Record<string, string | undefined> = proce
       css: true,
     },
     server: {
-      allowedHosts: ['.trycloudflare.com'],
+      allowedHosts: ['localhost', '.trycloudflare.com'],
       proxy: {
         '/api': apiProxyTarget,
       },
@@ -22,7 +22,7 @@ export function createViteConfig(env: Record<string, string | undefined> = proce
       host: '127.0.0.1',
       port: 4175,
       strictPort: true,
-      allowedHosts: ['.trycloudflare.com'],
+      allowedHosts: ['localhost', '.trycloudflare.com'],
       proxy: {
         '/api': apiProxyTarget,
       },

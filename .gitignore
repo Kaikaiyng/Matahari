@@ -4,3 +4,4 @@
 /deploy/.build/
 /deploy/artifacts/
 /frontend/test-results/
+/.worktrees/

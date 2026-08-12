@@ -20,9 +20,6 @@ import { productBrand } from './branding'
 import { BrandMark } from './components/BrandMark'
 import { AdminShell } from './components/AdminShell'
 import type { NavigationGroup } from './components/AdminShell'
-import { MobileShell } from './components/MobileShell'
-import { ParentPortalView } from './components/ParentPortalView'
-import { StudentPortalView } from './components/StudentPortalView'
 import { DeploymentBanner } from './components/DeploymentBanner'
 import {
   IconlyDashboard,
@@ -4714,18 +4711,6 @@ function App() {
   const [activePage, setActivePage] = useState<PageKey>('dashboard')
   const [focusedStudentId, setFocusedStudentId] = useState<number | null>(null)
   const [classReturnContext, setClassReturnContext] = useState<SchoolClassOption | null>(null)
-  const [viewMode] = useState<'admin' | 'mobile'>(() => {
-    try {
-      const searchParams = new URLSearchParams(window.location.search)
-      const isPortalRoute = window.location.pathname.startsWith('/portal') || searchParams.has('portal')
-      const isPortalSubdomain = window.location.hostname.startsWith('portal') || window.location.hostname.startsWith('app')
-      return isPortalRoute || isPortalSubdomain ? 'mobile' : 'admin'
-    } catch {
-      return 'admin'
-    }
-  })
-  const [mobileTab, setMobileTab] = useState<string>('home')
-  const [portalRole, setPortalRole] = useState<'parent' | 'student'>('parent')
 
   const loadDashboard = async (sessionUser: CurrentUser) => {
     setDashboard(null)
@@ -4800,16 +4785,6 @@ function App() {
     setClassReturnContext(null)
   }
 
-  const allowedPortalRoles: Array<'parent' | 'student'> = user
-    ? [
-        ...(user.roles.includes('parent') ? ['parent' as const] : []),
-        ...(user.roles.includes('student') ? ['student' as const] : []),
-      ]
-    : []
-  const effectivePortalRole = allowedPortalRoles.includes(portalRole)
-    ? portalRole
-    : allowedPortalRoles[0]
-
   const openStudentDetail = (studentId: number) => {
     setClassReturnContext(null)
     setFocusedStudentId(studentId)
@@ -4856,6 +4831,17 @@ function App() {
         <DeploymentBanner />
         <LoginPage onLogin={handleLogin} />
       </>
+    )
+  }
+
+  const adminRoles = ['super-admin', 'school-admin', 'finance', 'ceo', 'teacher']
+  if (!user.roles.some((role) => adminRoles.includes(role))) {
+    return (
+      <main className="admin-access-unavailable">
+        <h1>Admin access unavailable</h1>
+        <p>This account belongs to the Parent/Student App and cannot enter the Admin Panel.</p>
+        <button type="button" className="primary-button" onClick={() => void handleLogout()}>Logout</button>
+      </main>
     )
   }
 
@@ -4937,41 +4923,6 @@ function App() {
         )}
         <DashboardPage dashboard={dashboard} apiState={apiState} user={user} setActivePage={setActivePage} />
       </>
-    )
-  }
-
-  if (viewMode === 'mobile') {
-    if (!effectivePortalRole) {
-      return (
-        <section className="portal-access-unavailable">
-          <BrandMark />
-          <h1>Portal access unavailable</h1>
-          <p>This account does not have an active Parent or Student portal role.</p>
-          <button type="button" className="primary-button" onClick={() => void handleLogout()}>Logout</button>
-        </section>
-      )
-    }
-
-    return (
-      <MobileShell
-        activeTab={mobileTab}
-        onTabChange={setMobileTab}
-        userRole={effectivePortalRole}
-        allowedRoles={allowedPortalRoles}
-        onRoleChange={(role) => {
-          setPortalRole(role)
-          setMobileTab('home')
-        }}
-        onLogout={() => void handleLogout()}
-        userName={user.name}
-        environment="staging"
-      >
-        {effectivePortalRole === 'student' ? (
-          <StudentPortalView studentName={user.name} activeTab={mobileTab} />
-        ) : (
-          <ParentPortalView parentName={user.name} activeTab={mobileTab} />
-        )}
-      </MobileShell>
     )
   }
 

@@ -1,0 +1,43 @@
+:root {
+  --brand-primary: #e11d48;
+  --brand-primary-dark: #be123c;
+  --brand-primary-soft: #fff1f2;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #0f172a;
+  background: #e8ebf2;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { width: 100%; min-width: 0; min-height: 100%; }
+body { margin: 0; overflow-x: hidden; }
+button, input, select { font: inherit; }
+:where(button, input, select, [tabindex]):focus-visible {
+  outline: 3px solid var(--brand-primary-dark);
+  outline-offset: 2px;
+}
+
+.portal-state-screen {
+  width: min(100% - 32px, 420px);
+  min-height: 100vh;
+  margin: 0 auto;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  gap: 12px;
+}
+
+.portal-state-screen img { width: 64px; margin: 0 auto 8px; }
+.portal-state-screen h1, .portal-state-screen p { margin: 0; }
+.portal-state-screen p { color: #64748b; line-height: 1.5; }
+.portal-state-screen button {
+  border: 0;
+  border-radius: 12px;
+  padding: 12px 18px;
+  background: var(--brand-primary);
+  color: white;
+  font-weight: 750;
+  cursor: pointer;
+}

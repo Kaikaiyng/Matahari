@@ -9,7 +9,7 @@
 ```mermaid
 flowchart LR
     Browser["Browser: React 19 + TypeScript"]
-    Mobile["Experimental /portal Parent / Student web preview"]
+    Mobile["Independent app/ Parent / Student web client"]
     Vite["Vite dev server or Preview"]
     API["Laravel 13 JSON API"]
     DB["SQLite demo/tests or MariaDB direction"]
@@ -18,7 +18,7 @@ flowchart LR
     Tunnel["Optional temporary demo tunnel"]
 
     Browser <-->|"local assets"| Vite
-    Mobile -.->|"planned /api/v1 self-service APIs"| API
+    Mobile -->|"/api/v1 self-service + teacher attendance"| API
     Browser -->|"same-origin /api + session/CSRF cookies"| Vite
     Browser <-->|"temporary public HTTPS"| Tunnel
     Tunnel <-->|"forwards to Preview"| Vite
@@ -29,7 +29,7 @@ flowchart LR
     API -.->|"test sessions"| Memory
 ```
 
-The current frontend and backend are separate applications. Laravel is the security and persistence boundary; React is not authoritative for permissions or financial state. The mobile node is an approved target, not implemented code. It will reuse the same API, database, identity/RBAC, and finance domain rather than create a mobile backend.
+The Admin frontend, Parent/Student App, and backend are separate applications. Laravel remains the shared security and persistence boundary; neither React client is authoritative for permissions or financial state. Both clients reuse the same API, database, identity/RBAC, and domain services rather than creating a second mobile backend.
 
 ## Backend Structure
 
@@ -42,6 +42,7 @@ The current frontend and backend are separate applications. Laravel is the secur
 - `app/Support/SchoolContext.php` and `ResolveSchoolContext`: consistent school resolution for new Phase A `/api/v1` modules.
 - `app/Policies/`: Phase A academic and portal-link resource authorization.
 - `app/Services/Foundation/`: academic foundation, teacher scope, portal-link, and minimum foundation-account transactions.
+- `app/Services/Attendance/`: teaching-assignment-scoped daily attendance and transactional correction audit.
 - `app/Services/FeeAgreements/`: agreement creation and superseding transactions.
 - `app/Services/Billing/`: Fee Record generation/summary, payment, receipt, numbering, and legacy invoice services.
 - `app/Services/Audit/` and `app/Audit/`: audit events, trusted context, sanitization, and persistence.
@@ -64,7 +65,9 @@ Legacy authorization remains primarily route middleware plus distributed scope c
 
 The application does not use React Router, Redux, React Query, or another global data layer. Page selection is component state, so there are no deep links or browser-history routes. Data fetching uses local state/effects and the shared API wrapper.
 
-No native or separate mobile-client workspace currently exists. The experimental `/portal` surface is isolated by route and components but shares the existing React build. Its long-term workspace/build boundary remains a reviewed architecture decision.
+`frontend/` and `app/` are independent React workspaces. Admin and Parent/Student App are built and deployed separately on different domains, while each domain reverse-proxies its own `/api` path to the same Laravel backend. This same-origin browser topology preserves the existing session-cookie and CSRF model. A native workspace and store packaging do not exist yet.
+
+The approved App direction adds a Teacher/Staff mobile mode without turning `app/` into an administrative back door. Community publication is school/class-audience scoped; attendance and academic mutations remain teaching-assignment scoped; Parent/Student reads remain guardian-child or student-self scoped. Admin moderation and broad operational management remain in `frontend/`.
 
 ## Authentication Flow
 
@@ -102,6 +105,8 @@ cookie/session middleware
 New Phase A modules use a consistent chain under `/api/v1`: authenticated active user, permission middleware, `ResolveSchoolContext`, resource policy/access service, school-scoped query, and transactional domain service. Self-service callers do not provide their own school scope. Legacy endpoints retain their current distributed checks and can migrate incrementally.
 
 Teacher roster access requires an active/current teaching assignment matching the authenticated teacher, school, academic year, class, and subject. Portal identity linking requires exact same-school users with the required role; it never uses guessed personal-data matching.
+
+Daily attendance reuses that teaching scope. A Teacher can create or update one `daily` session for an assigned class/date. Submitted changes require a correction reason. Parent reads require an active guardian-child link with `can_view_academics = true`; Student reads resolve only the authenticated user's same-school student link. React role visibility is not the authorization boundary.
 
 ## Request and Validation Flow
 
@@ -148,6 +153,7 @@ Implemented:
 - Central `AuditLoggerContract`/`AuditLogger` binding.
 - Secure audit columns, indexes, event UUID uniqueness, legacy backfill, and Eloquent instance immutability.
 - Required transactional events for student create/update/status, agreement create/supersede, Fee Record activation/manual charges, payment record/verify/void, and receipt issue/void.
+- Required transactional events for daily attendance submission and correction.
 - Best-effort login success/failure/logout events with a dedicated redacted security-log fallback if audit storage fails.
 - `GET /api/audit-logs` and `GET /api/audit-logs/{auditLog}` with validated filters, stable cursor pagination, output re-sanitization, and `audit.view` backend enforcement.
 - A permission-visible, read-only Audit Trail UI for Super Admin.
