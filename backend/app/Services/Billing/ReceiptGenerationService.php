@@ -200,7 +200,7 @@ class ReceiptGenerationService
 
     private function nextReceiptNumber(Payment $payment, Carbon $receiptDate): string
     {
-        $prefix = $payment->school?->receipt_prefix ?: $payment->school?->code ?: 'DEMO';
+        $prefix = $payment->school?->receipt_prefix ?: $payment->school?->code ?: 'MIS';
         $series = 'A';
         $sequence = $this->lockedSequence((int) $payment->school_id, $prefix, $series);
 

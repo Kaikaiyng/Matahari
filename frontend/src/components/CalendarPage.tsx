@@ -764,15 +764,12 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
               </label>
 
               <div ref={participantPickerRef} className="calendar-setting-row calendar-participants-row">
-                <button
+                <span
                   className="calendar-participant-add"
-                  type="button"
-                  aria-label="Add participants"
-                  aria-expanded={participantPickerOpen}
-                  onClick={() => setParticipantPickerOpen((open) => !open)}
+                  aria-hidden="true"
                 >
                   <UserPlus size={18} aria-hidden="true" />
-                </button>
+                </span>
                 <div className="calendar-participant-picker">
                   <span className="calendar-participant-label">Participants</span>
                   <div className="calendar-participant-selection">

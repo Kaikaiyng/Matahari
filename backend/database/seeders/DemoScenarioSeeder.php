@@ -8,6 +8,7 @@ use App\Models\FeeItem;
 use App\Models\FeeRecordCharge;
 use App\Models\Guardian;
 use App\Models\Payment;
+use App\Models\PortalNotification;
 use App\Models\Receipt;
 use App\Models\School;
 use App\Models\SchoolClass;
@@ -22,7 +23,7 @@ class DemoScenarioSeeder extends Seeder
 {
     public function run(): void
     {
-        $school = School::query()->where('code', 'DEMO')->firstOrFail();
+        $school = School::query()->where('code', 'MIS')->firstOrFail();
         $admin = User::query()->where('username', 'admin')->firstOrFail();
         $yearTwo = SchoolClass::query()
             ->where('school_id', $school->id)
@@ -40,22 +41,23 @@ class DemoScenarioSeeder extends Seeder
             ->where('code', 'MISC')
             ->firstOrFail();
 
-        $alyssa = Student::query()->where('school_id', $school->id)->where('student_no', 'DEMO-2026-001')->firstOrFail();
-        $daniel = Student::query()->where('school_id', $school->id)->where('student_no', 'DEMO-2026-002')->firstOrFail();
-        $mika = Student::query()->where('school_id', $school->id)->where('student_no', 'DEMO-2026-003')->firstOrFail();
+        $alyssa = Student::query()->where('school_id', $school->id)->where('student_no', 'MIS-2026-001')->firstOrFail();
+        $daniel = Student::query()->where('school_id', $school->id)->where('student_no', 'MIS-2026-002')->firstOrFail();
+        $mika = Student::query()->where('school_id', $school->id)->where('student_no', 'MIS-2026-003')->firstOrFail();
 
         $this->activateAgreement($alyssa, $admin, [$tuition, $misc], [7, 8, 9]);
-        $this->activateAgreement($daniel, $admin, [$tuition, $misc], [7]);
-        $this->activateAgreement($mika, $admin, [$tuition, $misc], [7, 8]);
+        $this->activateAgreement($daniel, $admin, [$tuition, $misc], [7, 8, 9]);
+        $this->activateAgreement($mika, $admin, [$tuition, $misc], [7, 8, 9]);
 
         $this->createPaidScenario($daniel, $admin);
         $this->createPartialScenario($mika, $admin);
+        $this->createDemoNotifications($school);
     }
 
     private function createUnconfiguredStudent(School $school, SchoolClass $schoolClass): void
     {
         $student = Student::query()->updateOrCreate(
-            ['school_id' => $school->id, 'student_no' => 'DEMO-2026-004'],
+            ['school_id' => $school->id, 'student_no' => 'MIS-2026-004'],
             [
                 'class_id' => $schoolClass->id,
                 'level_group' => 'primary',
@@ -106,7 +108,7 @@ class DemoScenarioSeeder extends Seeder
                 'effective_to' => '2026-12-31',
                 'is_current' => true,
                 'status' => 'active',
-                'remarks' => 'Demo fee agreement',
+                'remarks' => 'Fee agreement',
                 'created_by' => $admin->id,
                 'updated_by' => $admin->id,
             ],
@@ -150,7 +152,7 @@ class DemoScenarioSeeder extends Seeder
     {
         $payment = Payment::query()
             ->where('student_id', $student->id)
-            ->where('remark', 'Demo fully paid account')
+            ->where('remark', 'Fully paid account')
             ->first();
 
         if (! $payment) {
@@ -164,11 +166,11 @@ class DemoScenarioSeeder extends Seeder
 
             $payment = app(PaymentRecordingService::class)->createForStudent($student, [
                 'payment_method' => 'cash',
-                'payment_date' => '2026-07-10',
-                'received_date' => '2026-07-10',
+                'payment_date' => '2026-08-10',
+                'received_date' => '2026-08-10',
                 'amount' => $amount,
                 'paid_by' => 'Jonathan Lim',
-                'remark' => 'Demo fully paid account',
+                'remark' => 'Fully paid account',
                 'academic_year' => '2026',
                 'allocations' => $charges->map(fn (FeeRecordCharge $charge) => [
                     'allocation_type' => 'charge',
@@ -186,7 +188,7 @@ class DemoScenarioSeeder extends Seeder
 
         if (! $hasReceipt) {
             app(ReceiptGenerationService::class)->generate($payment, [
-                'receipt_date' => '2026-07-10',
+                'receipt_date' => '2026-08-10',
                 'paid_by' => 'Jonathan Lim',
             ], $admin);
         }
@@ -194,7 +196,7 @@ class DemoScenarioSeeder extends Seeder
 
     private function createPartialScenario(Student $student, User $admin): void
     {
-        if (Payment::query()->where('student_id', $student->id)->where('remark', 'Demo partial payment')->exists()) {
+        if (Payment::query()->where('student_id', $student->id)->where('remark', 'Partial payment')->exists()) {
             return;
         }
 
@@ -208,11 +210,11 @@ class DemoScenarioSeeder extends Seeder
 
         app(PaymentRecordingService::class)->createForStudent($student, [
             'payment_method' => 'cash',
-            'payment_date' => '2026-07-12',
-            'received_date' => '2026-07-12',
+            'payment_date' => '2026-08-12',
+            'received_date' => '2026-08-12',
             'amount' => 400,
             'paid_by' => 'Rachel Wong',
-            'remark' => 'Demo partial payment',
+            'remark' => 'Partial payment',
             'academic_year' => '2026',
             'allocations' => [[
                 'allocation_type' => 'charge',
@@ -221,5 +223,34 @@ class DemoScenarioSeeder extends Seeder
                 'amount' => 400,
             ]],
         ], $admin);
+    }
+
+    private function createDemoNotifications(School $school): void
+    {
+        $parent = User::query()->where('school_id', $school->id)->where('username', 'rachel.wong')->first();
+        $student = User::query()->where('school_id', $school->id)->where('username', 'alyssa.tan')->first();
+        if (! $parent || ! $student) {
+            return;
+        }
+
+        PortalNotification::query()->updateOrCreate(
+            ['school_id' => $school->id, 'title' => 'Term 3 Fee Invoice Issued'],
+            [
+                'recipient_user_id' => $parent->id,
+                'type' => 'finance',
+                'body' => 'Fee invoice for Term 3 (2026) has been generated. Please view outstanding balance and payment history in Finance tab.',
+                'created_at' => now()->subHours(2),
+            ],
+        );
+
+        PortalNotification::query()->updateOrCreate(
+            ['school_id' => $school->id, 'title' => 'Parent-Teacher Conference Scheduled'],
+            [
+                'recipient_user_id' => $student->id,
+                'type' => 'general',
+                'body' => 'Mid-term Parent-Teacher Conference will be held on Friday, August 28th. Please confirm attendance with your class teacher.',
+                'created_at' => now()->subDays(1),
+            ],
+        );
     }
 }

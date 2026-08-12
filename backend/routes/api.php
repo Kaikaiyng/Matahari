@@ -17,7 +17,11 @@ use App\Http\Controllers\Api\StudentStatusController;
 use App\Http\Controllers\Api\V1\AcademicYearController;
 use App\Http\Controllers\Api\V1\ClassEnrolmentController;
 use App\Http\Controllers\Api\V1\FoundationAccountController;
+use App\Http\Controllers\Api\V1\ParentPortalController;
 use App\Http\Controllers\Api\V1\PortalLinkController;
+use App\Http\Controllers\Api\V1\PortalNotificationController;
+use App\Http\Controllers\Api\V1\StaffController;
+use App\Http\Controllers\Api\V1\StudentPortalController;
 use App\Http\Controllers\Api\V1\SubjectController;
 use App\Http\Controllers\Api\V1\TeacherScopeController;
 use App\Http\Controllers\Api\V1\TeachingAssignmentController;
@@ -151,10 +155,35 @@ Route::prefix('v1')->middleware([...$sessionMiddleware, 'auth', 'active', 'schoo
         Route::patch('/student-parent-links/{studentParentLink}/portal-access', [PortalLinkController::class, 'guardianAccess'])->middleware('permission:portal_links.manage');
         Route::patch('/users/{user}/foundation-roles', [FoundationAccountController::class, 'roles'])->middleware('permission:foundation_accounts.manage');
         Route::post('/users', [FoundationAccountController::class, 'store'])->middleware('permission:foundation_accounts.manage');
+        Route::get('/staff', [StaffController::class, 'index'])->middleware('permission:foundation_accounts.manage');
+        Route::post('/staff', [StaffController::class, 'store'])->middleware('permission:foundation_accounts.manage');
     });
 
     Route::prefix('teacher')->middleware('permission:teaching_scope.view')->group(function (): void {
         Route::get('/teaching-assignments', [TeacherScopeController::class, 'assignments']);
         Route::get('/classes/{schoolClass}/students', [TeacherScopeController::class, 'students']);
+    });
+
+    Route::prefix('portal')->group(function (): void {
+        // Parent portal — requires active guardian link per resource
+        Route::prefix('parent')->middleware('permission:parent.self_service')->group(function (): void {
+            Route::get('/me', [ParentPortalController::class, 'me']);
+            Route::get('/children/{student}/outstanding', [ParentPortalController::class, 'childOutstanding']);
+            Route::get('/children/{student}/payments', [ParentPortalController::class, 'childPayments']);
+            Route::get('/children/{student}/receipts', [ParentPortalController::class, 'childReceipts']);
+        });
+
+        // Student portal — requires active student-self link
+        Route::prefix('student')->middleware('permission:student.self_service')->group(function (): void {
+            Route::get('/me', [StudentPortalController::class, 'me']);
+            Route::get('/enrolments', [StudentPortalController::class, 'enrolments']);
+        });
+
+        // In-app notifications — available to both parent and student
+        Route::prefix('notifications')->group(function (): void {
+            Route::get('/', [PortalNotificationController::class, 'index']);
+            Route::patch('/{portalNotification}/read', [PortalNotificationController::class, 'markRead']);
+            Route::post('/mark-all-read', [PortalNotificationController::class, 'markAllRead']);
+        });
     });
 });

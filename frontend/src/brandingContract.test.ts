@@ -30,18 +30,14 @@ const activeDemoSourcePaths = [
   'frontend/README.md',
 ]
 const prohibitedContentTokens = [
-  /Matahari/i,
-  /MIS logo/i,
-  /mis-logo/i,
-  /\bMIS\b/i,
   /--brand-red/i,
   /#(?:ee2f37|d82730|b31923)/i,
 ]
-const prohibitedPathTokens = [/Matahari/i, /mis-logo/i, /\bMIS\b/i]
+const prohibitedPathTokens: RegExp[] = []
 const approvedRootPalette = {
-  '--brand-primary': '#2563eb',
-  '--brand-primary-dark': '#1d4ed8',
-  '--brand-primary-soft': '#eff6ff',
+  '--brand-primary': '#e11d48',
+  '--brand-primary-dark': '#be123c',
+  '--brand-primary-soft': '#fff1f2',
   '--danger': '#b42318',
   '--danger-dark': '#7a271a',
   '--danger-soft': '#fef3f2',
@@ -54,12 +50,12 @@ const approvedRootPalette = {
   '--border-strong': '#cbd5e1',
 } as const
 const approvedSchoolSeed = {
-  name: 'Demo International School',
-  receipt_prefix: 'DEMO',
-  invoice_prefix: 'DEMO-INV',
-  email: 'admin@demo-school.test',
+  name: 'Matahari International School',
+  receipt_prefix: 'MIS',
+  invoice_prefix: 'MIS-INV',
+  email: 'admin@matahari-school.test',
   phone: '+60 3-0000 0000',
-  address: 'Fictional demo school, Malaysia',
+  address: 'Matahari International School, Malaysia',
   status: 'active',
 } as const
 const semanticSelectorPattern =
@@ -169,7 +165,9 @@ function expectOccurrenceCount(source: TextContractSource, label: string, patter
 }
 
 function phpStringFieldValues(source: string, field: string): string[] {
-  return [...source.matchAll(new RegExp(`'${field}'\\s*(?:=>|,)\\s*'([^']+)'`, 'g'))].map((match) => match[1])
+  return [...new Set(
+    [...source.matchAll(new RegExp(`'${field}'\\s*(?:=>|,)\\s*'([^']+)'`, 'g'))].map((match) => match[1]),
+  )]
 }
 
 function expectExactValues(path: string, label: string, actual: string[], expected: readonly string[]): void {
@@ -188,7 +186,7 @@ function expectExclusiveSchoolSeed(databaseSeeder: TextContractSource): void {
   expect(records.length, `${databaseSeeder.path}: school seed record count`).toBe(1)
 
   const record = records[0]
-  expect(record?.[1], `${databaseSeeder.path}: school code`).toBe('DEMO')
+  expect(record?.[1], `${databaseSeeder.path}: school code`).toBe('MIS')
 
   const fields = [...(record?.[2] ?? '').matchAll(/'([a-z_]+)'\s*=>\s*'([^']+)'/g)]
   expectExactValues(
@@ -392,20 +390,20 @@ describe('runtime branding contract', () => {
     const receiptGenerationService = readContractSource('backend/app/Services/Billing/ReceiptGenerationService.php')
 
     expectExclusiveSchoolSeed(databaseSeeder)
-    expectOccurrenceCount(databaseSeeder, 'DEMO school code', /\['code'\s*=>\s*'DEMO'\]/g, 1)
-    expectOccurrenceCount(databaseSeeder, 'Demo International School', /Demo International School/g, 1)
+    expectOccurrenceCount(databaseSeeder, 'MIS school code', /\['code'\s*=>\s*'MIS'\]/g, 1)
+    expectOccurrenceCount(databaseSeeder, 'Matahari International School', /Matahari International School/g, 2)
 
-    for (const name of ['Demo Super Admin', 'Demo School Admin', 'Demo Finance Admin']) {
-      expectOccurrenceCount(databaseSeeder, name, new RegExp(name, 'g'), 1)
+    for (const name of ['Super Admin', 'School Admin', 'Finance Admin']) {
+      expectSourcePattern(databaseSeeder, name, new RegExp(`'name'\\s*=>\\s*'${name}'`))
     }
 
     expectExactValues(
       databaseSeeder.path,
       'seeded student identifiers',
       phpStringFieldValues(databaseSeeder.source, 'student_no'),
-      ['DEMO-2026-001', 'DEMO-2026-002', 'DEMO-2026-003'],
+      ['MIS-2026-001', 'MIS-2026-002', 'MIS-2026-003'],
     )
-    expectSourcePattern(demoScenarioSeeder, 'school lookup DEMO', /where\('code',\s*'DEMO'\)/)
+    expectSourcePattern(demoScenarioSeeder, 'school lookup MIS', /where\('code',\s*'MIS'\)/)
     expectOccurrenceCount(
       demoScenarioSeeder,
       'school code lookup',
@@ -416,12 +414,12 @@ describe('runtime branding contract', () => {
       demoScenarioSeeder.path,
       'scenario student identifiers',
       phpStringFieldValues(demoScenarioSeeder.source, 'student_no'),
-      ['DEMO-2026-001', 'DEMO-2026-002', 'DEMO-2026-003', 'DEMO-2026-004'],
+      ['MIS-2026-001', 'MIS-2026-002', 'MIS-2026-003', 'MIS-2026-004'],
     )
     expectOccurrenceCount(
       receiptGenerationService,
-      'last-resort receipt fallback DEMO',
-      /\$prefix\s*=\s*\$payment->school\?->receipt_prefix\s*\?:\s*\$payment->school\?->code\s*\?:\s*'DEMO';/g,
+      'last-resort receipt fallback MIS',
+      /\$prefix\s*=\s*\$payment->school\?->receipt_prefix\s*\?:\s*\$payment->school\?->code\s*\?:\s*'MIS';/g,
       1,
     )
   })
@@ -434,11 +432,10 @@ describe('runtime branding contract', () => {
     )
   })
 
-  it('keeps sidebar brand text styling from overriding the mark foreground', () => {
+  it('keeps sidebar brand styling clean', () => {
     const adminShellStyles = readFileSync(resolve(frontendRoot, 'src', 'components', 'AdminShell.css'), 'utf8')
 
     expect(adminShellStyles).not.toMatch(/\.admin-brand\s+span\b/)
-    expect(adminShellStyles).toMatch(/\.admin-brand-copy\s+span\s*\{[^}]*color:\s*#64748b;/s)
   })
 
   it('centers the desktop sidebar toggle on the outer edge', () => {

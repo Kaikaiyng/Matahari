@@ -79,7 +79,7 @@ export function FilterToolbar({ ariaLabel, children }: { ariaLabel: string; chil
 }
 
 type DataPanelProps = {
-  title: string
+  title: ReactNode
   eyebrow?: string
   action?: ReactNode
   children: ReactNode
@@ -87,8 +87,9 @@ type DataPanelProps = {
 }
 
 export function DataPanel({ title, eyebrow, action, children, className = '' }: DataPanelProps) {
+  const ariaLabel = typeof title === 'string' ? title : undefined
   return (
-    <section className={`data-panel ${className}`.trim()} aria-label={title}>
+    <section className={`data-panel ${className}`.trim()} aria-label={ariaLabel}>
       <header className="data-panel-header">
         <div>
           {eyebrow && <p className="eyebrow">{eyebrow}</p>}

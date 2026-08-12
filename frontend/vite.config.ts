@@ -1,7 +1,8 @@
 import react from '@vitejs/plugin-react'
+import { loadEnv } from 'vite'
 import { defineConfig, type ViteUserConfig } from 'vitest/config'
 
-export function createViteConfig(env: NodeJS.ProcessEnv = process.env): ViteUserConfig {
+export function createViteConfig(env: Record<string, string | undefined> = process.env): ViteUserConfig {
   const apiProxyTarget = env.VITE_API_PROXY_TARGET ?? 'http://127.0.0.1:8000'
 
   return {
@@ -29,4 +30,7 @@ export function createViteConfig(env: NodeJS.ProcessEnv = process.env): ViteUser
   }
 }
 
-export default defineConfig(createViteConfig())
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode || 'development', process.cwd(), '')
+  return createViteConfig(env)
+})

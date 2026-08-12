@@ -1,4 +1,4 @@
-# School Admin System Demo Script
+# Matahari International School Demo Script
 
 Status: Current demo sequence
 
@@ -41,7 +41,7 @@ For a real iPad, connect both devices to the same trusted LAN and follow [Develo
 Suggested explanation:
 
 ```text
-This is an independent School Admin System workflow prototype.
+This is the Matahari International School administration and finance workflow prototype.
 
 The demo uses a fictional school, fictional users, and sample financial records. It is
 not affiliated with or endorsed by any school, and printed receipts are not valid receipts.

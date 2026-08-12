@@ -8,14 +8,8 @@ import {
   CreditCard,
   Eye,
   GraduationCap,
-  History,
-  LayoutDashboard,
-  LockKeyhole,
-  Mail,
-  Phone,
   RefreshCw,
   Search,
-  Settings2,
   School,
   ShieldCheck,
   UserPlus,
@@ -26,7 +20,25 @@ import { productBrand } from './branding'
 import { BrandMark } from './components/BrandMark'
 import { AdminShell } from './components/AdminShell'
 import type { NavigationGroup } from './components/AdminShell'
+import { MobileShell } from './components/MobileShell'
+import { ParentPortalView } from './components/ParentPortalView'
+import { StudentPortalView } from './components/StudentPortalView'
 import { DeploymentBanner } from './components/DeploymentBanner'
+import {
+  IconlyDashboard,
+  IconlyCalendar,
+  IconlyGraduationCap,
+  IconlyClasses,
+  IconlyParents,
+  IconlyFees,
+  IconlyFeeRecord,
+  IconlyAudit,
+  IconlySettings,
+  IconlyStaff,
+} from './components/icons/IconlyIcons'
+import { StaffPage } from './components/StaffPage'
+import { ParentsPage } from './components/ParentsPage'
+import { LoginPage } from './components/LoginPage'
 import {
   DataPanel,
   FieldError,
@@ -78,6 +90,7 @@ type PageKey =
   | 'students'
   | 'classes'
   | 'parents'
+  | 'employees'
   | 'fees'
   | 'fee-record'
   | 'audit'
@@ -359,50 +372,36 @@ const navGroups: NavigationGroup<PageKey>[] = [
   {
     label: 'Overview',
     items: [
-      { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, requiredPermission: 'fee_record.view' },
-      { key: 'calendar', label: 'Calendar', icon: CalendarDays, requiredPermission: 'calendar.view' },
+      { key: 'dashboard', label: 'Dashboard', icon: IconlyDashboard as any, requiredPermission: 'fee_record.view' },
+      { key: 'calendar', label: 'Calendar', icon: IconlyCalendar as any, requiredPermission: 'calendar.view' },
     ],
   },
   {
     label: 'People',
     items: [
-      { key: 'students', label: 'Students', icon: GraduationCap, requiredPermission: 'students.view' },
-      { key: 'classes', label: 'Classes', icon: School, requiredPermission: 'students.view' },
-      { key: 'parents', label: 'Parents', icon: Users, requiredPermission: 'parents.view' },
+      { key: 'students', label: 'Students', icon: IconlyGraduationCap as any, requiredPermission: 'students.view' },
+      { key: 'classes', label: 'Classes', icon: IconlyClasses as any, requiredPermission: 'students.view' },
+      { key: 'parents', label: 'Parents', icon: IconlyParents as any, requiredPermission: 'parents.view' },
+      { key: 'employees', label: 'Employees', icon: IconlyStaff as any, requiredPermission: 'foundation_accounts.manage' },
     ],
   },
   {
     label: 'Finance',
     items: [
-      { key: 'fees', label: 'Fees', icon: CreditCard, requiredPermission: 'fee_items.view' },
-      { key: 'fee-record', label: 'Fee Record', icon: ClipboardList, requiredPermission: 'fee_record.view' },
+      { key: 'fees', label: 'Fees', icon: IconlyFees as any, requiredPermission: 'fee_items.view' },
+      { key: 'fee-record', label: 'Fee Record', icon: IconlyFeeRecord as any, requiredPermission: 'fee_record.view' },
     ],
   },
   {
     label: 'Administration',
     items: [
-      { key: 'audit', label: 'Audit Trail', icon: History, requiredPermission: 'audit.view' },
-      { key: 'settings', label: 'Settings', icon: Settings2 },
+      { key: 'audit', label: 'Audit Trail', icon: IconlyAudit as any, requiredPermission: 'audit.view' },
+      { key: 'settings', label: 'Settings', icon: IconlySettings as any, requiredPermission: 'foundation_accounts.manage' },
     ],
   },
 ]
 
 const navItems = navGroups.flatMap((group) => group.items)
-
-const parents = [
-  {
-    name: 'Michelle Tan',
-    phone: '012-345 6789',
-    email: 'michelle@example.test',
-    address: 'Fictional demo contact',
-  },
-  {
-    name: 'Jonathan Lim',
-    phone: '012-222 4411',
-    email: 'jonathan@example.test',
-    address: 'Fictional demo contact',
-  },
-]
 
 const feeStructures = [
   { item: 'Tuition Fee', type: 'Mandatory Fee Item', amount: 'Configured per agreement', status: 'Configured in Fee Agreement' },
@@ -508,10 +507,6 @@ function formatValidationError(errors: ValidationErrors | undefined, field: stri
   return errors?.[field]?.[0]
 }
 
-function repeatsValidationError(errors: ValidationErrors | undefined, message: string) {
-  return Object.values(errors ?? {}).some((messages) => messages.includes(message))
-}
-
 function statusClass(status: string) {
   const normalized = status.toLowerCase()
   if (normalized.includes('overdue') || normalized.includes('inactive') || normalized.includes('withdraw')) {
@@ -558,15 +553,6 @@ function paymentStatusClass(status: PaymentStatus) {
 
 function hasPermission(user: CurrentUser, permission: string) {
   return user.permissions.includes(permission)
-}
-
-function initials(name: string) {
-  return name
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join('')
 }
 
 function mapError(error: unknown) {
@@ -744,122 +730,9 @@ function Message({
   )
 }
 
-const REMEMBERED_USERNAME_KEY = 'matahari.rememberedUsername'
 
-function rememberedUsername() {
-  try {
-    return window.localStorage.getItem(REMEMBERED_USERNAME_KEY) ?? ''
-  } catch {
-    return ''
-  }
-}
 
-function LoginScreen({
-  onLogin,
-}: {
-  onLogin: (user: CurrentUser) => void
-}) {
-  const [username, setUsername] = useState(rememberedUsername)
-  const [password, setPassword] = useState('')
-  const [rememberMe, setRememberMe] = useState(() => Boolean(rememberedUsername()))
-  const [error, setError] = useState('')
-  const [errors, setErrors] = useState<ValidationErrors>()
-  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const submitLogin = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setError('')
-    setErrors(undefined)
-    setIsSubmitting(true)
-
-    try {
-      const response = await apiRequest<{ user: CurrentUser }>('/login', {
-        method: 'POST',
-        body: { username, password },
-      })
-      try {
-        if (rememberMe) {
-          window.localStorage.setItem(REMEMBERED_USERNAME_KEY, response.user.username)
-        } else {
-          window.localStorage.removeItem(REMEMBERED_USERNAME_KEY)
-        }
-      } catch {
-        // Login still works when browser storage is unavailable.
-      }
-      onLogin(response.user)
-    } catch (loginError) {
-      if (loginError instanceof ApiError) {
-        setErrors(loginError.errors)
-      }
-      setError(mapError(loginError))
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  return (
-    <main className="login-screen">
-      <form className="login-card" onSubmit={submitLogin}>
-        <BrandMark className="login-brand-mark" size={34} />
-        <div>
-          <p className="eyebrow">{productBrand.productName}</p>
-          <h1>Admin Login</h1>
-        </div>
-
-        {error && !repeatsValidationError(errors, error) && <Message tone="error">{error}</Message>}
-
-        <label className="form-field">
-          Username
-          <input
-            autoComplete="username"
-            value={username}
-            onChange={(event) => setUsername(event.target.value)}
-          />
-          {formatValidationError(errors, 'username') && (
-            <small>{formatValidationError(errors, 'username')}</small>
-          )}
-        </label>
-
-        <label className="form-field">
-          Password
-          <input
-            autoComplete="current-password"
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-          />
-          {formatValidationError(errors, 'password') && (
-            <small>{formatValidationError(errors, 'password')}</small>
-          )}
-        </label>
-
-        <label className="login-remember">
-          <input
-            type="checkbox"
-            checked={rememberMe}
-            onChange={(event) => {
-              const checked = event.target.checked
-              setRememberMe(checked)
-              if (!checked) {
-                try {
-                  window.localStorage.removeItem(REMEMBERED_USERNAME_KEY)
-                } catch {
-                  // The checkbox remains usable when browser storage is unavailable.
-                }
-              }
-            }}
-          />
-          <span>Remember me</span>
-        </label>
-
-        <button className="primary-action full-width" disabled={isSubmitting}>
-          <LockKeyhole size={18} />
-          {isSubmitting ? 'Logging in...' : 'Login'}
-        </button>
-      </form>
-    </main>
-  )
-}
 
 function StudentsPage({
   user,
@@ -3905,7 +3778,7 @@ function StudentsPage({
                     <BrandMark className="receipt-brand-mark" size={34} />
                     <div>
                       <p className="eyebrow">Sample Receipt</p>
-                      <h2>{productBrand.demoOrganizationName}</h2>
+                      <h2>{productBrand.organizationName}</h2>
                       <span>Payment made is not refundable.</span>
                     </div>
                   </div>
@@ -4032,42 +3905,6 @@ function StudentsPage({
   )
 }
 
-function ParentsPage() {
-  return (
-    <section className="page-stack">
-      <PageHeader
-        eyebrow="People"
-        title="Parent Contacts"
-        description="Review the current parent and guardian contact directory."
-      />
-      <DataPanel eyebrow="Directory" title="Parent Directory">
-        <section className="cards-grid contact-directory">
-          {parents.map((parent) => (
-            <article className="contact-card" key={parent.email}>
-              <div className="contact-avatar">{initials(parent.name)}</div>
-              <div>
-                <h3>{parent.name}</h3>
-                <p>{parent.address}</p>
-              </div>
-              <span>
-                <Phone size={15} />
-                {parent.phone}
-              </span>
-              <span>
-                <Mail size={15} />
-                {parent.email}
-              </span>
-              <span>
-                <ShieldCheck size={15} />
-                Parent module remains prototype
-              </span>
-            </article>
-          ))}
-        </section>
-      </DataPanel>
-    </section>
-  )
-}
 
 function SettingsPage({
   user,
@@ -4089,7 +3926,7 @@ function SettingsPage({
           <dl className="settings-summary">
             <div>
               <dt>Current school</dt>
-              <dd>{dashboard?.school.name ?? 'Matahari International School'}</dd>
+              <dd>{dashboard?.school.name ?? productBrand.organizationName}</dd>
             </div>
             <div>
               <dt>School ID</dt>
@@ -4877,6 +4714,18 @@ function App() {
   const [activePage, setActivePage] = useState<PageKey>('dashboard')
   const [focusedStudentId, setFocusedStudentId] = useState<number | null>(null)
   const [classReturnContext, setClassReturnContext] = useState<SchoolClassOption | null>(null)
+  const [viewMode] = useState<'admin' | 'mobile'>(() => {
+    try {
+      const searchParams = new URLSearchParams(window.location.search)
+      const isPortalRoute = window.location.pathname.startsWith('/portal') || searchParams.has('portal')
+      const isPortalSubdomain = window.location.hostname.startsWith('portal') || window.location.hostname.startsWith('app')
+      return isPortalRoute || isPortalSubdomain ? 'mobile' : 'admin'
+    } catch {
+      return 'admin'
+    }
+  })
+  const [mobileTab, setMobileTab] = useState<string>('home')
+  const [portalRole, setPortalRole] = useState<'parent' | 'student'>('parent')
 
   const loadDashboard = async (sessionUser: CurrentUser) => {
     setDashboard(null)
@@ -4951,6 +4800,16 @@ function App() {
     setClassReturnContext(null)
   }
 
+  const allowedPortalRoles: Array<'parent' | 'student'> = user
+    ? [
+        ...(user.roles.includes('parent') ? ['parent' as const] : []),
+        ...(user.roles.includes('student') ? ['student' as const] : []),
+      ]
+    : []
+  const effectivePortalRole = allowedPortalRoles.includes(portalRole)
+    ? portalRole
+    : allowedPortalRoles[0]
+
   const openStudentDetail = (studentId: number) => {
     setClassReturnContext(null)
     setFocusedStudentId(studentId)
@@ -4995,7 +4854,7 @@ function App() {
     return (
       <>
         <DeploymentBanner />
-        <LoginScreen onLogin={handleLogin} />
+        <LoginPage onLogin={handleLogin} />
       </>
     )
   }
@@ -5051,6 +4910,10 @@ function App() {
       return <ParentsPage />
     }
 
+    if (activePage === 'employees') {
+      return <StaffPage />
+    }
+
     if (activePage === 'fees') {
       return <FeesPage />
     }
@@ -5074,6 +4937,41 @@ function App() {
         )}
         <DashboardPage dashboard={dashboard} apiState={apiState} user={user} setActivePage={setActivePage} />
       </>
+    )
+  }
+
+  if (viewMode === 'mobile') {
+    if (!effectivePortalRole) {
+      return (
+        <section className="portal-access-unavailable">
+          <BrandMark />
+          <h1>Portal access unavailable</h1>
+          <p>This account does not have an active Parent or Student portal role.</p>
+          <button type="button" className="primary-button" onClick={() => void handleLogout()}>Logout</button>
+        </section>
+      )
+    }
+
+    return (
+      <MobileShell
+        activeTab={mobileTab}
+        onTabChange={setMobileTab}
+        userRole={effectivePortalRole}
+        allowedRoles={allowedPortalRoles}
+        onRoleChange={(role) => {
+          setPortalRole(role)
+          setMobileTab('home')
+        }}
+        onLogout={() => void handleLogout()}
+        userName={user.name}
+        environment="staging"
+      >
+        {effectivePortalRole === 'student' ? (
+          <StudentPortalView studentName={user.name} activeTab={mobileTab} />
+        ) : (
+          <ParentPortalView parentName={user.name} activeTab={mobileTab} />
+        )}
+      </MobileShell>
     )
   }
 

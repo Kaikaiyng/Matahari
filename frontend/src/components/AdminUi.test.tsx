@@ -300,8 +300,8 @@ describe('AdminUi', () => {
   it('explains the session bootstrap state', () => {
     render(<SessionLoader />)
 
-    expect(screen.getByRole('img', { name: 'School Admin System logo' })).toBeInTheDocument()
-    expect(screen.getByText('School Admin System')).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'Matahari International School logo' })).toBeInTheDocument()
+    expect(screen.getByText('Matahari International School')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Checking your session' })).toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveTextContent('Verifying your secure admin access')
   })

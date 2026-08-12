@@ -20,7 +20,7 @@ class UsernameMigrationTest extends TestCase
         $this->assertFalse(Schema::hasColumn('users', 'email_verified_at'));
         $this->assertFalse(Schema::hasTable('password_reset_tokens'));
         $this->assertSame(
-            ['admin', 'finance', 'superadmin'],
+            ['admin', 'alyssa.tan', 'finance', 'rachel.wong', 'superadmin', 'teacher.lim'],
             User::query()->orderBy('username')->pluck('username')->all(),
         );
         $this->assertTrue(User::query()->withCount('roles')->get()->every(

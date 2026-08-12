@@ -23,10 +23,10 @@ function renderShell() {
     <AdminShell
       activePage="dashboard"
       pageTitle="Dashboard"
-      contextText="Demo International School"
+      contextText="Matahari International School"
       navGroups={groups}
       apiState="live"
-      user={{ name: 'Demo Admin', username: 'admin' }}
+      user={{ name: 'School Admin', username: 'admin' }}
       onSelectPage={onSelectPage}
       onLogout={onLogout}
     >
@@ -53,10 +53,7 @@ describe('AdminShell', () => {
     expect(within(navigation).getByText('Overview')).toBeInTheDocument()
     expect(within(navigation).getByText('People')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Dashboard' })).toHaveAttribute('aria-current', 'page')
-    expect(screen.getByText('Demo International School')).toBeInTheDocument()
-    expect(screen.getByRole('img', { name: 'School Admin System logo' })).toBeInTheDocument()
-    expect(screen.getByText('School Admin')).toBeInTheDocument()
-    expect(screen.getByText('System')).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'Matahari International School logo' })).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Students' }))
     await user.click(screen.getByRole('button', { name: 'Logout' }))
@@ -132,10 +129,10 @@ describe('AdminShell', () => {
       <AdminShell
         activePage="dashboard"
         pageTitle="Dashboard"
-        contextText="Demo International School"
+        contextText="Matahari International School"
         navGroups={groups}
         apiState="live"
-        user={{ name: 'Demo Admin', username: 'admin' }}
+        user={{ name: 'School Admin', username: 'admin' }}
         onSelectPage={() => undefined}
         onLogout={() => undefined}
       >
@@ -149,10 +146,10 @@ describe('AdminShell', () => {
       <AdminShell
         activePage="dashboard"
         pageTitle="Dashboard"
-        contextText="Demo International School"
+        contextText="Matahari International School"
         navGroups={groups}
         apiState="demo"
-        user={{ name: 'Demo Admin', username: 'admin' }}
+        user={{ name: 'School Admin', username: 'admin' }}
         onSelectPage={() => undefined}
         onLogout={() => undefined}
       >
@@ -166,10 +163,10 @@ describe('AdminShell', () => {
   it('resets the workspace scroll position when the active page changes', () => {
     const scrollTo = vi.mocked(window.scrollTo)
     const shellProps = {
-      contextText: 'Demo International School',
+      contextText: 'Matahari International School',
       navGroups: groups,
       apiState: 'live' as const,
-      user: { name: 'Demo Admin', username: 'admin' },
+      user: { name: 'School Admin', username: 'admin' },
       onSelectPage: () => undefined,
       onLogout: () => undefined,
     }

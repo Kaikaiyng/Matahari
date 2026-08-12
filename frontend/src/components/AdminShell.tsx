@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { LucideIcon } from 'lucide-react'
-import { ChevronLeft, LogOut, Menu, School, X } from 'lucide-react'
-import { productBrand } from '../branding'
+import { ChevronLeft, Info, Menu, X } from 'lucide-react'
+import { IconlyBell, IconlyLogout } from './icons/IconlyIcons'
 import { BrandMark } from './BrandMark'
 import './AdminShell.css'
 
@@ -154,11 +154,7 @@ export function AdminShell<PageKey extends string>({
         inert={isNarrowViewport && !isOpen ? true : undefined}
       >
         <div className="admin-brand">
-          <BrandMark className="admin-brand-mark" size={27} />
-          <div className="admin-brand-copy">
-            <strong>{productBrand.productShortName}</strong>
-            <span>{productBrand.productDescriptor}</span>
-          </div>
+          <BrandMark className="admin-brand-mark" />
           <button
             ref={closeRef}
             className="icon-button drawer-close"
@@ -195,7 +191,9 @@ export function AdminShell<PageKey extends string>({
                   className={key === activePage ? 'nav-item active' : 'nav-item'}
                   onClick={() => selectPage(key)}
                 >
-                  <Icon size={18} />
+                  <span className="nav-item-icon-box">
+                    <Icon size={18} />
+                  </span>
                   <span className="sidebar-label">{label}</span>
                 </button>
               ))}
@@ -206,11 +204,11 @@ export function AdminShell<PageKey extends string>({
         <footer className="sidebar-footer">
           <div className="sidebar-portal" title={isCollapsed ? 'Admin Portal' : undefined}>
             <span className="sidebar-portal-mark" aria-hidden="true">
-              <School size={15} />
+              <Info size={15} />
             </span>
             <div className="sidebar-label">
               <strong>Admin Portal</strong>
-              <small>School operations</small>
+              <small>Version 0.0.1</small>
             </div>
           </div>
           <button
@@ -221,7 +219,7 @@ export function AdminShell<PageKey extends string>({
             onClick={onLogout}
           >
             <span className="sidebar-footer-icon">
-              <LogOut size={17} />
+              <IconlyLogout size={16} />
             </span>
             <span className="sidebar-label">Log out</span>
           </button>
@@ -242,8 +240,9 @@ export function AdminShell<PageKey extends string>({
           </button>
 
           <div className="utility-context">
-            <span>{contextText}</span>
-            <h1>{pageTitle}</h1>
+            <span className="utility-context-name">{contextText}</span>
+            <span className="utility-breadcrumb-separator" aria-hidden="true">/</span>
+            <h1 className="utility-page-title">{pageTitle}</h1>
           </div>
 
           <div className="utility-actions">
@@ -252,12 +251,13 @@ export function AdminShell<PageKey extends string>({
                 Service temporarily unavailable
               </span>
             )}
-            <div className="user-chip">
-              <span>{initial}</span>
-              <div>
-                <strong>{user.name}</strong>
-                <small>{user.username}</small>
-              </div>
+            <button type="button" className="header-notification-button" aria-label="Notifications">
+              <IconlyBell size={20} />
+              <span className="notification-dot" aria-hidden="true" />
+            </button>
+            <div className="user-profile">
+              <span className="user-avatar">{initial}</span>
+              <span className="user-name">{user.name}</span>
             </div>
           </div>
         </header>
