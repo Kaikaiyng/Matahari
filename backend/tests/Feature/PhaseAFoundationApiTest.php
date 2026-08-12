@@ -297,6 +297,50 @@ class PhaseAFoundationApiTest extends TestCase
         $this->assertTrue($target->fresh()->hasPermissionTo('parent.self_service'));
     }
 
+    public function test_school_admin_can_create_minimum_foundation_account_with_multiple_roles(): void
+    {
+        [$school] = $this->schoolFixture('MIS');
+        $admin = $this->userWithRoleAndPermissions($school, 'school-admin', ['foundation_accounts.manage']);
+        $this->roleWithPermissions('teacher', ['teaching_scope.view']);
+        $this->roleWithPermissions('parent', ['parent.self_service']);
+
+        $this->actingAs($admin)->postJson('/api/v1/admin/users', [
+            'name' => 'Teacher Parent',
+            'username' => 'teacher.parent',
+            'password' => 'temporary-password-123',
+            'roles' => ['teacher', 'parent'],
+        ])->assertCreated()
+            ->assertJsonPath('data.username', 'teacher.parent')
+            ->assertJson(fn ($json) => $json
+                ->whereContains('data.roles', 'teacher')
+                ->whereContains('data.roles', 'parent')
+                ->missing('data.password')
+                ->etc());
+
+        $user = User::query()->where('username', 'teacher.parent')->firstOrFail();
+        $this->assertSame($school->id, $user->school_id);
+        $this->assertTrue(Hash::check('temporary-password-123', $user->password));
+        $this->assertDatabaseHas('audit_logs', ['action' => 'user.created', 'entity_id' => $user->id]);
+    }
+
+    public function test_foundation_account_cannot_be_created_for_another_school(): void
+    {
+        [$school] = $this->schoolFixture('MIS');
+        [$otherSchool] = $this->schoolFixture('OTH');
+        $admin = $this->userWithRoleAndPermissions($school, 'school-admin', ['foundation_accounts.manage']);
+        $this->roleWithPermissions('student', ['student.self_service']);
+
+        $this->actingAs($admin)->postJson('/api/v1/admin/users', [
+            'school_id' => $otherSchool->id,
+            'name' => 'Cross School User',
+            'username' => 'cross.school',
+            'password' => 'temporary-password-123',
+            'roles' => ['student'],
+        ])->assertForbidden();
+
+        $this->assertDatabaseMissing('users', ['username' => 'cross.school']);
+    }
+
     public function test_audit_failure_rolls_back_sensitive_mutation(): void
     {
         [$school] = $this->schoolFixture('MIS');
