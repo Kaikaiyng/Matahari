@@ -2,7 +2,7 @@
 
 **Status:** Current implementation and confirmed product context
 
-**Repository baseline:** Phase A delivery branch through `a5f4fb4`
+**Repository baseline:** MIS demo/portal review based on Phase A merge `a69d32b`
 
 **Reviewed:** 2026-08-12
 
@@ -21,7 +21,7 @@ The seeded implementation contains these stored role slugs:
 
 The intended CEO concept has been described as management or print-only access, but the current seed grants only Fee Record view and Calendar view permissions. It does not grant receipt printing. See [Permissions](permissions.md).
 
-Phase A also adds the `teacher`, `parent`, and `student` role slugs without replacing existing assignments. A user may hold multiple roles. These roles establish backend identity and access foundations; they do not mean the Parent/Student mobile experience is already available.
+Phase A also adds the `teacher`, `parent`, and `student` role slugs without replacing existing assignments. A user may hold multiple roles. An experimental `/portal` web preview now exercises parent/student identities, but this does not make the later mobile phases or a native application complete.
 
 ## Intended Scale
 
@@ -50,6 +50,7 @@ Do not describe the system as unlimited or use the historical cost estimate as p
 - Backend permission and authenticated-school enforcement for the legacy dashboard and monthly invoice endpoints.
 - Database guards for one current Fee Agreement per school/student/year and one scheduled charge per agreement item/month.
 - Phase A teacher/parent/student roles, reviewed nullable portal links, academic years, enrolment history, subjects, teaching assignments, scoped `/api/v1` management/teacher APIs, policies/access services, and transactional foundation audit events.
+- MIS-branded demo identities for Admin, Teacher, Parent, and Student; an experimental role-filtered `/portal` web shell; self-profile/enrolment endpoints; and user-scoped in-app notification storage.
 
 ### Partially Implemented
 
@@ -61,13 +62,14 @@ Do not describe the system as unlimited or use the historical cost estimate as p
 - Payments and receipts: real workflows are implemented within Student Detail; there are no separate top-level modules.
 - Invoices: legacy schema and a permission/school-scoped monthly-generation API remain, but the active Fee Record workflow does not use invoices as its source of truth and no invoice UI exists.
 - Audit: critical authentication, student, agreement, Fee Record activation/manual charge, payment, and receipt actions are covered. Calendar changes, exports, user management, generic correction, and recovery audit flows are not integrated because those features are lower-risk operational changes or absent from the current product.
+- Mobile preview: Parent/Student layout, notification drawer, and read-only parent finance queries are functional demo slices. Attendance, feedback, timetable, and payment-method interaction remain explicitly non-authoritative demo previews; payment confirmation creates no record.
 
 ### Approved Product Direction, Not Implemented
 
 - Full user/role administration, account status management, and password reset. Phase A provides only minimum account creation and teacher/parent/student role assignment.
 - General reports, exports, statements, reminders, and server-generated PDF documents.
-- A mobile-first Parent/Student web client, with optional basic Teacher mode, using the existing Laravel API, MariaDB data, identity/RBAC, and finance services.
-- Parent Finance, in-app notifications, manual payment reminders, teacher Quiz, push delivery, and later native Android/iOS packaging in separately approved phases.
+- Completion and product hardening of the mobile-first Parent/Student web client, with optional basic Teacher mode.
+- Production Parent Finance, manual payment reminders, teacher Quiz, push delivery, and later native Android/iOS packaging in separately approved phases.
 - Generic audit corrections, audit export, and recovery workflows beyond read-only event review.
 - Refunds, credits, overpayments, write-offs, and approved financial correction workflows.
 - Stable production hosting, remote CD/promotion, monitoring, scheduled backups, and a verified restore process. Repository-owned CI and deployment configuration now exist but require current runner/container evidence.
@@ -79,11 +81,11 @@ Unless a future approved specification adds them, do not infer these from naviga
 
 - Attendance, grading, examinations, timetabling, learning management, admissions automation, HR/payroll, library, transport operations, and other complete academic ERP modules.
 - Provider-specific VPS provisioning, public domains, edge TLS/Basic Auth, Cloudflare, and live infrastructure state.
-- Mobile client code, native packaging, token authentication, Firebase, and app-store delivery. These are approved future product phases, not current repository capabilities.
+- Native mobile client code, native packaging, token authentication, Firebase, and app-store delivery. These remain future product phases.
 
 ## System Boundaries
 
-- The current React client presents administration workflows and responsive usability checks. A future mobile client will be a separate product surface, not a relabeling of the responsive Admin UI.
+- The current React client presents administration workflows plus an isolated `/portal` preview. It is not a native client and its demo-only cards are not backend business-rule evidence.
 - Laravel is authoritative for authentication, authorization, validation, school scoping, state transitions, numbering, and persisted finance effects.
 - Admin Web and future mobile clients share one Laravel backend, one MariaDB database, one RBAC/identity system, and the existing finance source of truth.
 - MariaDB/MySQL-compatible behavior is the production direction. SQLite supports the local demo and default automated tests only.

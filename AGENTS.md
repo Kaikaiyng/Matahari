@@ -49,6 +49,10 @@ Matahari is a school administration and finance MVP for Matahari International S
 - Never run `migrate:fresh`, destructive schema probes, or seeders against a database that may contain valuable data.
 - Preserve existing data and document any data migration, recovery, or rollback limitation.
 
+## System UI Layout & Design Rules
+
+- Use a consistent 16px gap between sibling cards and panels. The parent layout owns that gap; child cards must not add a second outer margin that doubles the spacing.
+
 ## Development Constraints
 
 - Make the smallest complete change and avoid unrelated refactoring.

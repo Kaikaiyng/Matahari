@@ -2,7 +2,7 @@
 
 **Status:** Repository command and release reference
 
-**Repository baseline:** Phase A delivery branch through `a5f4fb4`
+**Repository baseline:** MIS demo/portal review based on Phase A merge `a69d32b`
 
 Run commands from a clean feature branch/worktree. Record the exact command, exit code, counts, skipped cases, and limitations. Never convert a skipped or unavailable check into a pass.
 
@@ -78,7 +78,7 @@ npm.cmd run build
 - `build` runs `tsc -b` and then Vite production build, so it is also the configured TypeScript check.
 - No browser E2E command is configured.
 
-The commands above validate the current Admin frontend only. A future mobile workspace must define and document its own install, unit/component test, lint, type-check, and production-build commands before Phase B can be called complete.
+The commands above validate both the Admin UI and the experimental `/portal` components because they share one React workspace. A future separate/native mobile workspace must define its own install, unit/component test, lint, type-check, and production-build commands before that product phase can be called complete.
 
 ## Future Mobile Validation Gates
 

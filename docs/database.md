@@ -97,7 +97,7 @@ The approved mobile product does not introduce a second database or duplicate pa
 
 Parent Finance must continue to derive outstanding amounts from `fee_record_charges` and verified payment allocations. A separate mobile balance table or `fee_installments` ledger is not approved for V1.
 
-Later phases may add notification/device and quiz tables only through separately reviewed additive migrations. Planned concepts include durable notifications, user devices, flexible quiz class/direct-student targets, and materialized quiz recipients. These tables do not exist in Phase A, and their final names, keys, foreign keys, retention, and rollback behavior require MariaDB-specific review before implementation.
+The experimental portal adds `portal_notifications`, scoped by `school_id` and `recipient_user_id`, with JSON context and nullable read time. It does not add device tokens or push delivery. Later phases may add device and quiz tables only through separately reviewed additive migrations. Planned Quiz concepts remain flexible class/direct-student targets and materialized quiz recipients; their final keys, retention, and rollback behavior require MariaDB-specific review before implementation.
 
 Known integrity gaps:
 

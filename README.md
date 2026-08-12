@@ -1,8 +1,8 @@
-# School Admin System
+# Matahari International School Administration System
 
-School Admin System is a neutral school administration platform under incremental development. The repository currently delivers an Admin/Finance web MVP and the Phase A academic/identity foundation; an approved Parent/Student mobile product roadmap follows in later phases. Its seeded demo uses the fictional `Demo International School` tenant. It is not yet a complete academic ERP, a mobile application release, or a production deployment package.
+This repository is the Matahari International School (MIS) administration and finance system under incremental development. It currently delivers an Admin/Finance web MVP, the Phase A academic/identity foundation, and an experimental mobile-shaped Parent/Student portal preview inside the existing React application. It is not yet a complete academic ERP, a native mobile application, or a production deployment package.
 
-This repository retains its internal Matahari project history and historical records as development evidence. The neutral runtime demo is not an affiliation with, or endorsement by, any school.
+MIS branding is now the approved runtime and disposable-demo identity. Branding changes do not authorize rewriting an existing tenant, student number, invoice number, receipt number, or other historical record.
 
 ## Current Scope
 
@@ -15,14 +15,15 @@ Implemented workflows include:
 - Payment allocation, verification, void safeguards, receipt generation, browser printing, and receipt void/regeneration.
 - Shared school calendar CRUD.
 - Phase A academic foundation APIs for academic years, class enrolments, subjects, teaching assignments, and reviewed portal identity links.
+- Experimental `/portal` Parent/Student web views, self-service identity endpoints, personal in-app notifications, and MIS demo personas. These are test previews, not completed product phases.
 - Permission-filtered navigation and a Super Admin-only, read-only Audit Trail with filters and event detail.
 - Responsive desktop, tablet, and mobile administration UI.
 - CSRF-protected session mutations, login throttling, active-session rechecks, request IDs, and transactional audit events for implemented critical workflows.
 
 Important boundaries:
 
-- The approved target includes a separate mobile-first Parent/Student experience, followed later by optional native packaging. It is **planned, not implemented**; the existing responsive Admin UI is not that mobile product.
-- Quiz, notifications, payment reminders, Parent Finance, mobile/native authentication, Firebase, and Capacitor are not part of Phase A. See [Mobile Product Architecture and Roadmap](docs/mobile-product-roadmap.md).
+- The current `/portal` route is an experimental responsive preview within `frontend/`, not a released mobile product. Some academic cards and timetable/attendance content are explicitly labelled demo data.
+- Parent finance is read-only in this preview and its payment notice interaction deliberately persists nothing. Payment reminders, Quiz, native authentication, Firebase, Capacitor, and app-store packaging remain unimplemented. See [Mobile Product Architecture and Roadmap](docs/mobile-product-roadmap.md).
 
 - Payments and receipts are implemented inside Student Detail; unimplemented top-level placeholder navigation has been removed.
 - The parent directory and fee catalogue top-level pages remain display-only; parent mutations, fee catalogue management, reports, exports, settings, user management, password reset, and production deployment are incomplete or not implemented.
@@ -53,7 +54,7 @@ tools/php/           Windows PHP launchers and local SQLite demo helpers
 tools/public-demo/   Temporary Cloudflare Quick Tunnel demo tooling
 ```
 
-No `mobile/` workspace exists yet. Its location and build boundary will be decided in Phase B without mixing it into the current Admin frontend by implication.
+No native or separate `mobile/` workspace exists. The experimental `/portal` surface currently shares the React build; whether it remains isolated there or moves to a separate workspace is still an architectural gate.
 
 Future coding agents must also read [AGENTS.md](AGENTS.md).
 
@@ -86,7 +87,7 @@ Create or intentionally reset only the ignored local demo SQLite database:
 tools\php\reset-demo-sqlite.cmd
 ```
 
-`tools\php\reset-demo-sqlite.cmd` destroys only the ignored, disposable `backend/database/database.sqlite` demo database and then runs `migrate:fresh --seed`. It reseeds the fictional `Demo International School` tenant and `DEMO` identifiers. It does not run automatically; do not adapt it to a database containing valuable data. Existing receipt identifiers are financial history and are never rewritten automatically. Seeded users are demo-only; inspect the seeder locally if credentials are needed, and never reuse them in a deployed environment.
+`tools\php\reset-demo-sqlite.cmd` destroys only the ignored, disposable `backend/database/database.sqlite` demo database and then runs `migrate:fresh --seed`. It reseeds the MIS demo tenant and `MIS` identifiers. It does not run automatically; do not adapt it to a database containing valuable data. Existing receipt identifiers are financial history and are never rewritten automatically. Seeded users are demo-only; inspect the seeder locally if credentials are needed, and never reuse them in a deployed environment.
 
 The runtime product label and receipt disclaimer are centralized in `frontend/src/branding.ts`. Later school-specific branding requires explicit approval and a deliberate update to the presentation configuration and, where appropriate, a fresh disposable demo seed. It must not be used to rename an existing tenant or rewrite historical receipt identifiers.
 
@@ -190,5 +191,5 @@ npm.cmd run build
 - The default automated backend suite uses SQLite and cannot prove MariaDB JSON, index, locking, foreign-key, or rollback behavior.
 - No stable hosting or production environment exists. CI and portable Docker/Compose source are included, but real container startup, remote deployment, monitoring, and backup/restore remain unverified.
 - User administration and password reset are not implemented.
-- General reports, exports, statements, reminders, Parent Finance/mobile self-service, PDF generation, and complete academic ERP modules are not implemented. The approved mobile direction is documented separately from implementation status.
+- General reports, exports, statements, reminders, production-ready Parent Finance/mobile self-service, PDF generation, and complete academic ERP modules are not implemented. The current portal is an experimental preview only.
 - Operational readiness remains incomplete: production hosting, remote release operations, monitoring, runtime grant execution, backups, restore drills, and approved discount/correction policies are not verified. See [Current Status](docs/current-status.md).

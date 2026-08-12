@@ -42,7 +42,7 @@ The mobile experience is developed and validated first as a mobile-first web app
 | --- | --- | --- |
 | A — Backend Foundation | Implemented on the unmerged Phase A branch | School context, foundation roles, explicit portal links, academic years, enrolments, subjects, teaching assignments, minimum management APIs, policies/access services, audit, constraints, and tests |
 | B — Mobile Web Shell | Approved, not implemented | Mobile-first client, localhost/staging runtime, login shell, role-aware navigation, Parent home, Student home, optional basic Teacher mode, and API-client structure |
-| C — Parent Finance | Approved, not implemented | My Children, authoritative outstanding balance, student-account payment history, existing receipt view/download/print/share, and guardian finance authorization |
+| C — Parent Finance | Experimental preview, not complete | `/portal` has guarded read-only balance/payment/receipt queries and a non-persisting payment notice preview; download/share, production UX, and release validation remain open |
 | D — Notifications and Manual Payment Reminder | Approved, not implemented | In-app notification centre, manual Admin/Finance reminder action, recipient resolution, audit/history, and a future-push-ready boundary |
 | E — Teacher and Quiz | Approved, not implemented | Teacher classes, quiz authoring, class and direct-student targets, materialized recipients, attempts, server-side scoring, and result visibility |
 | F — Push and Native Packaging | Approved, not implemented | Device registration, FCM, Capacitor Android/APK, followed later by iOS/TestFlight evaluation |

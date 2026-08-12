@@ -8,15 +8,24 @@
 
 **Current delivery branch:** `phase-a-academic-foundation` (not merged)
 
-**Overall status:** White-labelled neutral administration-finance demo MVP with application hardening in place; production operations and several business policies remain incomplete
+**Overall status:** MIS-branded administration-finance demo MVP with Phase A foundations and an experimental Parent/Student portal preview; production operations and several business policies remain incomplete
 
 The Phase A commit above is on the unmerged delivery branch. The earlier white-label feature was delivered through [pull request #8](https://github.com/Kaikaiyng/Matahari/pull/8) and merged into `master` as `2f4c6bd199a7fae149658d3993aba370203746de` on 2026-08-04.
 
 ## Runtime Demo Identity
 
-The runtime demonstration is presented as **School Admin System**. A fresh, intentional reset of the ignored disposable SQLite demo database seeds the fictional **Demo International School** tenant and `DEMO` identifiers; printable receipts are marked as samples and are not valid receipts.
+The runtime demonstration is presented as the **Matahari International School** administration system. A fresh, intentional reset of the ignored disposable SQLite demo database seeds the MIS tenant, `MIS` identifiers, and explicit Admin/Teacher/Parent/Student demo accounts; printable receipts remain marked as samples and are not valid receipts.
 
-The repository retains internal Matahari project history and historical records as development evidence. Those records do not describe the neutral runtime identity or establish an affiliation with, or endorsement by, a school. The reset command never runs automatically and must not be adapted to a database containing valuable data. Existing receipt identifiers are financial history and are never rewritten automatically.
+The reset command never runs automatically and must not be adapted to a database containing valuable data. MIS branding applies to fresh demo data and presentation; it does not rename existing tenants or rewrite historical student, invoice, payment, or receipt identifiers.
+
+## 2026-08-12 MIS Demo and Portal Review
+
+- The returned ZIP was reviewed on branch `feature/mis-demo-mobile-review` against Phase A merge `a69d32b`.
+- Backend PHPUnit: 249 tests discovered, 241 passed, 8 MariaDB-only skipped, 1,287 assertions.
+- Frontend Vitest: 16 files and 174 tests passed. Oxlint exited 0 with 9 pre-existing Fast Refresh organization warnings in `CalendarViews.tsx`; TypeScript/Vite production build passed with 91 modules transformed.
+- Pint formatting/check, API route loading (70 routes), and repository diff checks passed.
+- SQLite fresh migration with seed, repeated seed, latest rollback, re-migration, and API route loading passed on an explicit disposable database.
+- **Not verified in this environment:** MariaDB lifecycle/FK/index inspection. No local MariaDB server or Docker executable was available; SQLite results are not presented as MariaDB proof.
 
 Later school-specific branding requires explicit approval and a controlled update to the presentation configuration and, if needed, a fresh disposable demo seed. It must not rename existing tenant data or rewrite financial history.
 
@@ -63,7 +72,7 @@ The confirmed earlier technology direction named Laravel 10, but this repository
 ## Known Incomplete Features
 
 - Existing guardian links remain `unreviewed` with nullable access flags, and no live parent/student user association or enrolment history is inferred. Portal activation and production backfill require a separately approved workflow.
-- Mobile Web, Parent Finance, notifications, payment reminders, quiz, AI, Firebase, Capacitor, and native authentication remain unimplemented. Mobile is now an approved Phase B–F product direction, not a current repository capability; see [Mobile Product Architecture and Roadmap](mobile-product-roadmap.md).
+- An experimental `/portal` web shell, user-scoped notifications, parent/student self endpoints, read-only guardian finance queries, and demo portal content now exist. They are not a completed mobile phase or production Parent Finance. Payment reminders, quiz, AI, Firebase, Capacitor, native authentication, and native packaging remain unimplemented; see [Mobile Product Architecture and Roadmap](mobile-product-roadmap.md).
 
 - Parent CRUD, fee catalogue management, user/role management, password reset, and a global school selector.
 - Reports beyond Fee Record views, exports, statements, reminders, parent portal, and server-side PDF.

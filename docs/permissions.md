@@ -58,7 +58,7 @@ Phase A permission defaults:
 - Super Admin: all Phase A permissions.
 - School Admin: academic year, subject, enrolment, teaching-assignment, portal-link, and foundation-role management.
 - Teacher: academic-year/subject read plus `teaching_scope.view`.
-- Parent: `parent.self_service` only; no Parent Finance API exists yet.
+- Parent: `parent.self_service`; experimental portal reads additionally require an active same-school guardian-child link and the relevant reviewed pivot capability. This is not approval of a production Parent Finance workflow.
 - Student: `student.self_service` only; no student-finance permission.
 - Finance and CEO: no new Phase A permissions.
 
@@ -92,7 +92,7 @@ It does not grant receipt view/print, student view, payment view, or a general r
 
 Phase A policies are present for new foundation resources. Legacy modules retain their existing route/controller/request/service enforcement until migrated deliberately.
 
-Future mobile navigation must not treat `parent.self_service`, `student.self_service`, or `teaching_scope.view` as sufficient resource authorization by itself. Each API must also validate the active guardian-child, student-self, or teaching-assignment relationship and same-school ownership. Parent Finance and notification permissions will be defined in their own approved phases; they are not implied by the Phase A role slugs.
+Portal navigation must not treat `parent.self_service`, `student.self_service`, or `teaching_scope.view` as sufficient resource authorization by itself. Each API also validates the active guardian-child, student-self, or teaching-assignment relationship and same-school ownership. Notification reads and read-state updates are restricted to the authenticated recipient and school. Production Parent Finance and notification administration still require their own approved permission design.
 
 ## Legacy Endpoint Enforcement
 

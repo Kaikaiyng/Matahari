@@ -9,7 +9,7 @@
 ```mermaid
 flowchart LR
     Browser["Browser: React 19 + TypeScript"]
-    Mobile["Future mobile-first Parent / Student client"]
+    Mobile["Experimental /portal Parent / Student web preview"]
     Vite["Vite dev server or Preview"]
     API["Laravel 13 JSON API"]
     DB["SQLite demo/tests or MariaDB direction"]
@@ -64,7 +64,7 @@ Legacy authorization remains primarily route middleware plus distributed scope c
 
 The application does not use React Router, Redux, React Query, or another global data layer. Page selection is component state, so there are no deep links or browser-history routes. Data fetching uses local state/effects and the shared API wrapper.
 
-No mobile-client workspace currently exists. Its folder/build structure is a Phase B decision and must preserve a clear boundary from the existing Admin frontend.
+No native or separate mobile-client workspace currently exists. The experimental `/portal` surface is isolated by route and components but shares the existing React build. Its long-term workspace/build boundary remains a reviewed architecture decision.
 
 ## Authentication Flow
 
