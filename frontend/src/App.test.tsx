@@ -74,7 +74,7 @@ const financeDialogUser = {
 }
 
 const dashboard = {
-  school: { id: 1, code: 'DEMO', name: 'Demo International School' },
+  school: { id: 1, code: 'MIS', name: 'Matahari International School' },
   metrics: {
     today_collection: 0,
     monthly_collection: 0,
@@ -352,6 +352,20 @@ function installApiUser(user: Omit<typeof currentUser, 'school_id'> & { school_i
   })
 }
 
+function installActiveFeeAgreement() {
+  const fetchMock = vi.mocked(globalThis.fetch)
+  const installedImplementation = fetchMock.getMockImplementation()
+  if (!installedImplementation) throw new Error('API mock is not installed')
+
+  fetchMock.mockImplementation((input, init) => {
+    const url = new URL(String(input), window.location.origin)
+    if (url.pathname.endsWith('/students/1/fee-agreements') && init?.method !== 'POST') {
+      return json({ data: [currentFeeAgreement] })
+    }
+    return installedImplementation(input, init)
+  })
+}
+
 async function renderAuthenticatedApp() {
   render(
     <StrictMode>
@@ -361,7 +375,35 @@ async function renderAuthenticatedApp() {
   await screen.findByRole('heading', { name: 'Dashboard' })
 }
 
-async function openSelectedStudentPayments(user: ReturnType<typeof userEvent.setup>) {
+async function openSelectedStudentPayments(
+  user: ReturnType<typeof userEvent.setup>,
+  withIssuedReceipt = false,
+) {
+  if (withIssuedReceipt) {
+    const fetchMock = vi.mocked(globalThis.fetch)
+    const installedImplementation = fetchMock.getMockImplementation()
+    if (!installedImplementation) throw new Error('API mock is not installed')
+
+    fetchMock.mockImplementation((input, init) => {
+      const url = new URL(String(input), window.location.origin)
+      if (url.pathname.endsWith('/students/1/payments') && init?.method !== 'POST') {
+        return json({
+          data: [{
+            ...pendingPayment,
+            status: 'verified',
+            issued_receipt: {
+              id: issuedReceipt.id,
+              receipt_no: issuedReceipt.receipt_no,
+              receipt_date: issuedReceipt.receipt_date,
+              status: issuedReceipt.status,
+            },
+          }],
+        })
+      }
+      return installedImplementation(input, init)
+    })
+  }
+
   await renderAuthenticatedApp()
   await user.click(screen.getByRole('button', { name: 'Students' }))
   await user.click(await screen.findByRole('button', { name: 'Open' }))
@@ -399,8 +441,8 @@ describe('demo shell', () => {
     render(<App />)
 
     const username = await screen.findByLabelText('Username')
-    expect(screen.getByRole('img', { name: 'School Admin System logo' })).toBeInTheDocument()
-    expect(screen.getByText('School Admin System')).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'Matahari International School logo' })).toBeInTheDocument()
+    expect(screen.getByText('Matahari International School')).toBeInTheDocument()
     const password = screen.getByLabelText('Password')
     expect(username).toHaveValue('')
     expect(password).toHaveValue('')
@@ -482,7 +524,7 @@ describe('demo shell', () => {
 
     const utilityHeader = document.querySelector<HTMLElement>('.utility-header')
     if (!utilityHeader) throw new Error('Utility header was not rendered')
-    expect(within(utilityHeader).getByText('Demo International School')).toBeInTheDocument()
+    expect(within(utilityHeader).getByText('Matahari International School')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'School overview' })).toBeInTheDocument()
     expect(screen.getByRole('region', { name: 'Dashboard metrics' })).toBeInTheDocument()
     expect(screen.getByRole('region', { name: 'Financial snapshot' })).toBeInTheDocument()
@@ -639,16 +681,23 @@ describe('demo shell', () => {
     expect(screen.getAllByText('Active').some((element) => element.classList.contains('status-badge'))).toBe(true)
   })
 
-  it.each([
-    ['Parents', 'Parent Directory'],
-    ['Fees', 'Fee Catalogue'],
-  ])('uses the shared data hierarchy on %s', async (destination, panelTitle) => {
+  it('uses the shared data hierarchy on Fees', async () => {
     const user = userEvent.setup()
     await renderAuthenticatedApp()
 
-    await user.click(screen.getByRole('button', { name: destination }))
+    await user.click(screen.getByRole('button', { name: 'Fees' }))
 
-    expect(await screen.findByRole('region', { name: panelTitle })).toBeInTheDocument()
+    expect(await screen.findByRole('region', { name: 'Fee Catalogue' })).toBeInTheDocument()
+  })
+
+  it('shows the MIS demo parent directory grouped by class', async () => {
+    const user = userEvent.setup()
+    await renderAuthenticatedApp()
+
+    await user.click(screen.getByRole('button', { name: 'Parents' }))
+
+    expect(await screen.findByRole('heading', { name: 'Parent & Guardian Directory' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Class: MA1' })).toBeInTheDocument()
   })
 
   it('replaces the student list with a focused student workspace', async () => {
@@ -704,7 +753,7 @@ describe('demo shell', () => {
     expect(screen.getByRole('heading', { name: 'MA1' })).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Parents' }))
-    await screen.findByRole('heading', { name: 'Parent Directory' })
+    await screen.findByRole('heading', { name: 'Parent & Guardian Directory' })
     await user.click(screen.getByRole('button', { name: 'Classes' }))
 
     expect(await screen.findByRole('heading', { name: 'Class Directory' })).toBeInTheDocument()
@@ -792,9 +841,14 @@ describe('demo shell', () => {
   it('uses One-time Charge language and identifies the selected student', async () => {
     const user = userEvent.setup()
     installApiUser(schoolAdminDialogUser)
+    installActiveFeeAgreement()
     await renderAuthenticatedApp()
     await user.click(screen.getByRole('button', { name: 'Students' }))
     await user.click(await screen.findByRole('button', { name: 'Open' }))
+    await waitFor(
+      () => expect(screen.getByRole('button', { name: 'Add One-time Charge' })).toBeInTheDocument(),
+      { timeout: 3_000 },
+    )
     await user.click(screen.getByRole('button', { name: 'Add One-time Charge' }))
 
     const dialog = screen.getByRole('dialog', { name: 'One-time Charge' })
@@ -897,6 +951,7 @@ describe('demo shell', () => {
 
   it('uses the shared modal frame for financial workflows', async () => {
     const user = userEvent.setup()
+    installActiveFeeAgreement()
     await renderAuthenticatedApp()
 
     await user.click(screen.getByRole('button', { name: 'Students' }))
@@ -907,6 +962,10 @@ describe('demo shell', () => {
     expect(screen.getByRole('dialog', { name: 'Create Fee Agreement' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Cancel' }))
 
+    await waitFor(
+      () => expect(screen.getByRole('button', { name: 'Add One-time Charge' })).toBeInTheDocument(),
+      { timeout: 3_000 },
+    )
     await user.click(screen.getByRole('button', { name: 'Add One-time Charge' }))
     expect(screen.getByRole('dialog', { name: 'One-time Charge' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Cancel' }))
@@ -924,8 +983,6 @@ describe('demo shell', () => {
     expect(screen.getByRole('dialog', { name: 'Void Payment' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Cancel' }))
 
-    await user.click(screen.getAllByRole('button', { name: 'Void' }).at(-1)!)
-    expect(screen.getByRole('dialog', { name: 'Void Receipt' })).toBeInTheDocument()
   }, 10_000)
 
   it('shows the selected payment before verification', async () => {
@@ -1031,8 +1088,8 @@ describe('demo shell', () => {
   it('explains that voiding a receipt leaves payment and balances unchanged', async () => {
     const user = userEvent.setup()
     installApiUser(financeDialogUser)
-    await openSelectedStudentPayments(user)
-    await user.click(screen.getAllByRole('button', { name: 'Void' }).at(-1)!)
+    await openSelectedStudentPayments(user, true)
+    await user.click(await screen.findByRole('button', { name: 'Void Receipt' }))
 
     const dialog = screen.getByRole('dialog', { name: 'Void Receipt' })
     const summary = within(dialog).getByRole('region', { name: 'Receipt to void' })
@@ -1044,10 +1101,10 @@ describe('demo shell', () => {
 
   it('marks the displayed receipt as a fictional sample', async () => {
     const user = userEvent.setup()
-    await openSelectedStudentPayments(user)
-    await user.click(await screen.findByRole('button', { name: 'View' }))
+    await openSelectedStudentPayments(user, true)
+    await user.click(await screen.findByRole('button', { name: 'View Receipt' }))
 
-    expect(screen.getByRole('heading', { name: 'Demo International School' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Matahari International School' })).toBeInTheDocument()
     expect(screen.getByRole('note')).toHaveTextContent('SAMPLE — NOT A VALID RECEIPT')
   })
 
@@ -1141,8 +1198,8 @@ describe('demo shell', () => {
       return installedImplementation(input, init)
     })
 
-    await openSelectedStudentPayments(user)
-    await user.click(screen.getAllByRole('button', { name: 'Void' }).at(-1)!)
+    await openSelectedStudentPayments(user, true)
+    await user.click(await screen.findByRole('button', { name: 'Void Receipt' }))
     const dialog = screen.getByRole('dialog', { name: 'Void Receipt' })
     await user.type(within(dialog).getByLabelText('Void Reason'), 'Receipt reissued')
     await user.click(within(dialog).getByRole('button', { name: 'Confirm Void Receipt' }))

@@ -41,7 +41,7 @@
   align-items: end;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 
 .agreement-section-heading h3,
@@ -334,7 +334,7 @@
 }
 
 .fee-agreement-editor .billing-month-option input:focus-visible + span {
-  outline: 3px solid rgb(37 99 235 / 24%);
+  outline: 3px solid var(--border-strong);
   outline-offset: 1px;
 }
 

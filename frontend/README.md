@@ -1,8 +1,8 @@
-# School Admin System Frontend
+# MIS Administration System Frontend
 
-The frontend is a React and TypeScript neutral administration/finance demo. It uses Vite, Lucide icons, and focused project CSS. The application is intentionally practical and data-dense rather than a consumer mobile app or marketing dashboard. Runtime product copy is centralized in `src/branding.ts`; a fresh disposable backend demo seed supplies the fictional `Demo International School` tenant.
+The frontend is the MIS React and TypeScript administration/finance demo. It uses Vite, Lucide/custom icons, and focused project CSS. The main surface is a data-dense Admin application; `/portal` is an experimental mobile-shaped Parent/Student preview in the same build. Runtime product copy is centralized in `src/branding.ts`; a fresh disposable backend demo seed supplies the MIS tenant.
 
-The repository retains earlier internal project history as development evidence, but that history is not part of the neutral runtime identity or a claim of school affiliation. Do not use presentation changes to rename existing tenant data or historical receipt identifiers.
+Do not use presentation changes to rename existing tenant data or historical receipt identifiers. Portal attendance, timetable, and payment-method interactions labelled as demo previews are not authoritative persisted workflows.
 
 ## Stack
 

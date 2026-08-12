@@ -70,14 +70,14 @@
 }
 
 .calendar-view-switcher button[aria-pressed='true'] {
-  background: #6659df;
+  background: var(--brand-primary);
   color: #ffffff;
-  box-shadow: 0 5px 12px rgb(102 89 223 / 24%);
+  box-shadow: 0 5px 12px var(--brand-primary-soft);
 }
 
 .calendar-view-switcher button:focus-visible,
 .calendar-mini-month:focus-visible {
-  outline: 3px solid rgb(102 89 223 / 24%);
+  outline: 3px solid var(--border-strong);
   outline-offset: 2px;
 }
 
@@ -144,7 +144,7 @@
 .calendar-upcoming-heading > span {
   display: block;
   margin-bottom: 8px;
-  color: #6b5fd6;
+  color: var(--brand-primary);
   font-size: 11px;
   font-weight: 900;
   letter-spacing: 0.11em;
@@ -242,8 +242,8 @@
 }
 
 .calendar-day.calendar-today {
-  background: #faf9ff;
-  box-shadow: inset 0 0 0 2px #8b7fe8;
+  background: var(--brand-primary-soft);
+  box-shadow: inset 0 0 0 2px var(--brand-primary);
 }
 
 .calendar-day.calendar-today .calendar-day-number {
@@ -372,12 +372,12 @@
   right: 2px;
   bottom: 1px;
   border-radius: 50%;
-  background: #6b5fd6;
+  background: var(--brand-primary);
   content: '';
 }
 
 .calendar-mini-grid > .calendar-mini-today {
-  background: #6b5fd6;
+  background: var(--brand-primary);
   color: #ffffff;
   font-weight: 900;
 }
@@ -423,7 +423,7 @@
 
 .calendar-week-header .calendar-week-today strong,
 .calendar-week-header .calendar-week-today span {
-  color: #5d50d0;
+  color: var(--brand-primary);
 }
 
 .calendar-all-day-row {
@@ -504,7 +504,7 @@
 }
 
 .calendar-week-column-today {
-  background: rgb(104 91 221 / 3%);
+  background: var(--brand-primary-soft);
 }
 
 .calendar-event.calendar-week-event {
@@ -794,8 +794,8 @@
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: #e9e5fb;
-  color: #5c50c7;
+  background: var(--brand-primary-soft);
+  color: var(--brand-primary-dark);
   font-size: 11px;
   font-weight: 900;
 }
@@ -1035,7 +1035,7 @@
   line-height: 1.55;
 }
 
-.calendar-event-appointment { border-left-color: #6b5fd6; background: #eeebff; color: #574cb2; }
+.calendar-event-appointment { border-left-color: var(--brand-primary); background: var(--brand-primary-soft); color: var(--brand-primary-dark); }
 .calendar-event-training { border-left-color: #4e9a72; background: #e9f6ee; color: #397655; }
 .calendar-event-meeting { border-left-color: #4f94aa; background: #e8f5f8; color: #397b8d; }
 .calendar-event-school_event { border-left-color: #d3a53e; background: #fff7df; color: #a67b1e; }
