@@ -39,9 +39,9 @@
 
 - **Base unit:** 4px.
 - **Scale:** 4, 8, 12, 16, 20, 24, 32, and 48px.
-- **Density:** Comfortable in the Feed; compact in tables, attendance rosters, results, and finance records.
-- **Radius:** 8px controls, 12px information panels, 18px major mobile surfaces, pill only for statuses and filters.
-- **Shadow:** Rare and shallow. Prefer borders and surface contrast.
+- **Density:** Phone-first and calm. Major sections use 20â€“30px vertical separation; related rows may remain compact, but nested card-on-card layouts should be avoided.
+- **Radius:** 12â€“18px controls and rows, 22â€“25px major mobile surfaces, and pills for statuses, filters, and the floating navigation capsule.
+- **Shadow:** Soft and restrained. Use it to separate floating navigation and major paper surfaces from the warm canvas, not on every row.
 - **Touch target:** At least 44 by 44px.
 
 ## Navigation
@@ -49,8 +49,11 @@
 - Parent: Home, Children, Academics, Finance, More.
 - Student: Home, Learn, Quiz, Schedule, More.
 - Teacher/Staff: Home, Classes, Create, Attendance, More.
+- The primary mobile navigation is a floating liquid-glass capsule above the device safe area. Its active destination shows icon and label; inactive destinations remain recognizable icons with accessible labels.
+- The capsule uses a translucent white fallback everywhere and adds `backdrop-filter` blur/saturation only where supported. Content keeps sufficient bottom clearance so the navigation never hides the final action.
 - Notifications open from the persistent top bar rather than consuming a bottom-navigation slot.
 - Multi-role users may switch roles, but each role receives its own navigation and scoped content.
+- Sign out belongs in each role's More/Profile page rather than the persistent header.
 
 ## Motion
 
@@ -77,3 +80,5 @@
 | 2026-08-12 | General attendance-session model | Supports daily, lesson, and event attendance without rewriting history; the first UI exposes daily attendance. |
 | 2026-08-12 | Assigned Quiz and Practice Quiz are separate | Formal teacher assessments must not be mixed with student self-practice. |
 | 2026-08-12 | Parent Finance is read-only | The App reuses authoritative finance records without adding a payment interface. |
+| 2026-08-13 | Role-aware liquid-glass mobile navigation | A floating capsule preserves thumb reach and role clarity while reducing the visual weight of five persistent labels. |
+| 2026-08-13 | Calm phone-first record surfaces | More spacing, fewer nested borders, and grouped rows make academic, attendance, finance, Quiz, and profile pages easier to scan on 360â€“430px screens. |

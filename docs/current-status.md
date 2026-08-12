@@ -1,6 +1,6 @@
 # Current Status
 
-**Snapshot date:** 2026-08-12
+**Snapshot date:** 2026-08-13
 
 **Inspected Phase A implementation commit:** `ecaa0a1f177292ae99c9338e255a1f93312971f5`
 
@@ -44,6 +44,14 @@ The App is approved as a private school-community product: a relationship-scoped
 The current working slice redesigns the Admin staff login and all App role surfaces. Daily Attendance is connected end to end: assigned Teachers load current rosters, submit `present`, `late`, `absent`, or `excused`, and must provide a reason for corrections; authorized Parents and the linked Student can read the resulting record. Attendance writes and their audit events share one transaction. Community persistence/media, Assessment results, formal Quiz, Practice Quiz generation, and Schedule remain clearly labelled UI previews rather than implemented backend modules. See [MIS App Product Specification](mobile-app-product-spec.md) and the root [Design System](../DESIGN.md).
 
 Later school-specific branding requires explicit approval and a controlled update to the presentation configuration and, if needed, a fresh disposable demo seed. It must not rename existing tenant data or rewrite financial history.
+
+## 2026-08-13 Mobile App Visual Refinement
+
+- The App shell now uses a compact MIS Community header and a role-aware floating liquid-glass navigation capsule. The active destination shows icon and label; inactive destinations retain icons with accessible names.
+- Parent, Student, Teacher, and authorized Staff receive distinct five-item navigation sets. Sign out moved from the persistent header into each role's More/Profile page.
+- Feed and record surfaces use calmer phone-first spacing, fewer nested borders, stronger content hierarchy, and at least 44px interactive targets. The Feed remains a clearly labelled preview where publishing is not connected.
+- Automated browser checks covered 39 representative role/page/viewport combinations at 360x800, 390x844, and 430x932. No horizontal overflow or undersized visible interactive target remained after correction.
+- The browser helper's packaged Windows server lacked its Playwright dependency; validation used a cached Playwright runner with installed Chrome and did not add a project dependency.
 
 ## Technology Snapshot
 
