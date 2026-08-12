@@ -52,6 +52,8 @@ Later school-specific branding requires explicit approval and a controlled updat
 - Feed and record surfaces use calmer phone-first spacing, fewer nested borders, stronger content hierarchy, and at least 44px interactive targets. The Feed remains a clearly labelled preview where publishing is not connected.
 - Automated browser checks covered 39 representative role/page/viewport combinations at 360x800, 390x844, and 430x932. No horizontal overflow or undersized visible interactive target remained after correction.
 - The browser helper's packaged Windows server lacked its Playwright dependency; validation used a cached Playwright runner with installed Chrome and did not add a project dependency.
+- App validation passed with 3 files and 16 tests, clean Oxlint, and a TypeScript/Vite production build with 76 transformed modules. Existing Admin regression passed with 15 files and 169 tests, Oxlint exit 0 with the 9 known Fast Refresh organization warnings, and an 83-module production build.
+- Backend regression passed with 255 tests discovered, 247 passed, 8 opt-in MariaDB tests skipped, and 1,314 assertions. Pint passed and 74 API routes loaded. No backend schema changed in this visual-refinement branch, so a new MariaDB lifecycle was not run for this branch.
 
 ## Technology Snapshot
 
