@@ -69,7 +69,10 @@ describe('MobileShell & Portal Views', () => {
 
     // Welcome greeting includes first name.
     expect(screen.getByText(/Rachel/)).toBeDefined()
-    expect(screen.getByText('Community design preview · audience rules will be enforced by Laravel')).toBeDefined()
+    expect(screen.getByText('Preview · community publishing is not connected')).toBeDefined()
+    expect(document.querySelector('.context-card')).toBeTruthy()
+    expect(document.querySelector('.feed-post-meta')).toBeTruthy()
+    expect(document.querySelector('.preview-note')).toBeTruthy()
   })
 
   it('renders ParentPortalView finance tab in loading state', () => {
@@ -82,7 +85,7 @@ describe('MobileShell & Portal Views', () => {
     render(<StudentPortalView studentName="Alyssa Tan" activeTab="home" onLogout={() => {}} />)
 
     expect(screen.getByText(/Hello, Alyssa/)).toBeDefined()
-    expect(screen.getByText('Community design preview · audience rules will be enforced by Laravel')).toBeDefined()
+    expect(screen.getByText('Preview · community publishing is not connected')).toBeDefined()
   })
 
   it('triggers onTabChange when bottom navigation item is clicked', () => {
