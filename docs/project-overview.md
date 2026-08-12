@@ -63,7 +63,7 @@ Do not describe the system as unlimited or use the historical cost estimate as p
 
 Phase A foundation now defines teacher/parent/student roles, scoped academic records, and explicitly reviewed nullable portal identity links; it does not activate a portal or add native/mobile authentication.
 
-- User/role administration, account status management, and password reset.
+- Full user/role administration, account status management, and password reset. Phase A provides only minimum account creation and teacher/parent/student role assignment.
 - General reports, exports, statements, reminders, and server-generated PDF documents.
 - Parent portal and communications.
 - Generic audit corrections, audit export, and recovery workflows beyond read-only event review.

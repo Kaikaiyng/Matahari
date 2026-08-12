@@ -64,6 +64,8 @@ Phase A permission defaults:
 
 Foundation role management synchronizes only `teacher`, `parent`, and `student`; it preserves existing roles such as Finance or School Admin.
 
+`foundation_accounts.manage` also permits creation of a same-school active account with one or more foundation roles. It does not permit assigning existing administrative/finance roles, changing school ownership, deactivating accounts, or resetting passwords.
+
 ## CEO Intended Versus Implemented Access
 
 Confirmed intended context describes CEO or print-only management access. Current code grants CEO only:
