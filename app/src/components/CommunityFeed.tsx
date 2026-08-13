@@ -20,7 +20,7 @@ export function CommunityFeed({ role, userName, onOpenFinance, onCreatePost, mod
   const [comment, setComment] = useState('')
   const firstName = userName.split(' ')[0]
 
-  const load = () => portalApi.getCommunityPosts().then(({ data }) => setPosts(data)).catch(() => setError('Unable to load community posts.')).finally(() => setLoading(false))
+  const load = () => portalApi.getCommunityPosts().then(({ data }) => setPosts(Array.isArray(data) ? data : [])).catch(() => setError('Unable to load community posts.')).finally(() => setLoading(false))
   useEffect(() => { void load() }, [])
 
   const toggleLike = async (postId: number) => {
