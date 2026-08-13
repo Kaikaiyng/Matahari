@@ -163,6 +163,9 @@ class DatabaseSeeder extends Seeder
             'assessments.view_published' => 'View own authorized published assessment results',
             'schedule.manage' => 'Manage school class schedules',
             'schedule.view' => 'View authorized class schedules',
+            'quizzes.manage' => 'Manage authorized formal quizzes',
+            'quizzes.manage_school' => 'Manage all formal quizzes in the school',
+            'quizzes.attempt' => 'Attempt assigned formal quizzes',
         ])->mapWithKeys(fn (string $name, string $slug) => [
             $slug => Permission::query()->updateOrCreate(['slug' => $slug], ['name' => $name]),
         ]);
@@ -215,6 +218,9 @@ class DatabaseSeeder extends Seeder
             'assessments.view_published',
             'schedule.manage',
             'schedule.view',
+            'quizzes.manage',
+            'quizzes.manage_school',
+            'quizzes.attempt',
         ])->pluck('id')->all());
         $roles['finance']->permissions()->sync($permissions->only([
             'students.view',
@@ -244,6 +250,7 @@ class DatabaseSeeder extends Seeder
             'community.interact',
             'assessments.manage',
             'schedule.view',
+            'quizzes.manage',
         ])->pluck('id')->all());
         $roles['parent']->permissions()->sync($permissions->only([
             'parent.self_service',
@@ -258,6 +265,7 @@ class DatabaseSeeder extends Seeder
             'community.interact',
             'assessments.view_published',
             'schedule.view',
+            'quizzes.attempt',
         ])->pluck('id')->all());
 
         $superAdmin->roles()->sync([$roles['super-admin']->id]);

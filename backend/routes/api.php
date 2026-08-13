@@ -24,6 +24,7 @@ use App\Http\Controllers\Api\V1\FoundationAccountController;
 use App\Http\Controllers\Api\V1\ParentPortalController;
 use App\Http\Controllers\Api\V1\PortalLinkController;
 use App\Http\Controllers\Api\V1\PortalNotificationController;
+use App\Http\Controllers\Api\V1\QuizController;
 use App\Http\Controllers\Api\V1\StaffController;
 use App\Http\Controllers\Api\V1\StudentPortalController;
 use App\Http\Controllers\Api\V1\SubjectController;
@@ -195,6 +196,12 @@ Route::prefix('v1')->middleware([...$sessionMiddleware, 'auth', 'active', 'schoo
         Route::post('/{assessment}/publish', [AssessmentController::class, 'publish']);
     });
 
+    Route::prefix('quizzes')->middleware('permission:quizzes.manage')->group(function (): void {
+        Route::post('/', [QuizController::class, 'store']);
+        Route::post('/{quiz}/assignments', [QuizController::class, 'assign']);
+        Route::post('/assignments/{quizAssignment}/publish', [QuizController::class, 'publish']);
+    });
+
     Route::prefix('portal')->group(function (): void {
         // Parent portal — requires active guardian link per resource
         Route::prefix('parent')->middleware('permission:parent.self_service')->group(function (): void {
@@ -214,6 +221,11 @@ Route::prefix('v1')->middleware([...$sessionMiddleware, 'auth', 'active', 'schoo
             Route::get('/attendance', [StudentPortalController::class, 'attendance']);
             Route::get('/assessment-results', [StudentPortalController::class, 'assessmentResults'])->middleware('permission:assessments.view_published');
             Route::get('/schedule', [StudentPortalController::class, 'schedule'])->middleware('permission:schedule.view');
+            Route::prefix('quizzes')->middleware('permission:quizzes.attempt')->group(function (): void {
+                Route::get('/', [QuizController::class, 'studentIndex']);
+                Route::post('/assignments/{quizAssignment}/attempts', [QuizController::class, 'start']);
+                Route::post('/attempts/{quizAttempt}/submit', [QuizController::class, 'submit']);
+            });
         });
 
         // In-app notifications — available to both parent and student

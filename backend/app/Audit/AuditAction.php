@@ -58,4 +58,9 @@ enum AuditAction: string
     case AcademicTermUpdated = 'academic_term.updated';
     case ClassScheduleCreated = 'class_schedule.created';
     case ClassScheduleUpdated = 'class_schedule.updated';
+    case QuizCreated = 'quiz.created';
+    case QuizAssignmentCreated = 'quiz_assignment.created';
+    case QuizAssignmentPublished = 'quiz_assignment.published';
+    case QuizAttemptStarted = 'quiz_attempt.started';
+    case QuizAttemptSubmitted = 'quiz_attempt.submitted';
 }

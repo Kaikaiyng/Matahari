@@ -24,4 +24,7 @@ enum AuditSubject: string
     case Assessment = 'assessment';
     case AcademicTerm = 'academic_term';
     case ClassScheduleEntry = 'class_schedule_entry';
+    case Quiz = 'quiz';
+    case QuizAssignment = 'quiz_assignment';
+    case QuizAttempt = 'quiz_attempt';
 }
