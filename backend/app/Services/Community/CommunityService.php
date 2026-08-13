@@ -95,4 +95,24 @@ class CommunityService
             return $comment;
         });
     }
+
+    public function removeComment(int $schoolId, CommunityComment $comment, User $actor, AuditContext $context): void
+    {
+        $post = CommunityPost::query()->findOrFail($comment->community_post_id);
+        $this->access->findVisible($actor, $schoolId, $post);
+        abort_unless($comment->user_id === $actor->id || $post->author_user_id === $actor->id || $actor->hasPermissionTo('community.moderate'), 403);
+        DB::transaction(function () use ($schoolId, $comment, $actor, $context): void {
+            $comment->update(['status' => 'removed', 'removed_at' => now()]);
+            $this->audit->record(new AuditEvent(action: AuditAction::CommunityCommentRemoved, module: AuditModule::Community, schoolId: $schoolId, subjectType: AuditSubject::CommunityComment, subjectId: $comment->id, newValues: ['removed_by' => $actor->id]), $context);
+        });
+    }
+
+    public function hidePost(int $schoolId, CommunityPost $post, string $reason, User $actor, AuditContext $context): void
+    {
+        abort_unless((int) $post->school_id === $schoolId && $actor->hasPermissionTo('community.moderate'), 403);
+        DB::transaction(function () use ($schoolId, $post, $reason, $actor, $context): void {
+            $post->update(['status' => 'hidden', 'hidden_at' => now(), 'hidden_by_user_id' => $actor->id, 'moderation_reason' => trim($reason)]);
+            $this->audit->record(new AuditEvent(action: AuditAction::CommunityPostHidden, module: AuditModule::Community, schoolId: $schoolId, subjectType: AuditSubject::CommunityPost, subjectId: $post->id, newValues: ['reason' => trim($reason)]), $context);
+        });
+    }
 }

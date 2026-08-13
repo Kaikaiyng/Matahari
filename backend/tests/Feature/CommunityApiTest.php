@@ -80,4 +80,18 @@ class CommunityApiTest extends TestCase
         $this->actingAs(User::query()->where('username', 'rachel.wong')->firstOrFail())
             ->get($media['url'])->assertOk();
     }
+
+    public function test_comment_owner_can_remove_it_and_school_admin_can_hide_a_post_with_a_reason(): void
+    {
+        $admin = User::query()->where('username', 'admin')->firstOrFail();
+        $postId = $this->actingAs($admin)->postJson('/api/v1/community/posts', ['body' => 'Notice', 'audiences' => [['type' => 'school']]])->json('data.id');
+        $student = User::query()->where('username', 'alyssa.tan')->firstOrFail();
+        $commentId = $this->actingAs($student)->postJson("/api/v1/community/posts/{$postId}/comments", ['body' => 'Thanks'])->json('data.id');
+        $this->actingAs($student)->deleteJson("/api/v1/community/comments/{$commentId}")->assertOk();
+        $this->assertDatabaseHas('community_comments', ['id' => $commentId, 'status' => 'removed']);
+
+        $this->actingAs($admin)->postJson("/api/v1/community/posts/{$postId}/hide", ['reason' => 'Posted in error.'])->assertOk();
+        $this->assertDatabaseHas('community_posts', ['id' => $postId, 'status' => 'hidden', 'moderation_reason' => 'Posted in error.']);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'community.post_hidden', 'entity_id' => $postId]);
+    }
 }

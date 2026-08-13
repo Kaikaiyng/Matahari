@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Audit\AuditContextFactory;
 use App\Http\Controllers\Controller;
+use App\Models\CommunityComment;
 use App\Models\CommunityPost;
 use App\Models\CommunityPostMedia;
 use App\Services\Community\CommunityAccessService;
@@ -53,6 +54,21 @@ class CommunityController extends Controller
 
         return Storage::disk($communityPostMedia->storage_disk)
             ->download($communityPostMedia->storage_path, $communityPostMedia->original_name ?? 'community-file');
+    }
+
+    public function removeComment(Request $request, CommunityComment $communityComment, CommunityService $service, AuditContextFactory $contexts): JsonResponse
+    {
+        $service->removeComment(SchoolContext::fromRequest($request)->schoolId, $communityComment, $request->user(), $contexts->fromRequest($request));
+
+        return response()->json(['success' => true]);
+    }
+
+    public function hide(Request $request, CommunityPost $communityPost, CommunityService $service, AuditContextFactory $contexts): JsonResponse
+    {
+        $data = $request->validate(['reason' => ['required', 'string', 'max:500']]);
+        $service->hidePost(SchoolContext::fromRequest($request)->schoolId, $communityPost, $data['reason'], $request->user(), $contexts->fromRequest($request));
+
+        return response()->json(['success' => true]);
     }
 
     public function reaction(Request $request, CommunityPost $communityPost, CommunityService $service, AuditContextFactory $contexts): JsonResponse

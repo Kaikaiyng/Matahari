@@ -50,4 +50,5 @@ enum AuditAction: string
     case CommunityReactionUpdated = 'community.reaction_updated';
     case CommunityCommentCreated = 'community.comment_created';
     case CommunityCommentRemoved = 'community.comment_removed';
+    case CommunityPostHidden = 'community.post_hidden';
 }

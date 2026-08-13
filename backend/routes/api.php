@@ -140,6 +140,8 @@ Route::prefix('v1')->middleware([...$sessionMiddleware, 'auth', 'active', 'schoo
         Route::post('/posts/{communityPost}/reaction', [CommunityController::class, 'reaction'])->middleware('permission:community.interact');
         Route::post('/posts/{communityPost}/comments', [CommunityController::class, 'comment'])->middleware('permission:community.interact');
         Route::get('/media/{communityPostMedia}', [CommunityController::class, 'media']);
+        Route::delete('/comments/{communityComment}', [CommunityController::class, 'removeComment'])->middleware('permission:community.interact');
+        Route::post('/posts/{communityPost}/hide', [CommunityController::class, 'hide'])->middleware('permission:community.moderate');
     });
 
     Route::prefix('admin')->group(function (): void {
