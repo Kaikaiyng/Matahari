@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\V1\AcademicTermController;
 use App\Http\Controllers\Api\V1\AcademicYearController;
 use App\Http\Controllers\Api\V1\AssessmentController;
 use App\Http\Controllers\Api\V1\ClassEnrolmentController;
+use App\Http\Controllers\Api\V1\ClassScheduleController;
 use App\Http\Controllers\Api\V1\CommunityController;
 use App\Http\Controllers\Api\V1\FoundationAccountController;
 use App\Http\Controllers\Api\V1\ParentPortalController;
@@ -167,6 +168,10 @@ Route::prefix('v1')->middleware([...$sessionMiddleware, 'auth', 'active', 'schoo
         Route::post('/teaching-assignments', [TeachingAssignmentController::class, 'store'])->middleware('permission:teaching_assignments.manage');
         Route::post('/teaching-assignments/{teachingAssignment}/end', [TeachingAssignmentController::class, 'end'])->middleware('permission:teaching_assignments.manage');
 
+        Route::get('/class-schedules', [ClassScheduleController::class, 'index'])->middleware('permission:schedule.manage');
+        Route::post('/class-schedules', [ClassScheduleController::class, 'store'])->middleware('permission:schedule.manage');
+        Route::patch('/class-schedules/{classScheduleEntry}', [ClassScheduleController::class, 'update'])->middleware('permission:schedule.manage');
+
         Route::patch('/parents/{guardian}/portal-user', [PortalLinkController::class, 'guardianUser'])->middleware('permission:portal_links.manage');
         Route::patch('/students/{student}/portal-user', [PortalLinkController::class, 'studentUser'])->middleware('permission:portal_links.manage');
         Route::patch('/student-parent-links/{studentParentLink}/portal-access', [PortalLinkController::class, 'guardianAccess'])->middleware('permission:portal_links.manage');
@@ -199,6 +204,7 @@ Route::prefix('v1')->middleware([...$sessionMiddleware, 'auth', 'active', 'schoo
             Route::get('/children/{student}/receipts', [ParentPortalController::class, 'childReceipts']);
             Route::get('/children/{student}/attendance', [ParentPortalController::class, 'childAttendance']);
             Route::get('/children/{student}/assessment-results', [ParentPortalController::class, 'childAssessmentResults'])->middleware('permission:assessments.view_published');
+            Route::get('/children/{student}/schedule', [ParentPortalController::class, 'childSchedule'])->middleware('permission:schedule.view');
         });
 
         // Student portal — requires active student-self link
@@ -207,6 +213,7 @@ Route::prefix('v1')->middleware([...$sessionMiddleware, 'auth', 'active', 'schoo
             Route::get('/enrolments', [StudentPortalController::class, 'enrolments']);
             Route::get('/attendance', [StudentPortalController::class, 'attendance']);
             Route::get('/assessment-results', [StudentPortalController::class, 'assessmentResults'])->middleware('permission:assessments.view_published');
+            Route::get('/schedule', [StudentPortalController::class, 'schedule'])->middleware('permission:schedule.view');
         });
 
         // In-app notifications — available to both parent and student

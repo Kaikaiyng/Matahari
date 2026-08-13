@@ -9,6 +9,7 @@ use App\Models\Guardian;
 use App\Models\Receipt;
 use App\Models\Student;
 use App\Services\Billing\FeeRecordChargeGenerationService;
+use App\Services\Schedule\ScheduleReadService;
 use App\Support\SchoolContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -154,6 +155,13 @@ class ParentPortalController extends Controller
         $this->assertGuardianAccess($request, $student, 'can_view_academics');
 
         return response()->json(['data' => $this->publishedResults($student)]);
+    }
+
+    public function childSchedule(Request $request, Student $student, ScheduleReadService $service): JsonResponse
+    {
+        $this->assertGuardianAccess($request, $student, 'can_view_academics');
+
+        return response()->json(['data' => $service->forStudent($student)]);
     }
 
     private function publishedResults(Student $student): array
