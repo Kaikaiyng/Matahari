@@ -51,6 +51,12 @@ vi.mock('../api/portalApi', () => ({
     getStudentAssessmentResults: vi.fn().mockResolvedValue({ data: [] }),
     getStudentSchedule: vi.fn().mockResolvedValue({ data: { entries: [], due_dates: [] } }),
     getChildSchedule: vi.fn().mockResolvedValue({ data: { entries: [], due_dates: [] } }),
+    getStudentQuizzes: vi.fn().mockResolvedValue({ data: [] }),
+    startQuizAttempt: vi.fn(),
+    submitQuizAttempt: vi.fn(),
+    createFormalQuiz: vi.fn(),
+    createQuizAssignment: vi.fn(),
+    publishQuizAssignment: vi.fn(),
     getNotifications: vi.fn().mockResolvedValue({ data: [], meta: { unread_count: 0 } }),
     markNotificationRead: vi.fn(),
     markAllNotificationsRead: vi.fn(),
@@ -170,10 +176,10 @@ describe('MobileShell & Portal Views', () => {
     expect(teacherLogout).toHaveBeenCalledTimes(1)
   })
 
-  it('keeps Quiz as a preview while Schedule loads live records', async () => {
+  it('loads formal Quiz and Schedule from live APIs', async () => {
     const quiz = render(<StudentPortalView studentName="Alyssa Tan" activeTab="quiz" onLogout={() => {}} />)
-    expect(await screen.findByText(/Quiz delivery is not connected/)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Quiz coming later/ })).toBeDisabled()
+    expect(await screen.findByText('No formal quizzes are assigned.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Practice generator coming later/ })).toBeDisabled()
     quiz.unmount()
 
     vi.mocked(portalApi.getStudentSchedule).mockResolvedValueOnce({ data: { entries: [{ id: 1, title: 'English', day_of_week: new Date().getDay() || 7, starts_at: '08:00', ends_at: '09:00', location: 'Room 3', subject: 'English', teacher: 'Teacher Lim', effective_from: null, effective_to: null }], due_dates: [] } })

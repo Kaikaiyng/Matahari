@@ -169,6 +169,8 @@ export interface PublishedAssessmentResult { id: number; assessment_id: number; 
 export interface ScheduleEntry { id: number; title: string; day_of_week: number; starts_at: string; ends_at: string; location: string | null; subject: string | null; teacher: string | null; effective_from: string | null; effective_to: string | null }
 export interface ScheduleDueDate { assessment_id: number; title: string; subject: string; due_at: string }
 export interface StudentSchedule { entries: ScheduleEntry[]; due_dates: ScheduleDueDate[] }
+export interface FormalQuizAssignment { id: number; quiz_id: number; title: string; instructions: string | null; question_count: number; available_from: string | null; due_at: string | null; attempt_limit: number; attempts_used: number; latest_score: string | null }
+export interface FormalQuizAttempt { id: number; title: string; questions: Array<{ id: number; question_type: 'multiple_choice' | 'true_false'; prompt: string; points: number; options: Array<{ id: number; option_text: string }> }> }
 export interface AssessmentItem {
   id: number; title: string; assessment_type: string; max_score: number; status: string; due_at: string | null; published_at: string | null
   academic_year: { id: number; code: string }; subject: { id: number; code: string; name: string }; classes: Array<{ id: number; name: string }>
@@ -211,6 +213,13 @@ export const portalApi = {
   getStudentAttendance: () => portalRequest<{ data: AttendanceRecord[] }>('/student/attendance'),
   getStudentAssessmentResults: () => portalRequest<{ data: PublishedAssessmentResult[] }>('/student/assessment-results'),
   getStudentSchedule: () => portalRequest<{ data: StudentSchedule }>('/student/schedule'),
+  getStudentQuizzes: () => portalRequest<{ data: FormalQuizAssignment[] }>('/student/quizzes'),
+  startQuizAttempt: (assignmentId: number) => portalRequest<{ data: FormalQuizAttempt }>(`/student/quizzes/assignments/${assignmentId}/attempts`, { method: 'POST' }),
+  submitQuizAttempt: (attemptId: number, answers: Array<{ question_id: number; option_id: number }>) => portalRequest<{ data: { id: number; status: string; score: number; max_score: number } }>(`/student/quizzes/attempts/${attemptId}/submit`, { method: 'POST', body: { answers } }),
+
+  createFormalQuiz: (assignment: TeacherAssignment, title: string, prompt: string, options: string[], correctIndex: number) => apiRequest<{ data: { id: number } }>('/v1/quizzes', { method: 'POST', body: { academic_year_id: assignment.academic_year.id, subject_id: assignment.subject.id, class_ids: [assignment.class.id], title, questions: [{ question_type: options.length === 2 && options[0] === 'True' && options[1] === 'False' ? 'true_false' : 'multiple_choice', prompt, points: 1, options: options.map((option_text, index) => ({ option_text, is_correct: index === correctIndex })) }] } }),
+  createQuizAssignment: (quizId: number, assignment: TeacherAssignment) => apiRequest<{ data: { id: number } }>(`/v1/quizzes/${quizId}/assignments`, { method: 'POST', body: { academic_year_id: assignment.academic_year.id, class_ids: [assignment.class.id], attempt_limit: 1 } }),
+  publishQuizAssignment: (assignmentId: number) => apiRequest<{ data: unknown }>(`/v1/quizzes/assignments/${assignmentId}/publish`, { method: 'POST' }),
 
   getAssessments: () => apiRequest<{ data: AssessmentItem[] }>('/v1/assessments'),
   createAssessment: (assignment: TeacherAssignment, title: string, assessmentType: string, maxScore: number) => apiRequest<{ data: AssessmentItem }>('/v1/assessments', { method: 'POST', body: { academic_year_id: assignment.academic_year.id, subject_id: assignment.subject.id, class_ids: [assignment.class.id], title, assessment_type: assessmentType, max_score: maxScore } }),

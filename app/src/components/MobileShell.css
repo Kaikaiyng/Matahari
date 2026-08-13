@@ -51,3 +51,4 @@
 .feed-filter button,.child-selector select,.practice-options button{min-height:44px}
 .plain-icon{width:44px;height:44px}
 @media(max-width:390px){.feed-post-header{grid-template-columns:42px minmax(0,1fr) 44px}}
+.quiz-option-editor{display:grid;grid-template-columns:28px 1fr;align-items:center;gap:8px}.quiz-option-editor input[type=radio]{width:20px;height:20px}.quiz-attempt{display:grid;gap:18px}.quiz-attempt fieldset{display:grid;gap:10px;padding:16px;border:1px solid var(--app-line);border-radius:16px;background:#fff}.quiz-attempt legend{padding:0 6px;font-weight:800}.quiz-attempt fieldset label{display:flex;align-items:center;gap:10px;min-height:44px}

@@ -80,6 +80,9 @@ Foundation role management synchronizes only `teacher`, `parent`, and `student`;
 | Assessment management | `assessments.manage` | Teacher: current assigned class/year/subject combinations; School/Super Admin: same-school resources |
 | Schedule management | `schedule.manage` | School/Super Admin only; same-school year/class/subject/Teaching Assignment validation |
 | Schedule viewing | `schedule.view` | Student current enrolment; Guardian active reviewed academic link; Teacher permission is reserved for assigned-scope UI |
+| Formal Quiz management | `quizzes.manage` | Teacher owns Quiz and targets only current assigned academic-year/class/subject scope |
+| School Quiz management | `quizzes.manage_school` | School/Super Admin same-school override; broad Admin UI remains future |
+| Formal Quiz attempt | `quizzes.attempt` | Student self only and only when present in materialized assignment recipients |
 | School-wide assessment management | `assessments.manage_school` | School/Super Admin bypass Teacher assignment scope but never school scope |
 | Published assessment result | `assessments.view_published` plus portal role permission | Parent requires active reviewed academic guardian capability; Student resolves self only |
 | Portal notifications | Authenticated portal user | Recipient user and school must both match |
