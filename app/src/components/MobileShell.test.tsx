@@ -9,6 +9,10 @@ import { portalApi } from '../api/portalApi'
 // Mock the portalApi so components don't make real HTTP calls in tests
 vi.mock('../api/portalApi', () => ({
   portalApi: {
+    getCommunityPosts: vi.fn().mockResolvedValue({ data: [{ id: 1, body: 'A real school update', comments_enabled: true, published_at: '2026-08-13T12:00:00Z', author: { id: 4, name: 'Teacher Lim' }, audiences: [{ type: 'class', class_id: 1, student_id: null }], media: [], reaction_count: 2, reacted_by_me: false, comments: [] }] }),
+    toggleCommunityReaction: vi.fn(),
+    addCommunityComment: vi.fn(),
+    createCommunityPost: vi.fn(),
     getGuardianMe: vi.fn().mockResolvedValue({
       data: { id: 1, full_name: 'Rachel Wong', phone: null, email: null },
       children: [
@@ -73,10 +77,8 @@ describe('MobileShell & Portal Views', () => {
 
     // Welcome greeting includes first name.
     expect(screen.getByText(/Rachel/)).toBeDefined()
-    expect(screen.getByText('Preview · community publishing is not connected')).toBeDefined()
     expect(document.querySelector('.context-card')).toBeTruthy()
-    expect(document.querySelector('.feed-post-meta')).toBeTruthy()
-    expect(document.querySelector('.preview-note')).toBeTruthy()
+    expect(screen.getByText('School community')).toBeDefined()
   })
 
   it('renders ParentPortalView finance tab in loading state', () => {
@@ -89,7 +91,7 @@ describe('MobileShell & Portal Views', () => {
     render(<StudentPortalView studentName="Alyssa Tan" activeTab="home" onLogout={() => {}} />)
 
     expect(screen.getByText(/Hello, Alyssa/)).toBeDefined()
-    expect(screen.getByText('Preview · community publishing is not connected')).toBeDefined()
+    expect(screen.getByText('School community')).toBeDefined()
   })
 
   it('triggers onTabChange when bottom navigation item is clicked', () => {

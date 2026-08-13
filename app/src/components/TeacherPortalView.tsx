@@ -7,7 +7,7 @@ export function TeacherPortalView({ teacherName, activeTab, onTabChange, onLogou
   if (activeTab === 'home') return <CommunityFeed role={staffMode ? 'staff' : 'teacher'} userName={teacherName} onCreatePost={() => onTabChange('create')} />
   if (activeTab === 'classes') return <ClassesPage staffMode={staffMode} />
   if (activeTab === 'review' && staffMode) return <ClassesPage staffMode />
-  if (activeTab === 'create') return <CreatePost />
+  if (activeTab === 'create') return <CreatePost staffMode={staffMode} onPublished={() => onTabChange('home')} />
   if (activeTab === 'attendance') return <AttendancePage />
   return <TeacherMore teacherName={teacherName} staffMode={staffMode} onLogout={onLogout} />
 }
@@ -40,12 +40,16 @@ function ClassesPage({ staffMode }: { staffMode: boolean }) {
 }
 function ClassCard({ name, subject, students, year }: { name: string; subject: string; students: number; year: string }) { return <article className="class-card"><span className="class-monogram">{name}</span><span><strong>{name} · {subject}</strong><small><UsersRound /> {students} enrolled students</small><small>{year}</small></span></article> }
 
-function CreatePost() {
-  const [audience, setAudience] = useState('MB1')
+function CreatePost({ staffMode, onPublished }: { staffMode: boolean; onPublished: () => void }) {
+  const [assignments, setAssignments] = useState<TeacherAssignment[]>([])
+  const [audience, setAudience] = useState(staffMode ? 'school' : '')
   const [comments, setComments] = useState(true)
   const [message, setMessage] = useState('')
   const [notice, setNotice] = useState('')
-  return <div className="record-page"><Title eyebrow="Community" title="Share a school moment" copy="Choose the audience before adding student media." /><div className="preview-label">Preview composer · publishing is not persisted until the scoped media API lands</div><form className="post-composer" onSubmit={(event) => { event.preventDefault(); setNotice('Preview saved locally. No post was sent.') }}><label><span>Audience</span><select value={audience} onChange={(event) => setAudience(event.target.value)}><option value="MB1">Class MB1</option><option value="MB2">Class MB2</option><option value="school">Whole school · authorized Staff only</option></select></label><label><span>Post</span><textarea value={message} onChange={(event) => setMessage(event.target.value)} placeholder="What happened in class today?" rows={6} required /></label><div className="media-actions"><button type="button"><Camera /> Camera</button><button type="button"><Image /> Photos</button><button type="button"><Video /> Video</button><button type="button"><FileText /> File</button></div><label className="comment-toggle"><span><strong>Allow comments</strong><small>Families and students in this audience may respond.</small></span><input type="checkbox" checked={comments} onChange={(event) => setComments(event.target.checked)} /></label>{notice && <p className="composer-notice">{notice}</p>}<button className="primary-action" type="submit"><Send /> Save preview</button></form></div>
+  const [saving, setSaving] = useState(false)
+  useEffect(() => { if (!staffMode) portalApi.getTeacherAssignments().then(({ data }) => { setAssignments(data); setAudience(data[0] ? String(data[0].class.id) : '') }).catch(() => setNotice('Unable to load your assigned classes.')) }, [staffMode])
+  const submit = async (event: React.FormEvent) => { event.preventDefault(); if (!audience) return; setSaving(true); setNotice(''); try { await portalApi.createCommunityPost(message, comments, audience === 'school' ? [{ type: 'school' }] : [{ type: 'class', class_id: Number(audience) }]); onPublished() } catch (error) { setNotice(error instanceof Error ? error.message : 'Unable to publish this post.') } finally { setSaving(false) } }
+  return <div className="record-page"><Title eyebrow="Community" title="Share a school moment" copy="Choose an authorized audience before publishing." /><form className="post-composer" onSubmit={submit}><label><span>Audience</span><select value={audience} onChange={(event) => setAudience(event.target.value)} required>{staffMode && <option value="school">Whole school</option>}{assignments.map((item) => <option key={item.id} value={item.class.id}>{item.class.name} · {item.subject.name}</option>)}</select></label><label><span>Post</span><textarea value={message} onChange={(event) => setMessage(event.target.value)} placeholder="What happened in class today?" rows={6} maxLength={5000} required /></label><div className="media-actions"><button type="button" disabled><Camera /> Camera</button><button type="button" disabled><Image /> Photos</button><button type="button" disabled><Video /> Video</button><button type="button" disabled><FileText /> File</button></div><label className="comment-toggle"><span><strong>Allow comments</strong><small>Families and students in this audience may respond.</small></span><input type="checkbox" checked={comments} onChange={(event) => setComments(event.target.checked)} /></label>{notice && <p className="composer-notice">{notice}</p>}<button className="primary-action" type="submit" disabled={saving || !audience}><Send /> {saving ? 'Publishing…' : 'Publish post'}</button></form></div>
 }
 
 function AttendancePage() {

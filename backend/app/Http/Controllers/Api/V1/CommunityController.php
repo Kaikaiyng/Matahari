@@ -1,0 +1,68 @@
+<?php
+
+namespace App\Http\Controllers\Api\V1;
+
+use App\Audit\AuditContextFactory;
+use App\Http\Controllers\Controller;
+use App\Models\CommunityPost;
+use App\Services\Community\CommunityAccessService;
+use App\Services\Community\CommunityService;
+use App\Support\SchoolContext;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+
+class CommunityController extends Controller
+{
+    public function index(Request $request, CommunityAccessService $access): JsonResponse
+    {
+        $schoolId = SchoolContext::fromRequest($request)->schoolId;
+        $posts = $access->visiblePosts($request->user(), $schoolId)
+            ->with(['author:id,name', 'audiences', 'media', 'comments' => fn ($q) => $q->where('status', 'visible')->with('user:id,name')->oldest()])
+            ->withCount('reactions')->withExists(['reactions as reacted_by_me' => fn ($q) => $q->where('user_id', $request->user()->id)])
+            ->latest('published_at')->limit(50)->get();
+
+        return response()->json(['data' => $posts->map(fn (CommunityPost $post) => $this->response($post))]);
+    }
+
+    public function store(Request $request, CommunityService $service, AuditContextFactory $contexts): JsonResponse
+    {
+        $data = $request->validate([
+            'body' => ['required', 'string', 'max:5000'], 'comments_enabled' => ['sometimes', 'boolean'],
+            'audiences' => ['required', 'array', 'min:1', 'max:20'],
+            'audiences.*.type' => ['required', Rule::in(['school', 'class', 'student'])],
+            'audiences.*.class_id' => ['nullable', 'integer', 'required_if:audiences.*.type,class'],
+            'audiences.*.student_id' => ['nullable', 'integer', 'required_if:audiences.*.type,student'],
+        ]);
+        $post = $service->publish(SchoolContext::fromRequest($request)->schoolId, $data, $request->user(), $contexts->fromRequest($request));
+        $post->load(['author:id,name', 'audiences', 'media', 'comments.user'])->loadCount('reactions')->setAttribute('reacted_by_me', false);
+
+        return response()->json(['data' => $this->response($post)], 201);
+    }
+
+    public function reaction(Request $request, CommunityPost $communityPost, CommunityService $service, AuditContextFactory $contexts): JsonResponse
+    {
+        $post = $service->toggleReaction(SchoolContext::fromRequest($request)->schoolId, $communityPost, $request->user(), $contexts->fromRequest($request));
+
+        return response()->json(['data' => ['post_id' => $post->id, 'reacted' => $post->reactions()->where('user_id', $request->user()->id)->exists(), 'reaction_count' => $post->reactions()->count()]]);
+    }
+
+    public function comment(Request $request, CommunityPost $communityPost, CommunityService $service, AuditContextFactory $contexts): JsonResponse
+    {
+        $data = $request->validate(['body' => ['required', 'string', 'max:2000']]);
+        $comment = $service->comment(SchoolContext::fromRequest($request)->schoolId, $communityPost, $data['body'], $request->user(), $contexts->fromRequest($request))->load('user:id,name');
+
+        return response()->json(['data' => ['id' => $comment->id, 'body' => $comment->body, 'author' => $comment->user->name, 'created_at' => $comment->created_at?->toIso8601String()]], 201);
+    }
+
+    private function response(CommunityPost $post): array
+    {
+        return ['id' => $post->id, 'body' => $post->body, 'comments_enabled' => $post->comments_enabled, 'published_at' => $post->published_at?->toIso8601String(),
+            'author' => ['id' => $post->author->id, 'name' => $post->author->name],
+            'audiences' => $post->audiences->map(fn ($a) => ['type' => $a->audience_type, 'class_id' => $a->class_id, 'student_id' => $a->student_id]),
+            'media' => $post->media->map(fn ($m) => ['id' => $m->id, 'type' => $m->media_type, 'name' => $m->original_name]),
+            'reaction_count' => (int) ($post->reactions_count ?? 0), 'reacted_by_me' => (bool) ($post->reacted_by_me ?? false),
+            'comments' => $post->comments->map(fn ($c) => ['id' => $c->id, 'body' => $c->body, 'author' => $c->user->name, 'created_at' => $c->created_at?->toIso8601String()]),
+        ];
+    }
+}

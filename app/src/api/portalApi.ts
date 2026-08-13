@@ -150,9 +150,28 @@ export interface TeacherStudent {
   full_name: string
 }
 
+export interface CommunityComment { id: number; body: string; author: string; created_at: string | null }
+export interface CommunityPost {
+  id: number
+  body: string
+  comments_enabled: boolean
+  published_at: string | null
+  author: { id: number; name: string }
+  audiences: Array<{ type: 'school' | 'class' | 'student'; class_id: number | null; student_id: number | null }>
+  media: Array<{ id: number; type: string; name: string | null }>
+  reaction_count: number
+  reacted_by_me: boolean
+  comments: CommunityComment[]
+}
+
 // ─── API Calls ────────────────────────────────────────────────────────────────
 
 export const portalApi = {
+  getCommunityPosts: () => apiRequest<{ data: CommunityPost[] }>('/v1/community/posts'),
+  createCommunityPost: (body: string, commentsEnabled: boolean, audiences: Array<{ type: 'school' } | { type: 'class'; class_id: number }>) =>
+    apiRequest<{ data: CommunityPost }>('/v1/community/posts', { method: 'POST', body: { body, comments_enabled: commentsEnabled, audiences } }),
+  toggleCommunityReaction: (postId: number) => apiRequest<{ data: { post_id: number; reacted: boolean; reaction_count: number } }>(`/v1/community/posts/${postId}/reaction`, { method: 'POST' }),
+  addCommunityComment: (postId: number, body: string) => apiRequest<{ data: CommunityComment }>(`/v1/community/posts/${postId}/comments`, { method: 'POST', body: { body } }),
   getGuardianMe: () => portalRequest<GuardianMe>('/parent/me'),
   getChildOutstanding: (studentId: number, academicYear: string) =>
     portalRequest<{ data: OutstandingCharge[] }>(`/parent/children/${studentId}/outstanding?academic_year=${academicYear}`),
