@@ -216,7 +216,7 @@ As of merged `master` on 2026-08-13:
 - Community App tests: 16 passed across 3 files; lint and build passed
 - Backend: 255 tests discovered, 247 passed, 8 opt-in MariaDB tests skipped, and 1,314 assertions
 - API inventory: 74 non-vendor routes
-- Disposable demo schema: 43 non-SQLite-internal tables
+- Disposable schema after the Community App data-foundation migrations: 61 non-SQLite-internal tables
 - Deployment contract tests: 18 passed
 
 ## Audit MariaDB Integration Test

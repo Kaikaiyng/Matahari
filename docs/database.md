@@ -2,7 +2,7 @@
 
 **Status:** Current schema reference
 
-**Repository baseline:** merged `master` at `816ea1d` (2026-08-13)
+**Repository baseline:** Community App data-foundation branch from merged `master` at `ddd7e19` (2026-08-13)
 
 ## Engines and Configuration
 
@@ -17,7 +17,7 @@ The schema has no currency column and amount-to-words currently assumes Ringgit.
 
 ## Schema Inventory
 
-The migrated disposable demo schema contains 43 non-SQLite-internal tables.
+The migrated disposable schema contains 61 non-SQLite-internal tables.
 
 | Area | Tables |
 | --- | --- |
@@ -31,6 +31,9 @@ The migrated disposable demo schema contains 43 non-SQLite-internal tables.
 | School operations | `calendar_events` |
 | Academic foundation | `academic_years`, `class_enrolments`, `subjects`, `teaching_assignments` |
 | Portal and Attendance | `portal_notifications`, `attendance_sessions`, `attendance_records` |
+| Community content | `community_posts`, `community_post_audiences`, `community_post_media`, `community_post_reactions`, `community_comments` |
+| Assessments | `academic_terms`, `assessments`, `assessment_class_targets`, `assessment_results` |
+| Quiz | `quizzes`, `quiz_questions`, `quiz_options`, `quiz_assignments`, `quiz_assignment_class_targets`, `quiz_assignment_student_targets`, `quiz_assignment_recipients`, `quiz_attempts`, `quiz_attempt_answers` |
 
 ## Main Relationships
 
@@ -60,6 +63,18 @@ erDiagram
     ATTENDANCE_SESSIONS ||--o{ ATTENDANCE_RECORDS : contains
     STUDENTS ||--o{ ATTENDANCE_RECORDS : receives
     USERS ||--o{ PORTAL_NOTIFICATIONS : receives
+    USERS ||--o{ COMMUNITY_POSTS : authors
+    COMMUNITY_POSTS ||--o{ COMMUNITY_POST_AUDIENCES : targets
+    COMMUNITY_POSTS ||--o{ COMMUNITY_POST_MEDIA : contains
+    COMMUNITY_POSTS ||--o{ COMMUNITY_POST_REACTIONS : receives
+    COMMUNITY_POSTS ||--o{ COMMUNITY_COMMENTS : receives
+    ACADEMIC_YEARS ||--o{ ACADEMIC_TERMS : contains
+    ASSESSMENTS ||--o{ ASSESSMENT_RESULTS : records
+    QUIZZES ||--o{ QUIZ_QUESTIONS : contains
+    QUIZ_QUESTIONS ||--o{ QUIZ_OPTIONS : offers
+    QUIZZES ||--o{ QUIZ_ASSIGNMENTS : assigns
+    QUIZ_ASSIGNMENTS ||--o{ QUIZ_ASSIGNMENT_RECIPIENTS : materializes
+    QUIZZES ||--o{ QUIZ_ATTEMPTS : receives
 ```
 
 The diagram omits secondary actor, fee-item, legacy invoice, permission, and audit references for readability. Migrations remain authoritative.
@@ -99,17 +114,25 @@ Important lookup indexes cover student status/class/level, agreement current loo
 
 Phase A adds nullable unique `parents.user_id` and `students.user_id` references without backfill. Guardian access/history fields are nullable for existing unreviewed links. The current enrolment unique key is `(school_id, academic_year_id, student_id, current_slot)`; historical rows use `NULL`. Teaching assignments use the equivalent nullable-current-slot pattern across school/year/class/subject/teacher.
 
+The Community foundation deduplicates each post audience with `(community_post_id, audience_key)` and each user's reaction with `(community_post_id, user_id)`. Assessment results allow one row per `(assessment_id, student_id)`. Formal Quiz assignments preserve separate class and direct-student targets, then deduplicate effective access in `quiz_assignment_recipients` with `(quiz_assignment_id, student_id)`. Quiz attempt numbering is unique per student and materialized `attempt_context_key`, allowing formal assignment attempts and private Practice attempts to share the scoring engine without conflating the products.
+
 ## Community App Data Boundary
 
 The approved mobile product does not introduce a second database or duplicate parent, student, identity, finance, payment, or receipt tables. Future mobile APIs reuse the existing MariaDB records and domain services.
 
 Parent Finance must continue to derive outstanding amounts from `fee_record_charges` and verified payment allocations. A separate mobile balance table or `fee_installments` ledger is not approved for V1.
 
-The experimental portal adds `portal_notifications`, scoped by `school_id` and `recipient_user_id`, with JSON context and nullable read time. It does not add device tokens or push delivery. Later phases may add device and quiz tables only through separately reviewed additive migrations. Planned Quiz concepts remain flexible class/direct-student targets and materialized quiz recipients; their final keys, retention, and rollback behavior require MariaDB-specific review before implementation.
+The experimental portal adds `portal_notifications`, scoped by `school_id` and `recipient_user_id`, with JSON context and nullable read time. It does not add device tokens or push delivery.
 
 The first Attendance slice adds `attendance_sessions` and `attendance_records` through an additive migration. Sessions are school/year/class scoped and use a school-unique key such as `daily:2026-08-12:class:4`; the general columns also leave room for later `lesson` and `event` sessions. Records enforce one row per session/student, use `present`, `late`, `absent`, or `excused`, retain the original marker, and preserve correction actor/reason/time. No historical attendance is inferred or backfilled.
 
-Other approved future App data domains include community posts/audiences/media/reactions/comments and academic terms/assessments/published results. These still require additive migrations, explicit school/relationship constraints, tested rollback order, and no inferred historical backfill. Approval of the product model does not imply that those tables already exist.
+The Community foundation stores posts, explicit school/class/direct-student audience rows, private storage references for media, one reaction per user, and moderation-preserving comments. It does not upload files, issue media URLs, publish content, or grant visibility by itself. `calendar_event_id` is optional so an event post can reuse the authoritative calendar record.
+
+The Assessment foundation stores optional-date academic terms, subject assessments, multiple class targets, and one draft/published result per student. It does not infer terms, dates, historical marks, weights, grade formulas, or publication status.
+
+The Quiz foundation supports `formal` and `practice` records through one question/option/scoring storage engine. `multiple_choice` and `true_false` use the same `quiz_options` table. Published-content history can use `revision_of_id` plus `version_number`; formal assignments retain class targets, direct student targets, and materialized recipients. Attempts keep score snapshots and answer rows. No generation, delivery, scoring, publication, recipient-materialization service, or API is implemented yet, and correct-option columns must never be exposed to an unsubmitted student client.
+
+All 18 new tables are created additively and start empty. There is no historical backfill and no modification to identity, guardian links, enrolments, finance, payments, receipts, or existing role assignments.
 
 Known integrity gaps:
 
