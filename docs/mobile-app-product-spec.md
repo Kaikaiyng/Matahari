@@ -1,6 +1,6 @@
 # MIS App Product Specification
 
-**Status:** Approved direction; visual foundation and daily Attendance are live, Community/Assessment/Quiz storage foundations are implemented, and their APIs remain future controlled slices
+**Status:** Approved direction; Community, daily Attendance, Assessment publication, Parent Finance reads, and student Schedule are live; formal Quiz remains a future controlled slice
 
 **Approved:** 2026-08-12; implementation status reviewed 2026-08-13
 
@@ -95,6 +95,10 @@ Parent Finance is read-only. The App reuses `fee_record_charges`, verified alloc
 
 An authorized guardian sees the account records of an explicitly linked child when the relationship's finance capability is active. Existing ambiguous or unreviewed guardian links receive no automatic access.
 
+## Schedule
+
+Class schedules are recurring weekly records scoped to a school, academic year, and class. School Admin creates drafts in the Admin Panel and explicitly publishes them. Student visibility derives from the current enrolment; Guardian visibility additionally requires an active reviewed link with academic access. Optional subject and Teaching Assignment links must match the same school/year/class. Published Assessment due dates remain sourced from Assessment. Existing internal Calendar events are not automatically exposed because their historical participant text is not a verified portal audience.
+
 ## Security and Audit
 
 - Laravel is authoritative for role permission, school scope, teaching assignment, guardian-child scope, student-self scope, and publication status.
@@ -110,6 +114,7 @@ An authorized guardian sees the account records of an explicitly linked child wh
 3. Daily Attendance schema, Teacher marking, Parent/Student history, and correction audit. **Implemented and merged in `816ea1d`.**
 4. Assessment persistence schema. **Implemented as a storage-only foundation; services/APIs remain pending.** Entry/publication and Parent/Student result views follow separately.
 5. Formal Quiz and separate Practice Quiz. **Storage foundation implemented; authoring, assignment materialization, attempts/scoring APIs, and Practice generation remain pending.**
-6. Production media pipeline, push, native authentication review, and store packaging.
+6. Recurring class Schedule and published Assessment due dates. **Implemented with Admin management and scoped Student/Guardian reads.**
+7. Production media pipeline, push, native authentication review, and store packaging.
 
 Each slice uses additive corrective migrations and must state which screens are live data, preview data, or planned.

@@ -23,4 +23,5 @@ enum AuditSubject: string
     case CommunityComment = 'community_comment';
     case Assessment = 'assessment';
     case AcademicTerm = 'academic_term';
+    case ClassScheduleEntry = 'class_schedule_entry';
 }

@@ -56,4 +56,6 @@ enum AuditAction: string
     case AssessmentPublished = 'assessment.published';
     case AcademicTermCreated = 'academic_term.created';
     case AcademicTermUpdated = 'academic_term.updated';
+    case ClassScheduleCreated = 'class_schedule.created';
+    case ClassScheduleUpdated = 'class_schedule.updated';
 }

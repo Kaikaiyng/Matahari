@@ -8,6 +8,7 @@ use App\Models\AttendanceRecord;
 use App\Models\ClassEnrolment;
 use App\Models\Student;
 use App\Models\TeachingAssignment;
+use App\Services\Schedule\ScheduleReadService;
 use App\Support\SchoolContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -130,6 +131,14 @@ class StudentPortalController extends Controller
             ->map(fn (AssessmentResult $result) => ['id' => $result->id, 'assessment_id' => $result->assessment_id, 'title' => $result->assessment->title, 'assessment_type' => $result->assessment->assessment_type, 'subject' => $result->assessment->subject->name, 'score' => (float) $result->score, 'max_score' => (float) $result->assessment->max_score, 'grade_label' => $result->grade_label, 'teacher_comment' => $result->teacher_comment, 'published_at' => $result->published_at?->toIso8601String()])->values();
 
         return response()->json(['data' => $results]);
+    }
+
+    public function schedule(Request $request, ScheduleReadService $service): JsonResponse
+    {
+        SchoolContext::fromRequest($request);
+        $student = $this->resolveStudent($request);
+
+        return response()->json(['data' => $student ? $service->forStudent($student) : ['entries' => [], 'due_dates' => []]]);
     }
 
     private function resolveStudent(Request $request): ?Student

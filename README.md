@@ -25,7 +25,7 @@ Implemented workflows include:
 
 Important boundaries:
 
-- `frontend/` is Admin-only. `app/` is the separate multi-role Community App surface. Attendance, Community, and Assessment results use live scoped APIs. Quiz remains a storage foundation/preview; Schedule composes existing calendar and academic data rather than owning a duplicate timetable store.
+- `frontend/` is Admin-only. `app/` is the separate multi-role Community App surface. Attendance, Community, Assessment results, and the class Schedule use live scoped APIs. Quiz remains a storage foundation/preview.
 - Parent finance is read-only and has no payment interface. Payment reminders, native authentication, Firebase, Capacitor, and app-store packaging remain unimplemented. See [Mobile Product Architecture and Roadmap](docs/mobile-product-roadmap.md).
 
 - Payments and receipts are implemented inside Student Detail; unimplemented top-level placeholder navigation has been removed.

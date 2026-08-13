@@ -52,6 +52,7 @@ import {
 import type { UiTone } from './components/AdminUi'
 import { CalendarPage } from './components/CalendarPage'
 import { ClassesPage } from './components/ClassesPage'
+import { SchedulePage } from './components/SchedulePage'
 import type { SchoolClassOption } from './components/ClassesPage'
 import {
   isFeeAgreementFormDirty,
@@ -86,6 +87,7 @@ type PageKey =
   | 'calendar'
   | 'students'
   | 'classes'
+  | 'schedule'
   | 'parents'
   | 'employees'
   | 'fees'
@@ -378,6 +380,7 @@ const navGroups: NavigationGroup<PageKey>[] = [
     items: [
       { key: 'students', label: 'Students', icon: IconlyGraduationCap as any, requiredPermission: 'students.view' },
       { key: 'classes', label: 'Classes', icon: IconlyClasses as any, requiredPermission: 'students.view' },
+      { key: 'schedule', label: 'Schedule', icon: IconlyCalendar as any, requiredPermission: 'schedule.manage' },
       { key: 'parents', label: 'Parents', icon: IconlyParents as any, requiredPermission: 'parents.view' },
       { key: 'employees', label: 'Employees', icon: IconlyStaff as any, requiredPermission: 'foundation_accounts.manage' },
     ],
@@ -4890,6 +4893,10 @@ function App() {
           onUnauthorized={handleUnauthorized}
         />
       )
+    }
+
+    if (activePage === 'schedule') {
+      return <SchedulePage />
     }
 
     if (activePage === 'parents') {
