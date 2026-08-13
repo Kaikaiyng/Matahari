@@ -67,7 +67,12 @@ class PhaseAFoundationApiTest extends TestCase
 
         $this->getJson('/api/v1/admin/academic-years')->assertOk()->assertJsonCount(1, 'data');
         $this->getJson('/api/v1/admin/subjects')->assertOk()->assertJsonCount(1, 'data');
-        $this->getJson('/api/v1/admin/class-enrolments?academic_year_id='.$yearId)->assertOk()->assertJsonCount(1, 'data');
+        $this->getJson('/api/v1/admin/class-enrolments?academic_year_id='.$yearId)
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.student.id', $student->id)
+            ->assertJsonPath('data.0.student.student_no', $student->student_no)
+            ->assertJsonPath('data.0.student.full_name', $student->full_name);
         $this->getJson('/api/v1/admin/teaching-assignments?academic_year_id='.$yearId)->assertOk()->assertJsonCount(1, 'data');
 
         $this->postJson("/api/v1/admin/teaching-assignments/{$assignmentId}/end", ['ended_on' => '2026-11-30'])

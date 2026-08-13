@@ -61,6 +61,8 @@ vi.mock('../api/portalApi', () => ({
     markNotificationRead: vi.fn(),
     markAllNotificationsRead: vi.fn(),
     getTeacherAssignments: vi.fn().mockResolvedValue({ data: [] }),
+    getStaffAssignments: vi.fn().mockResolvedValue({ data: [] }),
+    getStaffStudents: vi.fn().mockResolvedValue({ data: [] }),
     getTeacherStudents: vi.fn().mockResolvedValue({ data: [] }),
     getAssessments: vi.fn().mockResolvedValue({ data: [] }),
     createAssessment: vi.fn(),
@@ -209,5 +211,17 @@ describe('MobileShell & Portal Views', () => {
     expect(await screen.findByText('MB1 · English')).toBeInTheDocument()
     expect(screen.getByText('2 enrolled students')).toBeInTheDocument()
     expect(screen.getByText('2026')).toBeInTheDocument()
+  })
+
+  it('connects Staff school tools to moderation, assessment, and Quiz workspaces', () => {
+    const changeTab = vi.fn()
+    render(<TeacherPortalView teacherName="School Admin" activeTab="classes" onTabChange={changeTab} onLogout={() => {}} staffMode />)
+
+    fireEvent.click(screen.getByRole('button', { name: /Content review/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Assessments/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Formal Quiz/ }))
+    expect(changeTab).toHaveBeenNthCalledWith(1, 'review')
+    expect(changeTab).toHaveBeenNthCalledWith(2, 'assessments')
+    expect(changeTab).toHaveBeenNthCalledWith(3, 'quizzes')
   })
 })

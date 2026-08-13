@@ -84,7 +84,7 @@ Merged delivery `816ea1d` redesigns the Admin staff login and all App role surfa
 - The Community App admits Parent, Student, Teacher, and derived Staff personas. Finance-only and CEO-only accounts do not receive App personas. Multi-role App users may switch only among personas derived from their stored roles.
 - Teacher Classes loads current teaching assignments and each assignment's scoped roster count from the same protected APIs used by Attendance. It does not expose unrelated classes or students.
 - Parent Finance no longer embeds a demo balance or hard-codes `2026`. The parent summary includes the child's explicitly stored current enrolment academic year, and finance queries stop when no current year exists.
-- Quiz, Schedule, Assessment/result examples, pending settings, and future moderation actions are explicitly labelled and non-actionable until their APIs exist. Receipt rows are viewing-only rather than fake download controls.
+- Formal Quiz, Schedule, Assessment results, Community moderation, and notifications use live scoped APIs. Practice/AI Quiz and native/store features remain explicitly unavailable. Receipt rows are viewing-only rather than fake download controls.
 - Local checkpoint regression: backend 250 passed/10 MariaDB-only skipped/1,340 assertions; Admin 170 tests; App 19 tests; Pint, both lints, both builds, and 74 API routes passed. Admin retains the 9 known Fast Refresh warnings. SQLite fresh/seed created 61 tables, rolling back the three data-foundation migrations left 43 tables and preserved the school row, and re-migration restored 61 tables.
 
 Later school-specific branding requires explicit approval and a controlled update to the presentation configuration and, if needed, a fresh disposable demo seed. It must not rename existing tenant data or rewrite financial history.
@@ -93,7 +93,7 @@ Later school-specific branding requires explicit approval and a controlled updat
 
 - The App shell now uses a compact MIS Community header and a role-aware floating liquid-glass navigation capsule. The active destination shows icon and label; inactive destinations retain icons with accessible names.
 - Parent, Student, Teacher, and authorized Staff receive distinct five-item navigation sets. Sign out moved from the persistent header into each role's More/Profile page.
-- Feed and record surfaces use calmer phone-first spacing, fewer nested borders, stronger content hierarchy, and at least 44px interactive targets. The Feed remains a clearly labelled preview where publishing is not connected.
+- Feed and record surfaces use calmer phone-first spacing, fewer nested borders, stronger content hierarchy, and at least 44px interactive targets. Community publishing, reading, interaction, and moderation are connected to scoped APIs.
 - Automated browser checks covered 39 representative role/page/viewport combinations at 360x800, 390x844, and 430x932. No horizontal overflow or undersized visible interactive target remained after correction.
 - The browser helper's packaged Windows server lacked its Playwright dependency; validation used a cached Playwright runner with installed Chrome and did not add a project dependency.
 - App validation passed with 3 files and 16 tests, clean Oxlint, and a TypeScript/Vite production build with 76 transformed modules. Existing Admin regression passed with 15 files and 169 tests, Oxlint exit 0 with the 9 known Fast Refresh organization warnings, and an 83-module production build.
@@ -149,7 +149,7 @@ The confirmed earlier technology direction named Laravel 10, but this repository
 ## Known Incomplete Features
 
 - Existing guardian links remain `unreviewed` with nullable access flags, and no live parent/student user association or enrolment history is inferred. Portal activation and production backfill require a separately approved workflow.
-- An independent `app/` web workspace, user-scoped notifications, Parent/Student self endpoints, Teacher daily Attendance, read-only guardian finance queries, role-aware navigation, and preview Community content now exist. Admin remains in `frontend/`; both clients share the backend/database but have independent local ports, builds, and intended domains. This is not completed production Parent Finance. Community/Assessment/Quiz schemas exist, but their services and APIs do not. Payment reminders, Quiz delivery/scoring, AI, Firebase, Capacitor, native authentication, and native packaging remain unimplemented.
+- The independent `app/` workspace now provides user-scoped notifications, Parent/Student self-service, Teacher daily Attendance, read-only guardian finance, scoped Community, published Assessment results, recurring Schedule, and formal Quiz delivery/scoring. Admin remains in `frontend/`; both clients share the backend/database but have independent builds and intended domains. Production Parent Finance operations, payment reminders, Practice/AI Quiz, Firebase, Capacitor, native authentication, and native packaging remain unimplemented.
 
 - Parent CRUD, fee catalogue management, user/role management, password reset, and a global school selector.
 - Reports beyond Fee Record views, exports, statements, reminders, parent portal, and server-side PDF.

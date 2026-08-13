@@ -149,6 +149,7 @@ export interface TeacherStudent {
   student_no: string
   full_name: string
 }
+export interface AcademicYearItem { id: number; code: string; name: string; is_current: boolean }
 
 export interface CommunityComment { id: number; body: string; author: string; created_at: string | null; can_remove?: boolean }
 export interface CommunityPost {
@@ -227,6 +228,21 @@ export const portalApi = {
   publishAssessment: (assessmentId: number) => apiRequest<{ data: AssessmentItem }>(`/v1/assessments/${assessmentId}/publish`, { method: 'POST' }),
 
   getTeacherAssignments: () => apiRequest<{ data: TeacherAssignment[] }>('/v1/teacher/teaching-assignments'),
+  getStaffAssignments: async () => {
+    const years = await apiRequest<{ data: AcademicYearItem[] }>('/v1/admin/academic-years')
+    const year = years.data.find((item) => item.is_current) ?? years.data[0]
+    if (!year) return { data: [] as TeacherAssignment[] }
+    const [assignments, classes, subjects] = await Promise.all([
+      apiRequest<{ data: Array<{ id: number; class_id: number; subject_id: number }> }>(`/v1/admin/teaching-assignments?academic_year_id=${year.id}`),
+      apiRequest<{ data: Array<{ id: number; name: string }> }>('/classes'),
+      apiRequest<{ data: Array<{ id: number; code: string; name: string }> }>('/v1/admin/subjects'),
+    ])
+    return { data: assignments.data.map((item) => ({ id: item.id, academic_year: { id: year.id, code: year.code }, class: { id: item.class_id, name: classes.data.find((row) => row.id === item.class_id)?.name ?? `Class #${item.class_id}` }, subject: subjects.data.find((row) => row.id === item.subject_id) ?? { id: item.subject_id, code: String(item.subject_id), name: `Subject #${item.subject_id}` } })) }
+  },
+  getStaffStudents: async (assignment: TeacherAssignment) => {
+    const response = await apiRequest<{ data: Array<{ student: TeacherStudent | null; status: string; is_current: boolean }> }>(`/v1/admin/class-enrolments?academic_year_id=${assignment.academic_year.id}&class_id=${assignment.class.id}`)
+    return { data: response.data.filter((item) => item.status === 'active' && item.is_current && item.student).map((item) => item.student as TeacherStudent) }
+  },
   getTeacherStudents: (assignment: TeacherAssignment) =>
     apiRequest<{ data: TeacherStudent[] }>(`/v1/teacher/classes/${assignment.class.id}/students?academic_year_id=${assignment.academic_year.id}&subject_id=${assignment.subject.id}`),
   getDailyAttendance: (assignment: TeacherAssignment, attendanceDate: string) =>

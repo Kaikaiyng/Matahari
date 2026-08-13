@@ -67,6 +67,7 @@ class ClassEnrolmentController extends Controller
             'class_id' => $item->class_id, 'student_id' => $item->student_id,
             'starts_on' => $item->starts_on?->toDateString(), 'ended_on' => $item->ended_on?->toDateString(),
             'status' => $item->status, 'is_current' => $item->current_slot === 1,
+            'student' => $item->student ? ['id' => $item->student->id, 'student_no' => $item->student->student_no, 'full_name' => $item->student->full_name] : null,
         ];
     }
 }
