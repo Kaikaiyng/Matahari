@@ -139,6 +139,7 @@ Route::prefix('v1')->middleware([...$sessionMiddleware, 'auth', 'active', 'schoo
         Route::post('/posts', [CommunityController::class, 'store'])->middleware('permission:community.publish');
         Route::post('/posts/{communityPost}/reaction', [CommunityController::class, 'reaction'])->middleware('permission:community.interact');
         Route::post('/posts/{communityPost}/comments', [CommunityController::class, 'comment'])->middleware('permission:community.interact');
+        Route::get('/media/{communityPostMedia}', [CommunityController::class, 'media']);
     });
 
     Route::prefix('admin')->group(function (): void {

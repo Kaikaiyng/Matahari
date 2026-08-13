@@ -46,8 +46,12 @@ async function performRequest<T>(path: string, options: RequestOptions, retryAft
   }
 
   if (body !== undefined) {
-    headers.set('Content-Type', 'application/json')
-    init.body = JSON.stringify(body)
+    if (body instanceof FormData) {
+      init.body = body
+    } else {
+      headers.set('Content-Type', 'application/json')
+      init.body = JSON.stringify(body)
+    }
   }
 
   const response = await fetch(`${apiBaseUrl}${path}`, init)

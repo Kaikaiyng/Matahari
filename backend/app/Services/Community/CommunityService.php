@@ -15,6 +15,9 @@ use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Throwable;
 
 class CommunityService
 {
@@ -24,28 +27,43 @@ class CommunityService
     {
         $this->access->assertCanPublish($actor, $schoolId, $data['audiences']);
 
-        return DB::transaction(function () use ($schoolId, $data, $actor, $context): CommunityPost {
-            $post = CommunityPost::query()->create([
-                'school_id' => $schoolId, 'author_user_id' => $actor->id, 'post_type' => 'post',
-                'body' => trim($data['body']), 'comments_enabled' => $data['comments_enabled'] ?? true,
-                'status' => 'published', 'published_at' => now(),
-            ]);
-            foreach ($data['audiences'] as $audience) {
-                if ($audience['type'] === 'class') {
-                    $class = SchoolClass::query()->where('school_id', $schoolId)->findOrFail($audience['class_id']);
-                    $key = "class:{$class->id}";
-                } elseif ($audience['type'] === 'student') {
-                    $student = Student::query()->where('school_id', $schoolId)->findOrFail($audience['student_id']);
-                    $key = "student:{$student->id}";
-                } else {
-                    $key = 'school';
+        $storedPaths = [];
+        try {
+            return DB::transaction(function () use ($schoolId, $data, $actor, $context, &$storedPaths): CommunityPost {
+                $post = CommunityPost::query()->create([
+                    'school_id' => $schoolId, 'author_user_id' => $actor->id, 'post_type' => 'post',
+                    'body' => trim($data['body']), 'comments_enabled' => $data['comments_enabled'] ?? true,
+                    'status' => 'published', 'published_at' => now(),
+                ]);
+                foreach ($data['audiences'] as $audience) {
+                    if ($audience['type'] === 'class') {
+                        $class = SchoolClass::query()->where('school_id', $schoolId)->findOrFail($audience['class_id']);
+                        $key = "class:{$class->id}";
+                    } elseif ($audience['type'] === 'student') {
+                        $student = Student::query()->where('school_id', $schoolId)->findOrFail($audience['student_id']);
+                        $key = "student:{$student->id}";
+                    } else {
+                        $key = 'school';
+                    }
+                    $post->audiences()->create(['school_id' => $schoolId, 'audience_type' => $audience['type'], 'class_id' => $audience['class_id'] ?? null, 'student_id' => $audience['student_id'] ?? null, 'audience_key' => $key]);
                 }
-                $post->audiences()->create(['school_id' => $schoolId, 'audience_type' => $audience['type'], 'class_id' => $audience['class_id'] ?? null, 'student_id' => $audience['student_id'] ?? null, 'audience_key' => $key]);
-            }
-            $this->audit->record(new AuditEvent(action: AuditAction::CommunityPostPublished, module: AuditModule::Community, schoolId: $schoolId, subjectType: AuditSubject::CommunityPost, subjectId: $post->id, newValues: ['audiences' => $post->audiences()->pluck('audience_key')->all(), 'comments_enabled' => $post->comments_enabled]), $context);
+                foreach ($data['media'] ?? [] as $index => $file) {
+                    $path = $file->storeAs("community/{$schoolId}/{$post->id}", Str::uuid().'.'.$file->extension(), 'local');
+                    $storedPaths[] = $path;
+                    $post->media()->create([
+                        'school_id' => $schoolId, 'media_type' => str_starts_with((string) $file->getMimeType(), 'image/') ? 'image' : (str_starts_with((string) $file->getMimeType(), 'video/') ? 'video' : 'file'),
+                        'storage_disk' => 'local', 'storage_path' => $path, 'original_name' => $file->getClientOriginalName(),
+                        'mime_type' => $file->getMimeType(), 'size_bytes' => $file->getSize(), 'sort_order' => $index, 'status' => 'ready',
+                    ]);
+                }
+                $this->audit->record(new AuditEvent(action: AuditAction::CommunityPostPublished, module: AuditModule::Community, schoolId: $schoolId, subjectType: AuditSubject::CommunityPost, subjectId: $post->id, newValues: ['audiences' => $post->audiences()->pluck('audience_key')->all(), 'comments_enabled' => $post->comments_enabled]), $context);
 
-            return $post;
-        });
+                return $post;
+            });
+        } catch (Throwable $exception) {
+            Storage::disk('local')->delete($storedPaths);
+            throw $exception;
+        }
     }
 
     public function toggleReaction(int $schoolId, CommunityPost $post, User $actor, AuditContext $context): CommunityPost

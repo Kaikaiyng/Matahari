@@ -5,12 +5,15 @@ namespace App\Http\Controllers\Api\V1;
 use App\Audit\AuditContextFactory;
 use App\Http\Controllers\Controller;
 use App\Models\CommunityPost;
+use App\Models\CommunityPostMedia;
 use App\Services\Community\CommunityAccessService;
 use App\Services\Community\CommunityService;
 use App\Support\SchoolContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class CommunityController extends Controller
 {
@@ -33,11 +36,23 @@ class CommunityController extends Controller
             'audiences.*.type' => ['required', Rule::in(['school', 'class', 'student'])],
             'audiences.*.class_id' => ['nullable', 'integer', 'required_if:audiences.*.type,class'],
             'audiences.*.student_id' => ['nullable', 'integer', 'required_if:audiences.*.type,student'],
+            'media' => ['sometimes', 'array', 'max:6'],
+            'media.*' => ['file', 'max:51200', 'mimetypes:image/jpeg,image/png,image/webp,video/mp4,video/quicktime,application/pdf'],
         ]);
         $post = $service->publish(SchoolContext::fromRequest($request)->schoolId, $data, $request->user(), $contexts->fromRequest($request));
         $post->load(['author:id,name', 'audiences', 'media', 'comments.user'])->loadCount('reactions')->setAttribute('reacted_by_me', false);
 
         return response()->json(['data' => $this->response($post)], 201);
+    }
+
+    public function media(Request $request, CommunityPostMedia $communityPostMedia, CommunityAccessService $access): StreamedResponse
+    {
+        $post = CommunityPost::query()->findOrFail($communityPostMedia->community_post_id);
+        $access->findVisible($request->user(), SchoolContext::fromRequest($request)->schoolId, $post);
+        abort_unless($communityPostMedia->status === 'ready', 404);
+
+        return Storage::disk($communityPostMedia->storage_disk)
+            ->download($communityPostMedia->storage_path, $communityPostMedia->original_name ?? 'community-file');
     }
 
     public function reaction(Request $request, CommunityPost $communityPost, CommunityService $service, AuditContextFactory $contexts): JsonResponse
@@ -60,7 +75,7 @@ class CommunityController extends Controller
         return ['id' => $post->id, 'body' => $post->body, 'comments_enabled' => $post->comments_enabled, 'published_at' => $post->published_at?->toIso8601String(),
             'author' => ['id' => $post->author->id, 'name' => $post->author->name],
             'audiences' => $post->audiences->map(fn ($a) => ['type' => $a->audience_type, 'class_id' => $a->class_id, 'student_id' => $a->student_id]),
-            'media' => $post->media->map(fn ($m) => ['id' => $m->id, 'type' => $m->media_type, 'name' => $m->original_name]),
+            'media' => $post->media->map(fn ($m) => ['id' => $m->id, 'type' => $m->media_type, 'name' => $m->original_name, 'url' => "/api/v1/community/media/{$m->id}"]),
             'reaction_count' => (int) ($post->reactions_count ?? 0), 'reacted_by_me' => (bool) ($post->reacted_by_me ?? false),
             'comments' => $post->comments->map(fn ($c) => ['id' => $c->id, 'body' => $c->body, 'author' => $c->user->name, 'created_at' => $c->created_at?->toIso8601String()]),
         ];

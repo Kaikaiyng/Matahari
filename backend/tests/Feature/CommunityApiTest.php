@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Models\SchoolClass;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class CommunityApiTest extends TestCase
@@ -62,5 +64,20 @@ class CommunityApiTest extends TestCase
         $admin = User::query()->where('username', 'admin')->firstOrFail();
         $this->actingAs($admin)->postJson('/api/v1/community/posts', ['body' => 'School notice', 'audiences' => [['type' => 'school']]])->assertCreated();
         $this->actingAs(User::query()->where('username', 'rachel.wong')->firstOrFail())->getJson('/api/v1/community/posts')->assertJsonPath('data.0.body', 'School notice');
+    }
+
+    public function test_private_media_is_stored_and_downloaded_only_through_an_authorized_post(): void
+    {
+        Storage::fake('local');
+        $teacher = User::query()->where('username', 'teacher.lim')->firstOrFail();
+        $class = SchoolClass::query()->where('name', 'MB1')->firstOrFail();
+        $created = $this->actingAs($teacher)->post('/api/v1/community/posts', [
+            'body' => 'Class photo', 'audiences' => [['type' => 'class', 'class_id' => $class->id]],
+            'media' => [UploadedFile::fake()->create('lesson.pdf', 10, 'application/pdf')],
+        ])->assertCreated();
+        $media = $created->json('data.media.0');
+        $this->assertNotNull($media);
+        $this->actingAs(User::query()->where('username', 'rachel.wong')->firstOrFail())
+            ->get($media['url'])->assertOk();
     }
 }
