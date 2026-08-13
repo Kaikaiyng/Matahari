@@ -150,7 +150,7 @@ export interface TeacherStudent {
   full_name: string
 }
 
-export interface CommunityComment { id: number; body: string; author: string; created_at: string | null }
+export interface CommunityComment { id: number; body: string; author: string; created_at: string | null; can_remove?: boolean }
 export interface CommunityPost {
   id: number
   body: string
@@ -162,6 +162,7 @@ export interface CommunityPost {
   reaction_count: number
   reacted_by_me: boolean
   comments: CommunityComment[]
+  can_moderate: boolean
 }
 
 // ─── API Calls ────────────────────────────────────────────────────────────────
@@ -181,6 +182,8 @@ export const portalApi = {
   },
   toggleCommunityReaction: (postId: number) => apiRequest<{ data: { post_id: number; reacted: boolean; reaction_count: number } }>(`/v1/community/posts/${postId}/reaction`, { method: 'POST' }),
   addCommunityComment: (postId: number, body: string) => apiRequest<{ data: CommunityComment }>(`/v1/community/posts/${postId}/comments`, { method: 'POST', body: { body } }),
+  removeCommunityComment: (commentId: number) => apiRequest<{ success: boolean }>(`/v1/community/comments/${commentId}`, { method: 'DELETE' }),
+  hideCommunityPost: (postId: number, reason: string) => apiRequest<{ success: boolean }>(`/v1/community/posts/${postId}/hide`, { method: 'POST', body: { reason } }),
   getGuardianMe: () => portalRequest<GuardianMe>('/parent/me'),
   getChildOutstanding: (studentId: number, academicYear: string) =>
     portalRequest<{ data: OutstandingCharge[] }>(`/parent/children/${studentId}/outstanding?academic_year=${academicYear}`),

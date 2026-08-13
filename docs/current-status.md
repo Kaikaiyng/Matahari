@@ -49,6 +49,12 @@ Merged delivery `816ea1d` redesigns the Admin staff login and all App role surfa
 - Eighteen additive tables now establish storage for Community content, academic terms/Assessments/results, and formal/Practice Quiz. The approved class targets, direct student targets, materialized Quiz recipients, shared `multiple_choice`/`true_false` option storage, result publication state, revision links, attempts, and answers are represented.
 - The migration does not seed or infer posts, terms, dates, results, audiences, recipients, or Quiz attempts and does not alter current student, guardian, finance, payment, receipt, or role rows.
 - This is schema only. Community media/publishing, result publication, Quiz generation/delivery/scoring, authorization services, mutation audits, and APIs remain unimplemented; the App screens remain previews until those slices are connected.
+
+## 2026-08-13 Community Workflow
+
+- Community publishing and reading are connected to the shared Laravel API and database. School/Super Admin may publish school-wide; Teachers may publish only to classes covered by current Teaching Assignments; Parent and Student feeds resolve linked current enrolments.
+- Private photos, short videos, and PDFs are stored outside the public web root and downloaded only after the containing post audience is authorized. Appreciations, controlled comments, owner/author comment removal, Staff post hiding with reasons, and mutation audit events are implemented.
+- Direct-student authoring UI, event-post composition, reports, malware scanning, retention automation, and a complete desktop Admin moderation workspace remain incomplete production gates.
 - Local SQLite verification: all 61 tables migrated from fresh; the three new migrations rolled back in reverse FK order; existing seeded school/student data remained; re-migration returned to 61 tables. The focused schema suite passed 3 tests/24 assertions, and the backend regression passed 250 tests with 8 existing MariaDB-only skips and 1,339 assertions before the non-SQLite inspection test was added.
 - GitHub [Full qualification run 31661265923](https://github.com/Kaikaiyng/Matahari/actions/runs/31661265923) passed on exact commit `f047c2d`: backend 250 passed/10 skipped/1,339 assertions, disposable MariaDB 11.4 full migrate/rollback/re-migrate, and 2 dedicated FK/index inspection tests with 59 assertions. Pint, 74 API routes, dependency audits, Admin 169 tests/build, App 16 tests/build, and 18 deployment tests passed. Admin lint retained the 9 known Fast Refresh warnings; App lint was clean.
 

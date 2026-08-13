@@ -9,10 +9,12 @@ import { portalApi } from '../api/portalApi'
 // Mock the portalApi so components don't make real HTTP calls in tests
 vi.mock('../api/portalApi', () => ({
   portalApi: {
-    getCommunityPosts: vi.fn().mockResolvedValue({ data: [{ id: 1, body: 'A real school update', comments_enabled: true, published_at: '2026-08-13T12:00:00Z', author: { id: 4, name: 'Teacher Lim' }, audiences: [{ type: 'class', class_id: 1, student_id: null }], media: [], reaction_count: 2, reacted_by_me: false, comments: [] }] }),
+    getCommunityPosts: vi.fn().mockResolvedValue({ data: [{ id: 1, body: 'A real school update', comments_enabled: true, published_at: '2026-08-13T12:00:00Z', author: { id: 4, name: 'Teacher Lim' }, audiences: [{ type: 'class', class_id: 1, student_id: null }], media: [], reaction_count: 2, reacted_by_me: false, comments: [], can_moderate: false }] }),
     toggleCommunityReaction: vi.fn(),
     addCommunityComment: vi.fn(),
     createCommunityPost: vi.fn(),
+    removeCommunityComment: vi.fn(),
+    hideCommunityPost: vi.fn(),
     getGuardianMe: vi.fn().mockResolvedValue({
       data: { id: 1, full_name: 'Rachel Wong', phone: null, email: null },
       children: [

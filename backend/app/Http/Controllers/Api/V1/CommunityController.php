@@ -93,7 +93,8 @@ class CommunityController extends Controller
             'audiences' => $post->audiences->map(fn ($a) => ['type' => $a->audience_type, 'class_id' => $a->class_id, 'student_id' => $a->student_id]),
             'media' => $post->media->map(fn ($m) => ['id' => $m->id, 'type' => $m->media_type, 'name' => $m->original_name, 'url' => "/api/v1/community/media/{$m->id}"]),
             'reaction_count' => (int) ($post->reactions_count ?? 0), 'reacted_by_me' => (bool) ($post->reacted_by_me ?? false),
-            'comments' => $post->comments->map(fn ($c) => ['id' => $c->id, 'body' => $c->body, 'author' => $c->user->name, 'created_at' => $c->created_at?->toIso8601String()]),
+            'comments' => $post->comments->map(fn ($c) => ['id' => $c->id, 'body' => $c->body, 'author' => $c->user->name, 'created_at' => $c->created_at?->toIso8601String(), 'can_remove' => $c->user_id === auth()->id() || $post->author_user_id === auth()->id() || auth()->user()?->hasPermissionTo('community.moderate')]),
+            'can_moderate' => (bool) auth()->user()?->hasPermissionTo('community.moderate'),
         ];
     }
 }

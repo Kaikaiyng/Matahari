@@ -9,9 +9,10 @@ type CommunityFeedProps = {
   userName: string
   onOpenFinance?: () => void
   onCreatePost?: () => void
+  moderation?: boolean
 }
 
-export function CommunityFeed({ role, userName, onOpenFinance, onCreatePost }: CommunityFeedProps) {
+export function CommunityFeed({ role, userName, onOpenFinance, onCreatePost, moderation = false }: CommunityFeedProps) {
   const [posts, setPosts] = useState<CommunityPost[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -38,6 +39,16 @@ export function CommunityFeed({ role, userName, onOpenFinance, onCreatePost }: C
     } catch { setError('Unable to add your comment.') }
   }
 
+  const removeComment = async (postId: number, commentId: number) => {
+    try { await portalApi.removeCommunityComment(commentId); setPosts((items) => items.map((post) => post.id === postId ? { ...post, comments: post.comments.filter((item) => item.id !== commentId) } : post)) } catch { setError('Unable to remove this comment.') }
+  }
+
+  const hidePost = async (postId: number) => {
+    const reason = window.prompt('Reason for hiding this post?')?.trim()
+    if (!reason) return
+    try { await portalApi.hideCommunityPost(postId, reason); setPosts((items) => items.filter((post) => post.id !== postId)) } catch { setError('Unable to hide this post.') }
+  }
+
   return <div className="community-page">
     <section className="community-welcome"><div><p>School community</p><h1>{role === 'student' ? `Hello, ${firstName}` : `Welcome, ${firstName}`}</h1></div><span className="role-chip">{role === 'staff' ? 'Staff' : role[0].toUpperCase() + role.slice(1)}</span></section>
     {role === 'parent' && <button type="button" className="attention-strip context-card" onClick={onOpenFinance}><span className="attention-icon">RM</span><span><strong>View school account</strong><small>Open read-only finance records for your linked children</small></span><b>View</b></button>}
@@ -45,12 +56,12 @@ export function CommunityFeed({ role, userName, onOpenFinance, onCreatePost }: C
     {loading ? <div className="app-skeleton large" /> : error && posts.length === 0 ? <div className="app-empty"><h2>Community unavailable</h2><p>{error}</p></div> : posts.length === 0 ? <div className="app-empty"><h2>No posts yet</h2><p>Authorized school updates will appear here.</p></div> : <section className="feed-list" aria-label="School community posts">
       {error && <p className="form-error">{error}</p>}
       {posts.map((post) => <article className="feed-post" key={post.id}>
-        <header className="feed-post-header"><span className="feed-avatar">{post.author.name.split(' ').map((part) => part[0]).slice(0, 2).join('')}</span><span className="feed-author"><strong>{post.author.name}</strong><span className="feed-post-meta"><small>{post.published_at ? new Date(post.published_at).toLocaleString() : 'Published'}</small></span></span></header>
+        <header className="feed-post-header"><span className="feed-avatar">{post.author.name.split(' ').map((part) => part[0]).slice(0, 2).join('')}</span><span className="feed-author"><strong>{post.author.name}</strong><span className="feed-post-meta"><small>{post.published_at ? new Date(post.published_at).toLocaleString() : 'Published'}</small></span></span>{moderation && post.can_moderate && <button type="button" className="plain-icon" onClick={() => void hidePost(post.id)}>Hide</button>}</header>
         <div className="feed-copy"><p>{post.body}</p></div>
         {post.media.map((media) => media.type === 'image' ? <img className="feed-uploaded-image" key={media.id} src={media.url} alt={media.name ?? 'Community photo'} /> : media.type === 'video' ? <video className="feed-uploaded-video" key={media.id} src={media.url} controls /> : <a key={media.id} href={media.url}>{media.name ?? 'Download attachment'}</a>)}
         <div className="feed-counts">{post.reaction_count} appreciations · {post.comments_enabled ? `${post.comments.length} comments` : 'Comments closed'}</div>
         <footer className="feed-actions"><button type="button" className={post.reacted_by_me ? 'liked' : ''} onClick={() => void toggleLike(post.id)}><Heart size={19} fill={post.reacted_by_me ? 'currentColor' : 'none'} />{post.reacted_by_me ? 'Appreciated' : 'Appreciate'}</button><button type="button" disabled={!post.comments_enabled} onClick={() => setCommenting(commenting === post.id ? null : post.id)}><MessageCircle size={19} />{post.comments_enabled ? 'Comment' : 'Comments off'}</button></footer>
-        {post.comments.map((item) => <div className="community-comment" key={item.id}><strong>{item.author}</strong><span>{item.body}</span></div>)}
+        {post.comments.map((item) => <div className="community-comment" key={item.id}><strong>{item.author}</strong><span>{item.body}</span>{item.can_remove && <button type="button" onClick={() => void removeComment(post.id, item.id)}>Remove</button>}</div>)}
         {commenting === post.id && <div className="community-comment-form"><input value={comment} maxLength={2000} onChange={(event) => setComment(event.target.value)} placeholder="Write a comment" /><button type="button" onClick={() => void submitComment(post.id)}>Send</button></div>}
       </article>)}
     </section>}

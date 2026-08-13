@@ -6,7 +6,7 @@ import { CommunityFeed } from './CommunityFeed'
 export function TeacherPortalView({ teacherName, activeTab, onTabChange, onLogout, staffMode = false }: { teacherName: string; activeTab: string; onTabChange: (tab: string) => void; onLogout: () => void; staffMode?: boolean }) {
   if (activeTab === 'home') return <CommunityFeed role={staffMode ? 'staff' : 'teacher'} userName={teacherName} onCreatePost={() => onTabChange('create')} />
   if (activeTab === 'classes') return <ClassesPage staffMode={staffMode} />
-  if (activeTab === 'review' && staffMode) return <ClassesPage staffMode />
+  if (activeTab === 'review' && staffMode) return <CommunityFeed role="staff" userName={teacherName} moderation />
   if (activeTab === 'create') return <CreatePost staffMode={staffMode} onPublished={() => onTabChange('home')} />
   if (activeTab === 'attendance') return <AttendancePage />
   return <TeacherMore teacherName={teacherName} staffMode={staffMode} onLogout={onLogout} />

@@ -2,11 +2,18 @@
 
 namespace Tests\Feature;
 
+use App\Audit\AuditContext;
+use App\Audit\AuditContextFactory;
+use App\Audit\AuditEvent;
+use App\Contracts\AuditLoggerContract;
+use App\Models\AuditLog;
 use App\Models\SchoolClass;
 use App\Models\User;
+use App\Services\Community\CommunityService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use RuntimeException;
 use Tests\TestCase;
 
 class CommunityApiTest extends TestCase
@@ -93,5 +100,28 @@ class CommunityApiTest extends TestCase
         $this->actingAs($admin)->postJson("/api/v1/community/posts/{$postId}/hide", ['reason' => 'Posted in error.'])->assertOk();
         $this->assertDatabaseHas('community_posts', ['id' => $postId, 'status' => 'hidden', 'moderation_reason' => 'Posted in error.']);
         $this->assertDatabaseHas('audit_logs', ['action' => 'community.post_hidden', 'entity_id' => $postId]);
+    }
+
+    public function test_post_persistence_rolls_back_when_audit_fails(): void
+    {
+        $this->app->bind(AuditLoggerContract::class, fn () => new class implements AuditLoggerContract
+        {
+            public function record(AuditEvent $event, AuditContext $context): AuditLog
+            {
+                throw new RuntimeException('Forced audit failure.');
+            }
+        });
+        $teacher = User::query()->where('username', 'teacher.lim')->firstOrFail();
+        $class = SchoolClass::query()->where('name', 'MB1')->firstOrFail();
+
+        try {
+            app(CommunityService::class)->publish($teacher->school_id, ['body' => 'Rollback', 'audiences' => [['type' => 'class', 'class_id' => $class->id]]], $teacher, app(AuditContextFactory::class)->system());
+            $this->fail('Audit failure should escape the transaction.');
+        } catch (RuntimeException $exception) {
+            $this->assertSame('Forced audit failure.', $exception->getMessage());
+        }
+
+        $this->assertDatabaseCount('community_posts', 0);
+        $this->assertDatabaseCount('community_post_audiences', 0);
     }
 }
