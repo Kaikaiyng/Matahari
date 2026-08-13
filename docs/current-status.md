@@ -8,7 +8,7 @@
 
 **Current merged delivery:** `ddd7e193179129be35f7a2b1c408eb809734f8d4` (`Merge project-wide documentation update`)
 
-**Overall status:** MIS-branded administration-finance demo MVP with Phase A foundations, separately built Admin and multi-role Community App clients, and a first scoped daily-attendance slice; native/store delivery, production operations, and several product modules remain incomplete
+**Overall status:** MIS-branded administration-finance demo MVP with Phase A foundations, separately built Admin and multi-role Community App clients, live daily Attendance, and storage-only Community/Assessment/Quiz foundations; native/store delivery, production operations, and the corresponding feature APIs remain incomplete
 
 The Phase A commit above remains in the delivery history and is now included in `master`. The earlier white-label feature was delivered through [pull request #8](https://github.com/Kaikaiyng/Matahari/pull/8) and merged into `master` as `2f4c6bd199a7fae149658d3993aba370203746de` on 2026-08-04.
 
@@ -49,6 +49,8 @@ Merged delivery `816ea1d` redesigns the Admin staff login and all App role surfa
 - Eighteen additive tables now establish storage for Community content, academic terms/Assessments/results, and formal/Practice Quiz. The approved class targets, direct student targets, materialized Quiz recipients, shared `multiple_choice`/`true_false` option storage, result publication state, revision links, attempts, and answers are represented.
 - The migration does not seed or infer posts, terms, dates, results, audiences, recipients, or Quiz attempts and does not alter current student, guardian, finance, payment, receipt, or role rows.
 - This is schema only. Community media/publishing, result publication, Quiz generation/delivery/scoring, authorization services, mutation audits, and APIs remain unimplemented; the App screens remain previews until those slices are connected.
+- Local SQLite verification: all 61 tables migrated from fresh; the three new migrations rolled back in reverse FK order; existing seeded school/student data remained; re-migration returned to 61 tables. The focused schema suite passed 3 tests/24 assertions, and the backend regression passed 250 tests with 8 existing MariaDB-only skips and 1,339 assertions before the non-SQLite inspection test was added.
+- GitHub [Full qualification run 31661265923](https://github.com/Kaikaiyng/Matahari/actions/runs/31661265923) passed on exact commit `f047c2d`: backend 250 passed/10 skipped/1,339 assertions, disposable MariaDB 11.4 full migrate/rollback/re-migrate, and 2 dedicated FK/index inspection tests with 59 assertions. Pint, 74 API routes, dependency audits, Admin 169 tests/build, App 16 tests/build, and 18 deployment tests passed. Admin lint retained the 9 known Fast Refresh warnings; App lint was clean.
 
 Later school-specific branding requires explicit approval and a controlled update to the presentation configuration and, if needed, a fresh disposable demo seed. It must not rename existing tenant data or rewrite financial history.
 

@@ -339,7 +339,7 @@ MariaDB is the production database direction. SQLite is used for the repeatable 
 
 ### MariaDB migration lifecycle
 
-The historical payment-allocation foreign-key ordering problem is corrected by additive migration `2026_06_30_000006_ensure_payment_allocation_fee_agreement_item_foreign_key.php`. Phase A fresh migration, rollback/re-migration, existing-data upgrade, foreign-key, and index behavior were validated on disposable MariaDB. Production upgrade and rollback still require backups, a reviewed preflight, and an environment-specific recovery plan. Never use `migrate:fresh` against valuable data.
+The historical payment-allocation foreign-key ordering problem is corrected by additive migration `2026_06_30_000006_ensure_payment_allocation_fee_agreement_item_foreign_key.php`. Phase A fresh migration, rollback/re-migration, existing-data upgrade, foreign-key, and index behavior were validated on disposable MariaDB. The Community App data foundation also passed a full migration/rollback/re-migration lifecycle on MariaDB 11.4 plus 59 assertions covering all 18 tables and critical FK/delete-rule/unique-index definitions in GitHub qualification run `31661265923`. Production upgrade and rollback still require backups, a reviewed preflight, and an environment-specific recovery plan. Never use `migrate:fresh` against valuable data.
 
 ## 10. Backup and Security
 

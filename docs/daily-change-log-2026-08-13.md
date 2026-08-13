@@ -25,6 +25,7 @@
 - Backend: 255 tests discovered, 247 passed, 8 opt-in MariaDB tests skipped, and 1,314 assertions; Pint passed; 74 API routes loaded.
 - Deployment contracts: 18 tests passed.
 - Responsive Community App QA: 39 role/page combinations across 360x800, 390x844, and 430x932; no horizontal overflow or undersized visible interactive targets remained.
+- Community App data-foundation qualification: local SQLite fresh/three-migration rollback/re-migrate preserved seeded base data and returned to 61 tables. GitHub run `31661265923` passed with backend 250 passed/10 SQLite skips/1,339 assertions, MariaDB 11.4 lifecycle plus 59 dedicated FK/index assertions, Admin 169 tests/build, App 16 tests/build, Pint, route loading, dependency audits, and deployment contracts.
 
 The visual-refinement slice did not change schema. The later Community App data-foundation slice does change schema; its SQLite and MariaDB evidence is recorded in `docs/current-status.md` when validation completes.
 
