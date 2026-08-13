@@ -1,6 +1,6 @@
 # MIS App Product Specification
 
-**Status:** Approved direction; Community, daily Attendance, Assessment publication, Parent Finance reads, and student Schedule are live; formal Quiz remains a future controlled slice
+**Status:** Approved direction; Community, daily Attendance, Assessment publication, Parent Finance reads, student Schedule, and formal Quiz V1 are live; Practice/AI Quiz remains deferred
 
 **Approved:** 2026-08-12; implementation status reviewed 2026-08-13
 
@@ -87,7 +87,7 @@ Formal Assigned Quiz and personal Practice Quiz are separate products.
 - Practice Quiz results remain private to the student and never become official grades.
 - AI generation is a future authoring adapter. It is not installed, invoked, or represented as working.
 
-**Current implementation:** additive tables exist for formal/practice Quiz identity, immutable-style revisions, `multiple_choice`/`true_false` questions using shared options, formal class/direct-student targets, deduplicated materialized recipients, attempts, and answers. Authoring, publication, recipient resolution, delivery, scoring, Practice generation, APIs, and audit events remain unimplemented.
+**Current implementation:** Teacher-scoped manual authoring supports `multiple_choice` and `true_false` through shared options. Formal assignments preserve class and direct-student targets, explicitly record academic year, and materialize deduplicated recipients at publication. Students receive questions/options only after an authorized attempt starts; correct-answer flags remain server-side. Submission is server-scored, attempt limits are enforced, and mutations are transactionally audited. Practice generation and every AI integration remain disabled.
 
 ## Parent Finance
 
@@ -113,7 +113,7 @@ Class schedules are recurring weekly records scoped to a school, academic year, 
 2. Community persistence schema. **Implemented as a storage-only foundation; services/APIs remain pending.** Publishing/reactions/comments, media delivery, moderation, and audit follow separately.
 3. Daily Attendance schema, Teacher marking, Parent/Student history, and correction audit. **Implemented and merged in `816ea1d`.**
 4. Assessment persistence schema. **Implemented as a storage-only foundation; services/APIs remain pending.** Entry/publication and Parent/Student result views follow separately.
-5. Formal Quiz and separate Practice Quiz. **Storage foundation implemented; authoring, assignment materialization, attempts/scoring APIs, and Practice generation remain pending.**
+5. Formal Quiz and separate Practice Quiz. **Formal manual V1 authoring, materialized assignment, delivery, and scoring are implemented. Practice and AI generation remain pending.**
 6. Recurring class Schedule and published Assessment due dates. **Implemented with Admin management and scoped Student/Guardian reads.**
 7. Production media pipeline, push, native authentication review, and store packaging.
 

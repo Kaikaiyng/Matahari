@@ -8,7 +8,7 @@
 
 **Current merged delivery:** `ddd7e193179129be35f7a2b1c408eb809734f8d4` (`Merge project-wide documentation update`)
 
-**Overall status:** MIS-branded administration-finance demo MVP with Phase A foundations, separate Admin and multi-role App clients, live Community, daily Attendance, Assessment publication, Parent Finance reads, and class Schedule; formal Quiz, native/store delivery, and production operations remain incomplete
+**Overall status:** MIS-branded administration-finance demo MVP with Phase A foundations, separate Admin and multi-role App clients, live Community, daily Attendance, Assessment publication, Parent Finance reads, class Schedule, and formal Quiz V1; Practice/AI Quiz, native/store delivery, and production operations remain incomplete
 
 The Phase A commit above remains in the delivery history and is now included in `master`. The earlier white-label feature was delivered through [pull request #8](https://github.com/Kaikaiyng/Matahari/pull/8) and merged into `master` as `2f4c6bd199a7fae149658d3993aba370203746de` on 2026-08-04.
 
@@ -68,6 +68,13 @@ Merged delivery `816ea1d` redesigns the Admin staff login and all App role surfa
 - School Admin creates drafts and explicitly publishes them from the Admin Panel. Schedule mutations and audit events share transactions.
 - Students see published entries for their current enrolment and due dates from published Assessments. Guardians use an active reviewed link with academic access.
 - Existing internal Calendar records remain private to its existing permission boundary and are not automatically exposed to families.
+
+## 2026-08-13 Formal Quiz Workflow
+
+- Teachers manually author `multiple_choice` and `true_false` questions within current Teaching Assignment scope. Both types use shared option storage and server scoring.
+- Assignments retain class and direct-student targets. Publication resolves an explicit academic-year roster into deduplicated materialized recipients without guessing historical membership.
+- Students see only assignments where they are recipients. Correct-answer flags never leave the server before submission; attempt limits and availability windows are enforced.
+- Creation, publication, attempt start, and submission/scoring are audited transactionally. Practice and AI generation remain disabled according to the deferred technical plan.
 - Local SQLite verification: all 61 tables migrated from fresh; the three new migrations rolled back in reverse FK order; existing seeded school/student data remained; re-migration returned to 61 tables. The focused schema suite passed 3 tests/24 assertions, and the backend regression passed 250 tests with 8 existing MariaDB-only skips and 1,339 assertions before the non-SQLite inspection test was added.
 - GitHub [Full qualification run 31661265923](https://github.com/Kaikaiyng/Matahari/actions/runs/31661265923) passed on exact commit `f047c2d`: backend 250 passed/10 skipped/1,339 assertions, disposable MariaDB 11.4 full migrate/rollback/re-migrate, and 2 dedicated FK/index inspection tests with 59 assertions. Pint, 74 API routes, dependency audits, Admin 169 tests/build, App 16 tests/build, and 18 deployment tests passed. Admin lint retained the 9 known Fast Refresh warnings; App lint was clean.
 
