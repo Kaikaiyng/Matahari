@@ -17,6 +17,7 @@
 - Preserved Parent Finance as read-only with no payment interface.
 - Preserved Community publishing/media, Assessments/results, Schedule, formal Quiz, and Practice Quiz generation as labelled previews or planned modules.
 - Added 18 empty, additive storage-foundation tables for Community, Assessments/results, and formal/Practice Quiz without inferring or backfilling live records. Their services and APIs remain pending.
+- Completed a cross-client role checkpoint: Admin is restricted to Super/School Admin, Finance, and CEO; Teacher/Parent/Student use the Community App; Teacher Classes uses live assignment-scoped APIs; Parent Finance uses the child's stored current academic year; preview-only controls no longer imply real mutations or fake balances.
 
 ## Validation
 

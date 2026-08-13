@@ -43,6 +43,7 @@ Implemented Community App/self-service rules:
 - A reviewed guardian may have multiple children, and a student may have multiple guardians. Access is evaluated per active relationship and capability flag.
 - A guardian with active finance access sees the student's account payment history, not only payments physically made by that guardian.
 - Parent outstanding amounts must come from the existing Fee Record and payment-allocation domain logic. A mobile balance ledger or client-side authoritative calculation is forbidden.
+- Parent Finance selects the child's explicitly stored current enrolment academic-year code. It must not guess or hard-code a production academic year; a child without a confirmed current enrolment receives no year-specific balance query.
 - Parent receipt access must reuse the existing authoritative receipt resource/output; mobile must not create a second receipt definition.
 - Parent Finance is read-only and exposes no payment interface.
 - Teacher daily Attendance is limited to a current same-school teaching assignment and enrolled roster. Parent reads require the reviewed academic capability; Student reads resolve only the linked self record.

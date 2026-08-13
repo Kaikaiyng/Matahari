@@ -52,6 +52,15 @@ Merged delivery `816ea1d` redesigns the Admin staff login and all App role surfa
 - Local SQLite verification: all 61 tables migrated from fresh; the three new migrations rolled back in reverse FK order; existing seeded school/student data remained; re-migration returned to 61 tables. The focused schema suite passed 3 tests/24 assertions, and the backend regression passed 250 tests with 8 existing MariaDB-only skips and 1,339 assertions before the non-SQLite inspection test was added.
 - GitHub [Full qualification run 31661265923](https://github.com/Kaikaiyng/Matahari/actions/runs/31661265923) passed on exact commit `f047c2d`: backend 250 passed/10 skipped/1,339 assertions, disposable MariaDB 11.4 full migrate/rollback/re-migrate, and 2 dedicated FK/index inspection tests with 59 assertions. Pint, 74 API routes, dependency audits, Admin 169 tests/build, App 16 tests/build, and 18 deployment tests passed. Admin lint retained the 9 known Fast Refresh warnings; App lint was clean.
 
+## 2026-08-13 Role and Client Boundary Checkpoint
+
+- Admin Panel access is limited to Super Admin, School Admin, Finance, and CEO. Teacher-only, Parent-only, and Student-only accounts are rejected by the Admin client; backend route permissions remain authoritative.
+- The Community App admits Parent, Student, Teacher, and derived Staff personas. Finance-only and CEO-only accounts do not receive App personas. Multi-role App users may switch only among personas derived from their stored roles.
+- Teacher Classes loads current teaching assignments and each assignment's scoped roster count from the same protected APIs used by Attendance. It does not expose unrelated classes or students.
+- Parent Finance no longer embeds a demo balance or hard-codes `2026`. The parent summary includes the child's explicitly stored current enrolment academic year, and finance queries stop when no current year exists.
+- Quiz, Schedule, Assessment/result examples, pending settings, and future moderation actions are explicitly labelled and non-actionable until their APIs exist. Receipt rows are viewing-only rather than fake download controls.
+- Local checkpoint regression: backend 250 passed/10 MariaDB-only skipped/1,340 assertions; Admin 170 tests; App 19 tests; Pint, both lints, both builds, and 74 API routes passed. Admin retains the 9 known Fast Refresh warnings. SQLite fresh/seed created 61 tables, rolling back the three data-foundation migrations left 43 tables and preserved the school row, and re-migration restored 61 tables.
+
 Later school-specific branding requires explicit approval and a controlled update to the presentation configuration and, if needed, a fresh disposable demo seed. It must not rename existing tenant data or rewrite financial history.
 
 ## 2026-08-13 Mobile App Visual Refinement

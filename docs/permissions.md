@@ -76,6 +76,13 @@ Foundation role management synchronizes only `teacher`, `parent`, and `student`;
 | Staff App preview | Existing administrative role/permissions | No new publishing or academic bypass; preview UI is not mutation authority |
 | Portal notifications | Authenticated portal user | Recipient user and school must both match |
 
+Client entry-point checkpoint:
+
+- Admin Panel admits only `super-admin`, `school-admin`, `finance`, and `ceo` roles. A Teacher-only, Parent-only, or Student-only account is directed to the Community App instead of receiving an unusable Admin dashboard.
+- Community App admits Parent, Student, Teacher, and the derived Staff persona. Staff currently maps only from `super-admin` or `school-admin`; it does not give Finance or CEO a community-publishing identity.
+- Multi-role users retain the backend permission union. The Community App role switch lists only personas actually derived from the user's stored roles.
+- These client gates are usability boundaries. Backend permission middleware and resource scope remain authoritative.
+
 The current Attendance slice deliberately reuses `teaching_scope.view`; dedicated future Attendance/Community/Assessment/Quiz permissions must be introduced only with their backend modules and tests.
 
 ## CEO Intended Versus Implemented Access
