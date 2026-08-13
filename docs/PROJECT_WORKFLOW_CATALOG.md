@@ -2,7 +2,7 @@
 
 Status: Evidence-backed current-state catalog
 
-Last reviewed: 2026-08-12
+Last reviewed: 2026-08-13
 
 This catalog is the source checklist for the editable FigJam workflow board and the final Notion documentation. It distinguishes runtime behavior from approved-but-unimplemented design and historical/deferred scope.
 
@@ -10,7 +10,17 @@ Published FigJam board: [Matahari Complete Project Workflow Atlas](https://www.f
 
 The board contains 15 numbered diagrams (`00` through `14`) and 15 matching Mermaid sources under `docs/workflow-diagrams/`.
 
-The catalog text is updated through 2026-07-22. The FigJam board and Mermaid diagrams remain a 2026-07-14 workflow snapshot; use the current route inventory and sections below for later Calendar, Classes, username-authentication, and dashboard changes.
+The detailed Admin finance walkthrough below originated from the 2026-07-22 catalog. This 2026-08-13 supplement records the later academic/portal/App boundary; the FigJam board and Mermaid diagrams remain a 2026-07-14 snapshot. For exact current routes and schema, use [Architecture](architecture.md), [Database](database.md), and generated framework output.
+
+## 2026-08-13 Current Workflow Supplement
+
+- `frontend/` is the Admin/Finance client. `app/` is a separately built and deployed mobile-first Community App for Parent, Student, Teacher, and authorized Staff roles.
+- Both clients use one Laravel API, one authoritative database, session/CSRF authentication, the same RBAC identities, and the same finance source of truth.
+- Phase A academic years, subjects, enrolment history, teaching assignments, minimum foundation accounts, and explicit portal links are implemented and merged.
+- Parent/Student self-service identity, enrolment, read-only Parent finance, notifications, and Attendance reads are implemented with relationship/self and school scope.
+- Teacher daily Attendance is implemented with current teaching-assignment scope, correction reasons, and transactional audit.
+- Community publishing/media, reactions/comments persistence, Assessments/results, Schedule, formal Quiz, Practice Quiz generation, push, and native packaging remain planned or preview-only.
+- The current generated inventory is 74 non-vendor API routes; do not reuse older counts in the historical workflow sections as current evidence.
 
 ## 1. Status Legend
 
@@ -46,7 +56,7 @@ Human and system actors:
 - MariaDB / SQLite test database
 - Browser print workflow
 
-Phase A now defines teacher, parent, and student roles plus explicit same-school portal links. Parent and student accounts are foundation actors at the backend level, but no Parent/Student self-service frontend is implemented. The approved Mobile Web, Parent Finance, notifications, Quiz, push, and native workflows remain future Phase B–F work; see [Mobile Product Architecture and Roadmap](mobile-product-roadmap.md).
+Phase A defines Teacher, Parent, and Student roles plus explicit same-school portal links. The independent Community App now provides scoped Parent/Student self-service, notifications, read-only Parent finance, and Teacher/Parent/Student daily Attendance. Community persistence, Assessments, Quiz, push, and native workflows remain future work; see [Mobile Product Architecture and Roadmap](mobile-product-roadmap.md).
 
 ## 3. Role and Permission Matrix
 
@@ -356,7 +366,7 @@ Category Monthly adds category and returns one Jan–Dec cell per student/catego
 
 ## 12. Legacy Dashboard and Invoice Flow
 
-These two endpoints are authenticated but remain legacy/backend-only surfaces without a more specific permission slug.
+These two endpoints remain legacy/backend-only surfaces, but they are authenticated, school-scoped, and protected by `fee_record.view` for the Dashboard and `fee_record.generate` for invoice generation.
 
 ### Dashboard
 
@@ -401,7 +411,7 @@ Login already uses normalized username. The remaining plan would let Super Admin
 - Username authentication is implemented; Super Admin user management remains design-only.
 - Parent and fee-management permissions exist without complete mutation routes/UI.
 - Payments and Receipts are implemented inside Student Detail while their top-level navigation pages remain prototypes.
-- Dashboard and invoice generation routes are authenticated legacy endpoints without a more specific permission slug.
+- Dashboard and invoice generation are retained legacy endpoints, now protected by `fee_record.view` and `fee_record.generate` respectively plus school-scope enforcement.
 - Historical PRD/backlog describes invoice-centric payment updates and broader modules; current implemented finance source of truth is Fee Record charges and their allocations.
 - Category mapping is explicitly temporary until final school fee codes are confirmed.
 - MariaDB fresh migration has a known foreign-key ordering workaround.
@@ -435,7 +445,7 @@ The final board must include all of these named areas:
 - Domain behavior: API controllers, Form Requests, Fee Agreement and Billing services
 - Persistence: migrations and Eloquent models
 - UI behavior: `frontend/src/App.tsx`, `frontend/src/api.ts`, and responsive/print CSS
-- Edge cases: 116 PHPUnit feature/unit tests as of 2026-07-22, especially auth, calendar, student/class, agreement, charge, allocation, payment, receipt, summary, and category-monthly suites
+- Edge cases: 255 PHPUnit tests discovered on 2026-08-13 (247 passed and 8 opt-in MariaDB tests skipped), covering auth, scope, academic foundation, portal, Attendance, calendar, student/class, agreement, charge, allocation, payment, receipt, summary, and category-monthly behavior
 - Current scope: `IMPLEMENTATION_STATUS.md`, `SYSTEM_ARCHITECTURE.md`, `DATABASE_DESIGN.md`, `UAT_CHECKLIST.md`, and `DEMO_REVIEW_SCRIPT.md`
 - Partially delivered auth and future user-management design: `docs/superpowers/specs/2026-07-12-username-auth-user-management-design.md`
 - Draft business-rule caveats: `docs/business-rules/business-rules-v0.1.md`

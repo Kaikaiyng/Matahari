@@ -2,7 +2,7 @@
 
 ## Project Summary
 
-Matahari is a school administration and finance MVP for Matahari International School. The repository currently contains a Laravel 13 JSON API and a React 19/TypeScript frontend. It is not a complete academic ERP and is not verified as production-ready.
+Matahari is a school administration, finance, and school-community MVP for Matahari International School. The repository contains one Laravel 13 JSON API, an Admin-only React 19/TypeScript workspace in `frontend/`, and an independent mobile-first multi-role React workspace in `app/`. Both clients share the backend and authoritative database but are built and deployed separately. It is not a complete academic ERP or verified as production-ready.
 
 ## Read Before Editing
 
@@ -15,8 +15,8 @@ Matahari is a school administration and finance MVP for Matahari International S
 ## Repository Map
 
 - `backend/`: Laravel application, API routes, domain services, migrations, seeders, and PHPUnit tests.
-- `frontend/`: React application, shared components, feature editors, Vitest tests, and Vite configuration.
-- `app/`: Independent mobile-first Parent/Student React application with its own build, tests, and deployment surface.
+- `frontend/`: Admin-only React application, shared components, feature editors, Vitest tests, and Vite configuration.
+- `app/`: Parent/Student/Teacher/Staff Community App, role-aware navigation, portal views, Vitest tests, and independent Vite configuration.
 - `docs/`: canonical current documentation plus historical plans and decision records.
 - `tools/php/`: Windows PHP launchers and local SQLite demo helpers.
 - `tools/public-demo/`: temporary demo tunnel tooling; it is not production deployment infrastructure.
@@ -59,7 +59,7 @@ Matahari is a school administration and finance MVP for Matahari International S
 - Make the smallest complete change and avoid unrelated refactoring.
 - Follow existing controller/request/service/model boundaries. Financial mutations belong in transactions and should use row locks where concurrent updates matter.
 - Do not add a package without a concrete justification and lockfile update.
-- Keep `frontend/` (Admin), `app/` (Parent/Student), and Laravel scaffold assets in `backend/` as separate runtime/build boundaries.
+- Keep `frontend/` (Admin), `app/` (multi-role Community App), and Laravel scaffold assets in `backend/` as separate runtime/build boundaries.
 - Update relevant canonical documentation in the same change when behavior, permissions, schema, commands, or status changes.
 
 ## Testing Requirements

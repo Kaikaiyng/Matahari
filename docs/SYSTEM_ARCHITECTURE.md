@@ -2,14 +2,14 @@
 
 Status: Current implementation reference
 
-Last updated: 2026-08-12
+Last updated: 2026-08-13
 
-This file primarily describes the implemented Admin Web runtime. The independent `app/` workspace now provides the mobile-first Parent/Student web client; it shares this Laravel API and authoritative database but has its own domain and build. Native store packaging is not implemented. See [Mobile Product Architecture and Roadmap](mobile-product-roadmap.md).
+This file summarizes the implemented Admin Web, Community App, and shared Laravel runtime. The independent `app/` workspace supports Parent, Student, Teacher, and authorized Staff roles; it shares the API and authoritative database with Admin but has its own domain and build. Native store packaging is not implemented. The canonical detailed reference is [Architecture](architecture.md).
 
 ## 1. Runtime Topology
 
 ```text
-Admin domain                 Parent/Student App domain
+Admin domain                 Community App domain
 frontend/ build              app/ build
           \                    /
            \ same-origin /api /
@@ -21,11 +21,11 @@ frontend/ build              app/ build
         SQLite repeatable demo / MariaDB production direction
 ```
 
-The diagram above means the current Admin frontend is responsive. It does not claim that the Phase B Mobile Web client or a native app exists.
+Both web clients exist. The diagram does not claim that a native package exists.
 
 SQLite remains available for new-contributor setup, test isolation, and rollback. `backend/phpunit.xml` uses SQLite `:memory:` so automated tests do not modify the active demo database.
 
-Deployment, Cloudflare, Docker, Nginx, domains, hosting, and TLS are not implemented in this repository.
+Repository-owned Docker, Nginx, Compose, release packaging, and CI contracts exist. Real hosting, domains, edge TLS, monitoring, backup, restore, and production promotion remain unverified.
 
 ## 2. Frontend Boundary
 
@@ -74,6 +74,9 @@ Laravel responsibilities:
 - Payment allocation, verification, and void reversal
 - Receipt sequence, snapshots, print data, and void/regeneration behavior
 - Fee Record Summary and Category Monthly aggregation
+- Phase A academic years, subjects, enrolment history, teaching assignments, portal links, and foundation accounts
+- Parent/Student self-service identity, finance/attendance reads, and user-scoped notifications
+- Teacher assignment-scoped daily Attendance marking, correction reasons, and transactional audit
 
 The current code follows Laravel controller/model/service patterns without a broad state-management or module-framework layer.
 
@@ -114,7 +117,7 @@ The default session lifetime is 480 minutes (8 hours) of inactivity. `SESSION_EX
 
 ### Legacy endpoint boundary
 
-`GET /api/dashboard/school` and `POST /api/invoices/generate-monthly` are retained from the initial scaffold. They now run inside the session and `auth` middleware group, but they do not have a more specific permission slug. The Dashboard outstanding-total metric uses Fee Record charges; other invoice-oriented dashboard fields and monthly invoice generation remain legacy/backend-only behavior.
+`GET /api/dashboard/school` and `POST /api/invoices/generate-monthly` are retained from the initial scaffold. They run inside the session/auth group and require `fee_record.view` and `fee_record.generate` respectively. The Dashboard outstanding-total metric uses Fee Record charges; other invoice-oriented dashboard fields and monthly invoice generation remain legacy/backend-only behavior.
 
 ## 6. Finance Data Flow
 
@@ -171,7 +174,7 @@ cd backend
 ..\tools\php\php-local.cmd artisan route:list --path=api --except-vendor
 ```
 
-Current route count: 35.
+Current route count: 74. The tables below document the original Admin groups; `/api/v1/admin`, `/api/v1/teacher`, and `/api/v1/portal` add the academic foundation, portal self-service, notifications, and Attendance routes. Always regenerate the authoritative list with the command above.
 
 ### Auth and legacy dashboard
 
@@ -279,9 +282,9 @@ See [Database Design](DATABASE_DESIGN.md) for table groups and relationships.
 - Statements and reminders
 - General reports and export pipelines
 - PDF generation
-- Parent Portal
+- Production-ready Parent Finance and complete portal workflows beyond the implemented self-service/Attendance slice
 - Remaining production dashboard/invoice reporting beyond the implemented Fee Record outstanding total
 - Queue-driven communication workflows
-- Production deployment and network architecture
+- Verified production deployment, edge network, monitoring, and backup/restore operations
 
 These should be designed as separate phases after the current finance flow passes real-device and school UAT.

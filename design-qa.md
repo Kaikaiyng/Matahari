@@ -1,5 +1,7 @@
 # Design QA: Sidebar Brand Mark Contrast
 
+> **Historical QA evidence (2026-08-07).** This validates the Admin sidebar contrast fix only. It predates the independent Community App and its 2026-08-13 liquid-glass navigation QA; use [Design System](DESIGN.md) and [Current Status](docs/current-status.md) for the current visual baseline. Local temporary screenshot paths below are provenance notes and are not required project assets.
+
 ## Evidence
 
 - Source visual truth path: user-provided conversation attachment showing the expanded sidebar brand crop (508 x 213 pixels), received 2026-08-07.

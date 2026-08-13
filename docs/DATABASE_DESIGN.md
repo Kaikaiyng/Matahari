@@ -2,9 +2,9 @@
 
 Status: Current implementation reference
 
-Last updated: 2026-07-22
+Last updated: 2026-08-13
 
-Repeatable demo database: SQLite
+Repeatable demo and default test database: SQLite
 
 Optional development database: MariaDB
 
@@ -38,10 +38,13 @@ The active finance UI uses Fee Agreements and Fee Record charges. Legacy invoice
 - Money is stored in decimal columns and handled as decimal/cents in application logic.
 - Staff authenticate with a globally unique normalized username; staff email and password-reset-token storage are not part of the current schema.
 - Calendar events are school-scoped and preserve creator/updater identities.
+- Academic years, subjects, class enrolments, and teaching assignments preserve academic history without rewriting `students.class_id`.
+- Parent/Student portal links are nullable and same-school; historical guardian access is never guessed or automatically activated.
+- Daily Attendance preserves the original marker and records correction actor, reason, and time.
 
 ## 3. Schema Inventory
 
-The current schema contains 36 tables.
+The current disposable demo schema contains 43 non-SQLite-internal tables, including Laravel infrastructure.
 
 ### Laravel infrastructure (7)
 
@@ -122,6 +125,20 @@ These tables remain useful for seeded configuration and legacy invoice behavior.
 | Table | Responsibility |
 | --- | --- |
 | `calendar_events` | School-scoped all-day/timed events, event details, and creator/updater audit users |
+
+### Academic, portal, and Attendance foundation (7)
+
+| Table | Responsibility |
+| --- | --- |
+| `academic_years` | School-scoped years and current-year state |
+| `class_enrolments` | Student class history with one current enrolment slot |
+| `subjects` | School-scoped subject catalogue |
+| `teaching_assignments` | Teacher/class/subject/year scope and history |
+| `portal_notifications` | Recipient-scoped durable in-app notifications |
+| `attendance_sessions` | School/year/class/date/type attendance sessions |
+| `attendance_records` | Per-student status, original marker, correction metadata, and notes |
+
+Portal identity fields are additive columns on `parents`, `students`, and `student_parent_links`, not separate identity tables.
 
 ## 4. Key Records
 
@@ -283,17 +300,11 @@ Rules:
 
 ## 9. MariaDB and SQLite
 
-MariaDB is used by the current local demo because it supports phpMyAdmin and matches the intended relational deployment direction. SQLite remains valid for tests and simple local setup.
+MariaDB is the production database direction. SQLite is used for the repeatable local demo and default automated tests; SQLite success is not MariaDB proof.
 
-### Fresh MariaDB migration caveat
+### MariaDB migration lifecycle
 
-Migration `2026_06_26_000001_create_school_finance_tables.php` defines the nullable `payment_allocations.fee_agreement_item_id` foreign key before migration `2026_06_30_000004_create_fee_agreement_tables.php` creates `fee_agreement_items`.
-
-SQLite permits this creation order. MariaDB rejects it when foreign-key creation checks are enabled.
-
-The current local migration was completed by temporarily disabling foreign-key creation checks only while creating the empty schema, then restoring `FOREIGN_KEY_CHECKS=ON` before importing data. The resulting constraint was validated after the parent table existed.
-
-A future code migration should remove this workaround by creating the column first and adding its foreign key only after `fee_agreement_items` exists. Do not use `migrate:fresh` against a database containing data.
+The historical payment-allocation foreign-key ordering problem is corrected by additive migration `2026_06_30_000006_ensure_payment_allocation_fee_agreement_item_foreign_key.php`. Phase A fresh migration, rollback/re-migration, existing-data upgrade, foreign-key, and index behavior were validated on disposable MariaDB. Production upgrade and rollback still require backups, a reviewed preflight, and an environment-specific recovery plan. Never use `migrate:fresh` against valuable data.
 
 ## 10. Backup and Security
 
@@ -306,4 +317,4 @@ A future code migration should remove this workaround by creating the column fir
 
 ## 11. Deferred Schema Areas
 
-The current schema does not complete production models for Statements, Reminders, general Reports/Exports, Parent Portal, PDF documents, or production dashboard aggregates. Those require separate product and data-model design rather than being inferred from legacy invoice tables.
+The current schema does not complete Community posts/media/reactions/comments, Assessments/results, formal or Practice Quiz, payment reminders, device/push delivery, Statements, general Reports/Exports, PDF documents, or production dashboard aggregates. Parent/Student self-service and daily Attendance are partial implemented slices, not complete portal/academic products.

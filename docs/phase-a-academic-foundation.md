@@ -6,7 +6,9 @@
 
 **Implementation head before this documentation-only update:** `ecaa0a1f177292ae99c9338e255a1f93312971f5`
 
-**Status:** Implemented and locally validated; not merged to `master`
+**Status:** Implemented, locally validated, and merged to `master`; live-data backfill gates remain separate
+
+**Merged delivery baseline:** Phase A history is included in `master` through merge `816ea1d` (2026-08-13)
 
 ## Delivered Scope
 

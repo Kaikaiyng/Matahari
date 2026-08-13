@@ -1,8 +1,8 @@
 # MIS Administration System Frontend
 
-The frontend is the Admin-only MIS React and TypeScript administration/finance workspace. Parent/Student functionality lives in the separate root `app/` workspace and is not routed or built from this application. Runtime product copy is centralized in `src/branding.ts`; a fresh disposable backend demo seed supplies the MIS tenant.
+The frontend is the Admin-only MIS React and TypeScript administration/finance workspace. Community App functionality for Parent, Student, Teacher, and authorized Staff roles lives in the separate root `app/` workspace and is not routed or built from this application. Runtime product copy is centralized in `src/branding.ts`; a fresh disposable backend demo seed supplies the MIS tenant.
 
-Do not use presentation changes to rename existing tenant data or historical receipt identifiers. Portal attendance, timetable, and payment-method interactions labelled as demo previews are not authoritative persisted workflows.
+Do not use presentation changes to rename existing tenant data or historical receipt identifiers. Admin remains the desktop location for broad operational management, permission-sensitive finance actions, moderation, and audit review.
 
 ## Stack
 
@@ -104,12 +104,11 @@ npm.cmd audit --omit=dev --audit-level=moderate
 npm.cmd audit --audit-level=moderate
 ```
 
-Last verified on 2026-08-04:
+Last verified on merged `master` on 2026-08-13:
 
-- Vitest passed 156 tests across 14 files.
-- Oxlint completed with no reported diagnostics.
-- TypeScript and the production build passed with 73 modules transformed.
-- Production-only and complete-tree npm audits both reported 0 vulnerabilities.
-- Local in-app browser QA covered 1440x900, 1180x820, 820x1180, and 390x844; real-device iPad Safari remains recommended.
+- Vitest passed 169 tests across 15 files.
+- Oxlint exited 0 with 9 existing `react(only-export-components)` Fast Refresh organization warnings in `CalendarViews.tsx`.
+- TypeScript and the production build passed with 83 modules transformed.
+- The earlier production-only and complete-tree npm audit run reported 0 vulnerabilities; rerun audits for release evidence because registry state changes over time.
 
 The responsive acceptance details are in [the implemented responsive design](../docs/superpowers/specs/2026-07-11-ipad-first-responsive-demo-design.md).

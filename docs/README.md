@@ -1,6 +1,6 @@
 # Documentation Index
 
-Start with the canonical documents below. They describe the repository through the Phase A delivery branch reviewed on 2026-08-12 and explicitly separate current behavior from approved future direction and unverified policy.
+Start with the canonical documents below. They describe merged `master` at `816ea1d` on 2026-08-13 and explicitly separate current behavior from approved future direction and unverified policy.
 
 ## Canonical Project Knowledge
 
@@ -21,6 +21,9 @@ The root [README](../README.md) is the human entry point. Future coding agents m
 
 ## Supporting Current References
 
+- [2026-08-13 Change Log](daily-change-log-2026-08-13.md)
+- [MIS App Product Specification](mobile-app-product-spec.md)
+- [MIS App Design System](../DESIGN.md)
 - [Maintenance Guide](MAINTENANCE_GUIDE.md)
 - [Deployment Foundation](deployment-foundation.md)
 - [System Architecture](SYSTEM_ARCHITECTURE.md)
@@ -34,7 +37,7 @@ The root [README](../README.md) is the human entry point. Future coding agents m
 - [Audit Log Operations](AUDIT_LOG_OPERATIONS.md)
 - [Workflow Atlas](workflow-diagrams/README.md)
 
-Some supporting references predate the secure-audit foundation and contain stale test counts or over-broad claims. When they conflict, the canonical lowercase documents and current code/tests take precedence. Preserve useful historical context; correct current-reference drift in a focused follow-up rather than treating an old statement as runtime fact.
+Supporting references are synchronized at a summary level, but some retain dated validation evidence. When counts differ, use the newest dated evidence in [Current Status](current-status.md); current code/tests remain authoritative.
 
 ## Business Input Requiring Approval
 
@@ -52,7 +55,7 @@ Some supporting references predate the secure-audit foundation and contain stale
 - [Decision Log](DECISIONS.md)
 - [Roadmap](ROADMAP.md)
 
-Files under `superpowers/specs/` and `superpowers/plans/` preserve delivery decisions and execution history. They are not current completion claims. The documentation-foundation execution plan is [here](superpowers/plans/2026-08-03-project-knowledge-foundation.md).
+Files under `superpowers/specs/` and `superpowers/plans/`, dated change logs, `design-qa.md`, and the workflow atlas preserve delivery decisions and execution history. They are intentionally not rewritten as current completion claims. The documentation-foundation execution plan is [here](superpowers/plans/2026-08-03-project-knowledge-foundation.md).
 
 ## Documentation Ownership
 

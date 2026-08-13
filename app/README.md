@@ -1,6 +1,17 @@
-# MIS Parent & Student App
+# MIS Community App
 
-This is the independent mobile-first web workspace for Matahari International School Parent and Student users. It has its own login, build, tests, deployment surface, and domain boundary. It shares the Laravel API and authoritative database with the Admin Panel; it does not share the Admin frontend runtime.
+This is the independent mobile-first web workspace for Matahari International School Parent, Student, Teacher, and authorized Staff users. It has its own login, build, tests, deployment surface, and domain boundary. It shares the Laravel API and authoritative database with the Admin Panel; it does not share the Admin frontend runtime.
+
+## Current Experience
+
+- Role-aware floating liquid-glass navigation with distinct Parent, Student, Teacher, and Staff destinations.
+- Community-style Home feed presentation with explicit preview labels where publishing is not connected.
+- Live scoped Parent/Student identity and Attendance reads.
+- Live assignment-scoped Teacher daily Attendance marking with correction reasons.
+- Read-only Parent finance backed by the existing finance source of truth; there is no payment interface.
+- Preview-only academic results, Schedule, formal Quiz, Practice Quiz, and publishing surfaces.
+
+Sign out is available from each role's More/Profile page. Native authentication, push delivery, and store packaging are not part of the current web workspace.
 
 ## Local Development
 
@@ -25,8 +36,10 @@ npm.cmd run lint
 npm.cmd run build
 ```
 
+Last verified on 2026-08-13: 3 Vitest files and 16 tests passed, Oxlint exited cleanly, and the TypeScript/Vite production build completed with 76 modules transformed. Automated responsive QA covered 39 role/page combinations at 360x800, 390x844, and 430x932 without horizontal overflow or undersized visible interactive targets.
+
 ## Deployment Boundary
 
 Deploy `app/dist` on the App domain and reverse-proxy that domain's `/api` path to the shared Laravel backend. Deploy `frontend/dist` separately on the Admin domain with the same `/api` reverse-proxy pattern. This preserves browser session/CSRF behavior without exposing Laravel directly as a cross-site API.
 
-There is no Capacitor, Firebase, native authentication, or store packaging in this workspace yet. Those remain separately approved future work.
+There is no Capacitor, Firebase, Sanctum, native authentication, or store packaging in this workspace yet. Those remain separately approved future work.

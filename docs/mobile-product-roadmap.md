@@ -2,7 +2,7 @@
 
 **Status:** Approved community-first App direction; split client, visual redesign, and daily Attendance implemented; community persistence, assessment, and Quiz remain planned
 
-**Reviewed:** 2026-08-12
+**Reviewed:** 2026-08-13
 
 ## Status Language
 
@@ -12,14 +12,14 @@ This document uses three distinct states:
 - **Approved, not implemented:** a product or architecture decision that constrains future work.
 - **Needs confirmation:** a decision that still requires product, operational, or security approval.
 
-The `frontend/` application is the responsive Admin/Finance interface. The separate root `app/` workspace is now the mobile-first Parent/Student web product and has its own build and tests. No native package, push integration, or token-authentication stack exists yet.
+The `frontend/` application is the responsive Admin/Finance interface. The separate root `app/` workspace is the mobile-first multi-role Community App and has its own build and tests. No native package, push integration, or token-authentication stack exists yet.
 
 ## Target Product Architecture
 
 ```mermaid
 flowchart TB
     Admin["React Admin / Finance / Teacher Web"]
-    MobileWeb["Parent / Student / optional Teacher Mobile Web"]
+    MobileWeb["Parent / Student / Teacher / Staff Community Web"]
     Native["Later: Capacitor Android / iOS package"]
     API["One Laravel API"]
     DB["One MariaDB database"]
@@ -40,7 +40,7 @@ The mobile experience is developed and validated first as a mobile-first web app
 
 | Phase | Status | Scope |
 | --- | --- | --- |
-| A — Backend Foundation | Implemented on the unmerged Phase A branch | School context, foundation roles, explicit portal links, academic years, enrolments, subjects, teaching assignments, minimum management APIs, policies/access services, audit, constraints, and tests |
+| A — Backend Foundation | Implemented and merged | School context, foundation roles, explicit portal links, academic years, enrolments, subjects, teaching assignments, minimum management APIs, policies/access services, audit, constraints, and tests |
 | B — Mobile Web Shell | Implemented | Independent `app/`, session login, role-aware Parent/Student/Teacher/Staff shell, separate build/domain, and community-first redesign |
 | C — Community and Parent Records | Approved for implementation | Relationship-scoped Feed, Teacher/Staff publishing, reactions, controlled comments, children, published academics, and read-only Finance |
 | D — Attendance and Assessments | Attendance implemented; Assessments planned | General attendance sessions with initial daily marking, scoped history and audit are present; academic terms, assessments, publication, and results remain planned |

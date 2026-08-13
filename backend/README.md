@@ -1,6 +1,6 @@
 # Matahari Backend
 
-The backend is a Laravel 13 JSON API for the Matahari Admin Finance MVP. It owns authentication, authorization, financial validation, Fee Record charges, payment allocation, and receipt integrity.
+The backend is the shared Laravel 13 JSON API for the MIS Admin Panel and Community App. It owns authentication, authorization, school scope, academic foundations, portal relationship scope, daily Attendance, audit integration, financial validation, Fee Record charges, payment allocation, and receipt integrity.
 
 ## Requirements
 
@@ -58,7 +58,7 @@ For an existing local database:
 ..\tools\php\php-local.cmd artisan migrate --force
 ```
 
-The current schema has 36 tables. The full domain grouping and MariaDB fresh-install caveat are documented in [Database Design](../docs/DATABASE_DESIGN.md).
+The current disposable demo schema has 43 non-SQLite-internal tables, including Laravel infrastructure. The full domain grouping and MariaDB lifecycle requirements are documented in [Database](../docs/database.md).
 
 ## Start the API
 
@@ -88,10 +88,14 @@ The default API base is `http://127.0.0.1:8000/api`.
 - Receipt creation, detail, print view, history, voiding, and regeneration
 - Fee Record Summary and Category Monthly ledger APIs
 - Legacy dashboard and monthly invoice-generation endpoints retained from the initial scaffold
+- Academic years, subjects, class enrolment history, teaching assignments, and foundation account/portal-link management
+- Parent and Student self-service identity/finance/attendance reads
+- User-scoped portal notifications
+- Teacher assignment-scoped daily Attendance marking and correction audit
 
 ## API Inventory
 
-The application currently exposes 35 non-vendor API routes. Generate the authoritative list with:
+The application currently exposes 74 non-vendor API routes. Generate the authoritative list with:
 
 ```powershell
 ..\tools\php\php-local.cmd artisan route:list --path=api --except-vendor
@@ -108,6 +112,9 @@ Main route groups:
 | Fee Record | preview, activate, manual charge, outstanding, summary, and category monthly |
 | Payments | student history/create, verify, and void |
 | Receipts | student history, create from payment, show, print, and void |
+| Academic foundation | academic years, subjects, enrolments, teaching assignments, staff/foundation accounts, and portal links |
+| Portal self-service | Parent/Student identity, finance/attendance reads, and notifications |
+| Teacher scope | assigned classes/students and daily Attendance read/write |
 
 See [System Architecture](../docs/SYSTEM_ARCHITECTURE.md) for the complete endpoint table and finance data flow. See [Maintenance Guide](../docs/MAINTENANCE_GUIDE.md) for where route, validation, controller, service, model, and frontend request responsibilities belong.
 
@@ -138,11 +145,13 @@ See [System Architecture](../docs/SYSTEM_ARCHITECTURE.md) for the complete endpo
 
 `phpunit.xml` forces SQLite `:memory:` so the automated suite does not modify the active local development/demo database.
 
-Last verified on 2026-07-22:
+Last verified on merged `master` on 2026-08-13:
 
 ```text
-116 tests
-721 assertions
+255 tests discovered
+247 passed
+8 opt-in MariaDB tests skipped
+1,314 assertions
 ```
 
 ## Deferred Backend Scope
@@ -150,6 +159,7 @@ Last verified on 2026-07-22:
 - Statements and reminders
 - General reports and exports
 - PDF generation
-- Parent Portal
+- Community Feed persistence/media, Assessment publication, and Quiz APIs
+- Production-ready Parent Finance and guardian activation workflow
 - Remaining production dashboard/invoice reporting beyond the implemented Fee Record outstanding total
 - Deployment and hosting automation
