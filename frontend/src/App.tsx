@@ -4834,12 +4834,12 @@ function App() {
     )
   }
 
-  const adminRoles = ['super-admin', 'school-admin', 'finance', 'ceo', 'teacher']
+  const adminRoles = ['super-admin', 'school-admin', 'finance', 'ceo']
   if (!user.roles.some((role) => adminRoles.includes(role))) {
     return (
       <main className="admin-access-unavailable">
         <h1>Admin access unavailable</h1>
-        <p>This account belongs to the Parent/Student App and cannot enter the Admin Panel.</p>
+        <p>This account belongs to the Community App and cannot enter the Admin Panel.</p>
         <button type="button" className="primary-button" onClick={() => void handleLogout()}>Logout</button>
       </main>
     )

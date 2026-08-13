@@ -68,7 +68,7 @@ export function CommunityFeed({ role, userName, onOpenFinance, onCreatePost }: C
 
       {role === 'parent' && (
         <button type="button" className="attention-strip context-card" onClick={onOpenFinance}>
-          <span className="attention-icon">RM</span><span><strong>RM 1,240 outstanding</strong><small>Alyssa Tan · account updated today</small></span><b>View</b>
+          <span className="attention-icon">RM</span><span><strong>View school account</strong><small>Open reviewed, read-only finance records for your linked children</small></span><b>View</b>
         </button>
       )}
       {(role === 'teacher' || role === 'staff') && (

@@ -4,6 +4,7 @@ import { MobileShell } from './MobileShell'
 import { ParentPortalView } from './ParentPortalView'
 import { StudentPortalView } from './StudentPortalView'
 import { TeacherPortalView } from './TeacherPortalView'
+import { portalApi } from '../api/portalApi'
 
 // Mock the portalApi so components don't make real HTTP calls in tests
 vi.mock('../api/portalApi', () => ({
@@ -17,6 +18,7 @@ vi.mock('../api/portalApi', () => ({
           full_name: 'Alyssa Tan',
           status: 'active',
           class: { id: 1, name: 'Grade MB1' },
+          academic_year: { id: 1, code: '2026', name: '2026 Academic Year' },
           can_view_finance: true,
           can_view_academics: true,
         },
@@ -42,6 +44,8 @@ vi.mock('../api/portalApi', () => ({
     getNotifications: vi.fn().mockResolvedValue({ data: [], meta: { unread_count: 0 } }),
     markNotificationRead: vi.fn(),
     markAllNotificationsRead: vi.fn(),
+    getTeacherAssignments: vi.fn().mockResolvedValue({ data: [] }),
+    getTeacherStudents: vi.fn().mockResolvedValue({ data: [] }),
   },
 }))
 
@@ -152,5 +156,38 @@ describe('MobileShell & Portal Views', () => {
     render(<TeacherPortalView teacherName="Teacher Lim" activeTab="more" onTabChange={() => {}} onLogout={teacherLogout} />)
     fireEvent.click(screen.getByRole('button', { name: 'Sign out' }))
     expect(teacherLogout).toHaveBeenCalledTimes(1)
+  })
+
+  it('labels Quiz and Schedule as previews and does not expose fake actions', async () => {
+    const quiz = render(<StudentPortalView studentName="Alyssa Tan" activeTab="quiz" onLogout={() => {}} />)
+    expect(await screen.findByText(/Quiz delivery is not connected/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Quiz coming later/ })).toBeDisabled()
+    quiz.unmount()
+
+    render(<StudentPortalView studentName="Alyssa Tan" activeTab="schedule" onLogout={() => {}} />)
+    expect(await screen.findByText(/Schedule data is not connected/)).toBeInTheDocument()
+  })
+
+  it('loads Teacher classes from the scoped teaching assignment APIs', async () => {
+    vi.mocked(portalApi.getTeacherAssignments).mockResolvedValueOnce({
+      data: [{
+        id: 7,
+        academic_year: { id: 1, code: '2026' },
+        class: { id: 2, name: 'MB1' },
+        subject: { id: 3, code: 'ENG', name: 'English' },
+      }],
+    })
+    vi.mocked(portalApi.getTeacherStudents).mockResolvedValueOnce({
+      data: [
+        { id: 11, student_no: 'MIS-001', full_name: 'Alyssa Tan' },
+        { id: 12, student_no: 'MIS-002', full_name: 'Daniel Lim' },
+      ],
+    })
+
+    render(<TeacherPortalView teacherName="Teacher Lim" activeTab="classes" onTabChange={() => {}} onLogout={() => {}} />)
+
+    expect(await screen.findByText('MB1 · English')).toBeInTheDocument()
+    expect(screen.getByText('2 enrolled students')).toBeInTheDocument()
+    expect(screen.getByText('2026')).toBeInTheDocument()
   })
 })

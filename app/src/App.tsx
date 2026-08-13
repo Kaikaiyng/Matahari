@@ -65,7 +65,7 @@ function App() {
   if (!user) return <PortalLogin onLogin={(loggedInUser) => { setUser(loggedInUser); setAuthState('authenticated') }} />
 
   if (!activeRole) {
-    return <main className="portal-state-screen"><img src="/logo.jpeg" alt="" /><h1>App access unavailable</h1><p>This account does not have a Parent or Student role.</p><button type="button" onClick={() => void logout()}>Sign out</button></main>
+    return <main className="portal-state-screen"><img src="/logo.jpeg" alt="" /><h1>App access unavailable</h1><p>This account does not have an approved Parent, Student, Teacher, or Staff App role.</p><button type="button" onClick={() => void logout()}>Sign out</button></main>
   }
 
   const environment = import.meta.env.VITE_APP_ENVIRONMENT === 'production' ? 'production' : 'staging'

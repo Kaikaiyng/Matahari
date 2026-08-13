@@ -32,11 +32,13 @@ class DemoPortalApiTest extends TestCase
         $this->assertTrue($studentUser->hasPermissionTo('student.self_service'));
         $this->assertTrue($teacher->hasPermissionTo('teaching_scope.view'));
 
-        $this->actingAs($parent)
+        $parentResponse = $this->actingAs($parent)
             ->getJson('/api/v1/portal/parent/me')
             ->assertOk()
             ->assertJsonCount(3, 'children')
             ->assertJsonPath('data.full_name', 'Rachel Wong');
+        $alyssa = collect($parentResponse->json('children'))->firstWhere('student_no', 'MIS-2026-001');
+        $this->assertSame('2026', data_get($alyssa, 'academic_year.code'));
 
         $this->actingAs($studentUser)
             ->getJson('/api/v1/portal/student/enrolments')

@@ -652,6 +652,22 @@ describe('demo shell', () => {
     expect(screen.queryByRole('navigation', { name: 'Main navigation' })).not.toBeInTheDocument()
   })
 
+  it('rejects a teacher-only account from the Admin Panel', async () => {
+    installApiUser({
+      ...currentUser,
+      name: 'Ms Lim',
+      username: 'teacher.lim',
+      roles: ['teacher'],
+      permissions: ['academic_years.view', 'subjects.view', 'teaching_scope.view'],
+    })
+
+    render(<App />)
+
+    expect(await screen.findByRole('heading', { name: 'Admin access unavailable' })).toBeInTheDocument()
+    expect(screen.getByText('This account belongs to the Community App and cannot enter the Admin Panel.')).toBeInTheDocument()
+    expect(screen.queryByRole('navigation', { name: 'Main navigation' })).not.toBeInTheDocument()
+  })
+
   it('opens Calendar with the active school context', async () => {
     const user = userEvent.setup()
     await renderAuthenticatedApp()
