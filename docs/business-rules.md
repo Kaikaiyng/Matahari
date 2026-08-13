@@ -54,7 +54,7 @@ Approved future rules:
 - Manual payment reminders are the V1 requirement. Laravel must recheck current outstanding data before resolving guardian recipients and creating notifications; automatic scheduling is later work.
 - Notification amount snapshots, if approved for display/audit, never become the financial source of truth.
 
-Community, Assessment, and Quiz database foundations preserve the approved school scope, audience/target shapes, result publication state, Quiz revisions, question options, materialized assignment recipients, and attempt history. Community now enforces scoped publishing, feed visibility, private media delivery, reactions/comments, removal/moderation history, and transactional audit. Assessment publication, formal Quiz delivery/scoring, Practice Quiz generation, payment reminders, push, and native packaging remain unimplemented backend behavior.
+Community, Assessment, and Quiz database foundations preserve the approved school scope, audience/target shapes, result publication state, Quiz revisions, question options, materialized assignment recipients, and attempt history. Community enforces scoped publishing, feed visibility, private media delivery, reactions/comments, removal/moderation history, and transactional audit. Assessment now enforces Teaching Assignment targets, draft-only editing, complete current-roster publication, published-only portal reads, and transactional audit; it does not infer grade formulas, weights, rankings, dates, or historical results. Formal Quiz delivery/scoring, Practice Quiz generation, payment reminders, push, and native packaging remain unimplemented.
 
 ## Fee Agreements
 

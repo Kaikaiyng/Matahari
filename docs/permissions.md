@@ -77,6 +77,9 @@ Foundation role management synchronizes only `teacher`, `parent`, and `student`;
 | Community publish | `community.publish` | Teacher: current assigned classes only; School/Super Admin: school, class, or direct-student audience |
 | Community interaction | `community.interact` | Only posts visible to the authenticated user; comments must be enabled |
 | Community moderation | `community.moderate` | School/Super Admin only; hiding requires a reason and preserves history |
+| Assessment management | `assessments.manage` | Teacher: current assigned class/year/subject combinations; School/Super Admin: same-school resources |
+| School-wide assessment management | `assessments.manage_school` | School/Super Admin bypass Teacher assignment scope but never school scope |
+| Published assessment result | `assessments.view_published` plus portal role permission | Parent requires active reviewed academic guardian capability; Student resolves self only |
 | Portal notifications | Authenticated portal user | Recipient user and school must both match |
 
 Client entry-point checkpoint:
@@ -116,7 +119,7 @@ Phase A policies are present for new foundation resources. Legacy modules retain
 
 Portal navigation must not treat `parent.self_service`, `student.self_service`, or `teaching_scope.view` as sufficient resource authorization by itself. Each API also validates the active guardian-child, student-self, or teaching-assignment relationship and same-school ownership. Notification reads and read-state updates are restricted to the authenticated recipient and school. Daily Attendance currently reuses `teaching_scope.view` plus an active same-school assignment for Teacher writes; Parent reads additionally require `can_view_academics = true`, and Student reads resolve only the linked self record. Production Parent Finance and notification administration still require their own approved permission design.
 
-Community now uses `community.view`, `community.publish`, `community.interact`, and `community.moderate`; Staff publishing does not imply school-wide academic access, and Teacher scope remains bounded by active Teaching Assignments. Attendance currently reuses its established scope permission. Assessment, Quiz attempt, and Practice Quiz permissions remain planned until their implementation migrations are added.
+Community uses `community.view`, `community.publish`, `community.interact`, and `community.moderate`; Staff publishing does not imply school-wide academic access, and Teacher scope remains bounded by active Teaching Assignments. Assessment uses `assessments.manage`, `assessments.manage_school`, and `assessments.view_published`. Attendance continues to reuse its established scope permission. Quiz attempt and Practice Quiz permissions remain planned until their implementation migrations are added.
 
 ## Legacy Endpoint Enforcement
 

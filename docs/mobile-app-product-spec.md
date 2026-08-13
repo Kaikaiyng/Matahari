@@ -75,7 +75,7 @@ Teachers may mark only students in classes covered by current teaching assignmen
 - Formal Quiz may link to an Assessment, but it does not automatically alter a term total without an approved school rule.
 - Migration must not infer historical terms, marks, weights, or publication status.
 
-**Current implementation:** additive tables exist for terms, assessments, multiple class targets, and per-student draft/published results. No dates or historical results were inferred, and no assessment API is connected yet.
+**Current implementation:** Academic Term management, Teaching Assignment-scoped Teacher assessment creation, draft result entry, complete-roster publication, and relationship/self-scoped published Parent/Student result views are connected. Publication and audit share one transaction, and published results cannot be silently rewritten. No dates, historical results, grade formulas, weights, or rankings are inferred. A broader desktop Admin assessment workspace and an approved correction/version workflow remain future work.
 
 ## Quiz
 

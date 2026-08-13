@@ -55,6 +55,12 @@ Merged delivery `816ea1d` redesigns the Admin staff login and all App role surfa
 - Community publishing and reading are connected to the shared Laravel API and database. School/Super Admin may publish school-wide; Teachers may publish only to classes covered by current Teaching Assignments; Parent and Student feeds resolve linked current enrolments.
 - Private photos, short videos, and PDFs are stored outside the public web root and downloaded only after the containing post audience is authorized. Appreciations, controlled comments, owner/author comment removal, Staff post hiding with reasons, and mutation audit events are implemented.
 - Direct-student authoring UI, event-post composition, reports, malware scanning, retention automation, and a complete desktop Admin moderation workspace remain incomplete production gates.
+
+## 2026-08-13 Assessment Workflow
+
+- School/Super Admin can manage Academic Terms without inferred dates. Teachers create assessments only for current class/year/subject Teaching Assignments, save draft scores, and explicitly publish only after every currently enrolled target student has a score.
+- Parent reads require the active reviewed guardian academic capability; Student reads resolve only the linked self record. Both surfaces expose only published results. No grade formula, weighting, ranking, or historical result is inferred.
+- Assessment create/result/publication mutations and audit events share transactions. Published results fail closed against silent rewriting; an approved correction/version workflow and a broader desktop Admin assessment UI remain future work.
 - Local SQLite verification: all 61 tables migrated from fresh; the three new migrations rolled back in reverse FK order; existing seeded school/student data remained; re-migration returned to 61 tables. The focused schema suite passed 3 tests/24 assertions, and the backend regression passed 250 tests with 8 existing MariaDB-only skips and 1,339 assertions before the non-SQLite inspection test was added.
 - GitHub [Full qualification run 31661265923](https://github.com/Kaikaiyng/Matahari/actions/runs/31661265923) passed on exact commit `f047c2d`: backend 250 passed/10 skipped/1,339 assertions, disposable MariaDB 11.4 full migrate/rollback/re-migrate, and 2 dedicated FK/index inspection tests with 59 assertions. Pint, 74 API routes, dependency audits, Admin 169 tests/build, App 16 tests/build, and 18 deployment tests passed. Admin lint retained the 9 known Fast Refresh warnings; App lint was clean.
 

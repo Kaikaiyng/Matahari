@@ -51,4 +51,9 @@ enum AuditAction: string
     case CommunityCommentCreated = 'community.comment_created';
     case CommunityCommentRemoved = 'community.comment_removed';
     case CommunityPostHidden = 'community.post_hidden';
+    case AssessmentCreated = 'assessment.created';
+    case AssessmentResultsSaved = 'assessment.results_saved';
+    case AssessmentPublished = 'assessment.published';
+    case AcademicTermCreated = 'academic_term.created';
+    case AcademicTermUpdated = 'academic_term.updated';
 }
