@@ -2,7 +2,7 @@
 
 **Status:** Repository foundation implemented; real staging, production, backup, and monitoring are not configured
 
-**Updated:** 2026-08-06
+**Updated:** 2026-08-13
 
 This document describes the deployment material currently stored in the repository. The approved target architecture remains in [Staging and Production Deployment Design](superpowers/specs/2026-08-06-staging-production-deployment-design.md).
 
@@ -13,6 +13,8 @@ This document describes the deployment material currently stored in the reposito
 | `backend/app/Http/Controllers/HealthController.php` | Database-aware, non-secret `GET /health` readiness response |
 | `backend/app/Http/Controllers/DeploymentInfoController.php` | Allowlisted runtime label from `DEPLOYMENT_MODE` through `GET /api/deployment-info` |
 | `frontend/src/components/DeploymentBanner.tsx` | Displays `STAGING` or `PRE-LAUNCH DEMO` without rebuilding the frontend |
+| `app/` | Independently built multi-role Community App served on its own domain |
+| `deploy/docker/nginx/mobile-app.conf` | Serves `app/dist` and proxies that domain's `/api` to the shared Laravel service |
 | `deploy/scripts/create-release.mjs` | Creates an allowlisted release tree and per-file SHA-256 manifest |
 | `deploy/scripts/package-release.sh` | Creates and verifies the single ZIP and its SHA-256 file on Linux CI |
 | `deploy/docker/` | Pinned PHP-FPM runtime and internal application Nginx configuration |
@@ -34,7 +36,7 @@ The database service has no host port. It creates these fixed boundaries from pr
 
 Migration identities receive schema privileges only for their own database. Runtime identities receive no privileges during first initialization. After migrations, `apply-runtime-grants.sh` enumerates the actual tables and grants normal CRUD per table, except `audit_logs`, which receives only `SELECT` and `INSERT`.
 
-Staging and production run with different Compose project names, release roots, Laravel `.env` files, storage/cache volumes, ports, database credentials, `APP_KEY`, session settings, and `DEPLOYMENT_MODE`. Each environment exposes separate loopback-only Admin and Parent/Student App ports. The edge proxy must route two HTTPS hostnames to those ports; both internal Nginx services proxy `/api` to the same Laravel service and database.
+Staging and production run with different Compose project names, release roots, Laravel `.env` files, storage/cache volumes, ports, database credentials, `APP_KEY`, session settings, and `DEPLOYMENT_MODE`. Each environment exposes separate loopback-only Admin and Community App ports. The edge proxy must route two HTTPS hostnames to those ports; both internal Nginx services proxy `/api` to the same Laravel service and database.
 
 ## Runtime Deployment Label
 
@@ -51,7 +53,7 @@ Laravel maps the mode to an allowlisted label and never returns environment valu
 
 ## Release Artifact
 
-`deploy/release-files.txt` is the only source allowlist. The release contains Laravel runtime code, migration files, production `backend/vendor`, built Admin `frontend/dist`, and built Parent/Student `app/dist`. It excludes environment files, SQLite data, source dependency directories, test results, credentials, key files, and local tooling state.
+`deploy/release-files.txt` is the only source allowlist. The release contains Laravel runtime code, migration files, production `backend/vendor`, built Admin `frontend/dist`, and built Community App `app/dist`. It excludes environment files, SQLite data, source dependency directories, test results, credentials, key files, and local tooling state.
 
 `release-manifest.json` records:
 
@@ -90,7 +92,7 @@ npm.cmd run lint
 npm.cmd run build
 ```
 
-Parent/Student App:
+Community App:
 
 ```powershell
 cd app
@@ -99,7 +101,7 @@ npm.cmd run lint
 npm.cmd run build
 ```
 
-The release staging tree can be rehearsed on Windows after `backend/vendor`, `frontend/dist`, and `app/dist` exist:
+The release staging tree can be rehearsed on Windows after `backend/vendor`, `frontend/dist`, and `app/dist` exist. Deployment contracts last passed 18 tests on 2026-08-13:
 
 ```powershell
 $releaseCommit = git rev-parse HEAD

@@ -2,7 +2,7 @@
 
 **Status:** Seeded role matrix and verified enforcement map
 
-**Repository baseline:** Phase A delivery branch through `a5f4fb4`
+**Repository baseline:** merged `master` at `816ea1d` (2026-08-13)
 
 ## Labels
 
@@ -65,6 +65,18 @@ Phase A permission defaults:
 Foundation role management synchronizes only `teacher`, `parent`, and `student`; it preserves existing roles such as Finance or School Admin.
 
 `foundation_accounts.manage` also permits creation of a same-school active account with one or more foundation roles. It does not permit assigning existing administrative/finance roles, changing school ownership, deactivating accounts, or resetting passwords.
+
+## Community App Current Access
+
+| Role/surface | Current backend permission | Additional resource scope |
+| --- | --- | --- |
+| Parent self-service | `parent.self_service` | Explicit same-school user link plus active reviewed guardian-child capability per child |
+| Student self-service | `student.self_service` | Explicit same-school student user link; self only; no Student Finance |
+| Teacher classes/Attendance | `teaching_scope.view` | Current same-school teaching assignment and current class enrolment |
+| Staff App preview | Existing administrative role/permissions | No new publishing or academic bypass; preview UI is not mutation authority |
+| Portal notifications | Authenticated portal user | Recipient user and school must both match |
+
+The current Attendance slice deliberately reuses `teaching_scope.view`; dedicated future Attendance/Community/Assessment/Quiz permissions must be introduced only with their backend modules and tests.
 
 ## CEO Intended Versus Implemented Access
 

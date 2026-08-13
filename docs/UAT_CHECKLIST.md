@@ -1,10 +1,10 @@
-# Finance MVP User Acceptance Checklist
+# MIS Admin and Community App User Acceptance Checklist
 
 Status: Current implemented-scope UAT
 
-Last updated: 2026-07-22
+Last updated: 2026-08-13
 
-The MVP passes this checklist when a school administrator can complete the implemented student-to-receipt flow accurately on desktop and iPad. This checklist does not claim acceptance for deferred modules.
+The current build passes this checklist when a school administrator can complete the implemented student-to-receipt flow accurately and the four Community App roles remain correctly scoped on phone-sized screens. This checklist does not claim acceptance for preview/deferred modules or production readiness.
 
 ## 1. Test Preparation
 
@@ -24,6 +24,7 @@ The MVP passes this checklist when a school administrator can complete the imple
 - [ ] School Admin and Finance see only permitted navigation/actions.
 - [ ] Direct API calls to protected actions return 401/403 when appropriate.
 - [ ] Permission rules are enforced by the backend, not only hidden by the frontend.
+- [ ] A multi-role user can switch App role without gaining out-of-scope records.
 
 ## 3. Responsive Navigation
 
@@ -36,6 +37,20 @@ The MVP passes this checklist when a school administrator can complete the imple
 - [ ] Focus states and touch targets are visible and usable.
 
 ## 4. Student Management
+
+Before Admin student-management checks, validate the separate Community App:
+
+- [ ] Parent, Student, Teacher, and Staff each receive the documented five-item navigation set.
+- [ ] The active destination shows icon and label; inactive destinations remain accessible by name.
+- [ ] Floating navigation respects the device safe area and never covers the final page action.
+- [ ] Visible controls are at least 44 by 44px and pages do not overflow at 360, 390, or 430px widths.
+- [ ] Sign out is available from More/Profile for every role.
+- [ ] Parent sees only explicitly linked children; Student sees only self; Teacher sees only currently assigned classes/students.
+- [ ] Cross-school portal links and academic identifiers are rejected by Laravel.
+- [ ] Teacher daily Attendance accepts `present`, `late`, `absent`, or `excused`; a correction requires a reason and audit record.
+- [ ] Parent/Student Attendance history reflects live scoped data.
+- [ ] Parent Finance is read-only and offers no payment control.
+- [ ] Feed publishing/media, Assessment, Schedule, and Quiz previews are not represented as persisted production features.
 
 - [ ] Student List loads, searches, and filters by status.
 - [ ] Student Name, Student ID, Class, Status, and Open remain visible on narrow screens.
@@ -187,9 +202,9 @@ At every size:
 - Statements and reminders
 - General reports and exports
 - PDF generation
-- Parent Portal
+- Production-ready Parent Finance and complete portal workflows beyond the implemented self-service/Attendance slice
 - Remaining production dashboard/invoice reporting beyond the implemented Fee Record outstanding total
-- Deployment, hosting, domain, and Cloudflare configuration
+- Verified production deployment, hosting, domains, edge TLS, monitoring, and backup/restore operations
 - Cross-school CEO reporting and full production multi-school operations
 
 ## 17. MVP Pass Criteria

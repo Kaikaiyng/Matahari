@@ -2,7 +2,7 @@
 
 **Status:** Current schema reference
 
-**Repository baseline:** Phase A delivery branch through `a5f4fb4`
+**Repository baseline:** merged `master` at `816ea1d` (2026-08-13)
 
 ## Engines and Configuration
 
@@ -17,7 +17,7 @@ The schema has no currency column and amount-to-words currently assumes Ringgit.
 
 ## Schema Inventory
 
-The migrated schema contains 40 tables.
+The migrated disposable demo schema contains 43 non-SQLite-internal tables.
 
 | Area | Tables |
 | --- | --- |
@@ -30,6 +30,7 @@ The migrated schema contains 40 tables.
 | Payments and receipts | `payments`, `payment_allocations`, `receipt_sequences`, `receipts`, `receipt_items` |
 | School operations | `calendar_events` |
 | Academic foundation | `academic_years`, `class_enrolments`, `subjects`, `teaching_assignments` |
+| Portal and Attendance | `portal_notifications`, `attendance_sessions`, `attendance_records` |
 
 ## Main Relationships
 
@@ -52,6 +53,13 @@ erDiagram
     PAYMENTS ||--o{ RECEIPTS : history
     RECEIPTS ||--o{ RECEIPT_ITEMS : snapshots
     SCHOOLS ||--o{ CALENDAR_EVENTS : schedules
+    STUDENTS ||--o{ CLASS_ENROLMENTS : history
+    CLASSES ||--o{ CLASS_ENROLMENTS : receives
+    USERS ||--o{ TEACHING_ASSIGNMENTS : teaches
+    CLASSES ||--o{ ATTENDANCE_SESSIONS : records
+    ATTENDANCE_SESSIONS ||--o{ ATTENDANCE_RECORDS : contains
+    STUDENTS ||--o{ ATTENDANCE_RECORDS : receives
+    USERS ||--o{ PORTAL_NOTIFICATIONS : receives
 ```
 
 The diagram omits secondary actor, fee-item, legacy invoice, permission, and audit references for readability. Migrations remain authoritative.
@@ -91,7 +99,7 @@ Important lookup indexes cover student status/class/level, agreement current loo
 
 Phase A adds nullable unique `parents.user_id` and `students.user_id` references without backfill. Guardian access/history fields are nullable for existing unreviewed links. The current enrolment unique key is `(school_id, academic_year_id, student_id, current_slot)`; historical rows use `NULL`. Teaching assignments use the equivalent nullable-current-slot pattern across school/year/class/subject/teacher.
 
-## Future Mobile Data Boundary
+## Community App Data Boundary
 
 The approved mobile product does not introduce a second database or duplicate parent, student, identity, finance, payment, or receipt tables. Future mobile APIs reuse the existing MariaDB records and domain services.
 

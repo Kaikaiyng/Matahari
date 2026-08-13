@@ -1,6 +1,6 @@
 # Matahari International School Administration System
 
-This repository is the Matahari International School (MIS) administration and finance system under incremental development. It contains an Admin/Finance web MVP, the Phase A academic/identity foundation, and an independent mobile-first Parent/Student web application. Both clients use the same Laravel API and authoritative database, but have separate workspaces, builds, and domain boundaries. It is not yet a complete academic ERP or native store release.
+This repository is the Matahari International School (MIS) administration and finance system under incremental development. It contains an Admin/Finance web MVP, the Phase A academic/identity foundation, and an independent mobile-first Community App for Parent, Student, Teacher, and authorized Staff roles. Both clients use the same Laravel API and authoritative database, but have separate workspaces, builds, deployments, and domain boundaries. It is not yet a complete academic ERP or native store release.
 
 MIS branding is now the approved runtime and disposable-demo identity. Branding changes do not authorize rewriting an existing tenant, student number, invoice number, receipt number, or other historical record.
 
@@ -15,15 +15,16 @@ Implemented workflows include:
 - Payment allocation, verification, void safeguards, receipt generation, browser printing, and receipt void/regeneration.
 - Shared school calendar CRUD.
 - Phase A academic foundation APIs for academic years, class enrolments, subjects, teaching assignments, and reviewed portal identity links.
-- Independent `app/` Parent/Student web views, self-service identity endpoints, personal in-app notifications, and MIS demo personas. These remain development previews, not completed product phases.
+- Independent `app/` Community App views for Parent, Student, Teacher, and authorized Staff roles, with role-aware liquid-glass navigation, self-service identity endpoints, personal in-app notifications, read-only parent finance, and MIS demo personas.
+- Daily class Attendance: assignment-scoped Teacher roster marking, Parent/Student history reads, correction reasons, and transactional audit logging.
 - Permission-filtered navigation and a Super Admin-only, read-only Audit Trail with filters and event detail.
 - Responsive desktop, tablet, and mobile administration UI.
 - CSRF-protected session mutations, login throttling, active-session rechecks, request IDs, and transactional audit events for implemented critical workflows.
 
 Important boundaries:
 
-- `frontend/` is Admin-only. `app/` is the separate Parent/Student product surface. Some App academic cards and timetable/attendance content are explicitly labelled demo data.
-- Parent finance is read-only in this preview and its payment notice interaction deliberately persists nothing. Payment reminders, Quiz, native authentication, Firebase, Capacitor, and app-store packaging remain unimplemented. See [Mobile Product Architecture and Roadmap](docs/mobile-product-roadmap.md).
+- `frontend/` is Admin-only. `app/` is the separate multi-role Community App surface. Attendance uses live scoped APIs; Community publishing/media, Assessment results, formal Quiz, Practice Quiz generation, and Schedule remain clearly labelled previews.
+- Parent finance is read-only and has no payment interface. Payment reminders, native authentication, Firebase, Capacitor, and app-store packaging remain unimplemented. See [Mobile Product Architecture and Roadmap](docs/mobile-product-roadmap.md).
 
 - Payments and receipts are implemented inside Student Detail; unimplemented top-level placeholder navigation has been removed.
 - The parent directory and fee catalogue top-level pages remain display-only; parent mutations, fee catalogue management, reports, exports, settings, user management, password reset, and production deployment are incomplete or not implemented.
@@ -42,14 +43,14 @@ Important boundaries:
 | Backend tests | PHPUnit `12.5.30` |
 | Frontend tests/lint | Vitest, Testing Library, Oxlint |
 
-The repository does not use Laravel 10. Admin is under `frontend/`, Parent/Student App is under `app/`, and the npm manifest under `backend/` is Laravel scaffold tooling.
+The repository does not use Laravel 10. Admin is under `frontend/`, the multi-role Community App is under `app/`, and the npm manifest under `backend/` is Laravel scaffold tooling.
 
 ## Repository Structure
 
 ```text
 backend/             Laravel API, domain services, schema, seeders, tests
-frontend/            React application, components, feature models, tests
-app/                 Independent Parent/Student mobile-first React application
+frontend/            Admin-only React application, components, feature models, tests
+app/                 Independent multi-role mobile-first React Community App
 docs/                Current documentation and historical delivery records
 tools/php/           Windows PHP launchers and local SQLite demo helpers
 tools/public-demo/   Temporary Cloudflare Quick Tunnel demo tooling
@@ -76,6 +77,8 @@ $env:PHPRC = (Resolve-Path ..\tools\php).Path
 composer install
 Remove-Item Env:PHPRC
 cd ..\frontend
+npm.cmd ci
+cd ..\app
 npm.cmd ci
 cd ..
 ```
@@ -105,7 +108,7 @@ cd frontend
 npm.cmd run dev
 ```
 
-Start the Parent/Student App in a third terminal:
+Start the Community App in a third terminal:
 
 ```powershell
 cd app
@@ -161,7 +164,7 @@ npm.cmd run lint
 npm.cmd run build
 ```
 
-Parent/Student App uses the same three commands from `app/`.
+The Community App uses the same three commands from `app/`.
 
 `npm.cmd run build` runs `tsc -b` before the Vite production build. No PHP static-analysis command is currently configured. GitHub Actions now defines quick checks, one immutable ZIP build, full application validation, dependency audits, and a disposable MariaDB migration lifecycle; its current execution result must still be checked in GitHub. See [Testing and Release](docs/testing-and-release.md) and [Deployment Foundation](docs/deployment-foundation.md).
 
@@ -206,5 +209,5 @@ Parent/Student App uses the same three commands from `app/`.
 - The default automated backend suite uses SQLite and cannot prove MariaDB JSON, index, locking, foreign-key, or rollback behavior.
 - No stable hosting or production environment exists. CI and portable Docker/Compose source are included, but real container startup, remote deployment, monitoring, and backup/restore remain unverified.
 - User administration and password reset are not implemented.
-- General reports, exports, statements, reminders, production-ready Parent Finance/mobile self-service, PDF generation, and complete academic ERP modules are not implemented. The current portal is an experimental preview only.
+- General reports, exports, statements, reminders, production-ready Parent Finance, Community persistence/media, Assessment publishing, formal/Practice Quiz backends, PDF generation, and complete academic ERP modules are not implemented. The current App combines a live attendance/self-service slice with clearly labelled preview surfaces.
 - Operational readiness remains incomplete: production hosting, remote release operations, monitoring, runtime grant execution, backups, restore drills, and approved discount/correction policies are not verified. See [Current Status](docs/current-status.md).

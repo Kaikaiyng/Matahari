@@ -2,13 +2,13 @@
 
 Status: Current local-development guide
 
-Last verified for the current Admin and Parent/Student web stacks: 2026-08-12
+Last verified for the current Admin and Community App web stacks: 2026-08-13
 
-The repository now has separate `frontend/` (Admin) and `app/` (Parent/Student) web workspaces. There is still no native toolchain: do not install Capacitor, Firebase, Sanctum, Android, or iOS dependencies from this guide. See [Mobile Product Architecture and Roadmap](mobile-product-roadmap.md).
+The repository has separate `frontend/` (Admin) and `app/` (Parent/Student/Teacher/Staff Community App) web workspaces. There is still no native toolchain: do not install Capacitor, Firebase, Sanctum, Android, or iOS dependencies from this guide. See [Mobile Product Architecture and Roadmap](mobile-product-roadmap.md).
 
 ## 1. Local Stack
 
-- Admin and Parent/Student App: separate React 19, TypeScript 6, Vite 8, Node.js, and `npm.cmd` workspaces
+- Admin and Community App: separate React 19, TypeScript 6, Vite 8, Node.js, and `npm.cmd` workspaces
 - Backend: Laravel 13 on PHP 8.4
 - Local database: SQLite for the repeatable demo; MariaDB remains available for development environments
 - Test database: SQLite `:memory:` through `backend/phpunit.xml`
@@ -56,7 +56,7 @@ npm.cmd run lint
 npm.cmd run build
 ```
 
-## 3. Parent/Student App Setup
+## 3. Community App Setup
 
 In a second terminal:
 
@@ -210,14 +210,14 @@ Use `npm.cmd` rather than `npm`.
 
 ## 11. Verified Baseline
 
-As of 2026-07-22:
+As of merged `master` on 2026-08-13:
 
-- Frontend tests: 75 passed across 7 files
-- Frontend lint: zero errors and zero warnings
-- Frontend build: passed
-- Backend: 116 tests and 721 assertions
-- API inventory: 35 non-vendor routes
-- Active demo schema: 36 tables
+- Admin tests: 169 passed across 15 files; build passed; lint exited 0 with 9 known Fast Refresh organization warnings
+- Community App tests: 16 passed across 3 files; lint and build passed
+- Backend: 255 tests discovered, 247 passed, 8 opt-in MariaDB tests skipped, and 1,314 assertions
+- API inventory: 74 non-vendor routes
+- Disposable demo schema: 43 non-SQLite-internal tables
+- Deployment contract tests: 18 passed
 
 ## Audit MariaDB Integration Test
 

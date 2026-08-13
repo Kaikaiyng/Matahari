@@ -2,7 +2,7 @@
 
 Status: Current contributor reference
 
-Last verified: 2026-07-22
+Last verified: 2026-08-13
 
 This guide identifies where behavior lives, what must change together, and which checks provide evidence before a change is published.
 
@@ -25,6 +25,8 @@ Do not implement a `TBD` business rule without stakeholder approval. Record the 
 | React application shell and most finance screens | `frontend/src/App.tsx`, `frontend/src/App.css` |
 | Focused frontend pages | `frontend/src/components/CalendarPage.tsx`, `ClassesPage.tsx`, `AdminShell.tsx`, `AdminUi.tsx` and matching CSS/tests |
 | Frontend HTTP transport | `frontend/src/api.ts` |
+| Community App shell and role views | `app/src/App.tsx`, `app/src/components/MobileShell.tsx`, `CommunityFeed.tsx`, and role portal views |
+| Community App HTTP transport | `app/src/api.ts`, `app/src/api/portalApi.ts` |
 | API route registry | `backend/routes/api.php` |
 | API controllers | `backend/app/Http/Controllers/Api/` |
 | Input validation | `backend/app/Http/Requests/` |
@@ -78,6 +80,9 @@ cd backend
 | Fee Record calculations | Billing services, Dashboard if it consumes the summary, Student/Fee Record screens, summary/category tests |
 | Payment or receipt states | Billing services, controllers/requests, Student Detail actions, void guards, receipt/payment tests, workflow docs |
 | Calendar behavior | Calendar migration/model/controller/requests, seeder permissions, `CalendarPage`, API/frontend tests |
+| Academic foundation or portal links | Additive migration, Phase A models/policies/access services, `/api/v1` permission, cross-school tests, and canonical schema/permission docs |
+| Attendance behavior | Attendance migration/models/service/controller, teaching assignment and guardian/student scope, transactional audit, App role view, and backend/App tests |
+| Community App navigation or visual system | `app/src/components/MobileShell*`, role views, `DESIGN.md`, App tests/build, and 360/390/430px viewport checks |
 | Public-demo ports, proxy, tunnel, or binary | `PublicDemo.psm1`, thin start/stop scripts, launcher contract tests, `PUBLIC_DEMO.md` |
 | Environment variable | `.env.example` where appropriate, Vite/Laravel config, setup docs; never commit a populated `.env` |
 

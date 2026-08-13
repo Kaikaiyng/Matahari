@@ -2,7 +2,7 @@
 
 **Status:** Verified current behavior plus confirmed intended policy
 
-**Repository baseline:** Phase A delivery branch through `a5f4fb4`
+**Repository baseline:** merged `master` at `816ea1d` (2026-08-13)
 
 This document separates policy from implementation. A confirmed intended rule is not described as enforced unless the backend or schema proves it.
 
@@ -37,17 +37,23 @@ Current enforcement:
 - Existing guardian relationships upgrade as `unreviewed`; finance/academic access flags and current-slot values remain `NULL` until an authorized operator links a reviewed parent user and explicitly activates access.
 - Student self-service is academic-only in this phase. Student finance access is not granted.
 
-Future mobile/self-service policy:
+Implemented Community App/self-service rules:
 
 - Admin Web and mobile surfaces must use the same user, parent, student, school, academic, and finance records.
 - A reviewed guardian may have multiple children, and a student may have multiple guardians. Access is evaluated per active relationship and capability flag.
-- A guardian with future finance access sees the student's account payment history, not only payments physically made by that guardian.
+- A guardian with active finance access sees the student's account payment history, not only payments physically made by that guardian.
 - Parent outstanding amounts must come from the existing Fee Record and payment-allocation domain logic. A mobile balance ledger or client-side authoritative calculation is forbidden.
 - Parent receipt access must reuse the existing authoritative receipt resource/output; mobile must not create a second receipt definition.
+- Parent Finance is read-only and exposes no payment interface.
+- Teacher daily Attendance is limited to a current same-school teaching assignment and enrolled roster. Parent reads require the reviewed academic capability; Student reads resolve only the linked self record.
+- Attendance values are `present`, `late`, `absent`, and `excused`. Corrections require a reason, preserve original marker metadata, and write their audit event in the same transaction.
+
+Approved future rules:
+
 - Manual payment reminders are the V1 requirement. Laravel must recheck current outstanding data before resolving guardian recipients and creating notifications; automatic scheduling is later work.
 - Notification amount snapshots, if approved for display/audit, never become the financial source of truth.
 
-These future rules are approved product constraints but are not implemented Parent Finance or notification behavior.
+Community publishing/media, Assessments/results, formal Quiz, Practice Quiz generation, payment reminders, push, and native packaging remain approved or planned constraints rather than implemented backend behavior.
 
 ## Fee Agreements
 

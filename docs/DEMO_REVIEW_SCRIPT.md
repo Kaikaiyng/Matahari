@@ -2,7 +2,7 @@
 
 Status: Current demo sequence
 
-Last updated: 2026-08-04
+Last updated: 2026-08-13
 
 ## 1. Demo Goal
 
@@ -20,7 +20,9 @@ Login
   -> Review Fee Record summaries
 ```
 
-Do not present the system as a finished school ERP. Reports, Export, PDF generation, Parent Portal, Statements, Reminders, and production deployment are not part of this demo.
+Do not present the system as a finished school ERP. Reports, Export, PDF generation, production-ready Parent Finance, Statements, Reminders, Community publishing persistence, Assessments, Quiz, native packaging, and production deployment are not part of this demo.
+
+The separate Community App may also be demonstrated at `http://127.0.0.1:5174` with seeded Parent, Student, Teacher, and Staff personas. Its daily Attendance path is connected to Laravel; Feed publishing, Schedule, Assessment, and Quiz surfaces remain labelled previews.
 
 ## 2. Devices
 
@@ -67,6 +69,15 @@ Expected:
 - Permission-restricted actions are absent or disabled
 
 ## 5. Student List and Detail
+
+Before returning to the Admin finance flow, optionally demonstrate the Community App:
+
+1. Sign in with a seeded persona and confirm the role-specific liquid-glass bottom navigation.
+2. Check Parent Children/Academics/Finance, Student Learn/Quiz/Schedule, Teacher Classes/Create/Attendance, and Staff Review/More boundaries.
+3. For Teacher Attendance, use only an assigned class; corrections require a reason.
+4. Confirm Parent/Student Attendance reads only the linked child/self record.
+5. Confirm Sign out is in More/Profile.
+6. State clearly that Feed publishing/media, Assessment results, Schedule, formal Quiz, and Practice generation are previews.
 
 1. Search or filter the Student List and switch the fee period between all-year and a month.
 2. Confirm Student Name, Student ID, Class, Status, and Open remain visible on narrow screens.

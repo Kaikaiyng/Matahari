@@ -1,5 +1,9 @@
 # Audit Log Operations
 
+**Reviewed:** 2026-08-13
+
+The same append-only and least-privilege rules apply to Admin, Phase A foundation, and daily Attendance audit events. Attendance writes/corrections and their audit rows are committed in one transaction; a failed audit insert must roll back the mutation.
+
 ## Security Boundary
 
 Matahari treats `audit_logs` as append-only for the application runtime. Laravel model guards prevent ordinary instance updates and deletes, but they do not stop bulk queries, raw SQL, migration credentials, or database administrators.

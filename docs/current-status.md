@@ -6,11 +6,11 @@
 
 **Default branch:** `master`
 
-**Current delivery branch:** `feature/split-admin-mobile-app` (release source branch)
+**Current merged delivery:** `816ea1dd17812b22852f413465f9f7c3ec64e8fb` (`Merge split admin and modern mobile app`)
 
 **Overall status:** MIS-branded administration-finance demo MVP with Phase A foundations, separately built Admin and multi-role Community App clients, and a first scoped daily-attendance slice; native/store delivery, production operations, and several product modules remain incomplete
 
-The Phase A commit above remains in the delivery history. The earlier white-label feature was delivered through [pull request #8](https://github.com/Kaikaiyng/Matahari/pull/8) and merged into `master` as `2f4c6bd199a7fae149658d3993aba370203746de` on 2026-08-04.
+The Phase A commit above remains in the delivery history and is now included in `master`. The earlier white-label feature was delivered through [pull request #8](https://github.com/Kaikaiyng/Matahari/pull/8) and merged into `master` as `2f4c6bd199a7fae149658d3993aba370203746de` on 2026-08-04.
 
 ## Runtime Demo Identity
 
@@ -29,7 +29,7 @@ The reset command never runs automatically and must not be adapted to a database
 
 ## 2026-08-12 Admin/App Split
 
-- Admin remains in `frontend/`; the independent mobile-first Parent/Student client is now in `app/`. Both use the same Laravel API/database while keeping separate builds, intended domains, and role gates.
+- Admin remains in `frontend/`; the independent mobile-first multi-role Community App is in `app/`. Both use the same Laravel API/database while keeping separate builds, intended domains, and role gates.
 - Admin Vitest: 15 files and 169 tests passed. Oxlint exited 0 with 9 existing Fast Refresh organization warnings; the production build passed with 83 modules transformed.
 - App Vitest: 3 files and 10 tests passed. Oxlint and the production build passed with 28 modules transformed.
 - Backend full regression: 250 tests discovered, 242 passed, 8 opt-in MariaDB tests skipped, and 1,292 assertions. Pint and 70-route API loading passed. The focused two-origin CORS contract passed with 5 assertions.
@@ -41,7 +41,7 @@ The reset command never runs automatically and must not be adapted to a database
 
 The App is approved as a private school-community product: a relationship-scoped Feed with Teacher/Staff publishing, reactions and controlled comments; daily Attendance on a general session schema; published Assessment results; formal Teacher-assigned Quiz plus separate Student Practice Quiz; and read-only Parent Finance without a payment interface.
 
-The current working slice redesigns the Admin staff login and all App role surfaces. Daily Attendance is connected end to end: assigned Teachers load current rosters, submit `present`, `late`, `absent`, or `excused`, and must provide a reason for corrections; authorized Parents and the linked Student can read the resulting record. Attendance writes and their audit events share one transaction. Community persistence/media, Assessment results, formal Quiz, Practice Quiz generation, and Schedule remain clearly labelled UI previews rather than implemented backend modules. See [MIS App Product Specification](mobile-app-product-spec.md) and the root [Design System](../DESIGN.md).
+Merged delivery `816ea1d` redesigns the Admin staff login and all App role surfaces. Daily Attendance is connected end to end: assigned Teachers load current rosters, submit `present`, `late`, `absent`, or `excused`, and must provide a reason for corrections; authorized Parents and the linked Student can read the resulting record. Attendance writes and their audit events share one transaction. Community persistence/media, Assessment results, formal Quiz, Practice Quiz generation, and Schedule remain clearly labelled UI previews rather than implemented backend modules. See [MIS App Product Specification](mobile-app-product-spec.md) and the root [Design System](../DESIGN.md).
 
 Later school-specific branding requires explicit approval and a controlled update to the presentation configuration and, if needed, a fresh disposable demo seed. It must not rename existing tenant data or rewrite financial history.
 
@@ -54,6 +54,13 @@ Later school-specific branding requires explicit approval and a controlled updat
 - The browser helper's packaged Windows server lacked its Playwright dependency; validation used a cached Playwright runner with installed Chrome and did not add a project dependency.
 - App validation passed with 3 files and 16 tests, clean Oxlint, and a TypeScript/Vite production build with 76 transformed modules. Existing Admin regression passed with 15 files and 169 tests, Oxlint exit 0 with the 9 known Fast Refresh organization warnings, and an 83-module production build.
 - Backend regression passed with 255 tests discovered, 247 passed, 8 opt-in MariaDB tests skipped, and 1,314 assertions. Pint passed and 74 API routes loaded. No backend schema changed in this visual-refinement branch, so a new MariaDB lifecycle was not run for this branch.
+
+## 2026-08-13 Project-wide Documentation Reconciliation
+
+- Root, Admin, App, Backend, canonical, operator, UAT, deployment, workflow, and historical-status documentation was reconciled against merged `master` at `816ea1d`.
+- Current references now consistently describe the separate Admin and multi-role Community App domains, shared Laravel/database boundary, implemented daily Attendance, 74-route/43-table inventory, and preview-versus-live module boundaries.
+- Historical plans, dated evidence, and the FigJam workflow snapshot remain preserved as history and are explicitly labelled so they are not mistaken for current completion claims.
+- Relative links across all tracked Markdown files, diff whitespace, and secret-bearing filename/content checks passed for the documentation change.
 
 ## Technology Snapshot
 
@@ -98,7 +105,7 @@ The confirmed earlier technology direction named Laravel 10, but this repository
 ## Known Incomplete Features
 
 - Existing guardian links remain `unreviewed` with nullable access flags, and no live parent/student user association or enrolment history is inferred. Portal activation and production backfill require a separately approved workflow.
-- An independent `app/` web workspace, user-scoped notifications, parent/student self endpoints, read-only guardian finance queries, and demo portal content now exist. Admin remains in `frontend/`; both clients share the backend/database but have independent local ports, builds, and intended domains. This is not completed production Parent Finance. Payment reminders, quiz, AI, Firebase, Capacitor, native authentication, and native packaging remain unimplemented.
+- An independent `app/` web workspace, user-scoped notifications, Parent/Student self endpoints, Teacher daily Attendance, read-only guardian finance queries, role-aware navigation, and preview Community content now exist. Admin remains in `frontend/`; both clients share the backend/database but have independent local ports, builds, and intended domains. This is not completed production Parent Finance. Payment reminders, Quiz persistence/scoring, AI, Firebase, Capacitor, native authentication, and native packaging remain unimplemented.
 
 - Parent CRUD, fee catalogue management, user/role management, password reset, and a global school selector.
 - Reports beyond Fee Record views, exports, statements, reminders, parent portal, and server-side PDF.
@@ -258,8 +265,8 @@ The repository must not be described as production-ready.
 
 ## Immediate Recommended Priorities
 
-1. Obtain explicit review before merging Phase A, then plan controlled academic-year, enrolment, and portal-link production-data gates without inferred backfill.
-2. Review and harden the independent Parent/Student App for real-device and school UAT, then separately approve native authentication and store packaging before adding any native dependency.
+1. Plan controlled academic-year, enrolment, portal-link, and guardian-access production-data gates without inferred backfill.
+2. Run real-device and school UAT for the independent Community App, then separately approve native authentication and store packaging before adding any native dependency.
 3. Confirm discount formulas/eligibility and the approved correction/reconciliation policy before enabling discounted or retroactive billing.
 4. Define refund, credit, overpayment, write-off, and audit-driven correction/recovery workflows.
 5. Run and stabilize CI on `master`, then verify remote staging/production operations, least-privilege database grants, monitoring, backups, and restore/reconciliation.

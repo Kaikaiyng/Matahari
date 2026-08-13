@@ -2,13 +2,13 @@
 
 Status: Current operator guide
 
-Last verified: 2026-07-22
+Last reviewed: 2026-08-13
 
 ## What it does
 
 The public-demo launcher creates a free temporary `https://...trycloudflare.com` address. The host PC must remain powered on and connected to the internet. The address normally changes after stopping and restarting.
 
-This is demo-only infrastructure. Share the URL and seeded demo login only with intended testers. Never place production or real student data in the demo SQLite database.
+This is demo-only infrastructure. Share the URL and seeded demo login only with intended testers. Never place production or real student data in the demo SQLite database. The current launcher exposes the Admin demo only; it does not publish the separate Community App on port `5174`.
 
 ## First use
 

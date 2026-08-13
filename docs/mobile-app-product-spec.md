@@ -2,7 +2,7 @@
 
 **Status:** Approved direction; visual foundation and daily Attendance slice implemented, remaining modules proceed in controlled slices
 
-**Approved:** 2026-08-12
+**Approved:** 2026-08-12; implementation status reviewed 2026-08-13
 
 ## Product Definition
 
@@ -99,9 +99,9 @@ An authorized guardian sees the account records of an explicitly linked child wh
 
 ## Delivery Slices
 
-1. Design system, compact App header, role-specific liquid-glass navigation, Feed presentation, calmer phone-first record pages, profile sign out, and Admin login restoration. **Implemented in the current working slice.**
+1. Design system, compact App header, role-specific liquid-glass navigation, Feed presentation, calmer phone-first record pages, profile sign out, and Admin login restoration. **Implemented and merged in `816ea1d`.**
 2. Community publishing/reactions/comments and moderation foundation.
-3. Daily Attendance schema, Teacher marking, Parent/Student history, and correction audit. **Implemented in the current working slice.**
+3. Daily Attendance schema, Teacher marking, Parent/Student history, and correction audit. **Implemented and merged in `816ea1d`.**
 4. Assessment entry/publication and Parent/Student result views.
 5. Formal Quiz and separate Practice Quiz.
 6. Production media pipeline, push, native authentication review, and store packaging.

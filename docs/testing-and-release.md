@@ -2,7 +2,7 @@
 
 **Status:** Repository command and release reference
 
-**Repository baseline:** MIS demo/portal review based on Phase A merge `a69d32b`
+**Repository baseline:** merged `master` at `816ea1d` (2026-08-13)
 
 Run commands from a clean feature branch/worktree. Record the exact command, exit code, counts, skipped cases, and limitations. Never convert a skipped or unavailable check into a pass.
 
@@ -78,16 +78,17 @@ npm.cmd run build
 - `build` runs `tsc -b` and then Vite production build, so it is also the configured TypeScript check.
 - No browser E2E command is configured.
 
-The commands above validate only the Admin UI. Run the same install/test/lint/build lifecycle separately from `app/` for the Parent/Student application. A future native packaging workspace must add its own platform validation before a store release can be called complete.
+The commands above validate only the Admin UI. Run the same install/test/lint/build lifecycle separately from `app/` for the multi-role Community App. A future native packaging workspace must add its own platform validation before a store release can be called complete.
 
 ## Future Mobile Validation Gates
 
 Mobile work requires evidence beyond narrow viewport checks of the current Admin UI:
 
-- Phase B: role-aware Parent/Student shell, loading/empty/error/offline behavior, session/CSRF preservation, direct API denial, accessibility, responsive browser QA, and staging topology.
+- Phase B: role-aware Parent/Student/Teacher/Staff shell, loading/empty/error behavior, session/CSRF preservation, direct API denial, accessibility, responsive browser QA, and staging topology.
 - Phase C: Admin-versus-Parent finance parity, guardian relationship/capability enforcement, cross-school/IDOR denial, and reuse of authoritative receipt output.
-- Phase D: authoritative balance recheck, recipient resolution, transactional audit/history, duplicate suppression, and durable notification behavior independent of push delivery.
-- Phase E: teacher assignment scope, class and direct-student targeting, recipient deduplication, server-side scoring, attempt concurrency, and historical enrolment behavior.
+- Attendance/Assessment slice: Teacher assignment scope, enrolment membership, correction reason/audit, draft-result denial, and Parent/Student relationship/self scope. Daily Attendance is implemented; Assessment publication remains planned.
+- Quiz slice: class and direct-student targeting, recipient deduplication, server-side scoring, attempt concurrency, and historical enrolment behavior.
+- Reminder/push slice: authoritative balance recheck, recipient resolution, transactional audit/history, duplicate suppression, and durable notification behavior independent of push delivery.
 - Phase F: native credential/token storage and revocation, device-token privacy, deep links, signed Android build, real-device push behavior, and platform-specific release checks.
 
 Do not claim Firebase, Capacitor, APK/iOS delivery, or native authentication passed until those dependencies exist and the relevant real-device checks have run.

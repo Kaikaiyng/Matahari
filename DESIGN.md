@@ -1,5 +1,7 @@
 # Design System — MIS App
 
+**Current visual baseline:** merged `master` at `816ea1d` (2026-08-13)
+
 ## Product Context
 
 - **What this is:** A private school-community and self-service App sharing the MIS Laravel API and database with the Admin Panel.

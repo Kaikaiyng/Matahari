@@ -2,14 +2,14 @@
 
 **Status:** Current implementation reference
 
-**Repository baseline:** Phase A delivery branch through `a5f4fb4`
+**Repository baseline:** merged `master` at `816ea1d` (2026-08-13)
 
 ## High-Level Architecture
 
 ```mermaid
 flowchart LR
-    Browser["Browser: React 19 + TypeScript"]
-    Mobile["Independent app/ Parent / Student web client"]
+    Browser["Admin browser: frontend/ React 19 + TypeScript"]
+    Mobile["Independent app/ multi-role Community client"]
     Vite["Vite dev server or Preview"]
     API["Laravel 13 JSON API"]
     DB["SQLite demo/tests or MariaDB direction"]
@@ -29,7 +29,7 @@ flowchart LR
     API -.->|"test sessions"| Memory
 ```
 
-The Admin frontend, Parent/Student App, and backend are separate applications. Laravel remains the shared security and persistence boundary; neither React client is authoritative for permissions or financial state. Both clients reuse the same API, database, identity/RBAC, and domain services rather than creating a second mobile backend.
+The Admin frontend, multi-role Community App, and backend are separate applications. Laravel remains the shared security and persistence boundary; neither React client is authoritative for permissions or financial state. Both clients reuse the same API, database, identity/RBAC, and domain services rather than creating a second mobile backend.
 
 ## Backend Structure
 
@@ -65,7 +65,7 @@ Legacy authorization remains primarily route middleware plus distributed scope c
 
 The application does not use React Router, Redux, React Query, or another global data layer. Page selection is component state, so there are no deep links or browser-history routes. Data fetching uses local state/effects and the shared API wrapper.
 
-`frontend/` and `app/` are independent React workspaces. Admin and Parent/Student App are built and deployed separately on different domains, while each domain reverse-proxies its own `/api` path to the same Laravel backend. This same-origin browser topology preserves the existing session-cookie and CSRF model. A native workspace and store packaging do not exist yet.
+`frontend/` and `app/` are independent React workspaces. Admin and the Community App are built and deployed separately on different domains, while each domain reverse-proxies its own `/api` path to the same Laravel backend. This same-origin browser topology preserves the existing session-cookie and CSRF model. A native workspace and store packaging do not exist yet.
 
 The approved App direction adds a Teacher/Staff mobile mode without turning `app/` into an administrative back door. Community publication is school/class-audience scoped; attendance and academic mutations remain teaching-assignment scoped; Parent/Student reads remain guardian-child or student-self scoped. Admin moderation and broad operational management remain in `frontend/`.
 
