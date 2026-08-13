@@ -8,7 +8,7 @@
 
 **Current merged delivery:** `ddd7e193179129be35f7a2b1c408eb809734f8d4` (`Merge project-wide documentation update`)
 
-**Overall status:** MIS-branded administration-finance demo MVP with Phase A foundations, separately built Admin and multi-role Community App clients, live daily Attendance, and storage-only Community/Assessment/Quiz foundations; native/store delivery, production operations, and the corresponding feature APIs remain incomplete
+**Overall status:** MIS-branded administration-finance demo MVP with Phase A foundations, separate Admin and multi-role App clients, live Community, daily Attendance, Assessment publication, Parent Finance reads, and class Schedule; formal Quiz, native/store delivery, and production operations remain incomplete
 
 The Phase A commit above remains in the delivery history and is now included in `master`. The earlier white-label feature was delivered through [pull request #8](https://github.com/Kaikaiyng/Matahari/pull/8) and merged into `master` as `2f4c6bd199a7fae149658d3993aba370203746de` on 2026-08-04.
 
@@ -61,6 +61,13 @@ Merged delivery `816ea1d` redesigns the Admin staff login and all App role surfa
 - School/Super Admin can manage Academic Terms without inferred dates. Teachers create assessments only for current class/year/subject Teaching Assignments, save draft scores, and explicitly publish only after every currently enrolled target student has a score.
 - Parent reads require the active reviewed guardian academic capability; Student reads resolve only the linked self record. Both surfaces expose only published results. No grade formula, weighting, ranking, or historical result is inferred.
 - Assessment create/result/publication mutations and audit events share transactions. Published results fail closed against silent rewriting; an approved correction/version workflow and a broader desktop Admin assessment UI remain future work.
+
+## 2026-08-13 Schedule Workflow
+
+- Additive recurring class Schedule storage is scoped to school, academic year, and class; optional subject/Teaching Assignment references must match that scope.
+- School Admin creates drafts and explicitly publishes them from the Admin Panel. Schedule mutations and audit events share transactions.
+- Students see published entries for their current enrolment and due dates from published Assessments. Guardians use an active reviewed link with academic access.
+- Existing internal Calendar records remain private to its existing permission boundary and are not automatically exposed to families.
 - Local SQLite verification: all 61 tables migrated from fresh; the three new migrations rolled back in reverse FK order; existing seeded school/student data remained; re-migration returned to 61 tables. The focused schema suite passed 3 tests/24 assertions, and the backend regression passed 250 tests with 8 existing MariaDB-only skips and 1,339 assertions before the non-SQLite inspection test was added.
 - GitHub [Full qualification run 31661265923](https://github.com/Kaikaiyng/Matahari/actions/runs/31661265923) passed on exact commit `f047c2d`: backend 250 passed/10 skipped/1,339 assertions, disposable MariaDB 11.4 full migrate/rollback/re-migrate, and 2 dedicated FK/index inspection tests with 59 assertions. Pint, 74 API routes, dependency audits, Admin 169 tests/build, App 16 tests/build, and 18 deployment tests passed. Admin lint retained the 9 known Fast Refresh warnings; App lint was clean.
 

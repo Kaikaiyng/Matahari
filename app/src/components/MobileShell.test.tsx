@@ -49,6 +49,8 @@ vi.mock('../api/portalApi', () => ({
     getStudentEnrolments: vi.fn().mockResolvedValue({ data: [] }),
     getStudentAttendance: vi.fn().mockResolvedValue({ data: [] }),
     getStudentAssessmentResults: vi.fn().mockResolvedValue({ data: [] }),
+    getStudentSchedule: vi.fn().mockResolvedValue({ data: { entries: [], due_dates: [] } }),
+    getChildSchedule: vi.fn().mockResolvedValue({ data: { entries: [], due_dates: [] } }),
     getNotifications: vi.fn().mockResolvedValue({ data: [], meta: { unread_count: 0 } }),
     markNotificationRead: vi.fn(),
     markAllNotificationsRead: vi.fn(),
@@ -168,14 +170,16 @@ describe('MobileShell & Portal Views', () => {
     expect(teacherLogout).toHaveBeenCalledTimes(1)
   })
 
-  it('labels Quiz and Schedule as previews and does not expose fake actions', async () => {
+  it('keeps Quiz as a preview while Schedule loads live records', async () => {
     const quiz = render(<StudentPortalView studentName="Alyssa Tan" activeTab="quiz" onLogout={() => {}} />)
     expect(await screen.findByText(/Quiz delivery is not connected/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Quiz coming later/ })).toBeDisabled()
     quiz.unmount()
 
+    vi.mocked(portalApi.getStudentSchedule).mockResolvedValueOnce({ data: { entries: [{ id: 1, title: 'English', day_of_week: new Date().getDay() || 7, starts_at: '08:00', ends_at: '09:00', location: 'Room 3', subject: 'English', teacher: 'Teacher Lim', effective_from: null, effective_to: null }], due_dates: [] } })
     render(<StudentPortalView studentName="Alyssa Tan" activeTab="schedule" onLogout={() => {}} />)
-    expect(await screen.findByText(/Schedule data is not connected/)).toBeInTheDocument()
+    expect(await screen.findByText('English')).toBeInTheDocument()
+    expect(screen.queryByText(/Schedule data is not connected/)).not.toBeInTheDocument()
   })
 
   it('loads Teacher classes from the scoped teaching assignment APIs', async () => {

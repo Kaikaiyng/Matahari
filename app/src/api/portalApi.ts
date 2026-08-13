@@ -166,6 +166,9 @@ export interface CommunityPost {
 }
 
 export interface PublishedAssessmentResult { id: number; assessment_id: number; title: string; assessment_type: string; subject: string; score: number; max_score: number; grade_label: string | null; teacher_comment: string | null; published_at: string | null }
+export interface ScheduleEntry { id: number; title: string; day_of_week: number; starts_at: string; ends_at: string; location: string | null; subject: string | null; teacher: string | null; effective_from: string | null; effective_to: string | null }
+export interface ScheduleDueDate { assessment_id: number; title: string; subject: string; due_at: string }
+export interface StudentSchedule { entries: ScheduleEntry[]; due_dates: ScheduleDueDate[] }
 export interface AssessmentItem {
   id: number; title: string; assessment_type: string; max_score: number; status: string; due_at: string | null; published_at: string | null
   academic_year: { id: number; code: string }; subject: { id: number; code: string; name: string }; classes: Array<{ id: number; name: string }>
@@ -201,11 +204,13 @@ export const portalApi = {
   getChildAttendance: (studentId: number) =>
     portalRequest<{ data: AttendanceRecord[] }>(`/parent/children/${studentId}/attendance`),
   getChildAssessmentResults: (studentId: number) => portalRequest<{ data: PublishedAssessmentResult[] }>(`/parent/children/${studentId}/assessment-results`),
+  getChildSchedule: (studentId: number) => portalRequest<{ data: StudentSchedule }>(`/parent/children/${studentId}/schedule`),
 
   getStudentMe: () => portalRequest<StudentMe>('/student/me'),
   getStudentEnrolments: () => portalRequest<{ data: StudentEnrolment[] }>('/student/enrolments'),
   getStudentAttendance: () => portalRequest<{ data: AttendanceRecord[] }>('/student/attendance'),
   getStudentAssessmentResults: () => portalRequest<{ data: PublishedAssessmentResult[] }>('/student/assessment-results'),
+  getStudentSchedule: () => portalRequest<{ data: StudentSchedule }>('/student/schedule'),
 
   getAssessments: () => apiRequest<{ data: AssessmentItem[] }>('/v1/assessments'),
   createAssessment: (assignment: TeacherAssignment, title: string, assessmentType: string, maxScore: number) => apiRequest<{ data: AssessmentItem }>('/v1/assessments', { method: 'POST', body: { academic_year_id: assignment.academic_year.id, subject_id: assignment.subject.id, class_ids: [assignment.class.id], title, assessment_type: assessmentType, max_score: maxScore } }),
