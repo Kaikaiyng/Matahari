@@ -34,6 +34,7 @@ vi.mock('../api/portalApi', () => ({
     getChildPayments: vi.fn().mockResolvedValue({ data: [] }),
     getChildReceipts: vi.fn().mockResolvedValue({ data: [] }),
     getChildAttendance: vi.fn().mockResolvedValue({ data: [] }),
+    getChildAssessmentResults: vi.fn().mockResolvedValue({ data: [] }),
     getStudentMe: vi.fn().mockResolvedValue({
       data: {
         id: 1,
@@ -47,11 +48,16 @@ vi.mock('../api/portalApi', () => ({
     }),
     getStudentEnrolments: vi.fn().mockResolvedValue({ data: [] }),
     getStudentAttendance: vi.fn().mockResolvedValue({ data: [] }),
+    getStudentAssessmentResults: vi.fn().mockResolvedValue({ data: [] }),
     getNotifications: vi.fn().mockResolvedValue({ data: [], meta: { unread_count: 0 } }),
     markNotificationRead: vi.fn(),
     markAllNotificationsRead: vi.fn(),
     getTeacherAssignments: vi.fn().mockResolvedValue({ data: [] }),
     getTeacherStudents: vi.fn().mockResolvedValue({ data: [] }),
+    getAssessments: vi.fn().mockResolvedValue({ data: [] }),
+    createAssessment: vi.fn(),
+    saveAssessmentResults: vi.fn(),
+    publishAssessment: vi.fn(),
   },
 }))
 
