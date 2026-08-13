@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\StudentFeeAgreementController;
 use App\Http\Controllers\Api\StudentStatusController;
 use App\Http\Controllers\Api\V1\AcademicYearController;
 use App\Http\Controllers\Api\V1\ClassEnrolmentController;
+use App\Http\Controllers\Api\V1\CommunityController;
 use App\Http\Controllers\Api\V1\FoundationAccountController;
 use App\Http\Controllers\Api\V1\ParentPortalController;
 use App\Http\Controllers\Api\V1\PortalLinkController;
@@ -133,6 +134,16 @@ Route::middleware([...$sessionMiddleware, 'auth', 'active'])->group(function ():
 });
 
 Route::prefix('v1')->middleware([...$sessionMiddleware, 'auth', 'active', 'school.context'])->group(function (): void {
+    Route::prefix('community')->middleware('permission:community.view')->group(function (): void {
+        Route::get('/posts', [CommunityController::class, 'index']);
+        Route::post('/posts', [CommunityController::class, 'store'])->middleware('permission:community.publish');
+        Route::post('/posts/{communityPost}/reaction', [CommunityController::class, 'reaction'])->middleware('permission:community.interact');
+        Route::post('/posts/{communityPost}/comments', [CommunityController::class, 'comment'])->middleware('permission:community.interact');
+        Route::get('/media/{communityPostMedia}', [CommunityController::class, 'media']);
+        Route::delete('/comments/{communityComment}', [CommunityController::class, 'removeComment'])->middleware('permission:community.interact');
+        Route::post('/posts/{communityPost}/hide', [CommunityController::class, 'hide'])->middleware('permission:community.moderate');
+    });
+
     Route::prefix('admin')->group(function (): void {
         Route::get('/academic-years', [AcademicYearController::class, 'index'])->middleware('permission:academic_years.view');
         Route::post('/academic-years', [AcademicYearController::class, 'store'])->middleware('permission:academic_years.manage');

@@ -19,4 +19,6 @@ enum AuditSubject: string
     case Guardian = 'guardian';
     case StudentParentLink = 'student_parent_link';
     case AttendanceSession = 'attendance_session';
+    case CommunityPost = 'community_post';
+    case CommunityComment = 'community_comment';
 }

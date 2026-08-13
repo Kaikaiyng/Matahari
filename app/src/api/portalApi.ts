@@ -150,9 +150,40 @@ export interface TeacherStudent {
   full_name: string
 }
 
+export interface CommunityComment { id: number; body: string; author: string; created_at: string | null; can_remove?: boolean }
+export interface CommunityPost {
+  id: number
+  body: string
+  comments_enabled: boolean
+  published_at: string | null
+  author: { id: number; name: string }
+  audiences: Array<{ type: 'school' | 'class' | 'student'; class_id: number | null; student_id: number | null }>
+  media: Array<{ id: number; type: string; name: string | null; url: string }>
+  reaction_count: number
+  reacted_by_me: boolean
+  comments: CommunityComment[]
+  can_moderate: boolean
+}
+
 // ─── API Calls ────────────────────────────────────────────────────────────────
 
 export const portalApi = {
+  getCommunityPosts: () => apiRequest<{ data: CommunityPost[] }>('/v1/community/posts'),
+  createCommunityPost: (body: string, commentsEnabled: boolean, audiences: Array<{ type: 'school' } | { type: 'class'; class_id: number }>, files: File[] = []) => {
+    const form = new FormData()
+    form.append('body', body)
+    form.append('comments_enabled', commentsEnabled ? '1' : '0')
+    audiences.forEach((audience, index) => {
+      form.append(`audiences[${index}][type]`, audience.type)
+      if (audience.type === 'class') form.append(`audiences[${index}][class_id]`, String(audience.class_id))
+    })
+    files.forEach((file) => form.append('media[]', file))
+    return apiRequest<{ data: CommunityPost }>('/v1/community/posts', { method: 'POST', body: form })
+  },
+  toggleCommunityReaction: (postId: number) => apiRequest<{ data: { post_id: number; reacted: boolean; reaction_count: number } }>(`/v1/community/posts/${postId}/reaction`, { method: 'POST' }),
+  addCommunityComment: (postId: number, body: string) => apiRequest<{ data: CommunityComment }>(`/v1/community/posts/${postId}/comments`, { method: 'POST', body: { body } }),
+  removeCommunityComment: (commentId: number) => apiRequest<{ success: boolean }>(`/v1/community/comments/${commentId}`, { method: 'DELETE' }),
+  hideCommunityPost: (postId: number, reason: string) => apiRequest<{ success: boolean }>(`/v1/community/posts/${postId}/hide`, { method: 'POST', body: { reason } }),
   getGuardianMe: () => portalRequest<GuardianMe>('/parent/me'),
   getChildOutstanding: (studentId: number, academicYear: string) =>
     portalRequest<{ data: OutstandingCharge[] }>(`/parent/children/${studentId}/outstanding?academic_year=${academicYear}`),

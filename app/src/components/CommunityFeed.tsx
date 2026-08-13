@@ -1,5 +1,6 @@
-import { useState } from 'react'
-import { CalendarDays, Heart, MessageCircle, MoreHorizontal, Play, ShieldCheck } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Heart, MessageCircle } from 'lucide-react'
+import { portalApi, type CommunityPost } from '../api/portalApi'
 
 type FeedRole = 'parent' | 'student' | 'teacher' | 'staff'
 
@@ -8,95 +9,61 @@ type CommunityFeedProps = {
   userName: string
   onOpenFinance?: () => void
   onCreatePost?: () => void
+  moderation?: boolean
 }
 
-const samplePosts = [
-  {
-    id: 1,
-    initials: 'LT',
-    author: 'Ms Lim',
-    meta: 'Mathematics · 42 minutes ago',
-    scope: 'Class MB1',
-    title: 'Math came alive in the courtyard today',
-    body: 'Students measured shadows and used the results to estimate the height of our rain trees. Ask them which tree surprised them most.',
-    media: 'photos' as const,
-    likes: 24,
-    comments: 3,
-    commentsEnabled: true,
-  },
-  {
-    id: 2,
-    initials: 'MIS',
-    author: 'MIS School Office',
-    meta: 'Yesterday at 4:15 PM',
-    scope: 'Whole school',
-    title: 'Family Sports Evening',
-    body: 'Join us this Friday for friendly games, student performances, and a shared picnic on the main field.',
-    media: 'event' as const,
-    likes: 38,
-    comments: 0,
-    commentsEnabled: false,
-  },
-  {
-    id: 3,
-    initials: 'AR',
-    author: 'Mr Arif',
-    meta: 'Science · Monday',
-    scope: 'Classes MB1 & MB2',
-    title: 'A closer look at the water cycle',
-    body: 'Our young scientists built working mini water cycles and explained evaporation, condensation, and precipitation in their own words.',
-    media: 'video' as const,
-    likes: 19,
-    comments: 4,
-    commentsEnabled: true,
-  },
-]
-
-export function CommunityFeed({ role, userName, onOpenFinance, onCreatePost }: CommunityFeedProps) {
-  const [filter, setFilter] = useState('For you')
-  const [liked, setLiked] = useState<number[]>([1])
+export function CommunityFeed({ role, userName, onOpenFinance, onCreatePost, moderation = false }: CommunityFeedProps) {
+  const [posts, setPosts] = useState<CommunityPost[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [commenting, setCommenting] = useState<number | null>(null)
+  const [comment, setComment] = useState('')
   const firstName = userName.split(' ')[0]
 
-  const toggleLike = (postId: number) => setLiked((items) => items.includes(postId) ? items.filter((id) => id !== postId) : [...items, postId])
+  const load = () => portalApi.getCommunityPosts().then(({ data }) => setPosts(Array.isArray(data) ? data : [])).catch(() => setError('Unable to load community posts.')).finally(() => setLoading(false))
+  useEffect(() => { void load() }, [])
 
-  return (
-    <div className="community-page">
-      <section className="community-welcome">
-        <div><p>Tuesday, 12 August</p><h1>{role === 'student' ? `Hello, ${firstName}` : `Good evening, ${firstName}`}</h1></div>
-        <span className="role-chip">{role === 'staff' ? 'Staff' : role[0].toUpperCase() + role.slice(1)}</span>
-      </section>
+  const toggleLike = async (postId: number) => {
+    try {
+      const { data } = await portalApi.toggleCommunityReaction(postId)
+      setPosts((items) => items.map((post) => post.id === postId ? { ...post, reacted_by_me: data.reacted, reaction_count: data.reaction_count } : post))
+    } catch { setError('Unable to update your appreciation.') }
+  }
 
-      {role === 'parent' && (
-        <button type="button" className="attention-strip context-card" onClick={onOpenFinance}>
-          <span className="attention-icon">RM</span><span><strong>View school account</strong><small>Open reviewed, read-only finance records for your linked children</small></span><b>View</b>
-        </button>
-      )}
-      {(role === 'teacher' || role === 'staff') && (
-        <button type="button" className="create-strip context-card" onClick={onCreatePost}><span>Share a school moment</span><b>Create post</b></button>
-      )}
+  const submitComment = async (postId: number) => {
+    if (!comment.trim()) return
+    try {
+      const { data } = await portalApi.addCommunityComment(postId, comment)
+      setPosts((items) => items.map((post) => post.id === postId ? { ...post, comments: [...post.comments, data] } : post))
+      setComment(''); setCommenting(null)
+    } catch { setError('Unable to add your comment.') }
+  }
 
-      <div className="feed-filter" aria-label="Feed filters">
-        {['For you', 'School', 'My classes', 'Events'].map((item) => <button key={item} type="button" className={filter === item ? 'active' : ''} onClick={() => setFilter(item)}>{item}</button>)}
-      </div>
+  const removeComment = async (postId: number, commentId: number) => {
+    try { await portalApi.removeCommunityComment(commentId); setPosts((items) => items.map((post) => post.id === postId ? { ...post, comments: post.comments.filter((item) => item.id !== commentId) } : post)) } catch { setError('Unable to remove this comment.') }
+  }
 
-      <div className="preview-label preview-note"><ShieldCheck size={14} /> Preview · community publishing is not connected</div>
+  const hidePost = async (postId: number) => {
+    const reason = window.prompt('Reason for hiding this post?')?.trim()
+    if (!reason) return
+    try { await portalApi.hideCommunityPost(postId, reason); setPosts((items) => items.filter((post) => post.id !== postId)) } catch { setError('Unable to hide this post.') }
+  }
 
-      <section className="feed-list" aria-label="School community posts">
-        {samplePosts.map((post) => {
-          const isLiked = liked.includes(post.id)
-          return (
-            <article className="feed-post" key={post.id}>
-              <header className="feed-post-header"><span className="feed-avatar">{post.initials}</span><span className="feed-author"><strong>{post.author}</strong><span className="feed-post-meta"><small>{post.meta}</small><span className="feed-scope">{post.scope}</span></span></span><button type="button" className="plain-icon" aria-label={`More options for ${post.title}`}><MoreHorizontal size={20} /></button></header>
-              <div className="feed-copy"><h2>{post.title}</h2><p>{post.body}</p></div>
-              {post.media === 'photos' && <div className="feed-media school-garden"><span>4 classroom photos</span></div>}
-              {post.media === 'video' && <div className="feed-media science-lab"><button type="button" aria-label="Play classroom video"><Play size={21} fill="currentColor" /></button><span>1:18 classroom video</span></div>}
-              {post.media === 'event' && <div className="event-card"><span className="event-date"><b>15</b>AUG</span><span><strong>Family Sports Evening</strong><small><CalendarDays size={13} /> 5:00 PM · Main field</small></span></div>}
-              <div className="feed-counts">{post.likes + (isLiked && post.id !== 1 ? 1 : 0)} appreciations · {post.commentsEnabled ? `${post.comments} comments` : 'Comments closed'}</div>
-              <footer className="feed-actions"><button type="button" className={isLiked ? 'liked' : ''} onClick={() => toggleLike(post.id)}><Heart size={19} fill={isLiked ? 'currentColor' : 'none'} />{isLiked ? 'Appreciated' : 'Appreciate'}</button><button type="button" disabled={!post.commentsEnabled}><MessageCircle size={19} />{post.commentsEnabled ? 'Comment' : 'Comments off'}</button></footer>
-            </article>
-          )
-        })}
-      </section>
-    </div>
-  )
+  return <div className="community-page">
+    <section className="community-welcome"><div><p>School community</p><h1>{role === 'student' ? `Hello, ${firstName}` : `Welcome, ${firstName}`}</h1></div><span className="role-chip">{role === 'staff' ? 'Staff' : role[0].toUpperCase() + role.slice(1)}</span></section>
+    {role === 'parent' && <button type="button" className="attention-strip context-card" onClick={onOpenFinance}><span className="attention-icon">RM</span><span><strong>View school account</strong><small>Open read-only finance records for your linked children</small></span><b>View</b></button>}
+    {(role === 'teacher' || role === 'staff') && <button type="button" className="create-strip context-card" onClick={onCreatePost}><span>Share a school moment</span><b>Create post</b></button>}
+    {loading ? <div className="app-skeleton large" /> : error && posts.length === 0 ? <div className="app-empty"><h2>Community unavailable</h2><p>{error}</p></div> : posts.length === 0 ? <div className="app-empty"><h2>No posts yet</h2><p>Authorized school updates will appear here.</p></div> : <section className="feed-list" aria-label="School community posts">
+      {error && <p className="form-error">{error}</p>}
+      {posts.map((post) => <article className="feed-post" key={post.id}>
+        <header className="feed-post-header"><span className="feed-avatar">{post.author.name.split(' ').map((part) => part[0]).slice(0, 2).join('')}</span><span className="feed-author"><strong>{post.author.name}</strong><span className="feed-post-meta"><small>{post.published_at ? new Date(post.published_at).toLocaleString() : 'Published'}</small></span></span>{moderation && post.can_moderate && <button type="button" className="plain-icon" onClick={() => void hidePost(post.id)}>Hide</button>}</header>
+        <div className="feed-copy"><p>{post.body}</p></div>
+        {post.media.map((media) => media.type === 'image' ? <img className="feed-uploaded-image" key={media.id} src={media.url} alt={media.name ?? 'Community photo'} /> : media.type === 'video' ? <video className="feed-uploaded-video" key={media.id} src={media.url} controls /> : <a key={media.id} href={media.url}>{media.name ?? 'Download attachment'}</a>)}
+        <div className="feed-counts">{post.reaction_count} appreciations · {post.comments_enabled ? `${post.comments.length} comments` : 'Comments closed'}</div>
+        <footer className="feed-actions"><button type="button" className={post.reacted_by_me ? 'liked' : ''} onClick={() => void toggleLike(post.id)}><Heart size={19} fill={post.reacted_by_me ? 'currentColor' : 'none'} />{post.reacted_by_me ? 'Appreciated' : 'Appreciate'}</button><button type="button" disabled={!post.comments_enabled} onClick={() => setCommenting(commenting === post.id ? null : post.id)}><MessageCircle size={19} />{post.comments_enabled ? 'Comment' : 'Comments off'}</button></footer>
+        {post.comments.map((item) => <div className="community-comment" key={item.id}><strong>{item.author}</strong><span>{item.body}</span>{item.can_remove && <button type="button" onClick={() => void removeComment(post.id, item.id)}>Remove</button>}</div>)}
+        {commenting === post.id && <div className="community-comment-form"><input value={comment} maxLength={2000} onChange={(event) => setComment(event.target.value)} placeholder="Write a comment" /><button type="button" onClick={() => void submitComment(post.id)}>Send</button></div>}
+      </article>)}
+    </section>}
+  </div>
 }

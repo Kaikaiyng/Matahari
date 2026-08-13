@@ -17,13 +17,14 @@ Implemented workflows include:
 - Phase A academic foundation APIs for academic years, class enrolments, subjects, teaching assignments, and reviewed portal identity links.
 - Independent `app/` Community App views for Parent, Student, Teacher, and authorized Staff roles, with role-aware liquid-glass navigation, self-service identity endpoints, personal in-app notifications, read-only parent finance, and MIS demo personas.
 - Daily class Attendance: assignment-scoped Teacher roster marking, Parent/Student history reads, correction reasons, and transactional audit logging.
+- Scoped Community publishing and feeds with private authorized media, appreciations, controlled comments, moderation history, and transactional audit logging.
 - Permission-filtered navigation and a Super Admin-only, read-only Audit Trail with filters and event detail.
 - Responsive desktop, tablet, and mobile administration UI.
 - CSRF-protected session mutations, login throttling, active-session rechecks, request IDs, and transactional audit events for implemented critical workflows.
 
 Important boundaries:
 
-- `frontend/` is Admin-only. `app/` is the separate multi-role Community App surface. Attendance uses live scoped APIs. Community, Assessment, and Quiz now have additive database foundations, but their APIs and current App screens remain clearly labelled previews; Schedule composes existing calendar and academic data rather than owning a duplicate timetable store.
+- `frontend/` is Admin-only. `app/` is the separate multi-role Community App surface. Attendance and the core Community feed use live scoped APIs. Assessment and Quiz have additive database foundations but remain previews; Schedule composes existing calendar and academic data rather than owning a duplicate timetable store.
 - Parent finance is read-only and has no payment interface. Payment reminders, native authentication, Firebase, Capacitor, and app-store packaging remain unimplemented. See [Mobile Product Architecture and Roadmap](docs/mobile-product-roadmap.md).
 
 - Payments and receipts are implemented inside Student Detail; unimplemented top-level placeholder navigation has been removed.

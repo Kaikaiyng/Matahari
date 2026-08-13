@@ -52,7 +52,7 @@ Admin Panel remains the desktop location for content moderation, permission mana
 - Content removal preserves moderation and audit history. Media access must use the same audience checks as the containing post.
 - Media consent, retention, file-size/type limits, malware scanning, and reporting response times remain controlled production gates.
 
-**Current implementation:** additive tables exist for posts, school/class/direct-student audiences, private media references, reactions, and moderation-preserving comments. Publishing, visibility resolution, uploads/downloads, reactions/comments, moderation services, APIs, and audit events are not connected yet.
+**Current implementation:** scoped APIs and App flows now provide school-wide Staff publishing, Teaching Assignment-scoped Teacher class publishing, relationship-scoped Parent/Student feeds, private authorized media upload/download, appreciations, controlled comments, comment removal, Staff post hiding, and transactional audit events. Direct-student authoring, event-post composition, reporting, malware scanning, retention automation, and the complete desktop Admin moderation workspace remain planned.
 
 ## Attendance
 

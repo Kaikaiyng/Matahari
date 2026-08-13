@@ -154,6 +154,10 @@ class DatabaseSeeder extends Seeder
             'foundation_accounts.manage' => 'Manage teacher, parent, and student role assignments',
             'parent.self_service' => 'Access parent self-service',
             'student.self_service' => 'Access student academic self-service',
+            'community.view' => 'View authorized community posts',
+            'community.publish' => 'Publish authorized community posts',
+            'community.interact' => 'React to and comment on authorized community posts',
+            'community.moderate' => 'Moderate community content',
         ])->mapWithKeys(fn (string $name, string $slug) => [
             $slug => Permission::query()->updateOrCreate(['slug' => $slug], ['name' => $name]),
         ]);
@@ -197,6 +201,10 @@ class DatabaseSeeder extends Seeder
             'teaching_assignments.manage',
             'portal_links.manage',
             'foundation_accounts.manage',
+            'community.view',
+            'community.publish',
+            'community.interact',
+            'community.moderate',
         ])->pluck('id')->all());
         $roles['finance']->permissions()->sync($permissions->only([
             'students.view',
@@ -221,12 +229,19 @@ class DatabaseSeeder extends Seeder
             'academic_years.view',
             'subjects.view',
             'teaching_scope.view',
+            'community.view',
+            'community.publish',
+            'community.interact',
         ])->pluck('id')->all());
         $roles['parent']->permissions()->sync($permissions->only([
             'parent.self_service',
+            'community.view',
+            'community.interact',
         ])->pluck('id')->all());
         $roles['student']->permissions()->sync($permissions->only([
             'student.self_service',
+            'community.view',
+            'community.interact',
         ])->pluck('id')->all());
 
         $superAdmin->roles()->sync([$roles['super-admin']->id]);
