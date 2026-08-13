@@ -8,10 +8,11 @@ This is the independent mobile-first web workspace for Matahari International Sc
 - Community-style Home feed presentation with explicit preview labels where publishing is not connected.
 - Live scoped Parent/Student identity and Attendance reads.
 - Live assignment-scoped Teacher daily Attendance marking with correction reasons.
+- Live Teacher Classes cards derived from the same current teaching assignments and scoped rosters used by Attendance.
 - Read-only Parent finance backed by the existing finance source of truth; there is no payment interface.
 - Preview-only academic results, Schedule, formal Quiz, Practice Quiz, and publishing surfaces.
 
-Sign out is available from each role's More/Profile page. Native authentication, push delivery, and store packaging are not part of the current web workspace.
+Sign out is available from each role's More/Profile page. Admin/Finance/CEO operations remain in `frontend/`; Teacher-only, Parent-only, and Student-only accounts do not enter the Admin Panel. Parent Finance derives its requested academic year from the child's current enrolment and never displays a hard-coded preview balance as live data. Native authentication, push delivery, and store packaging are not part of the current web workspace.
 
 ## Local Development
 
@@ -36,7 +37,7 @@ npm.cmd run lint
 npm.cmd run build
 ```
 
-Last verified on 2026-08-13: 3 Vitest files and 16 tests passed, Oxlint exited cleanly, and the TypeScript/Vite production build completed with 76 modules transformed. Automated responsive QA covered 39 role/page combinations at 360x800, 390x844, and 430x932 without horizontal overflow or undersized visible interactive targets.
+Last verified on 2026-08-13: 3 Vitest files and 19 tests passed, Oxlint exited cleanly, and the TypeScript/Vite production build completed with 75 modules transformed. Automated responsive QA covered 39 role/page combinations at 360x800, 390x844, and 430x932 without horizontal overflow or undersized visible interactive targets.
 
 ## Deployment Boundary
 

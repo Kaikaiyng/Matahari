@@ -6,9 +6,9 @@
 
 **Default branch:** `master`
 
-**Current merged delivery:** `816ea1dd17812b22852f413465f9f7c3ec64e8fb` (`Merge split admin and modern mobile app`)
+**Current merged delivery:** `ddd7e193179129be35f7a2b1c408eb809734f8d4` (`Merge project-wide documentation update`)
 
-**Overall status:** MIS-branded administration-finance demo MVP with Phase A foundations, separately built Admin and multi-role Community App clients, and a first scoped daily-attendance slice; native/store delivery, production operations, and several product modules remain incomplete
+**Overall status:** MIS-branded administration-finance demo MVP with Phase A foundations, separately built Admin and multi-role Community App clients, live daily Attendance, and storage-only Community/Assessment/Quiz foundations; native/store delivery, production operations, and the corresponding feature APIs remain incomplete
 
 The Phase A commit above remains in the delivery history and is now included in `master`. The earlier white-label feature was delivered through [pull request #8](https://github.com/Kaikaiyng/Matahari/pull/8) and merged into `master` as `2f4c6bd199a7fae149658d3993aba370203746de` on 2026-08-04.
 
@@ -43,6 +43,24 @@ The App is approved as a private school-community product: a relationship-scoped
 
 Merged delivery `816ea1d` redesigns the Admin staff login and all App role surfaces. Daily Attendance is connected end to end: assigned Teachers load current rosters, submit `present`, `late`, `absent`, or `excused`, and must provide a reason for corrections; authorized Parents and the linked Student can read the resulting record. Attendance writes and their audit events share one transaction. Community persistence/media, Assessment results, formal Quiz, Practice Quiz generation, and Schedule remain clearly labelled UI previews rather than implemented backend modules. See [MIS App Product Specification](mobile-app-product-spec.md) and the root [Design System](../DESIGN.md).
 
+## 2026-08-13 Community App Data Foundation
+
+- The App/database comparison found that identity/RBAC, guardian/student links, enrolments, teaching assignments, notifications, read-only Parent Finance, Attendance, and Calendar already reuse the authoritative backend data.
+- Eighteen additive tables now establish storage for Community content, academic terms/Assessments/results, and formal/Practice Quiz. The approved class targets, direct student targets, materialized Quiz recipients, shared `multiple_choice`/`true_false` option storage, result publication state, revision links, attempts, and answers are represented.
+- The migration does not seed or infer posts, terms, dates, results, audiences, recipients, or Quiz attempts and does not alter current student, guardian, finance, payment, receipt, or role rows.
+- This is schema only. Community media/publishing, result publication, Quiz generation/delivery/scoring, authorization services, mutation audits, and APIs remain unimplemented; the App screens remain previews until those slices are connected.
+- Local SQLite verification: all 61 tables migrated from fresh; the three new migrations rolled back in reverse FK order; existing seeded school/student data remained; re-migration returned to 61 tables. The focused schema suite passed 3 tests/24 assertions, and the backend regression passed 250 tests with 8 existing MariaDB-only skips and 1,339 assertions before the non-SQLite inspection test was added.
+- GitHub [Full qualification run 31661265923](https://github.com/Kaikaiyng/Matahari/actions/runs/31661265923) passed on exact commit `f047c2d`: backend 250 passed/10 skipped/1,339 assertions, disposable MariaDB 11.4 full migrate/rollback/re-migrate, and 2 dedicated FK/index inspection tests with 59 assertions. Pint, 74 API routes, dependency audits, Admin 169 tests/build, App 16 tests/build, and 18 deployment tests passed. Admin lint retained the 9 known Fast Refresh warnings; App lint was clean.
+
+## 2026-08-13 Role and Client Boundary Checkpoint
+
+- Admin Panel access is limited to Super Admin, School Admin, Finance, and CEO. Teacher-only, Parent-only, and Student-only accounts are rejected by the Admin client; backend route permissions remain authoritative.
+- The Community App admits Parent, Student, Teacher, and derived Staff personas. Finance-only and CEO-only accounts do not receive App personas. Multi-role App users may switch only among personas derived from their stored roles.
+- Teacher Classes loads current teaching assignments and each assignment's scoped roster count from the same protected APIs used by Attendance. It does not expose unrelated classes or students.
+- Parent Finance no longer embeds a demo balance or hard-codes `2026`. The parent summary includes the child's explicitly stored current enrolment academic year, and finance queries stop when no current year exists.
+- Quiz, Schedule, Assessment/result examples, pending settings, and future moderation actions are explicitly labelled and non-actionable until their APIs exist. Receipt rows are viewing-only rather than fake download controls.
+- Local checkpoint regression: backend 250 passed/10 MariaDB-only skipped/1,340 assertions; Admin 170 tests; App 19 tests; Pint, both lints, both builds, and 74 API routes passed. Admin retains the 9 known Fast Refresh warnings. SQLite fresh/seed created 61 tables, rolling back the three data-foundation migrations left 43 tables and preserved the school row, and re-migration restored 61 tables.
+
 Later school-specific branding requires explicit approval and a controlled update to the presentation configuration and, if needed, a fresh disposable demo seed. It must not rename existing tenant data or rewrite financial history.
 
 ## 2026-08-13 Mobile App Visual Refinement
@@ -58,7 +76,7 @@ Later school-specific branding requires explicit approval and a controlled updat
 ## 2026-08-13 Project-wide Documentation Reconciliation
 
 - Root, Admin, App, Backend, canonical, operator, UAT, deployment, workflow, and historical-status documentation was reconciled against merged `master` at `816ea1d`.
-- Current references now consistently describe the separate Admin and multi-role Community App domains, shared Laravel/database boundary, implemented daily Attendance, 74-route/43-table inventory, and preview-versus-live module boundaries.
+- At that documentation checkpoint, current references described the separate Admin and multi-role Community App domains, shared Laravel/database boundary, implemented daily Attendance, 74-route/43-table inventory, and preview-versus-live module boundaries. The later data-foundation migration increases the current schema inventory to 61 tables without adding routes.
 - Historical plans, dated evidence, and the FigJam workflow snapshot remain preserved as history and are explicitly labelled so they are not mistaken for current completion claims.
 - Relative links across all tracked Markdown files, diff whitespace, and secret-bearing filename/content checks passed for the documentation change.
 
@@ -105,7 +123,7 @@ The confirmed earlier technology direction named Laravel 10, but this repository
 ## Known Incomplete Features
 
 - Existing guardian links remain `unreviewed` with nullable access flags, and no live parent/student user association or enrolment history is inferred. Portal activation and production backfill require a separately approved workflow.
-- An independent `app/` web workspace, user-scoped notifications, Parent/Student self endpoints, Teacher daily Attendance, read-only guardian finance queries, role-aware navigation, and preview Community content now exist. Admin remains in `frontend/`; both clients share the backend/database but have independent local ports, builds, and intended domains. This is not completed production Parent Finance. Payment reminders, Quiz persistence/scoring, AI, Firebase, Capacitor, native authentication, and native packaging remain unimplemented.
+- An independent `app/` web workspace, user-scoped notifications, Parent/Student self endpoints, Teacher daily Attendance, read-only guardian finance queries, role-aware navigation, and preview Community content now exist. Admin remains in `frontend/`; both clients share the backend/database but have independent local ports, builds, and intended domains. This is not completed production Parent Finance. Community/Assessment/Quiz schemas exist, but their services and APIs do not. Payment reminders, Quiz delivery/scoring, AI, Firebase, Capacitor, native authentication, and native packaging remain unimplemented.
 
 - Parent CRUD, fee catalogue management, user/role management, password reset, and a global school selector.
 - Reports beyond Fee Record views, exports, statements, reminders, parent portal, and server-side PDF.

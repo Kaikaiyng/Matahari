@@ -41,10 +41,12 @@ The active finance UI uses Fee Agreements and Fee Record charges. Legacy invoice
 - Academic years, subjects, class enrolments, and teaching assignments preserve academic history without rewriting `students.class_id`.
 - Parent/Student portal links are nullable and same-school; historical guardian access is never guessed or automatically activated.
 - Daily Attendance preserves the original marker and records correction actor, reason, and time.
+- Community audiences, Assessment class targets, and Quiz targets/recipients are explicit school-scoped rows; no audience or recipient is inferred during migration.
+- Formal and Practice Quiz share question/option/attempt storage, while `quiz_kind` and assignment presence keep their product contexts distinct.
 
 ## 3. Schema Inventory
 
-The current disposable demo schema contains 43 non-SQLite-internal tables, including Laravel infrastructure.
+The current disposable schema contains 61 non-SQLite-internal tables, including Laravel infrastructure.
 
 ### Laravel infrastructure (7)
 
@@ -139,6 +141,39 @@ These tables remain useful for seeded configuration and legacy invoice behavior.
 | `attendance_records` | Per-student status, original marker, correction metadata, and notes |
 
 Portal identity fields are additive columns on `parents`, `students`, and `student_parent_links`, not separate identity tables.
+
+### Community content foundation (5)
+
+| Table | Responsibility |
+| --- | --- |
+| `community_posts` | Authored post lifecycle, optional calendar reference, comment control, and moderation state |
+| `community_post_audiences` | Deduplicated school, class, or direct-student visibility targets |
+| `community_post_media` | Ordered private storage references and media metadata; not public URLs |
+| `community_post_reactions` | One reaction per post/user |
+| `community_comments` | Comment content with hide/remove history |
+
+### Assessment foundation (4)
+
+| Table | Responsibility |
+| --- | --- |
+| `academic_terms` | Optional-date terms within an academic year |
+| `assessments` | Subject assessment header, type, maximum score, due/publication state |
+| `assessment_class_targets` | Multiple authorized class targets |
+| `assessment_results` | One draft/published result, optional grade label, and teacher comment per student |
+
+### Quiz foundation (9)
+
+| Table | Responsibility |
+| --- | --- |
+| `quizzes` | Formal/Practice identity, owner, revision, version, and publication state |
+| `quiz_questions` | Ordered `multiple_choice` or `true_false` questions and point values |
+| `quiz_options` | Shared ordered option/correctness mechanism |
+| `quiz_assignments` | Formal release window, due date, limit, and state |
+| `quiz_assignment_class_targets` | Multiple class targets |
+| `quiz_assignment_student_targets` | Direct student targets |
+| `quiz_assignment_recipients` | Deduplicated materialized effective recipients |
+| `quiz_attempts` | Formal or private Practice attempt lifecycle and score snapshot |
+| `quiz_attempt_answers` | One selected option and awarded score per attempted question |
 
 ## 4. Key Records
 
@@ -304,7 +339,7 @@ MariaDB is the production database direction. SQLite is used for the repeatable 
 
 ### MariaDB migration lifecycle
 
-The historical payment-allocation foreign-key ordering problem is corrected by additive migration `2026_06_30_000006_ensure_payment_allocation_fee_agreement_item_foreign_key.php`. Phase A fresh migration, rollback/re-migration, existing-data upgrade, foreign-key, and index behavior were validated on disposable MariaDB. Production upgrade and rollback still require backups, a reviewed preflight, and an environment-specific recovery plan. Never use `migrate:fresh` against valuable data.
+The historical payment-allocation foreign-key ordering problem is corrected by additive migration `2026_06_30_000006_ensure_payment_allocation_fee_agreement_item_foreign_key.php`. Phase A fresh migration, rollback/re-migration, existing-data upgrade, foreign-key, and index behavior were validated on disposable MariaDB. The Community App data foundation also passed a full migration/rollback/re-migration lifecycle on MariaDB 11.4 plus 59 assertions covering all 18 tables and critical FK/delete-rule/unique-index definitions in GitHub qualification run `31661265923`. Production upgrade and rollback still require backups, a reviewed preflight, and an environment-specific recovery plan. Never use `migrate:fresh` against valuable data.
 
 ## 10. Backup and Security
 
@@ -317,4 +352,4 @@ The historical payment-allocation foreign-key ordering problem is corrected by a
 
 ## 11. Deferred Schema Areas
 
-The current schema does not complete Community posts/media/reactions/comments, Assessments/results, formal or Practice Quiz, payment reminders, device/push delivery, Statements, general Reports/Exports, PDF documents, or production dashboard aggregates. Parent/Student self-service and daily Attendance are partial implemented slices, not complete portal/academic products.
+The current schema reserves Community posts/media/reactions/comments, Assessments/results, and formal/Practice Quiz records, but does not implement their services, authorization policies, audit-integrated mutations, media delivery, generation, scoring, or APIs. It also does not complete payment reminders, device/push delivery, Statements, general Reports/Exports, PDF documents, or production dashboard aggregates. Parent/Student self-service and daily Attendance are partial implemented slices, not complete portal/academic products.

@@ -2,7 +2,7 @@
 
 **Product:** Matahari International School Administration, Finance, and Community System
 
-**Merged baseline:** `master` at `816ea1dd17812b22852f413465f9f7c3ec64e8fb`
+**Merged baseline:** `master` at `ddd7e193179129be35f7a2b1c408eb809734f8d4`
 
 **Status:** Development demo with implemented foundation and daily Attendance slices; not production-ready
 
@@ -16,6 +16,8 @@
 - Added separate deployment/release contracts for the Community App.
 - Preserved Parent Finance as read-only with no payment interface.
 - Preserved Community publishing/media, Assessments/results, Schedule, formal Quiz, and Practice Quiz generation as labelled previews or planned modules.
+- Added 18 empty, additive storage-foundation tables for Community, Assessments/results, and formal/Practice Quiz without inferring or backfilling live records. Their services and APIs remain pending.
+- Completed a cross-client role checkpoint: Admin is restricted to Super/School Admin, Finance, and CEO; Teacher/Parent/Student use the Community App; Teacher Classes uses live assignment-scoped APIs; Parent Finance uses the child's stored current academic year; preview-only controls no longer imply real mutations or fake balances.
 
 ## Validation
 
@@ -24,12 +26,13 @@
 - Backend: 255 tests discovered, 247 passed, 8 opt-in MariaDB tests skipped, and 1,314 assertions; Pint passed; 74 API routes loaded.
 - Deployment contracts: 18 tests passed.
 - Responsive Community App QA: 39 role/page combinations across 360x800, 390x844, and 430x932; no horizontal overflow or undersized visible interactive targets remained.
+- Community App data-foundation qualification: local SQLite fresh/three-migration rollback/re-migrate preserved seeded base data and returned to 61 tables. GitHub run `31661265923` passed with backend 250 passed/10 SQLite skips/1,339 assertions, MariaDB 11.4 lifecycle plus 59 dedicated FK/index assertions, Admin 169 tests/build, App 16 tests/build, Pint, route loading, dependency audits, and deployment contracts.
 
-The visual-refinement work did not change schema, so no new MariaDB lifecycle was run for that final slice. Earlier Phase A MariaDB evidence remains documented separately and is not production-database proof.
+The visual-refinement slice did not change schema. The later Community App data-foundation slice does change schema; its SQLite and MariaDB evidence is recorded in `docs/current-status.md` when validation completes.
 
 ## Still Gated
 
 - No inferred production academic dates, enrolment history, account links, or guardian portal activation.
-- No Community persistence/media pipeline, Assessment publication, formal/Practice Quiz backend, payment reminders, or production Parent Finance.
+- No Community publishing/media pipeline, Assessment publication services, formal/Practice Quiz authoring/delivery/scoring APIs, payment reminders, or production Parent Finance. Storage foundations alone do not make these features live.
 - No Sanctum, Firebase, Capacitor, native authentication, push delivery, Android/iOS package, or store publication.
 - No verified production hosting, remote promotion, monitoring, backup scheduling, restore drill, or production MariaDB upgrade.

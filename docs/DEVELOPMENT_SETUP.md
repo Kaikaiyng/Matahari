@@ -214,9 +214,10 @@ As of merged `master` on 2026-08-13:
 
 - Admin tests: 169 passed across 15 files; build passed; lint exited 0 with 9 known Fast Refresh organization warnings
 - Community App tests: 16 passed across 3 files; lint and build passed
-- Backend: 255 tests discovered, 247 passed, 8 opt-in MariaDB tests skipped, and 1,314 assertions
+- Backend after the data-foundation slice: 260 tests discovered, 250 passed, 10 MariaDB-only inspections skipped under SQLite, and 1,339 assertions
 - API inventory: 74 non-vendor routes
-- Disposable demo schema: 43 non-SQLite-internal tables
+- Disposable schema after the Community App data-foundation migrations: 61 non-SQLite-internal tables
+- Disposable MariaDB 11.4 lifecycle and dedicated Community/Assessment/Quiz FK/index inspection: passed in GitHub qualification run `31661265923` (59 MariaDB assertions)
 - Deployment contract tests: 18 passed
 
 ## Audit MariaDB Integration Test

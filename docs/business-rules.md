@@ -43,6 +43,7 @@ Implemented Community App/self-service rules:
 - A reviewed guardian may have multiple children, and a student may have multiple guardians. Access is evaluated per active relationship and capability flag.
 - A guardian with active finance access sees the student's account payment history, not only payments physically made by that guardian.
 - Parent outstanding amounts must come from the existing Fee Record and payment-allocation domain logic. A mobile balance ledger or client-side authoritative calculation is forbidden.
+- Parent Finance selects the child's explicitly stored current enrolment academic-year code. It must not guess or hard-code a production academic year; a child without a confirmed current enrolment receives no year-specific balance query.
 - Parent receipt access must reuse the existing authoritative receipt resource/output; mobile must not create a second receipt definition.
 - Parent Finance is read-only and exposes no payment interface.
 - Teacher daily Attendance is limited to a current same-school teaching assignment and enrolled roster. Parent reads require the reviewed academic capability; Student reads resolve only the linked self record.
@@ -53,7 +54,7 @@ Approved future rules:
 - Manual payment reminders are the V1 requirement. Laravel must recheck current outstanding data before resolving guardian recipients and creating notifications; automatic scheduling is later work.
 - Notification amount snapshots, if approved for display/audit, never become the financial source of truth.
 
-Community publishing/media, Assessments/results, formal Quiz, Practice Quiz generation, payment reminders, push, and native packaging remain approved or planned constraints rather than implemented backend behavior.
+Community, Assessment, and Quiz database foundations now preserve the approved school scope, audience/target shapes, result publication state, Quiz revisions, question options, materialized assignment recipients, and attempt history. They do not yet expose mutation/read APIs or enforce workflow authorization and audit behavior. Community publishing/media delivery, Assessment publication, formal Quiz delivery/scoring, Practice Quiz generation, payment reminders, push, and native packaging therefore remain unimplemented backend behavior.
 
 ## Fee Agreements
 

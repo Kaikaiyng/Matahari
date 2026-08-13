@@ -56,7 +56,9 @@ jobs:
             app/package-lock.json
       - name: Install backend dependencies
         working-directory: backend
-        run: composer install --prefer-dist --no-interaction --no-progress
+        run: |
+          composer install --prefer-dist --no-interaction --no-progress
+          cp .env.example .env
       - name: Run complete backend validation
         working-directory: backend
         run: |
@@ -79,6 +81,7 @@ jobs:
           php artisan migrate --force
           php artisan migrate:rollback --force
           php artisan migrate --force
+          php artisan test tests/Feature/CommunityAppDataFoundationMariaDbSchemaTest.php
       - name: Run complete frontend validation
         working-directory: frontend
         run: |

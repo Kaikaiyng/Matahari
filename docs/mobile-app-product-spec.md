@@ -1,6 +1,6 @@
 # MIS App Product Specification
 
-**Status:** Approved direction; visual foundation and daily Attendance slice implemented, remaining modules proceed in controlled slices
+**Status:** Approved direction; visual foundation and daily Attendance are live, Community/Assessment/Quiz storage foundations are implemented, and their APIs remain future controlled slices
 
 **Approved:** 2026-08-12; implementation status reviewed 2026-08-13
 
@@ -52,6 +52,8 @@ Admin Panel remains the desktop location for content moderation, permission mana
 - Content removal preserves moderation and audit history. Media access must use the same audience checks as the containing post.
 - Media consent, retention, file-size/type limits, malware scanning, and reporting response times remain controlled production gates.
 
+**Current implementation:** additive tables exist for posts, school/class/direct-student audiences, private media references, reactions, and moderation-preserving comments. Publishing, visibility resolution, uploads/downloads, reactions/comments, moderation services, APIs, and audit events are not connected yet.
+
 ## Attendance
 
 Attendance uses a general session model with `daily`, `lesson`, and `event` types. The initial App UI exposes only daily class attendance.
@@ -73,6 +75,8 @@ Teachers may mark only students in classes covered by current teaching assignmen
 - Formal Quiz may link to an Assessment, but it does not automatically alter a term total without an approved school rule.
 - Migration must not infer historical terms, marks, weights, or publication status.
 
+**Current implementation:** additive tables exist for terms, assessments, multiple class targets, and per-student draft/published results. No dates or historical results were inferred, and no assessment API is connected yet.
+
 ## Quiz
 
 Formal Assigned Quiz and personal Practice Quiz are separate products.
@@ -82,6 +86,8 @@ Formal Assigned Quiz and personal Practice Quiz are separate products.
 - Correct answers and scoring remain server-side. Published Quiz content is revised through a new version rather than silently rewritten.
 - Practice Quiz results remain private to the student and never become official grades.
 - AI generation is a future authoring adapter. It is not installed, invoked, or represented as working.
+
+**Current implementation:** additive tables exist for formal/practice Quiz identity, immutable-style revisions, `multiple_choice`/`true_false` questions using shared options, formal class/direct-student targets, deduplicated materialized recipients, attempts, and answers. Authoring, publication, recipient resolution, delivery, scoring, Practice generation, APIs, and audit events remain unimplemented.
 
 ## Parent Finance
 
@@ -100,10 +106,10 @@ An authorized guardian sees the account records of an explicitly linked child wh
 ## Delivery Slices
 
 1. Design system, compact App header, role-specific liquid-glass navigation, Feed presentation, calmer phone-first record pages, profile sign out, and Admin login restoration. **Implemented and merged in `816ea1d`.**
-2. Community publishing/reactions/comments and moderation foundation.
+2. Community persistence schema. **Implemented as a storage-only foundation; services/APIs remain pending.** Publishing/reactions/comments, media delivery, moderation, and audit follow separately.
 3. Daily Attendance schema, Teacher marking, Parent/Student history, and correction audit. **Implemented and merged in `816ea1d`.**
-4. Assessment entry/publication and Parent/Student result views.
-5. Formal Quiz and separate Practice Quiz.
+4. Assessment persistence schema. **Implemented as a storage-only foundation; services/APIs remain pending.** Entry/publication and Parent/Student result views follow separately.
+5. Formal Quiz and separate Practice Quiz. **Storage foundation implemented; authoring, assignment materialization, attempts/scoring APIs, and Practice generation remain pending.**
 6. Production media pipeline, push, native authentication review, and store packaging.
 
 Each slice uses additive corrective migrations and must state which screens are live data, preview data, or planned.

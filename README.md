@@ -23,7 +23,7 @@ Implemented workflows include:
 
 Important boundaries:
 
-- `frontend/` is Admin-only. `app/` is the separate multi-role Community App surface. Attendance uses live scoped APIs; Community publishing/media, Assessment results, formal Quiz, Practice Quiz generation, and Schedule remain clearly labelled previews.
+- `frontend/` is Admin-only. `app/` is the separate multi-role Community App surface. Attendance uses live scoped APIs. Community, Assessment, and Quiz now have additive database foundations, but their APIs and current App screens remain clearly labelled previews; Schedule composes existing calendar and academic data rather than owning a duplicate timetable store.
 - Parent finance is read-only and has no payment interface. Payment reminders, native authentication, Firebase, Capacitor, and app-store packaging remain unimplemented. See [Mobile Product Architecture and Roadmap](docs/mobile-product-roadmap.md).
 
 - Payments and receipts are implemented inside Student Detail; unimplemented top-level placeholder navigation has been removed.
@@ -209,5 +209,5 @@ The Community App uses the same three commands from `app/`.
 - The default automated backend suite uses SQLite and cannot prove MariaDB JSON, index, locking, foreign-key, or rollback behavior.
 - No stable hosting or production environment exists. CI and portable Docker/Compose source are included, but real container startup, remote deployment, monitoring, and backup/restore remain unverified.
 - User administration and password reset are not implemented.
-- General reports, exports, statements, reminders, production-ready Parent Finance, Community persistence/media, Assessment publishing, formal/Practice Quiz backends, PDF generation, and complete academic ERP modules are not implemented. The current App combines a live attendance/self-service slice with clearly labelled preview surfaces.
+- General reports, exports, statements, reminders, production-ready Parent Finance, Community media delivery/APIs, Assessment publication APIs, formal/Practice Quiz services and scoring APIs, PDF generation, and complete academic ERP modules are not implemented. The new Community, Assessment, and Quiz tables are storage foundations only; the current App still combines a live attendance/self-service slice with clearly labelled preview surfaces.
 - Operational readiness remains incomplete: production hosting, remote release operations, monitoring, runtime grant execution, backups, restore drills, and approved discount/correction policies are not verified. See [Current Status](docs/current-status.md).

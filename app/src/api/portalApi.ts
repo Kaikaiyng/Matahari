@@ -21,6 +21,7 @@ export interface PortalChild {
   full_name: string
   status: string
   class: { id: number; name: string } | null
+  academic_year: { id: number; code: string; name: string } | null
   can_view_finance: boolean
   can_view_academics: boolean
 }

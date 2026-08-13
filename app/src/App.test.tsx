@@ -11,7 +11,7 @@ describe('separate MIS portal app', () => {
     vi.restoreAllMocks()
   })
 
-  it('shows the dedicated Parent and Student login for a guest', async () => {
+  it('shows the dedicated Community App login for a guest', async () => {
     vi.spyOn(globalThis, 'fetch').mockImplementation(() => json({ message: 'Unauthenticated.' }, 401))
     render(<App />)
 
@@ -32,6 +32,21 @@ describe('separate MIS portal app', () => {
 
     expect(await screen.findByRole('navigation', { name: 'Mobile Navigation' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Children' })).toBeInTheDocument()
+    expect(screen.queryByText('Admin Panel')).not.toBeInTheDocument()
+    expect(screen.getByText('View school account')).toBeInTheDocument()
+    expect(screen.queryByText('RM 1,240 outstanding')).not.toBeInTheDocument()
+  })
+
+  it('renders the teacher shell for an authenticated teacher', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
+      const path = new URL(String(input), window.location.origin).pathname
+      if (path.endsWith('/me')) return json({ user: { id: 4, name: 'Ms Lim', username: 'teacher.lim', school_id: 1, roles: ['teacher'], permissions: ['teaching_scope.view'] } })
+      if (path.endsWith('/portal/notifications')) return json({ data: [], meta: { unread_count: 0 } })
+      return json({ data: [] })
+    })
+    render(<App />)
+
+    expect(await screen.findByRole('button', { name: 'Attendance' })).toBeInTheDocument()
     expect(screen.queryByText('Admin Panel')).not.toBeInTheDocument()
   })
 

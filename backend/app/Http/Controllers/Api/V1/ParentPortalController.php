@@ -32,6 +32,12 @@ class ParentPortalController extends Controller
 
         $children = $guardian->students()
             ->wherePivot('status', 'active')
+            ->with([
+                'class',
+                'classEnrolments' => fn ($query) => $query
+                    ->where('current_slot', 1)
+                    ->with('academicYear'),
+            ])
             ->get()
             ->map(fn (Student $s) => $this->studentSummary($s));
 
@@ -178,12 +184,19 @@ class ParentPortalController extends Controller
      */
     private function studentSummary(Student $student): array
     {
+        $currentEnrolment = $student->classEnrolments->first();
+
         return [
             'id' => $student->id,
             'student_no' => $student->student_no,
             'full_name' => $student->full_name,
             'status' => $student->status,
             'class' => $student->class ? ['id' => $student->class->id, 'name' => $student->class->name] : null,
+            'academic_year' => $currentEnrolment?->academicYear ? [
+                'id' => $currentEnrolment->academicYear->id,
+                'code' => $currentEnrolment->academicYear->code,
+                'name' => $currentEnrolment->academicYear->name,
+            ] : null,
             'can_view_finance' => (bool) $student->pivot?->can_view_finance,
             'can_view_academics' => (bool) $student->pivot?->can_view_academics,
         ];
