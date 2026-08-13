@@ -1,7 +1,9 @@
 # Change Log — 2026-08-13
 
-**Product:** Matahari International School Administration, Finance, and Community System  
-**Merged baseline:** `master` at `816ea1dd17812b22852f413465f9f7c3ec64e8fb`  
+**Product:** Matahari International School Administration, Finance, and Community System
+
+**Merged baseline:** `master` at `816ea1dd17812b22852f413465f9f7c3ec64e8fb`
+
 **Status:** Development demo with implemented foundation and daily Attendance slices; not production-ready
 
 ## Delivered
