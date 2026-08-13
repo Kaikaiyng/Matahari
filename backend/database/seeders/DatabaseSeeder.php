@@ -158,6 +158,9 @@ class DatabaseSeeder extends Seeder
             'community.publish' => 'Publish authorized community posts',
             'community.interact' => 'React to and comment on authorized community posts',
             'community.moderate' => 'Moderate community content',
+            'assessments.manage' => 'Manage authorized assessments and results',
+            'assessments.manage_school' => 'Manage all assessments in the school',
+            'assessments.view_published' => 'View own authorized published assessment results',
         ])->mapWithKeys(fn (string $name, string $slug) => [
             $slug => Permission::query()->updateOrCreate(['slug' => $slug], ['name' => $name]),
         ]);
@@ -205,6 +208,9 @@ class DatabaseSeeder extends Seeder
             'community.publish',
             'community.interact',
             'community.moderate',
+            'assessments.manage',
+            'assessments.manage_school',
+            'assessments.view_published',
         ])->pluck('id')->all());
         $roles['finance']->permissions()->sync($permissions->only([
             'students.view',
@@ -232,16 +238,19 @@ class DatabaseSeeder extends Seeder
             'community.view',
             'community.publish',
             'community.interact',
+            'assessments.manage',
         ])->pluck('id')->all());
         $roles['parent']->permissions()->sync($permissions->only([
             'parent.self_service',
             'community.view',
             'community.interact',
+            'assessments.view_published',
         ])->pluck('id')->all());
         $roles['student']->permissions()->sync($permissions->only([
             'student.self_service',
             'community.view',
             'community.interact',
+            'assessments.view_published',
         ])->pluck('id')->all());
 
         $superAdmin->roles()->sync([$roles['super-admin']->id]);

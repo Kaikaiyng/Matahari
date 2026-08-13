@@ -14,7 +14,9 @@ use App\Http\Controllers\Api\SchoolClassController;
 use App\Http\Controllers\Api\StudentController;
 use App\Http\Controllers\Api\StudentFeeAgreementController;
 use App\Http\Controllers\Api\StudentStatusController;
+use App\Http\Controllers\Api\V1\AcademicTermController;
 use App\Http\Controllers\Api\V1\AcademicYearController;
+use App\Http\Controllers\Api\V1\AssessmentController;
 use App\Http\Controllers\Api\V1\ClassEnrolmentController;
 use App\Http\Controllers\Api\V1\CommunityController;
 use App\Http\Controllers\Api\V1\FoundationAccountController;
@@ -149,6 +151,9 @@ Route::prefix('v1')->middleware([...$sessionMiddleware, 'auth', 'active', 'schoo
         Route::post('/academic-years', [AcademicYearController::class, 'store'])->middleware('permission:academic_years.manage');
         Route::patch('/academic-years/{academicYear}', [AcademicYearController::class, 'update'])->middleware('permission:academic_years.manage');
         Route::post('/academic-years/{academicYear}/activate', [AcademicYearController::class, 'activate'])->middleware('permission:academic_years.manage');
+        Route::get('/academic-terms', [AcademicTermController::class, 'index'])->middleware('permission:assessments.manage_school');
+        Route::post('/academic-terms', [AcademicTermController::class, 'store'])->middleware('permission:assessments.manage_school');
+        Route::patch('/academic-terms/{academicTerm}', [AcademicTermController::class, 'update'])->middleware('permission:assessments.manage_school');
 
         Route::get('/subjects', [SubjectController::class, 'index'])->middleware('permission:subjects.view');
         Route::post('/subjects', [SubjectController::class, 'store'])->middleware('permission:subjects.manage');
@@ -178,6 +183,13 @@ Route::prefix('v1')->middleware([...$sessionMiddleware, 'auth', 'active', 'schoo
         Route::post('/attendance/daily', [TeacherAttendanceController::class, 'storeDaily']);
     });
 
+    Route::prefix('assessments')->middleware('permission:assessments.manage')->group(function (): void {
+        Route::get('/', [AssessmentController::class, 'index']);
+        Route::post('/', [AssessmentController::class, 'store']);
+        Route::put('/{assessment}/results', [AssessmentController::class, 'saveResults']);
+        Route::post('/{assessment}/publish', [AssessmentController::class, 'publish']);
+    });
+
     Route::prefix('portal')->group(function (): void {
         // Parent portal — requires active guardian link per resource
         Route::prefix('parent')->middleware('permission:parent.self_service')->group(function (): void {
@@ -186,6 +198,7 @@ Route::prefix('v1')->middleware([...$sessionMiddleware, 'auth', 'active', 'schoo
             Route::get('/children/{student}/payments', [ParentPortalController::class, 'childPayments']);
             Route::get('/children/{student}/receipts', [ParentPortalController::class, 'childReceipts']);
             Route::get('/children/{student}/attendance', [ParentPortalController::class, 'childAttendance']);
+            Route::get('/children/{student}/assessment-results', [ParentPortalController::class, 'childAssessmentResults'])->middleware('permission:assessments.view_published');
         });
 
         // Student portal — requires active student-self link
@@ -193,6 +206,7 @@ Route::prefix('v1')->middleware([...$sessionMiddleware, 'auth', 'active', 'schoo
             Route::get('/me', [StudentPortalController::class, 'me']);
             Route::get('/enrolments', [StudentPortalController::class, 'enrolments']);
             Route::get('/attendance', [StudentPortalController::class, 'attendance']);
+            Route::get('/assessment-results', [StudentPortalController::class, 'assessmentResults'])->middleware('permission:assessments.view_published');
         });
 
         // In-app notifications — available to both parent and student

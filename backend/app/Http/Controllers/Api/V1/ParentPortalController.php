@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\AssessmentResult;
 use App\Models\AttendanceRecord;
 use App\Models\Guardian;
 use App\Models\Receipt;
@@ -146,6 +147,20 @@ class ParentPortalController extends Controller
             ->get();
 
         return response()->json(['data' => $this->attendanceResponse($records)]);
+    }
+
+    public function childAssessmentResults(Request $request, Student $student): JsonResponse
+    {
+        $this->assertGuardianAccess($request, $student, 'can_view_academics');
+
+        return response()->json(['data' => $this->publishedResults($student)]);
+    }
+
+    private function publishedResults(Student $student): array
+    {
+        return AssessmentResult::query()->with('assessment.subject')->where('school_id', $student->school_id)->where('student_id', $student->id)
+            ->where('status', 'published')->whereHas('assessment', fn ($q) => $q->where('status', 'published'))->latest('published_at')->get()
+            ->map(fn (AssessmentResult $result) => ['id' => $result->id, 'assessment_id' => $result->assessment_id, 'title' => $result->assessment->title, 'assessment_type' => $result->assessment->assessment_type, 'subject' => $result->assessment->subject->name, 'score' => (float) $result->score, 'max_score' => (float) $result->assessment->max_score, 'grade_label' => $result->grade_label, 'teacher_comment' => $result->teacher_comment, 'published_at' => $result->published_at?->toIso8601String()])->values()->all();
     }
 
     /**
