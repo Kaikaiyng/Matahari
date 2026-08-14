@@ -3,6 +3,7 @@ import type { ReactNode, RefObject } from 'react'
 import { createPortal } from 'react-dom'
 import { AlertTriangle, CheckCircle2, Info, X } from 'lucide-react'
 import { productBrand } from '../branding'
+import { useTenantConfiguration } from '../tenant'
 import { BrandMark } from './BrandMark'
 import './AdminUi.css'
 
@@ -383,11 +384,12 @@ export function InlineMessage({
 }
 
 export function SessionLoader() {
+  const tenant = useTenantConfiguration()
   return (
     <main className="session-screen">
       <section className="session-card">
         <BrandMark className="session-brand-mark" />
-        <p className="eyebrow">{productBrand.productName}</p>
+        <p className="eyebrow">{tenant.branding.organization_name || productBrand.productName}</p>
         <h1>Checking your session</h1>
         <div className="session-progress" aria-hidden="true">
           <span />

@@ -1,6 +1,6 @@
 # MIS Administration System Frontend
 
-The frontend is the Admin-only MIS React and TypeScript administration/finance workspace. Community App functionality for Parent, Student, Teacher, and authorized Staff roles lives in the separate root `app/` workspace and is not routed or built from this application. Runtime product copy is centralized in `src/branding.ts`; a fresh disposable backend demo seed supplies the MIS tenant.
+The frontend is the Admin-only React and TypeScript administration/finance workspace for the active SaaS tenant. Community App functionality lives in the separate root `app/` workspace. At startup it fetches `/api/tenant-context`, requires an `admin` surface, and applies that tenant's labels, logo, colors and feature flags. A fresh disposable backend demo seed supplies the local MIS tenant.
 
 Do not use presentation changes to rename existing tenant data or historical receipt identifiers. Admin remains the desktop location for broad operational management, permission-sensitive finance actions, moderation, and audit review.
 

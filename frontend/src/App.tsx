@@ -81,6 +81,7 @@ import {
   type PaymentAllocationDraft,
 } from './features/payments/paymentAllocationModel'
 import './App.css'
+import { useTenantConfiguration } from './tenant'
 
 type PageKey =
   | 'dashboard'
@@ -748,6 +749,7 @@ function StudentsPage({
     onReturn: () => void
   }
 }) {
+  const tenant = useTenantConfiguration()
   const [students, setStudents] = useState<StudentSummary[]>([])
   const [schoolClasses, setSchoolClasses] = useState<SchoolClassOption[]>([])
   const [selectedStudent, setSelectedStudent] = useState<StudentDetail | null>(null)
@@ -3778,7 +3780,7 @@ function StudentsPage({
                     <BrandMark className="receipt-brand-mark" size={34} />
                     <div>
                       <p className="eyebrow">Sample Receipt</p>
-                      <h2>{productBrand.organizationName}</h2>
+                      <h2>{tenant.branding.organization_name}</h2>
                       <span>Payment made is not refundable.</span>
                     </div>
                   </div>
@@ -3913,6 +3915,7 @@ function SettingsPage({
   user: CurrentUser
   dashboard: DashboardResponse | null
 }) {
+  const tenant = useTenantConfiguration()
   return (
     <section className="page-stack">
       <PageHeader
@@ -3926,7 +3929,7 @@ function SettingsPage({
           <dl className="settings-summary">
             <div>
               <dt>Current school</dt>
-              <dd>{dashboard?.school.name ?? productBrand.organizationName}</dd>
+              <dd>{dashboard?.school.name ?? tenant.branding.organization_name}</dd>
             </div>
             <div>
               <dt>School ID</dt>
@@ -3938,10 +3941,10 @@ function SettingsPage({
             </div>
             <div>
               <dt>Mode</dt>
-              <dd><StatusBadge tone="info">Single school</StatusBadge></dd>
+              <dd><StatusBadge tone="info">Tenant-scoped</StatusBadge></dd>
             </div>
           </dl>
-          <p className="settings-note">School selection will be added here when multi-school support is introduced.</p>
+          <p className="settings-note">Tenant {tenant.slug} may contain multiple schools; access remains limited by your membership.</p>
         </DataPanel>
 
         <DataPanel eyebrow="Account" title="Account & Access">
@@ -4707,6 +4710,7 @@ function DashboardPage({
 }
 
 function App() {
+  const tenant = useTenantConfiguration()
   const [dashboard, setDashboard] = useState<DashboardResponse | null>(null)
   const [apiState, setApiState] = useState<'live' | 'demo' | 'loading'>('loading')
   const [authState, setAuthState] = useState<'checking' | 'guest' | 'authenticated'>('checking')
@@ -4806,7 +4810,8 @@ function App() {
   }
 
   const handleSelectPage = (page: PageKey) => {
-    if (!user || !navItems.some((item) => item.key === page && (!item.requiredPermission || hasPermission(user, item.requiredPermission)))) {
+    const featureKey = page === 'schedule' ? 'schedule' : null
+    if (!user || (featureKey && tenant.features[featureKey] === false) || !navItems.some((item) => item.key === page && (!item.requiredPermission || hasPermission(user, item.requiredPermission)))) {
       return
     }
 
@@ -4818,7 +4823,7 @@ function App() {
   const availableNavGroups = navGroups
     .map((group) => ({
       ...group,
-      items: group.items.filter((item) => !item.requiredPermission || (user && hasPermission(user, item.requiredPermission))),
+      items: group.items.filter((item) => (item.key !== 'schedule' || tenant.features.schedule !== false) && (!item.requiredPermission || (user && hasPermission(user, item.requiredPermission)))),
     }))
     .filter((group) => group.items.length > 0)
   const availableNavItems = availableNavGroups.flatMap((group) => group.items)
@@ -4837,7 +4842,7 @@ function App() {
     )
   }
 
-  const adminRoles = ['super-admin', 'school-admin', 'finance', 'ceo']
+  const adminRoles = ['super-admin', 'tenant-owner', 'school-admin', 'finance', 'ceo']
   if (!user.roles.some((role) => adminRoles.includes(role))) {
     return (
       <main className="admin-access-unavailable">

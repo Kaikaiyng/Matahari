@@ -6,6 +6,7 @@ import { StudentPortalView } from './components/StudentPortalView'
 import { TeacherPortalView } from './components/TeacherPortalView'
 import type { AppRole } from './components/MobileShell'
 import { PortalLogin } from './PortalLogin'
+import { useTenantConfiguration } from './tenant'
 
 export type CurrentUser = {
   id: number
@@ -17,6 +18,7 @@ export type CurrentUser = {
 }
 
 function App() {
+  const tenant = useTenantConfiguration()
   const [authState, setAuthState] = useState<'checking' | 'guest' | 'authenticated'>('checking')
   const [user, setUser] = useState<CurrentUser | null>(null)
   const [activeTab, setActiveTab] = useState('home')
@@ -42,7 +44,7 @@ function App() {
       ...(user.roles.includes('parent') ? ['parent' as const] : []),
       ...(user.roles.includes('student') ? ['student' as const] : []),
       ...(user.roles.includes('teacher') ? ['teacher' as const] : []),
-      ...(user.roles.some((role) => ['super-admin', 'school-admin'].includes(role)) ? ['staff' as const] : []),
+      ...(user.roles.some((role) => ['super-admin', 'tenant-owner', 'school-admin'].includes(role)) ? ['staff' as const] : []),
     ]
   }, [user])
   const activeRole = selectedRole && allowedRoles.includes(selectedRole) ? selectedRole : allowedRoles[0]
@@ -59,7 +61,7 @@ function App() {
   }
 
   if (authState === 'checking') {
-    return <main className="portal-state-screen"><img src="/logo.jpeg" alt="" /><h1>Loading MIS App</h1><p>Checking your secure session…</p></main>
+    return <main className="portal-state-screen"><img src={tenant.branding.logo_url ?? '/logo.jpeg'} alt="" /><h1>Loading {tenant.branding.organization_short_name} App</h1><p>Checking your secure session…</p></main>
   }
 
   if (!user) return <PortalLogin onLogin={(loggedInUser) => { setUser(loggedInUser); setAuthState('authenticated') }} />
