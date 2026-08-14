@@ -2,9 +2,19 @@
 
 **Status:** Verified current behavior plus confirmed intended policy
 
-**Repository baseline:** merged `master` at `816ea1d` (2026-08-13)
+**Repository baseline:** SaaS feature branch based on `master` at `0ad0558` (2026-08-14)
 
 This document separates policy from implementation. A confirmed intended rule is not described as enforced unless the backend or schema proves it.
+
+## Tenant Rules
+
+- The request hostname, not a submitted tenant ID, selects the tenant.
+- Only active tenants and active, explicitly verified domains resolve in production.
+- Each school/campus belongs to exactly one tenant; business records remain school-scoped.
+- A global user identity needs an active tenant membership. Roles and permitted schools are evaluated from that membership.
+- `tenant-owner` cannot administer another tenant. Platform ownership is explicit and is never inferred from ordinary roles or identity fields.
+- Tenant status, domain activation, branding, features, schools and memberships are audited transactionally.
+- Migration never guesses customer campus grouping, production domains, guardian/student identities, portal activation or academic dates.
 
 ## Student Lifecycle
 

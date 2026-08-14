@@ -2,9 +2,9 @@
 
 Status: `DEVELOPMENT_DEMO_WITH_LIVE_FOUNDATION_SLICES`
 
-Last verified on merged `master`: 2026-08-13 at `816ea1d`
+Current SaaS branch baseline: 2026-08-14 from `master` at `0ad0558`; final validation is recorded in [Current Status](current-status.md).
 
-Matahari now contains three independently operated runtimes: the Laravel API in `backend/`, the Admin Panel in `frontend/`, and the mobile-first Community App in `app/`. Admin and App have separate builds and intended domains but share the same authentication, RBAC, school scope, MariaDB-compatible schema, audit system, and finance source of truth. The repository is not production-ready and has no native/store package.
+The SaaS contains three independently operated runtimes: the Laravel API in `backend/`, the Admin Panel in `frontend/`, and the mobile-first Community App in `app/`. Admin and App have separate tenant domains/builds, resolve tenant context from the hostname, and share authentication identities, tenant membership RBAC, school scope, MariaDB-compatible schema, audit and finance sources of truth. MIS is the first tenant configuration. The repository is not production-ready and has no native/store package.
 
 ## 1. Implemented Admin and Finance
 

@@ -16,6 +16,11 @@ use App\Models\StudentDiscountAssignment;
 use App\Models\StudentFeeAssignment;
 use App\Models\Subject;
 use App\Models\TeachingAssignment;
+use App\Models\Tenant;
+use App\Models\TenantBranding;
+use App\Models\TenantDomain;
+use App\Models\TenantFeature;
+use App\Models\TenantUserMembership;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -24,9 +29,31 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
+        $tenant = Tenant::query()->updateOrCreate(
+            ['slug' => 'mis'],
+            ['name' => 'Matahari International School', 'status' => 'active', 'timezone' => 'Asia/Kuala_Lumpur', 'locale' => 'en'],
+        );
+        TenantBranding::query()->updateOrCreate(
+            ['tenant_id' => $tenant->id],
+            ['organization_name' => 'Matahari International School', 'organization_short_name' => 'MIS', 'admin_title' => 'Administration & Finance', 'app_title' => 'MIS Community', 'primary_color' => '#c9254a', 'accent_color' => '#1f2a44'],
+        );
+        foreach ([['localhost', 'admin'], ['127.0.0.1', 'app']] as [$hostname, $surface]) {
+            TenantDomain::query()->updateOrCreate(
+                ['hostname' => $hostname],
+                ['tenant_id' => $tenant->id, 'surface' => $surface, 'is_primary' => true, 'status' => 'active', 'verified_at' => now()],
+            );
+        }
+        foreach (['community', 'attendance', 'assessments', 'schedule', 'formal_quiz', 'parent_finance', 'notifications'] as $feature) {
+            TenantFeature::query()->updateOrCreate(['tenant_id' => $tenant->id, 'feature_key' => $feature], ['enabled' => true]);
+        }
+        foreach (['practice_ai_quiz', 'online_payments', 'native_authentication'] as $feature) {
+            TenantFeature::query()->updateOrCreate(['tenant_id' => $tenant->id, 'feature_key' => $feature], ['enabled' => false]);
+        }
+
         $school = School::query()->updateOrCreate(
             ['code' => 'MIS'],
             [
+                'tenant_id' => $tenant->id,
                 'name' => 'Matahari International School',
                 'receipt_prefix' => 'MIS',
                 'invoice_prefix' => 'MIS-INV',
@@ -47,6 +74,7 @@ class DatabaseSeeder extends Seeder
             'teacher' => 'Teacher',
             'parent' => 'Parent',
             'student' => 'Student',
+            'tenant-owner' => 'Tenant Owner',
         ])->mapWithKeys(fn (string $name, string $slug) => [
             $slug => Role::query()->updateOrCreate(['slug' => $slug], ['name' => $name]),
         ]);
@@ -55,6 +83,7 @@ class DatabaseSeeder extends Seeder
             ['username' => 'superadmin'],
             [
                 'school_id' => $school->id,
+                'is_platform_owner' => true,
                 'name' => 'Super Admin',
                 'password' => Hash::make('password'),
                 'status' => 'active',
@@ -65,6 +94,7 @@ class DatabaseSeeder extends Seeder
             ['username' => 'admin'],
             [
                 'school_id' => $school->id,
+                'is_platform_owner' => false,
                 'name' => 'School Admin',
                 'password' => Hash::make('password'),
                 'status' => 'active',
@@ -75,6 +105,7 @@ class DatabaseSeeder extends Seeder
             ['username' => 'finance'],
             [
                 'school_id' => $school->id,
+                'is_platform_owner' => false,
                 'name' => 'Finance Admin',
                 'password' => Hash::make('password'),
                 'status' => 'active',
@@ -85,6 +116,7 @@ class DatabaseSeeder extends Seeder
             ['username' => 'teacher.lim'],
             [
                 'school_id' => $school->id,
+                'is_platform_owner' => false,
                 'name' => 'Teacher Lim',
                 'password' => Hash::make('password'),
                 'status' => 'active',
@@ -95,6 +127,7 @@ class DatabaseSeeder extends Seeder
             ['username' => 'rachel.wong'],
             [
                 'school_id' => $school->id,
+                'is_platform_owner' => false,
                 'name' => 'Rachel Wong',
                 'password' => Hash::make('password'),
                 'status' => 'active',
@@ -105,6 +138,7 @@ class DatabaseSeeder extends Seeder
             ['username' => 'alyssa.tan'],
             [
                 'school_id' => $school->id,
+                'is_platform_owner' => false,
                 'name' => 'Alyssa Tan',
                 'password' => Hash::make('password'),
                 'status' => 'active',
@@ -166,11 +200,13 @@ class DatabaseSeeder extends Seeder
             'quizzes.manage' => 'Manage authorized formal quizzes',
             'quizzes.manage_school' => 'Manage all formal quizzes in the school',
             'quizzes.attempt' => 'Attempt assigned formal quizzes',
+            'tenant.settings.manage' => 'Manage current tenant settings',
         ])->mapWithKeys(fn (string $name, string $slug) => [
             $slug => Permission::query()->updateOrCreate(['slug' => $slug], ['name' => $name]),
         ]);
 
         $roles['super-admin']->permissions()->sync($permissions->pluck('id')->all());
+        $roles['tenant-owner']->permissions()->sync($permissions->except(['audit.view', 'audit.correct_generic'])->pluck('id')->all());
         $roles['ceo']->permissions()->sync($permissions->only([
             'fee_record.view',
             'calendar.view',
@@ -274,6 +310,15 @@ class DatabaseSeeder extends Seeder
         $teacher->roles()->sync([$roles['teacher']->id]);
         $parentUser->roles()->sync([$roles['parent']->id]);
         $studentUser->roles()->sync([$roles['student']->id]);
+
+        foreach ([$superAdmin, $admin, $finance, $teacher, $parentUser, $studentUser] as $user) {
+            $membership = TenantUserMembership::query()->updateOrCreate(
+                ['tenant_id' => $tenant->id, 'user_id' => $user->id],
+                ['default_school_id' => $school->id, 'access_all_schools' => $user->is_platform_owner, 'status' => 'active'],
+            );
+            $membership->schools()->syncWithoutDetaching([$school->id]);
+            $membership->roles()->sync($user->roles()->pluck('roles.id')->all());
+        }
 
         $ma1 = SchoolClass::query()
             ->where('school_id', $school->id)

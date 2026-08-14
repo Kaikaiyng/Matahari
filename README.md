@@ -1,14 +1,15 @@
-# Matahari International School Administration System
+# Multi-Tenant School Administration Platform
 
-This repository is the Matahari International School (MIS) administration and finance system under incremental development. It contains an Admin/Finance web MVP, the Phase A academic/identity foundation, and an independent mobile-first Community App for Parent, Student, Teacher, and authorized Staff roles. Both clients use the same Laravel API and authoritative database, but have separate workspaces, builds, deployments, and domain boundaries. It is not yet a complete academic ERP or native store release.
+This repository is a configurable school-administration SaaS under incremental development. Matahari International School (MIS) is the first tenant and demo configuration. The product contains an Admin/Finance browser surface and an independent mobile-first Community App for Parent, Student, Teacher, and authorized Staff roles. Both clients use the same Laravel API and authoritative database, resolve a tenant from their subdomain, and remain separate builds/deployments. It is not yet production-ready or a native store release.
 
-MIS branding is now the approved runtime and disposable-demo identity. Branding changes do not authorize rewriting an existing tenant, student number, invoice number, receipt number, or other historical record.
+Tenant branding is runtime configuration. Branding changes never authorize rewriting tenant identity, student numbers, invoice numbers, receipt numbers, or other historical records. See [SaaS Multi-Tenancy](docs/saas-multitenancy.md).
 
 ## Current Scope
 
 Implemented workflows include:
 
 - Username/password login with Laravel session cookies and seeded role permissions.
+- Host-authoritative tenant resolution, tenant-specific memberships/roles/school scopes, configurable branding/domains/features, and audited platform/tenant management APIs.
 - Student search, creation, detail, status changes, and read-only class rosters.
 - Versioned Fee Agreements and billing configuration.
 - Fee Record preview, activation, manual charges, outstanding balances, summary, and category/month views.
@@ -95,7 +96,7 @@ tools\php\reset-demo-sqlite.cmd
 
 `tools\php\reset-demo-sqlite.cmd` destroys only the ignored, disposable `backend/database/database.sqlite` demo database and then runs `migrate:fresh --seed`. It reseeds the MIS demo tenant and `MIS` identifiers. It does not run automatically; do not adapt it to a database containing valuable data. Existing receipt identifiers are financial history and are never rewritten automatically. Seeded users are demo-only; inspect the seeder locally if credentials are needed, and never reuse them in a deployed environment.
 
-The runtime product label and receipt disclaimer are centralized in `frontend/src/branding.ts`. Later school-specific branding requires explicit approval and a deliberate update to the presentation configuration and, where appropriate, a fresh disposable demo seed. It must not be used to rename an existing tenant or rewrite historical receipt identifiers.
+The Admin and App load public display configuration from `/api/tenant-context`; receipt/legal snapshot rules remain independent of presentation branding. A fresh disposable seed configures MIS for local development. Runtime branding must never rewrite historical receipt identifiers.
 
 Start the API in one terminal:
 

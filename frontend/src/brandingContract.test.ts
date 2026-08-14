@@ -391,7 +391,7 @@ describe('runtime branding contract', () => {
 
     expectExclusiveSchoolSeed(databaseSeeder)
     expectOccurrenceCount(databaseSeeder, 'MIS school code', /\['code'\s*=>\s*'MIS'\]/g, 1)
-    expectOccurrenceCount(databaseSeeder, 'Matahari International School', /Matahari International School/g, 2)
+    expectOccurrenceCount(databaseSeeder, 'Matahari International School tenant and school branding', /Matahari International School/g, 4)
 
     for (const name of ['Super Admin', 'School Admin', 'Finance Admin']) {
       expectSourcePattern(databaseSeeder, name, new RegExp(`'name'\\s*=>\\s*'${name}'`))

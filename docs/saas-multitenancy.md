@@ -1,0 +1,124 @@
+# SaaS Multi-Tenancy
+
+**Status:** Implemented foundation on `feature/saas-multitenancy`; production rollout pending
+
+**Reviewed:** 2026-08-14
+
+## Product Model
+
+The repository is now a configurable school-software SaaS. Matahari International School (MIS) is the first configured tenant, not the platform identity hard-coded into business data. The final platform product name is still a product decision and is not invented in code or documentation.
+
+The hierarchy is:
+
+```text
+platform
+  tenant (customer organization)
+    branding, domains, feature flags, memberships
+    one or more schools/campuses
+      academic, community, attendance, finance and audit records
+```
+
+The Laravel application and authoritative MariaDB database are shared. Existing business tables remain scoped by `school_id`; a school's required `tenant_id` supplies the tenant boundary. This avoids adding a redundant tenant key to every historical finance table while preserving its current school ownership.
+
+## Request Resolution
+
+Every API request passes through tenant resolution before authentication or business authorization:
+
+1. Normalize the request hostname.
+2. Match an active, explicitly verified `tenant_domains` record.
+3. Require the owning tenant to be active.
+4. Bind the tenant and surface (`admin`, `app`, or `api`) to the request.
+5. For authenticated requests, require an active `tenant_user_memberships` record.
+6. Resolve permissions and permitted schools from that active membership.
+7. Apply the existing resource, school, teacher, guardian, student, and finance controls.
+
+The host is authoritative. A client-supplied tenant ID cannot switch context. Unknown production hosts, pending domains, unverified domains, and suspended tenants fail closed. The local/test fallback exists only for repository compatibility and must not be enabled as a production tenant-selection mechanism.
+
+## Browser Surfaces
+
+- `frontend/` is the Admin browser build. It accepts only a domain whose surface is `admin`.
+- `app/` is the mobile-first role app build. It accepts only a domain whose surface is `app`.
+- Both load `GET /api/tenant-context` before rendering, apply tenant branding and feature flags, and use same-origin session/CSRF requests.
+- Both can be deployed under separate subdomains while reverse-proxying `/api` to the same Laravel application.
+
+The current app remains web technology. Capacitor, Firebase, Sanctum, native authentication and store packaging are not installed.
+
+## Identity, Membership and Roles
+
+`users` is a global identity table. Access is tenant-specific through `tenant_user_memberships`, which stores status, default school, all-school access, allowed schools and membership roles. The same identity may therefore have different roles and campuses in different tenants.
+
+Global `user_roles` are retained for compatibility and migration history. During an authenticated tenant request, authorization uses the active membership roles. `super-admin` cannot be assigned as a tenant membership role through the tenant API.
+
+`users.is_platform_owner` is an explicit platform-control capability. It is not inferred from `super-admin`, email, username or tenant ownership. Platform owners may administer tenants, but ordinary business APIs still require an explicit tenant/school context.
+
+`tenant-owner` is a tenant-scoped role with `tenant.settings.manage`. It may manage its current tenant only. It is distinct from the platform owner.
+
+## Tenant Configuration
+
+Tenant data includes:
+
+- slug, display name, status, timezone and locale;
+- organization/admin/app labels, logo URL and primary/accent colors;
+- separate Admin/App/API domains with at most one primary domain per surface;
+- tenant feature flags;
+- schools/campuses;
+- tenant user memberships, school scopes and membership roles.
+
+New domains start as `pending` and unverified. Activation is an explicit platform action after external DNS/TLS ownership checks. The application does not currently automate DNS challenges or certificate issuance.
+
+Feature configuration remains private. The public tenant-context endpoint exposes branding and boolean enabled states only.
+
+## Management APIs
+
+Public:
+
+- `GET /api/tenant-context`
+
+Platform owner under `/api/v1/platform`:
+
+- list/create tenants;
+- activate/suspend a tenant;
+- update branding;
+- add and explicitly activate domains;
+- update feature flags;
+- add schools;
+- create/update user membership scope and roles.
+
+Current tenant owner under `/api/v1/tenant`:
+
+- update branding;
+- add pending domains;
+- update feature flags;
+- add schools;
+- create/update memberships.
+
+The platform owner alone activates domains and changes tenant status.
+
+## Audit and Transaction Rules
+
+Tenant creation and all sensitive tenant mutations write audit records in the same database transaction. An audit failure rolls back the mutation. Audited actions cover tenant creation/status, branding, domain creation/activation, feature flags, schools and memberships. Audit metadata records the tenant ID without exposing credentials or private feature configuration.
+
+## Additive Migration and Existing Data
+
+The migration is additive. It does not rewrite finance history, fee agreements, payments, receipts, receipt numbers, students or role assignments. `schools.tenant_id` remains nullable during the compatibility transition so legacy test/setup and controlled upgrade tooling can still construct pre-tenant records; the migration backfills every existing school and all new management APIs always assign a tenant. Making the column non-null is a later live-data verification gate.
+
+School codes are unique within a tenant rather than globally, so separate customers may use the same campus code. A rollback after introducing duplicate codes across tenants intentionally fails its uniqueness precondition rather than deleting or renaming data; operators must resolve that controlled rollback gate first.
+
+For an existing installation, each existing school is conservatively placed in its own new tenant. Existing explicit `users.school_id` links become memberships and existing assigned roles are copied to those memberships. This is a mechanical preservation step, not a guess that separately stored schools belong to one customer.
+
+The migration does not guess or create production domains, merge campuses, activate guardian portal access, link guardians/students by personal data, or infer academic-year/enrolment dates. Those remain controlled live-data gates.
+
+## Production Gates
+
+Before a production rollout:
+
+- choose the platform product name and platform-control hostname;
+- register and verify each Admin/App/API domain and provision DNS/TLS externally;
+- explicitly review which schools belong to each customer tenant;
+- explicitly review tenant memberships, platform owners and tenant owners;
+- validate the migration lifecycle and FK/index behavior on disposable MariaDB;
+- configure proxy trusted-host/session/cookie behavior for the chosen domains;
+- run cross-tenant, cross-school, role, feature and suspended-tenant smoke tests;
+- retain the existing controlled gates for guardian links, portal access and historical academic data.
+
+MIS local seed domains are development fixtures only: `localhost` for Admin and `127.0.0.1` for App.

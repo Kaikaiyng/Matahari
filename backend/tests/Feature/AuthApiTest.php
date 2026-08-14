@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\FeeItem;
 use App\Models\School;
 use App\Models\Student;
+use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\RateLimiter;
@@ -113,7 +114,8 @@ class AuthApiTest extends TestCase
             ])->assertUnprocessable();
         }
 
-        $this->assertSame(5, RateLimiter::attempts('login:admin|127.0.0.1'));
+        $tenantId = Tenant::query()->where('slug', 'mis')->value('id');
+        $this->assertSame(5, RateLimiter::attempts("login:{$tenantId}|admin|127.0.0.1"));
 
         $this->postJson('/api/login', [
             'username' => 'admin',

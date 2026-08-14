@@ -13,6 +13,7 @@ use App\Models\Role;
 use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Models\TeachingAssignment;
+use App\Models\TenantUserMembership;
 use App\Models\User;
 use App\Services\Quiz\QuizService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -65,7 +66,13 @@ class FormalQuizApiTest extends TestCase
         $this->actingAs($teacher)->postJson("/api/v1/quizzes/assignments/{$assignmentId}/publish")->assertOk();
         $otherStudent = Student::query()->where('student_no', 'MIS-2026-002')->firstOrFail();
         $other = User::query()->create(['school_id' => $teacher->school_id, 'name' => 'Other Student', 'username' => 'other.student', 'password' => Hash::make('password'), 'status' => 'active']);
-        $other->roles()->attach(Role::query()->where('slug', 'student')->value('id'));
+        $studentRoleId = Role::query()->where('slug', 'student')->value('id');
+        $other->roles()->attach($studentRoleId);
+        $membership = TenantUserMembership::query()->create([
+            'tenant_id' => $teacher->school->tenant_id, 'user_id' => $other->id, 'default_school_id' => $teacher->school_id, 'status' => 'active',
+        ]);
+        $membership->schools()->attach($teacher->school_id);
+        $membership->roles()->attach($studentRoleId);
         $otherStudent->update(['user_id' => $other->id]);
         $this->actingAs($other)->postJson("/api/v1/portal/student/quizzes/assignments/{$assignmentId}/attempts")->assertForbidden();
     }

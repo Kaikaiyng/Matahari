@@ -115,7 +115,7 @@ class PhaseAAcademicFoundationMigrationTest extends TestCase
         $this->seed();
 
         $this->assertSame(
-            ['ceo', 'finance', 'parent', 'school-admin', 'student', 'super-admin', 'teacher'],
+            ['ceo', 'finance', 'parent', 'school-admin', 'student', 'super-admin', 'teacher', 'tenant-owner'],
             Role::query()->orderBy('slug')->pluck('slug')->all(),
         );
         $this->assertTrue(User::query()->where('username', 'admin')->firstOrFail()->hasPermissionTo('students.view'));

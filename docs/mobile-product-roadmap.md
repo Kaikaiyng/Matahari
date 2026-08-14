@@ -2,7 +2,9 @@
 
 **Status:** Approved community-first App direction; split client, visual redesign, and daily Attendance implemented; community persistence, assessment, and Quiz remain planned
 
-**Reviewed:** 2026-08-13
+**Reviewed:** 2026-08-14
+
+The Admin and App clients are now tenant-aware SaaS surfaces. Each tenant may have distinct Admin/App subdomains and frontend branding while sharing one Laravel backend and authoritative database. The hostname resolves the tenant before membership, role, school and resource scope. This changes deployment/configuration, not the approved native sequencing below. See [SaaS Multi-Tenancy](saas-multitenancy.md).
 
 ## Status Language
 

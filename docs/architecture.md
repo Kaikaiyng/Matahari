@@ -2,7 +2,13 @@
 
 **Status:** Current implementation reference
 
-**Repository baseline:** merged `master` at `816ea1d` (2026-08-13)
+**Repository baseline:** SaaS feature branch based on `master` at `0ad0558` (2026-08-14)
+
+## Tenant Boundary
+
+The shared backend resolves an active tenant from an explicitly verified request hostname before authentication and business authorization. `TenantContext` contains tenant and surface; active membership then supplies tenant-specific roles and permitted schools. Client-supplied tenant IDs are not authoritative. Each school belongs to one tenant and existing business records continue to inherit tenant ownership through `school_id`.
+
+Admin (`frontend/`) and App (`app/`) are separate builds on separate tenant domains. Each calls `/api/tenant-context`, rejects the wrong surface, and uses same-origin `/api` session/CSRF requests. See [SaaS Multi-Tenancy](saas-multitenancy.md).
 
 ## High-Level Architecture
 
@@ -11,8 +17,8 @@ flowchart LR
     Browser["Admin browser: frontend/ React 19 + TypeScript"]
     Mobile["Independent app/ multi-role Community client"]
     Vite["Vite dev server or Preview"]
-    API["Laravel 13 JSON API"]
-    DB["SQLite demo/tests or MariaDB direction"]
+    API["Laravel 13 JSON API + host TenantContext"]
+    DB["Shared SQLite demo/tests or authoritative MariaDB"]
     Files["File session store: local demo"]
     Memory["Array session store: tests"]
     Tunnel["Optional temporary demo tunnel"]

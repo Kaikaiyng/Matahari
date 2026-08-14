@@ -3,8 +3,10 @@ import type { FormEvent } from 'react'
 import { ApiError, apiRequest } from './api'
 import type { CurrentUser } from './App'
 import './PortalLogin.css'
+import { useTenantConfiguration } from './tenant'
 
 export function PortalLogin({ onLogin }: { onLogin: (user: CurrentUser) => void }) {
+  const tenant = useTenantConfiguration()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -36,9 +38,9 @@ export function PortalLogin({ onLogin }: { onLogin: (user: CurrentUser) => void 
   return (
     <main className="portal-login-page">
       <section className="portal-login-card" aria-labelledby="portal-login-title">
-        <img src="/logo.jpeg" alt="Matahari International School" className="portal-login-logo" />
-        <p className="portal-login-eyebrow">MIS School Community</p>
-        <h1 id="portal-login-title">Welcome to MIS</h1>
+        <img src={tenant.branding.logo_url ?? '/logo.jpeg'} alt={tenant.branding.organization_name} className="portal-login-logo" />
+        <p className="portal-login-eyebrow">{tenant.branding.app_title}</p>
+        <h1 id="portal-login-title">Welcome to {tenant.branding.organization_short_name}</h1>
         <p className="portal-login-copy">School life, learning, and family records in one private App.</p>
 
         <div className="portal-demo-accounts" aria-label="Demo accounts">

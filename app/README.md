@@ -1,6 +1,6 @@
 # MIS Community App
 
-This is the independent mobile-first web workspace for Matahari International School Parent, Student, Teacher, and authorized Staff users. It has its own login, build, tests, deployment surface, and domain boundary. It shares the Laravel API and authoritative database with the Admin Panel; it does not share the Admin frontend runtime.
+This is the independent mobile-first web workspace for Parent, Student, Teacher, and authorized Staff users of the active SaaS tenant. It has its own login, build, tests, deployment surface, and domain boundary. It fetches `/api/tenant-context`, requires an `app` surface, and applies tenant branding/features. It shares the Laravel API and authoritative database with the Admin Panel but not its frontend runtime.
 
 ## Current Experience
 

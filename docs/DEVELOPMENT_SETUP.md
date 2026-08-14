@@ -2,9 +2,9 @@
 
 Status: Current local-development guide
 
-Last verified for the current Admin and Community App web stacks: 2026-08-13
+Last verified for the current Admin and Community App web stacks: 2026-08-14
 
-The repository has separate `frontend/` (Admin) and `app/` (Parent/Student/Teacher/Staff Community App) web workspaces. There is still no native toolchain: do not install Capacitor, Firebase, Sanctum, Android, or iOS dependencies from this guide. See [Mobile Product Architecture and Roadmap](mobile-product-roadmap.md).
+The repository has separate tenant-aware `frontend/` (Admin) and `app/` (Parent/Student/Teacher/Staff Community App) web workspaces. Local seed domains are `localhost` for Admin and `127.0.0.1` for App; both proxy `/api` to the shared backend. There is still no native toolchain. See [SaaS Multi-Tenancy](saas-multitenancy.md) and [Mobile Product Architecture and Roadmap](mobile-product-roadmap.md).
 
 ## 1. Local Stack
 

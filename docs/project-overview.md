@@ -2,17 +2,19 @@
 
 **Status:** Current implementation and confirmed product context
 
-**Repository baseline:** merged `master` at `816ea1d`
+**Repository baseline:** SaaS feature branch based on merged `master` at `0ad0558`
 
-**Reviewed:** 2026-08-13
+**Reviewed:** 2026-08-14
 
 ## Business Purpose
 
-Matahari supports administrative and finance workflows for Matahari International School. The present product is an internal school administration and finance MVP intended for workflow demonstration and continued development. It is not a complete academic ERP.
+The product is becoming the owner's configurable school-software SaaS. It serves multiple customer tenants from one Laravel backend and authoritative MariaDB database; each tenant can contain multiple schools/campuses and has separate Admin/App domains, branding, features, memberships and role scopes. MIS is the first tenant/demo configuration. It is not yet a production-complete academic ERP.
 
 ## Intended Users
 
 The seeded implementation contains these stored role slugs:
+
+- `tenant-owner` — manages configuration and memberships for the active tenant only.
 
 - `super-admin` — Super Admin.
 - `school-admin` — School Admin.
@@ -22,6 +24,8 @@ The seeded implementation contains these stored role slugs:
 The intended CEO concept has been described as management or print-only access, but the current seed grants only Fee Record view and Calendar view permissions. It does not grant receipt printing. See [Permissions](permissions.md).
 
 Phase A also adds the `teacher`, `parent`, and `student` role slugs without replacing existing assignments. A user may hold multiple roles. The independent `app/` web workspace presents Parent, Student, Teacher, and authorized Staff experiences, but this does not make preview modules or a native application complete.
+
+Platform administration is not a tenant role. It uses the explicit `users.is_platform_owner` flag. Users are global identities, while tenant membership roles and permitted schools are resolved for the request hostname. See [SaaS Multi-Tenancy](saas-multitenancy.md).
 
 ## Intended Scale
 

@@ -2,7 +2,7 @@
 
 ## Project Summary
 
-Matahari is a school administration, finance, and school-community MVP for Matahari International School. The repository contains one Laravel 13 JSON API, an Admin-only React 19/TypeScript workspace in `frontend/`, and an independent mobile-first multi-role React workspace in `app/`. Both clients share the backend and authoritative database but are built and deployed separately. It is not a complete academic ERP or verified as production-ready.
+Matahari is the first tenant/demo configuration of a multi-tenant school administration, finance, and community SaaS. The repository contains one Laravel 13 JSON API, an Admin-only React 19/TypeScript workspace in `frontend/`, and an independent mobile-first multi-role React workspace in `app/`. Both clients share the backend and authoritative database, resolve tenant context from separate Admin/App domains, and are built/deployed separately. It is not a complete academic ERP or verified as production-ready.
 
 ## Read Before Editing
 
@@ -33,6 +33,7 @@ Matahari is a school administration, finance, and school-community MVP for Matah
 ## Authorization and Security
 
 - Backend enforcement is mandatory. Frontend visibility is only a usability control.
+- Resolve tenant from an active verified hostname before membership, permission and school scope. Never trust a client-submitted tenant ID or permit cross-tenant role/school leakage.
 - Apply `auth`, the correct `permission:<slug>`, and school-scope enforcement to protected operations. Test both unauthorized and cross-school cases.
 - Do not weaken authentication, authorization, validation, school scoping, or audit behavior to make a test pass.
 - Never add secrets, credentials, real student data, private connection strings, database files, or tunnel state to Git or documentation.

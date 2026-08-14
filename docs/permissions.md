@@ -2,7 +2,7 @@
 
 **Status:** Seeded role matrix and verified enforcement map
 
-**Repository baseline:** merged `master` at `816ea1d` (2026-08-13)
+**Repository baseline:** SaaS feature branch based on `master` at `0ad0558` (2026-08-14)
 
 ## Labels
 
@@ -12,7 +12,9 @@
 - **Not implemented:** No usable backend operation exists, even if a permission slug or placeholder appears.
 - **Needs confirmation:** Approved access policy is not established.
 
-Super Admin receives all seeded permissions. Stored role slugs now also include `teacher`, `parent`, and `student`; a user may hold multiple roles. Existing Finance and CEO grants remain unchanged.
+Super Admin receives all seeded permissions. Stored role slugs also include `tenant-owner`, `teacher`, `parent`, and `student`; a user may hold multiple roles. Existing Finance and CEO grants remain unchanged.
+
+Tenant requests use roles from the active `tenant_user_memberships` record, not a cross-tenant union of global roles. `tenant-owner` receives `tenant.settings.manage` for branding, pending domains, features, schools and memberships in the current tenant. Only an explicit platform owner may list/create/suspend tenants or activate domains. `super-admin` is not assignable as a tenant membership role through these APIs.
 
 ## Role Matrix
 
@@ -114,7 +116,8 @@ It does not grant receipt view/print, student view, payment view, or a general r
 | Authentication | Laravel `web` session guard and `auth` middleware |
 | Permission slugs | `permission:<slug>` route middleware using `EnsureUserHasPermission` |
 | Role-to-permission mapping | `roles`, `permissions`, `user_roles`, `role_permissions`; seeded in `DatabaseSeeder` |
-| School scope | Legacy distributed checks plus `SchoolContext`/`ResolveSchoolContext` for new Phase A modules |
+| Tenant scope | Host-resolved `TenantContext`, active tenant membership, membership roles and permitted membership schools |
+| School scope | Tenant-aware legacy resolver plus `SchoolContext`/`ResolveSchoolContext` for newer modules |
 | Resource policies | Phase A policies/access services enforce academic, teacher-assignment, and portal-link scope |
 | Mutation validation | Laravel Form Requests plus service invariants |
 | Frontend actions | `permissions.includes(...)` checks for many pages/buttons; not authoritative |

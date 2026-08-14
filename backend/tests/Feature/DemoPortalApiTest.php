@@ -7,6 +7,7 @@ use App\Models\PortalNotification;
 use App\Models\Role;
 use App\Models\School;
 use App\Models\Student;
+use App\Models\TenantUserMembership;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
@@ -165,6 +166,11 @@ class DemoPortalApiTest extends TestCase
             'status' => 'active',
         ]);
         $user->roles()->attach($role);
+        $membership = TenantUserMembership::query()->create([
+            'tenant_id' => $school->tenant_id, 'user_id' => $user->id, 'default_school_id' => $school->id, 'status' => 'active',
+        ]);
+        $membership->schools()->attach($school);
+        $membership->roles()->attach($role);
 
         $this->actingAs($user)
             ->postJson('/api/v1/admin/staff', [

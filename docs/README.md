@@ -1,6 +1,6 @@
 # Documentation Index
 
-Start with the canonical documents below. They describe merged `master` at `816ea1d` on 2026-08-13 and explicitly separate current behavior from approved future direction and unverified policy.
+Start with the canonical documents below. The active SaaS multi-tenancy work is based on `master` at `0ad0558` on 2026-08-14 and explicitly separates current behavior from production rollout gates and unverified policy.
 
 ## Canonical Project Knowledge
 
@@ -12,6 +12,7 @@ Start with the canonical documents below. They describe merged `master` at `816e
 | [Database](database.md) | Engines, tables, relationships, constraints, money, statuses, migrations, rollback, and MariaDB considerations |
 | [Permissions](permissions.md) | Seeded role matrix, enforcement locations, and frontend/backend gaps |
 | [Current Status](current-status.md) | Commit snapshot, implemented/partial work, risks, test status, deployment state, and priorities |
+| [SaaS Multi-Tenancy](saas-multitenancy.md) | Tenant/domain resolution, identity memberships, roles, branding, features, management APIs, migration safety, and rollout gates |
 | [Testing and Release](testing-and-release.md) | Exact validation commands, database checks, security review, smoke tests, release, and rollback |
 | [Phase A Academic Foundation Delivery](phase-a-academic-foundation.md) | Delivered Phase A scope, APIs, authorization, audit, migration safety, validation evidence, and live-data gates |
 | [Mobile Product Architecture and Roadmap](mobile-product-roadmap.md) | Approved one-backend mobile direction, Phase B–F boundaries, security rules, and future validation gates |

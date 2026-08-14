@@ -27,4 +27,6 @@ enum AuditSubject: string
     case Quiz = 'quiz';
     case QuizAssignment = 'quiz_assignment';
     case QuizAttempt = 'quiz_attempt';
+    case Tenant = 'tenant';
+    case TenantDomain = 'tenant_domain';
 }

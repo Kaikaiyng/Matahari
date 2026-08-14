@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\SchoolClassController;
 use App\Http\Controllers\Api\StudentController;
 use App\Http\Controllers\Api\StudentFeeAgreementController;
 use App\Http\Controllers\Api\StudentStatusController;
+use App\Http\Controllers\Api\TenantContextController;
 use App\Http\Controllers\Api\V1\AcademicTermController;
 use App\Http\Controllers\Api\V1\AcademicYearController;
 use App\Http\Controllers\Api\V1\AssessmentController;
@@ -22,6 +23,7 @@ use App\Http\Controllers\Api\V1\ClassScheduleController;
 use App\Http\Controllers\Api\V1\CommunityController;
 use App\Http\Controllers\Api\V1\FoundationAccountController;
 use App\Http\Controllers\Api\V1\ParentPortalController;
+use App\Http\Controllers\Api\V1\PlatformTenantController;
 use App\Http\Controllers\Api\V1\PortalLinkController;
 use App\Http\Controllers\Api\V1\PortalNotificationController;
 use App\Http\Controllers\Api\V1\QuizController;
@@ -31,6 +33,7 @@ use App\Http\Controllers\Api\V1\SubjectController;
 use App\Http\Controllers\Api\V1\TeacherAttendanceController;
 use App\Http\Controllers\Api\V1\TeacherScopeController;
 use App\Http\Controllers\Api\V1\TeachingAssignmentController;
+use App\Http\Controllers\Api\V1\TenantSettingsController;
 use App\Http\Controllers\DeploymentInfoController;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -39,6 +42,7 @@ use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/deployment-info', DeploymentInfoController::class)->name('deployment-info');
+Route::get('/tenant-context', TenantContextController::class)->name('tenant-context');
 
 $sessionMiddleware = [
     EncryptCookies::class,
@@ -51,13 +55,31 @@ Route::middleware($sessionMiddleware)->group(function (): void {
     Route::get('/csrf-cookie', fn () => response()->noContent());
     Route::post('/login', [AuthController::class, 'login']);
 
-    Route::middleware(['auth', 'active'])->group(function (): void {
+    Route::middleware(['auth', 'active', 'tenant.member'])->group(function (): void {
         Route::get('/me', [AuthController::class, 'me']);
         Route::post('/logout', [AuthController::class, 'logout']);
     });
 });
 
-Route::middleware([...$sessionMiddleware, 'auth', 'active'])->group(function (): void {
+Route::middleware([...$sessionMiddleware, 'auth', 'active', 'tenant.member'])->group(function (): void {
+    Route::prefix('v1/platform')->middleware('platform.owner')->group(function (): void {
+        Route::get('/tenants', [PlatformTenantController::class, 'index']);
+        Route::post('/tenants', [PlatformTenantController::class, 'store']);
+        Route::patch('/tenants/{tenant}/status', [PlatformTenantController::class, 'updateStatus']);
+        Route::patch('/tenants/{tenant}/branding', [PlatformTenantController::class, 'updateBranding']);
+        Route::post('/tenants/{tenant}/domains', [PlatformTenantController::class, 'storeDomain']);
+        Route::post('/tenants/{tenant}/domains/{tenantDomain}/activate', [PlatformTenantController::class, 'activateDomain']);
+        Route::put('/tenants/{tenant}/features/{featureKey}', [PlatformTenantController::class, 'updateFeature']);
+        Route::post('/tenants/{tenant}/schools', [PlatformTenantController::class, 'storeSchool']);
+        Route::put('/tenants/{tenant}/memberships/{user}', [PlatformTenantController::class, 'updateMembership']);
+    });
+    Route::prefix('v1/tenant')->middleware('permission:tenant.settings.manage')->group(function (): void {
+        Route::patch('/branding', [TenantSettingsController::class, 'updateBranding']);
+        Route::post('/domains', [TenantSettingsController::class, 'storeDomain']);
+        Route::put('/features/{featureKey}', [TenantSettingsController::class, 'updateFeature']);
+        Route::post('/schools', [TenantSettingsController::class, 'storeSchool']);
+        Route::put('/memberships/{user}', [TenantSettingsController::class, 'updateMembership']);
+    });
     Route::get('/dashboard/school', [DashboardController::class, 'school'])
         ->middleware('permission:fee_record.view');
     Route::post('/invoices/generate-monthly', [InvoiceGenerationController::class, 'store'])
@@ -137,8 +159,8 @@ Route::middleware([...$sessionMiddleware, 'auth', 'active'])->group(function ():
         ->middleware('permission:receipts.void');
 });
 
-Route::prefix('v1')->middleware([...$sessionMiddleware, 'auth', 'active', 'school.context'])->group(function (): void {
-    Route::prefix('community')->middleware('permission:community.view')->group(function (): void {
+Route::prefix('v1')->middleware([...$sessionMiddleware, 'auth', 'active', 'tenant.member', 'school.context'])->group(function (): void {
+    Route::prefix('community')->middleware(['tenant.feature:community', 'permission:community.view'])->group(function (): void {
         Route::get('/posts', [CommunityController::class, 'index']);
         Route::post('/posts', [CommunityController::class, 'store'])->middleware('permission:community.publish');
         Route::post('/posts/{communityPost}/reaction', [CommunityController::class, 'reaction'])->middleware('permission:community.interact');
@@ -169,9 +191,9 @@ Route::prefix('v1')->middleware([...$sessionMiddleware, 'auth', 'active', 'schoo
         Route::post('/teaching-assignments', [TeachingAssignmentController::class, 'store'])->middleware('permission:teaching_assignments.manage');
         Route::post('/teaching-assignments/{teachingAssignment}/end', [TeachingAssignmentController::class, 'end'])->middleware('permission:teaching_assignments.manage');
 
-        Route::get('/class-schedules', [ClassScheduleController::class, 'index'])->middleware('permission:schedule.manage');
-        Route::post('/class-schedules', [ClassScheduleController::class, 'store'])->middleware('permission:schedule.manage');
-        Route::patch('/class-schedules/{classScheduleEntry}', [ClassScheduleController::class, 'update'])->middleware('permission:schedule.manage');
+        Route::get('/class-schedules', [ClassScheduleController::class, 'index'])->middleware(['tenant.feature:schedule', 'permission:schedule.manage']);
+        Route::post('/class-schedules', [ClassScheduleController::class, 'store'])->middleware(['tenant.feature:schedule', 'permission:schedule.manage']);
+        Route::patch('/class-schedules/{classScheduleEntry}', [ClassScheduleController::class, 'update'])->middleware(['tenant.feature:schedule', 'permission:schedule.manage']);
 
         Route::patch('/parents/{guardian}/portal-user', [PortalLinkController::class, 'guardianUser'])->middleware('permission:portal_links.manage');
         Route::patch('/students/{student}/portal-user', [PortalLinkController::class, 'studentUser'])->middleware('permission:portal_links.manage');
@@ -185,18 +207,18 @@ Route::prefix('v1')->middleware([...$sessionMiddleware, 'auth', 'active', 'schoo
     Route::prefix('teacher')->middleware('permission:teaching_scope.view')->group(function (): void {
         Route::get('/teaching-assignments', [TeacherScopeController::class, 'assignments']);
         Route::get('/classes/{schoolClass}/students', [TeacherScopeController::class, 'students']);
-        Route::get('/attendance/daily', [TeacherAttendanceController::class, 'showDaily']);
-        Route::post('/attendance/daily', [TeacherAttendanceController::class, 'storeDaily']);
+        Route::get('/attendance/daily', [TeacherAttendanceController::class, 'showDaily'])->middleware('tenant.feature:attendance');
+        Route::post('/attendance/daily', [TeacherAttendanceController::class, 'storeDaily'])->middleware('tenant.feature:attendance');
     });
 
-    Route::prefix('assessments')->middleware('permission:assessments.manage')->group(function (): void {
+    Route::prefix('assessments')->middleware(['tenant.feature:assessments', 'permission:assessments.manage'])->group(function (): void {
         Route::get('/', [AssessmentController::class, 'index']);
         Route::post('/', [AssessmentController::class, 'store']);
         Route::put('/{assessment}/results', [AssessmentController::class, 'saveResults']);
         Route::post('/{assessment}/publish', [AssessmentController::class, 'publish']);
     });
 
-    Route::prefix('quizzes')->middleware('permission:quizzes.manage')->group(function (): void {
+    Route::prefix('quizzes')->middleware(['tenant.feature:formal_quiz', 'permission:quizzes.manage'])->group(function (): void {
         Route::post('/', [QuizController::class, 'store']);
         Route::post('/{quiz}/assignments', [QuizController::class, 'assign']);
         Route::post('/assignments/{quizAssignment}/publish', [QuizController::class, 'publish']);
@@ -206,22 +228,22 @@ Route::prefix('v1')->middleware([...$sessionMiddleware, 'auth', 'active', 'schoo
         // Parent portal — requires active guardian link per resource
         Route::prefix('parent')->middleware('permission:parent.self_service')->group(function (): void {
             Route::get('/me', [ParentPortalController::class, 'me']);
-            Route::get('/children/{student}/outstanding', [ParentPortalController::class, 'childOutstanding']);
-            Route::get('/children/{student}/payments', [ParentPortalController::class, 'childPayments']);
-            Route::get('/children/{student}/receipts', [ParentPortalController::class, 'childReceipts']);
-            Route::get('/children/{student}/attendance', [ParentPortalController::class, 'childAttendance']);
-            Route::get('/children/{student}/assessment-results', [ParentPortalController::class, 'childAssessmentResults'])->middleware('permission:assessments.view_published');
-            Route::get('/children/{student}/schedule', [ParentPortalController::class, 'childSchedule'])->middleware('permission:schedule.view');
+            Route::get('/children/{student}/outstanding', [ParentPortalController::class, 'childOutstanding'])->middleware('tenant.feature:parent_finance');
+            Route::get('/children/{student}/payments', [ParentPortalController::class, 'childPayments'])->middleware('tenant.feature:parent_finance');
+            Route::get('/children/{student}/receipts', [ParentPortalController::class, 'childReceipts'])->middleware('tenant.feature:parent_finance');
+            Route::get('/children/{student}/attendance', [ParentPortalController::class, 'childAttendance'])->middleware('tenant.feature:attendance');
+            Route::get('/children/{student}/assessment-results', [ParentPortalController::class, 'childAssessmentResults'])->middleware(['tenant.feature:assessments', 'permission:assessments.view_published']);
+            Route::get('/children/{student}/schedule', [ParentPortalController::class, 'childSchedule'])->middleware(['tenant.feature:schedule', 'permission:schedule.view']);
         });
 
         // Student portal — requires active student-self link
         Route::prefix('student')->middleware('permission:student.self_service')->group(function (): void {
             Route::get('/me', [StudentPortalController::class, 'me']);
             Route::get('/enrolments', [StudentPortalController::class, 'enrolments']);
-            Route::get('/attendance', [StudentPortalController::class, 'attendance']);
-            Route::get('/assessment-results', [StudentPortalController::class, 'assessmentResults'])->middleware('permission:assessments.view_published');
-            Route::get('/schedule', [StudentPortalController::class, 'schedule'])->middleware('permission:schedule.view');
-            Route::prefix('quizzes')->middleware('permission:quizzes.attempt')->group(function (): void {
+            Route::get('/attendance', [StudentPortalController::class, 'attendance'])->middleware('tenant.feature:attendance');
+            Route::get('/assessment-results', [StudentPortalController::class, 'assessmentResults'])->middleware(['tenant.feature:assessments', 'permission:assessments.view_published']);
+            Route::get('/schedule', [StudentPortalController::class, 'schedule'])->middleware(['tenant.feature:schedule', 'permission:schedule.view']);
+            Route::prefix('quizzes')->middleware(['tenant.feature:formal_quiz', 'permission:quizzes.attempt'])->group(function (): void {
                 Route::get('/', [QuizController::class, 'studentIndex']);
                 Route::post('/assignments/{quizAssignment}/attempts', [QuizController::class, 'start']);
                 Route::post('/attempts/{quizAttempt}/submit', [QuizController::class, 'submit']);
@@ -229,7 +251,7 @@ Route::prefix('v1')->middleware([...$sessionMiddleware, 'auth', 'active', 'schoo
         });
 
         // In-app notifications — available to both parent and student
-        Route::prefix('notifications')->group(function (): void {
+        Route::prefix('notifications')->middleware('tenant.feature:notifications')->group(function (): void {
             Route::get('/', [PortalNotificationController::class, 'index']);
             Route::patch('/{portalNotification}/read', [PortalNotificationController::class, 'markRead']);
             Route::post('/mark-all-read', [PortalNotificationController::class, 'markAllRead']);
