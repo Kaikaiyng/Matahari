@@ -12,7 +12,7 @@ The following decisions supersede the historical platform-name and single-organi
 | Product model | Multi-tenant school SaaS; MIS is the first tenant | Implemented foundation |
 | Initial host convention | `{tenant}.rylay.my` Admin, `{tenant}-app.rylay.my` App, `console.rylay.my` platform control | Adopted |
 | API topology | Same-origin `/api` reverse proxy per Admin/App host for the initial deployment | Adopted |
-| VPS | Not purchased or provisioned | Pending |
+| VPS | Hostinger KVM 2 preferred; specifications and region to be reconfirmed before purchase | Planned, not purchased |
 
 The RYLAY platform brand must not overwrite tenant branding or historical school, student, finance, invoice, payment or receipt identifiers. See [SaaS Multi-Tenancy](saas-multitenancy.md) for the current architecture.
 
