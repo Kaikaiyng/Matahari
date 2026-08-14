@@ -2,11 +2,11 @@
 
 **Status:** Approved direction; Community, daily Attendance, Assessment publication, Parent Finance reads, student Schedule, and formal Quiz V1 are live; Practice/AI Quiz remains deferred
 
-**Approved:** 2026-08-12; implementation status reviewed 2026-08-13
+**Approved:** 2026-08-12; implementation status reviewed 2026-08-14
 
 ## Product Definition
 
-The independent `app/` workspace is a private MIS school-community and self-service product. It shares the Laravel backend, MariaDB database, users, roles, permissions, school scope, academic records, audit system, and finance source of truth with `frontend/`. It is not a smaller copy of the Admin Panel.
+The independent `app/` workspace is a private tenant-branded school-community and self-service product; MIS is its first configuration. Its subdomain selects tenant context, then membership/relationship rules select permitted schools and records. It shares the Laravel backend, MariaDB database, global user identities, academic records, audit and finance sources of truth with `frontend/`. It is not a smaller copy of the Admin Panel.
 
 Home is a relationship-scoped school and classroom Feed inspired by the useful community pattern in ClassDojo. Personal records remain separate from the Feed so photographs and school updates do not blur the privacy or authority of attendance, grades, Quiz results, and finance data.
 

@@ -2,7 +2,7 @@
 
 **Status:** Current schema reference
 
-**Repository baseline:** Community App data-foundation branch from merged `master` at `ddd7e19` (2026-08-13)
+**Repository baseline:** SaaS feature branch based on `master` at `0ad0558` (2026-08-14)
 
 ## Engines and Configuration
 
@@ -15,6 +15,12 @@ SQLite success does not prove MariaDB JSON, indexes, DDL, foreign keys, row lock
 
 The schema has no currency column and amount-to-words currently assumes Ringgit. **Needs confirmation:** Whether the system will remain MYR-only.
 
+## Tenant Foundation
+
+`tenants` owns configuration and one or more `schools`. `tenant_brandings`, `tenant_domains`, and `tenant_features` are tenant-owned configuration. `tenant_user_memberships` joins a global `users` identity to a tenant; `tenant_membership_schools` and `tenant_membership_roles` define the active school and RBAC scope. `users.is_platform_owner` is an explicit platform capability.
+
+The migration is additive and leaves finance/academic ownership on `school_id`. Existing schools are conservatively assigned one generated tenant each; explicit existing `users.school_id` relationships and role assignments are copied to membership records. No production domain, campus grouping, guardian link, portal activation, academic date, or enrolment date is inferred. See [SaaS Multi-Tenancy](saas-multitenancy.md).
+
 ## Schema Inventory
 
 The migrated disposable schema contains 61 non-SQLite-internal tables.
@@ -22,7 +28,7 @@ The migrated disposable schema contains 61 non-SQLite-internal tables.
 | Area | Tables |
 | --- | --- |
 | Laravel infrastructure | `migrations`, `sessions`, `cache`, `cache_locks`, `jobs`, `job_batches`, `failed_jobs` |
-| School and access | `schools`, `users`, `roles`, `permissions`, `user_roles`, `role_permissions`, `audit_logs` |
+| Tenant, school and access | `tenants`, `tenant_brandings`, `tenant_domains`, `tenant_features`, `tenant_user_memberships`, `tenant_membership_schools`, `tenant_membership_roles`, `schools`, `users`, `roles`, `permissions`, `user_roles`, `role_permissions`, `audit_logs` |
 | Students and contacts | `classes`, `students`, `parents`, `student_parent_links` |
 | Legacy fee setup | `fee_items`, `discount_items`, `student_fee_assignments`, `student_discount_assignments` |
 | Fee Agreements | `fee_agreements`, `fee_agreement_items`, `fee_agreement_discounts`, `fee_agreement_discount_items` |

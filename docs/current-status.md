@@ -1,6 +1,6 @@
 # Current Status
 
-**Snapshot date:** 2026-08-13
+**Snapshot date:** 2026-08-14
 
 **Inspected Phase A implementation commit:** `ecaa0a1f177292ae99c9338e255a1f93312971f5`
 
@@ -8,7 +8,18 @@
 
 **Current merged delivery:** `ddd7e193179129be35f7a2b1c408eb809734f8d4` (`Merge project-wide documentation update`)
 
-**Overall status:** MIS-branded administration-finance demo MVP with Phase A foundations, separate Admin and multi-role App clients, live Community, daily Attendance, Assessment publication, Parent Finance reads, class Schedule, and formal Quiz V1; Practice/AI Quiz, native/store delivery, and production operations remain incomplete
+**Overall status:** SaaS multi-tenant foundation in final validation, with MIS as the first tenant; separate Admin and multi-role App clients, live Community, daily Attendance, Assessment publication, Parent Finance reads, class Schedule, and formal Quiz V1 remain shared tenant-aware modules. Practice/AI Quiz, native/store delivery, automated DNS/TLS and production operations remain incomplete.
+
+## 2026-08-14 SaaS Multi-Tenant Foundation
+
+- Shared host-authoritative tenant resolution now precedes login and protected API access.
+- A tenant owns branding, Admin/App/API domains, feature flags and one or more schools/campuses.
+- Global user identities receive tenant-specific status, roles, default school and permitted-school membership.
+- Explicit platform owners manage all tenants; tenant owners manage only their active tenant. Tenant configuration mutations are audited in the same transaction.
+- Both React builds load public tenant configuration before rendering, enforce their domain surface, and apply tenant branding/features.
+- Existing schools upgrade conservatively as separate tenants. Existing explicit user-school/role records are preserved into memberships; production domains and ambiguous live relationships are not guessed.
+- Focused tenant isolation, wrong-domain login, membership-role, cross-school, feature enforcement, platform/tenant authorization, audit rollback, suspension and existing-data upgrade tests are implemented. Full regression and disposable MariaDB evidence for this branch are pending final recorded validation.
+- See [SaaS Multi-Tenancy](saas-multitenancy.md) for the architecture and rollout gates.
 
 The Phase A commit above remains in the delivery history and is now included in `master`. The earlier white-label feature was delivered through [pull request #8](https://github.com/Kaikaiyng/Matahari/pull/8) and merged into `master` as `2f4c6bd199a7fae149658d3993aba370203746de` on 2026-08-04.
 

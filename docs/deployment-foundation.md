@@ -2,9 +2,11 @@
 
 **Status:** Repository foundation implemented; real staging, production, backup, and monitoring are not configured
 
-**Updated:** 2026-08-13
+**Updated:** 2026-08-14
 
 This document describes the deployment material currently stored in the repository. The approved target architecture remains in [Staging and Production Deployment Design](superpowers/specs/2026-08-06-staging-production-deployment-design.md).
+
+The deployment foundation now also requires hostname-based tenant resolution. Each tenant Admin/App domain must reverse-proxy same-origin `/api`, exist as an active verified tenant domain, and have externally managed DNS/TLS. Automated custom-domain verification/certificate provisioning is not yet implemented; see [SaaS Multi-Tenancy](saas-multitenancy.md).
 
 ## Implemented Repository Components
 

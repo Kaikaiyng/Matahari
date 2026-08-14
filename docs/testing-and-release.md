@@ -2,7 +2,9 @@
 
 **Status:** Repository command and release reference
 
-**Repository baseline:** merged `master` at `816ea1d` (2026-08-13)
+**Repository baseline:** SaaS feature branch based on `master` at `0ad0558` (2026-08-14)
+
+Tenant-sensitive changes must additionally cover known/unknown/pending/inactive hosts, wrong-tenant login, membership roles, membership school restrictions, surface mismatch, tenant suspension, feature enforcement, platform-versus-tenant administration and transactional audit rollback. Production smoke tests must use the real Admin/App hostnames; sending a tenant ID in a request is not a substitute.
 
 Run commands from a clean feature branch/worktree. Record the exact command, exit code, counts, skipped cases, and limitations. Never convert a skipped or unavailable check into a pass.
 

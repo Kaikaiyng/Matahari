@@ -2,7 +2,9 @@
 
 Status: Current implementation reference
 
-Last updated: 2026-08-13
+Last updated: 2026-08-14
+
+The shared database now begins with `tenants`; each tenant owns branding, verified domains, features, memberships and one or more schools. Business history remains owned through `school_id`. See [Database](database.md) and [SaaS Multi-Tenancy](saas-multitenancy.md) for the canonical schema and migration rules.
 
 Repeatable demo and default test database: SQLite
 

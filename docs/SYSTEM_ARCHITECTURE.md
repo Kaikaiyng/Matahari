@@ -2,9 +2,9 @@
 
 Status: Current implementation reference
 
-Last updated: 2026-08-13
+Last updated: 2026-08-14
 
-This file summarizes the implemented Admin Web, Community App, and shared Laravel runtime. The independent `app/` workspace supports Parent, Student, Teacher, and authorized Staff roles; it shares the API and authoritative database with Admin but has its own domain and build. Native store packaging is not implemented. The canonical detailed reference is [Architecture](architecture.md).
+This file summarizes the tenant-aware Admin Web, Community App, and shared Laravel runtime. Each Admin/App hostname resolves a tenant before membership/role/school scope; the clients share the API and authoritative database but have separate domains and builds. Native store packaging is not implemented. Canonical references are [Architecture](architecture.md) and [SaaS Multi-Tenancy](saas-multitenancy.md).
 
 ## 1. Runtime Topology
 
