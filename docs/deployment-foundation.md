@@ -8,7 +8,7 @@ This document describes the deployment material currently stored in the reposito
 
 The deployment foundation now also requires hostname-based tenant resolution. Each tenant Admin/App domain must reverse-proxy same-origin `/api`, exist as an active verified tenant domain, and have externally managed DNS/TLS. Automated custom-domain verification/certificate provisioning is not yet implemented; see [SaaS Multi-Tenancy](saas-multitenancy.md).
 
-RYLAY owns `rylay.my`; DNS authority has been delegated to Cloudflare, while the domain registration is with Hostinger. The approved initial host pattern is `{tenant}.rylay.my` for Admin and `{tenant}-app.rylay.my` for App, plus `console.rylay.my` for future platform control. No VPS or production origin is provisioned yet, so these are reserved names rather than live deployment claims.
+RYLAY owns `rylay.my`; DNS authority has been delegated to Cloudflare, while the domain registration is with Hostinger. The approved initial host pattern is `{tenant}.rylay.my` for Admin and `{tenant}-app.rylay.my` for App, plus `console.rylay.my` for future platform control. Hostinger KVM 2 is the preferred initial VPS option, but no VPS or production origin is provisioned yet, so these remain reserved names rather than live deployment claims.
 
 ## Implemented Repository Components
 

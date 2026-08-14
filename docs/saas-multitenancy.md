@@ -8,7 +8,7 @@
 
 The platform product name is **RYLAY** and its registered primary domain is **`rylay.my`**. Matahari International School (MIS) is the first configured tenant, not the platform identity hard-coded into business data.
 
-DNS authority for `rylay.my` has been delegated to Cloudflare from the Hostinger registration. No production VPS has been purchased yet, so production origin IPs, DNS records, TLS/origin configuration and deployment state remain unconfigured.
+DNS authority for `rylay.my` has been delegated to Cloudflare from the Hostinger registration. **Hostinger KVM 2 is the preferred initial VPS option but has not been purchased.** Production origin IPs, DNS records, TLS/origin configuration and deployment state therefore remain unconfigured. Current plan specifications, region, pricing, backup retention and upgrade limits must be checked again immediately before purchase.
 
 The hierarchy is:
 
@@ -124,7 +124,7 @@ The migration does not guess or create production domains, merge campuses, activ
 Before a production rollout:
 
 - design and implement the RYLAY public website and platform-control interface;
-- purchase and provision the production VPS;
+- confirm, purchase and provision the preferred Hostinger KVM 2 VPS;
 - register and verify each Admin/App/API domain and provision DNS/TLS externally;
 - explicitly review which schools belong to each customer tenant;
 - explicitly review tenant memberships, platform owners and tenant owners;

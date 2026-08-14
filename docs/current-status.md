@@ -15,7 +15,7 @@
 - The software/SaaS platform name is **RYLAY**. MIS remains the first customer tenant and keeps its own organization branding.
 - The registered primary domain is `rylay.my`, purchased through Hostinger. Its nameserver/DNS authority is delegated to Cloudflare.
 - Approved initial convention: `rylay.my`/`www.rylay.my` for the future public site, `console.rylay.my` for platform control, `{tenant}.rylay.my` for Admin, and `{tenant}-app.rylay.my` for App. MIS therefore targets `mis.rylay.my` and `mis-app.rylay.my`.
-- No VPS has been purchased. Production DNS records, origin addresses, TLS configuration and deployments are **Not configured**. No document contains Cloudflare/Hostinger credentials or account identifiers.
+- Hostinger KVM 2 is the preferred initial VPS option, but it has not been purchased. Its current specifications, region, price, backup retention and upgrade path require confirmation at purchase time. Production DNS records, origin addresses, TLS configuration and deployments are **Not configured**. No document contains Cloudflare/Hostinger credentials or account identifiers.
 
 ## 2026-08-14 SaaS Multi-Tenant Foundation
 
