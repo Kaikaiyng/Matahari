@@ -10,6 +10,13 @@
 
 **Overall status:** SaaS multi-tenant foundation in final validation, with MIS as the first tenant; separate Admin and multi-role App clients, live Community, daily Attendance, Assessment publication, Parent Finance reads, class Schedule, and formal Quiz V1 remain shared tenant-aware modules. Practice/AI Quiz, native/store delivery, automated DNS/TLS and production operations remain incomplete.
 
+## 2026-08-14 RYLAY Brand and Domain Decision
+
+- The software/SaaS platform name is **RYLAY**. MIS remains the first customer tenant and keeps its own organization branding.
+- The registered primary domain is `rylay.my`, purchased through Hostinger. Its nameserver/DNS authority is delegated to Cloudflare.
+- Approved initial convention: `rylay.my`/`www.rylay.my` for the future public site, `console.rylay.my` for platform control, `{tenant}.rylay.my` for Admin, and `{tenant}-app.rylay.my` for App. MIS therefore targets `mis.rylay.my` and `mis-app.rylay.my`.
+- No VPS has been purchased. Production DNS records, origin addresses, TLS configuration and deployments are **Not configured**. No document contains Cloudflare/Hostinger credentials or account identifiers.
+
 ## 2026-08-14 SaaS Multi-Tenant Foundation
 
 - Shared host-authoritative tenant resolution now precedes login and protected API access.

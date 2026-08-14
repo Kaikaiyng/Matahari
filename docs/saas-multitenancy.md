@@ -6,7 +6,9 @@
 
 ## Product Model
 
-The repository is now a configurable school-software SaaS. Matahari International School (MIS) is the first configured tenant, not the platform identity hard-coded into business data. The final platform product name is still a product decision and is not invented in code or documentation.
+The platform product name is **RYLAY** and its registered primary domain is **`rylay.my`**. Matahari International School (MIS) is the first configured tenant, not the platform identity hard-coded into business data.
+
+DNS authority for `rylay.my` has been delegated to Cloudflare from the Hostinger registration. No production VPS has been purchased yet, so production origin IPs, DNS records, TLS/origin configuration and deployment state remain unconfigured.
 
 The hierarchy is:
 
@@ -42,6 +44,15 @@ The host is authoritative. A client-supplied tenant ID cannot switch context. Un
 - Both can be deployed under separate subdomains while reverse-proxying `/api` to the same Laravel application.
 
 The current app remains web technology. Capacitor, Firebase, Sanctum, native authentication and store packaging are not installed.
+
+## Approved RYLAY Domain Convention
+
+- `rylay.my` and `www.rylay.my`: future RYLAY public website.
+- `console.rylay.my`: future RYLAY platform-control interface.
+- `{tenant}.rylay.my`: tenant Admin surface, beginning with `mis.rylay.my`.
+- `{tenant}-app.rylay.my`: tenant App surface, beginning with `mis-app.rylay.my`.
+
+This single-label convention is compatible with one `*.rylay.my` wildcard boundary. Each browser surface should reverse-proxy same-origin `/api` to Laravel; an independent cross-origin `api.rylay.my` is not required for the initial deployment. Exact DNS records must wait for a selected VPS and must be activated in `tenant_domains` only after DNS/TLS verification.
 
 ## Identity, Membership and Roles
 
@@ -112,7 +123,8 @@ The migration does not guess or create production domains, merge campuses, activ
 
 Before a production rollout:
 
-- choose the platform product name and platform-control hostname;
+- design and implement the RYLAY public website and platform-control interface;
+- purchase and provision the production VPS;
 - register and verify each Admin/App/API domain and provision DNS/TLS externally;
 - explicitly review which schools belong to each customer tenant;
 - explicitly review tenant memberships, platform owners and tenant owners;

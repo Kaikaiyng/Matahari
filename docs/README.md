@@ -1,6 +1,6 @@
 # Documentation Index
 
-Start with the canonical documents below. The active SaaS multi-tenancy work is based on `master` at `0ad0558` on 2026-08-14 and explicitly separates current behavior from production rollout gates and unverified policy.
+Start with the canonical documents below. The platform is named RYLAY, uses `rylay.my`, and has MIS as its first tenant. The documents explicitly separate current behavior from production rollout gates and unverified policy.
 
 ## Canonical Project Knowledge
 

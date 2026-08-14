@@ -2,7 +2,7 @@
 
 ## Project Summary
 
-Matahari is the first tenant/demo configuration of a multi-tenant school administration, finance, and community SaaS. The repository contains one Laravel 13 JSON API, an Admin-only React 19/TypeScript workspace in `frontend/`, and an independent mobile-first multi-role React workspace in `app/`. Both clients share the backend and authoritative database, resolve tenant context from separate Admin/App domains, and are built/deployed separately. It is not a complete academic ERP or verified as production-ready.
+RYLAY is a multi-tenant school administration, finance, and community SaaS using `rylay.my`; Matahari International School is its first tenant/demo configuration. The repository contains one Laravel 13 JSON API, an Admin-only React 19/TypeScript workspace in `frontend/`, and an independent mobile-first multi-role React workspace in `app/`. Both clients share the backend and authoritative database, resolve tenant context from separate Admin/App domains, and are built/deployed separately. It is not a complete academic ERP or verified as production-ready.
 
 ## Read Before Editing
 
