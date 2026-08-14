@@ -18,7 +18,10 @@
 - Explicit platform owners manage all tenants; tenant owners manage only their active tenant. Tenant configuration mutations are audited in the same transaction.
 - Both React builds load public tenant configuration before rendering, enforce their domain surface, and apply tenant branding/features.
 - Existing schools upgrade conservatively as separate tenants. Existing explicit user-school/role records are preserved into memberships; production domains and ambiguous live relationships are not guessed.
-- Focused tenant isolation, wrong-domain login, membership-role, cross-school, feature enforcement, platform/tenant authorization, audit rollback, suspension and existing-data upgrade tests are implemented. Full regression and disposable MariaDB evidence for this branch are pending final recorded validation.
+- Focused tenant isolation, wrong-domain login, membership-role, cross-school, feature enforcement, platform/tenant authorization, audit rollback, suspension, tenant-local school-code uniqueness and existing-data upgrade tests passed (11 tests, 56 assertions).
+- Full backend regression passed: 292 discovered, 282 passed, 10 guarded MariaDB-only tests skipped, and 1,495 assertions. Pint and 116-route API loading passed. Disposable SQLite fresh/seed, latest rollback and re-migration passed.
+- Admin passed 172 tests across 16 files, lint (with only 9 pre-existing Calendar Fast Refresh organization warnings), TypeScript and production build. App passed 22 tests across 4 files, lint, TypeScript and production build. Deployment contracts passed all 18 tests.
+- **Not verified locally:** MariaDB lifecycle and FK/index inspection. No MariaDB service, client or Docker executable was available; CI MariaDB evidence is required before production rollout.
 - See [SaaS Multi-Tenancy](saas-multitenancy.md) for the architecture and rollout gates.
 
 The Phase A commit above remains in the delivery history and is now included in `master`. The earlier white-label feature was delivered through [pull request #8](https://github.com/Kaikaiyng/Matahari/pull/8) and merged into `master` as `2f4c6bd199a7fae149658d3993aba370203746de` on 2026-08-04.
