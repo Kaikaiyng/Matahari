@@ -1,9 +1,13 @@
 <?php
 
 use App\Http\Middleware\AssignRequestId;
+use App\Http\Middleware\EnsurePlatformOwner;
+use App\Http\Middleware\EnsureTenantFeatureEnabled;
+use App\Http\Middleware\EnsureTenantMembership;
 use App\Http\Middleware\EnsureUserHasPermission;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\ResolveSchoolContext;
+use App\Http\Middleware\ResolveTenantContext;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -20,9 +24,13 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->prepend(AssignRequestId::class);
+        $middleware->api(prepend: [ResolveTenantContext::class]);
 
         $middleware->alias([
             'active' => EnsureUserIsActive::class,
+            'tenant.member' => EnsureTenantMembership::class,
+            'tenant.feature' => EnsureTenantFeatureEnabled::class,
+            'platform.owner' => EnsurePlatformOwner::class,
             'permission' => EnsureUserHasPermission::class,
             'school.context' => ResolveSchoolContext::class,
         ]);

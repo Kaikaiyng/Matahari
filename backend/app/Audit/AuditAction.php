@@ -63,4 +63,12 @@ enum AuditAction: string
     case QuizAssignmentPublished = 'quiz_assignment.published';
     case QuizAttemptStarted = 'quiz_attempt.started';
     case QuizAttemptSubmitted = 'quiz_attempt.submitted';
+    case TenantCreated = 'tenant.created';
+    case TenantStatusUpdated = 'tenant.status_updated';
+    case TenantBrandingUpdated = 'tenant.branding_updated';
+    case TenantDomainCreated = 'tenant.domain_created';
+    case TenantDomainActivated = 'tenant.domain_activated';
+    case TenantFeatureUpdated = 'tenant.feature_updated';
+    case TenantSchoolCreated = 'tenant.school_created';
+    case TenantMembershipUpdated = 'tenant.membership_updated';
 }

@@ -12,6 +12,7 @@ use App\Contracts\AuditLoggerContract;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
 use App\Models\User;
+use App\Support\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -56,6 +57,26 @@ class AuthController extends Controller
         /** @var User $user */
         $user = $request->user();
 
+        $tenantContext = TenantContext::optional($request);
+        if ($tenantContext && ! $user->applyTenantMembershipScope($tenantContext->tenantId())) {
+            RateLimiter::hit($throttleKey, 60);
+            $this->recordBestEffort(new AuditEvent(
+                action: AuditAction::LoginFailed,
+                module: AuditModule::Authentication,
+                schoolId: null,
+                subjectType: AuditSubject::User,
+                subjectId: $user->id,
+                metadata: ['reason' => 'tenant_membership_denied', 'tenant_id' => $tenantContext->tenantId()],
+            ), $this->contextFactory->fromRequest($request));
+            Auth::guard('web')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            throw ValidationException::withMessages([
+                'username' => 'The username or password is incorrect.',
+            ]);
+        }
+
         if ($user->status !== 'active') {
             RateLimiter::hit($throttleKey, 60);
             $context = $this->contextFactory->fromRequest($request);
@@ -99,7 +120,9 @@ class AuthController extends Controller
 
     private function loginThrottleKey(string $username, ?string $ipAddress): string
     {
-        return 'login:'.Str::lower($username).'|'.($ipAddress ?? 'unknown');
+        $tenantPrefix = app()->bound(TenantContext::class) ? app(TenantContext::class)->tenantId().'|' : '';
+
+        return 'login:'.$tenantPrefix.Str::lower($username).'|'.($ipAddress ?? 'unknown');
     }
 
     public function me(Request $request): JsonResponse
@@ -177,6 +200,8 @@ class AuthController extends Controller
      *     name: string,
      *     username: string,
      *     school_id: int|null,
+     *     tenant_id: int|null,
+     *     tenant_slug: string|null,
      *     status: string,
      *     last_login_at: string|null,
      *     roles: array<int, string>,
@@ -186,16 +211,23 @@ class AuthController extends Controller
     private function userPayload(User $user): array
     {
         $user->loadMissing('roles.permissions');
+        $tenantContext = TenantContext::optional(request());
+        $roles = $tenantContext && ! $user->is_platform_owner
+            ? $user->tenantMembership($tenantContext->tenantId())?->roles()->with('permissions')->get()
+            : $user->roles;
+        $roles ??= collect();
 
         return [
             'id' => $user->id,
             'name' => $user->name,
             'username' => $user->username,
             'school_id' => $user->school_id,
+            'tenant_id' => $tenantContext?->tenantId(),
+            'tenant_slug' => $tenantContext?->tenant->slug,
             'status' => $user->status,
             'last_login_at' => $user->last_login_at?->toISOString(),
-            'roles' => $user->roles->pluck('slug')->values()->all(),
-            'permissions' => $user->roles
+            'roles' => $roles->pluck('slug')->values()->all(),
+            'permissions' => $roles
                 ->flatMap(fn ($role) => $role->permissions->pluck('slug'))
                 ->unique()
                 ->sort()

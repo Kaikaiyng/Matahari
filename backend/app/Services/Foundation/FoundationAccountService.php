@@ -9,6 +9,8 @@ use App\Audit\AuditModule;
 use App\Audit\AuditSubject;
 use App\Contracts\AuditLoggerContract;
 use App\Models\Role;
+use App\Models\School;
+use App\Models\TenantUserMembership;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -33,6 +35,18 @@ class FoundationAccountService
                 'status' => 'active',
             ]);
             $user->roles()->attach($roles->pluck('id'));
+            $school = School::query()->whereKey($schoolId)->firstOrFail();
+            if ($school->tenant_id) {
+                $membership = TenantUserMembership::query()->create([
+                    'tenant_id' => $school->tenant_id,
+                    'user_id' => $user->id,
+                    'default_school_id' => $schoolId,
+                    'access_all_schools' => false,
+                    'status' => 'active',
+                ]);
+                $membership->schools()->attach($schoolId);
+                $membership->roles()->attach($roles->pluck('id'));
+            }
             $this->auditLogger->record(new AuditEvent(
                 action: AuditAction::UserCreated,
                 module: AuditModule::Users,
@@ -61,6 +75,13 @@ class FoundationAccountService
             $existingFoundationIds = Role::query()->whereIn('slug', self::FOUNDATION_ROLES)->pluck('id');
             $locked->roles()->detach($existingFoundationIds);
             $locked->roles()->attach($roles->pluck('id'));
+            $membership = $locked->school?->tenant_id
+                ? $locked->tenantMembership((int) $locked->school->tenant_id)
+                : null;
+            if ($membership) {
+                $membership->roles()->detach($existingFoundationIds);
+                $membership->roles()->attach($roles->pluck('id'));
+            }
             $after = $locked->roles()->pluck('slug')->sort()->values()->all();
             $this->auditLogger->record(new AuditEvent(
                 action: AuditAction::UserRoleChanged,
