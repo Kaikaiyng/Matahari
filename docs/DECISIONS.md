@@ -1,5 +1,21 @@
 # Product and Technical Decision Log
 
+## Current Superseding Decisions — 2026-08-14
+
+The following decisions supersede the historical platform-name and single-organization assumptions below:
+
+| Area | Current decision | Status |
+| --- | --- | --- |
+| Platform name | **RYLAY** | Adopted |
+| Primary domain | `rylay.my`, registered through Hostinger | Adopted |
+| DNS authority | Cloudflare nameservers; no credentials stored in the repository | Adopted |
+| Product model | Multi-tenant school SaaS; MIS is the first tenant | Implemented foundation |
+| Initial host convention | `{tenant}.rylay.my` Admin, `{tenant}-app.rylay.my` App, `console.rylay.my` platform control | Adopted |
+| API topology | Same-origin `/api` reverse proxy per Admin/App host for the initial deployment | Adopted |
+| VPS | Not purchased or provisioned | Pending |
+
+The RYLAY platform brand must not overwrite tenant branding or historical school, student, finance, invoice, payment or receipt identifiers. See [SaaS Multi-Tenancy](saas-multitenancy.md) for the current architecture.
+
 > **Historical decision record (June 2026).** Preserve these decisions and open questions as planning history; later implementation differs in several areas. In particular, MIS branding, the separate Community App, Phase A academic/identity foundations, and daily Attendance are now implemented development slices even though this record placed them outside the first finance MVP. Current behavior is documented in [System Architecture](SYSTEM_ARCHITECTURE.md), [Database Design](DATABASE_DESIGN.md), and [Implementation Status](IMPLEMENTATION_STATUS.md).
 
 Version: 0.2

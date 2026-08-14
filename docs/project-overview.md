@@ -8,7 +8,7 @@
 
 ## Business Purpose
 
-The product is becoming the owner's configurable school-software SaaS. It serves multiple customer tenants from one Laravel backend and authoritative MariaDB database; each tenant can contain multiple schools/campuses and has separate Admin/App domains, branding, features, memberships and role scopes. MIS is the first tenant/demo configuration. It is not yet a production-complete academic ERP.
+The product is the owner's configurable school-software SaaS named **RYLAY**, using the registered primary domain `rylay.my`. It serves multiple customer tenants from one Laravel backend and authoritative MariaDB database; each tenant can contain multiple schools/campuses and has separate Admin/App domains, branding, features, memberships and role scopes. MIS is the first tenant/demo configuration. It is not yet a production-complete academic ERP.
 
 ## Intended Users
 
