@@ -480,13 +480,15 @@ describe('demo shell', () => {
     expect(await screen.findByLabelText('Username')).toHaveValue('superadmin')
     expect(screen.getByRole('checkbox', { name: 'Remember me' })).toBeChecked()
     expect(screen.getByLabelText('Password')).toHaveValue('')
+    expect(window.localStorage.getItem('rylay.rememberedUsername')).toBe('superadmin')
+    expect(window.localStorage.getItem('matahari.rememberedUsername')).toBeNull()
 
     await user.clear(screen.getByLabelText('Username'))
     await user.type(screen.getByLabelText('Username'), 'admin')
     await user.type(screen.getByLabelText('Password'), 'password')
     await user.click(screen.getByRole('button', { name: 'Login' }))
 
-    await waitFor(() => expect(window.localStorage.getItem('matahari.rememberedUsername')).toBe(currentUser.username))
+    await waitFor(() => expect(window.localStorage.getItem('rylay.rememberedUsername')).toBe(currentUser.username))
     expect(window.localStorage.getItem('password')).toBeNull()
   })
 

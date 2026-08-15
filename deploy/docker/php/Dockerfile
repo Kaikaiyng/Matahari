@@ -6,19 +6,19 @@ RUN apt-get update \
     && apt-get purge -y --auto-remove libicu-dev libzip-dev \
     && rm -rf /var/lib/apt/lists/*
 
-RUN groupadd --gid 10001 matahari \
-    && useradd --uid 10001 --gid matahari --home-dir /nonexistent --shell /usr/sbin/nologin matahari \
-    && sed -ri 's/^user = .*/user = matahari/; s/^group = .*/group = matahari/' /usr/local/etc/php-fpm.d/www.conf
+RUN groupadd --gid 10001 rylay \
+    && useradd --uid 10001 --gid rylay --home-dir /nonexistent --shell /usr/sbin/nologin rylay \
+    && sed -ri 's/^user = .*/user = rylay/; s/^group = .*/group = rylay/' /usr/local/etc/php-fpm.d/www.conf
 
-COPY deploy/docker/php/php.ini /usr/local/etc/php/conf.d/90-matahari.ini
-COPY deploy/docker/php/opcache.ini /usr/local/etc/php/conf.d/91-matahari-opcache.ini
-COPY deploy/docker/php/entrypoint.sh /usr/local/bin/matahari-entrypoint
+COPY deploy/docker/php/php.ini /usr/local/etc/php/conf.d/90-rylay.ini
+COPY deploy/docker/php/opcache.ini /usr/local/etc/php/conf.d/91-rylay-opcache.ini
+COPY deploy/docker/php/entrypoint.sh /usr/local/bin/rylay-entrypoint
 
-RUN chmod 0555 /usr/local/bin/matahari-entrypoint
+RUN chmod 0555 /usr/local/bin/rylay-entrypoint
 
-WORKDIR /var/www/matahari/current/backend
-USER matahari
+WORKDIR /var/www/rylay/current/backend
+USER rylay
 
-ENTRYPOINT ["/usr/local/bin/matahari-entrypoint"]
+ENTRYPOINT ["/usr/local/bin/rylay-entrypoint"]
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 CMD php-fpm -t || exit 1
 CMD ["php-fpm", "--nodaemonize"]

@@ -35,8 +35,8 @@ The database service has no host port. It creates these fixed boundaries from pr
 
 | Environment | Database | Runtime identity | Migration identity |
 | --- | --- | --- | --- |
-| Staging | `matahari_staging` | `matahari_staging_app` | `matahari_staging_migrator` |
-| Production | `matahari_production` | `matahari_production_app` | `matahari_production_migrator` |
+| Staging | `rylay_staging` | `rylay_staging_app` | `rylay_staging_migrator` |
+| Production | `rylay_production` | `rylay_production_app` | `rylay_production_migrator` |
 
 Migration identities receive schema privileges only for their own database. Runtime identities receive no privileges during first initialization. After migrations, `apply-runtime-grants.sh` enumerates the actual tables and grants normal CRUD per table, except `audit_logs`, which receives only `SELECT` and `INSERT`.
 
@@ -68,7 +68,7 @@ Laravel maps the mode to an allowlisted label and never returns environment valu
 - sorted migration inventory;
 - SHA-256 for every included file.
 
-The GitHub release-candidate workflow creates one `matahari-<commit>.zip`, one checksum file, and the manifest. Production promotion must later download this exact artifact and checksum; it must not run the build steps again.
+The GitHub release-candidate workflow creates one `rylay-<commit>.zip`, one checksum file, and the manifest. Production promotion must later download this exact artifact and checksum; it must not run the build steps again.
 
 ## Local Verification
 
@@ -120,10 +120,10 @@ Use a real current UTC build time outside a deterministic rehearsal. `deploy/.bu
 Copy the example values to private files outside the repository and create separate secret files. Do not put secret values in the example files or shell history. On an Ubuntu host with Docker, validate before starting services:
 
 ```bash
-docker build -f deploy/docker/php/Dockerfile -t matahari-php:8.4.21-1 .
-docker compose --env-file /srv/matahari/private/database.env -f deploy/compose/database.yml config
-docker compose --env-file /srv/matahari/private/staging.env -f deploy/compose/application.yml config
-docker compose --env-file /srv/matahari/private/production.env -f deploy/compose/application.yml config
+docker build -f deploy/docker/php/Dockerfile -t rylay-php:8.4.21-1 .
+docker compose --env-file /srv/rylay/private/database.env -f deploy/compose/database.yml config
+docker compose --env-file /srv/rylay/private/staging.env -f deploy/compose/application.yml config
+docker compose --env-file /srv/rylay/private/production.env -f deploy/compose/application.yml config
 ```
 
 The Laravel `APP_ENV_FILE` referenced by each application Compose environment must contain the private environment-specific Laravel variables. At minimum, configure a unique `APP_KEY`, correct URL, MariaDB runtime identity, secure session cookies, database-backed session/cache/queue settings, `APP_DEBUG=false`, `MAIL_MAILER=log`, and the matching `DEPLOYMENT_MODE`.

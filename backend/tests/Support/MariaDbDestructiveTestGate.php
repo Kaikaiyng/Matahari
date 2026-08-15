@@ -11,7 +11,7 @@ final class MariaDbDestructiveTestGate
 
     public const string SKIP = 'skip';
 
-    private const string REQUIRED_DATABASE = 'matahari_audit_test';
+    private const string REQUIRED_DATABASE = 'rylay_audit_test';
 
     /**
      * @param  Closure(): array{database: mixed, version: mixed}  $probe

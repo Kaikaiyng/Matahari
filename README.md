@@ -2,6 +2,8 @@
 
 This repository is the RYLAY configurable school-administration SaaS under incremental development. Matahari International School (MIS) is the first tenant and demo configuration. The product contains an Admin/Finance browser surface and an independent mobile-first Community App for Parent, Student, Teacher, and authorized Staff roles. Both clients use the same Laravel API and authoritative database, resolve a tenant from their subdomain, and remain separate builds/deployments. It is not yet production-ready or a native store release.
 
+All tenants run the same Admin/App code and shared backend. Tenant-specific presentation and availability may differ only through host-resolved `branding` and `features`; tenant-specific frontend copies or code branches are not part of the architecture.
+
 Tenant branding is runtime configuration. Branding changes never authorize rewriting tenant identity, student numbers, invoice numbers, receipt numbers, or other historical records. See [SaaS Multi-Tenancy](docs/saas-multitenancy.md).
 
 ## Current Scope

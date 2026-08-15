@@ -214,7 +214,7 @@ Do not describe repository-wide rollback as safe. Releases that include schema c
 
 - Use the Laravel `mariadb` driver and a disposable test database.
 - Validate native JSON, exact BTREE indexes, foreign-key definitions, migration fresh/rollback/re-migrate, and row-lock/concurrency-sensitive workflows.
-- The guarded destructive tests refuse to run unless the database is exactly `matahari_audit_test`, `DB_URL` is empty, the driver is `mariadb`, the server identifies as MariaDB, and explicit opt-in is present.
+- The guarded destructive tests refuse to run unless the database is exactly `rylay_audit_test`, `DB_URL` is empty, the driver is `mariadb`, the server identifies as MariaDB, and explicit opt-in is present.
 - MariaDB database identities should separate web runtime, migration, and recovery authority. The web runtime should have only required table privileges; `audit_logs` should be `SELECT, INSERT` only.
 - **Not verified:** Production MariaDB version, collation, SQL modes, grants, backups, binary logs, restore, or reconciliation.
 

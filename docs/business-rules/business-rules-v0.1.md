@@ -1,14 +1,14 @@
-# Matahari School ERP Business Rules
+# RYLAY School ERP Business Rules
 
 > **Draft stakeholder input.** This file is not an implementation-status document. Some MVP workflows were implemented before every rule below was approved; use [Implementation Status](../IMPLEMENTATION_STATUS.md) and [System Architecture](../SYSTEM_ARCHITECTURE.md) for current behavior, and keep every `TBD` unresolved until stakeholder approval.
 
 Version: 0.1
 Status: Draft - Pending Approval
-Project: Matahari School ERP
+Project: RYLAY School ERP
 
 ## 1. Purpose
 
-This document is the official Business Rules foundation for Matahari School ERP.
+This document is the official Business Rules foundation for RYLAY School ERP.
 
 It must be approved before continuing to:
 

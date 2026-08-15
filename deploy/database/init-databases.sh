@@ -20,12 +20,12 @@ read_secret() {
   printf '%s' "$secret_value"
 }
 
-: "${STAGING_DB_DATABASE:=matahari_staging}"
-: "${STAGING_DB_USERNAME:=matahari_staging_app}"
-: "${STAGING_MIGRATOR_USERNAME:=matahari_staging_migrator}"
-: "${PRODUCTION_DB_DATABASE:=matahari_production}"
-: "${PRODUCTION_DB_USERNAME:=matahari_production_app}"
-: "${PRODUCTION_MIGRATOR_USERNAME:=matahari_production_migrator}"
+: "${STAGING_DB_DATABASE:=rylay_staging}"
+: "${STAGING_DB_USERNAME:=rylay_staging_app}"
+: "${STAGING_MIGRATOR_USERNAME:=rylay_staging_migrator}"
+: "${PRODUCTION_DB_DATABASE:=rylay_production}"
+: "${PRODUCTION_DB_USERNAME:=rylay_production_app}"
+: "${PRODUCTION_MIGRATOR_USERNAME:=rylay_production_migrator}"
 
 require_identifier STAGING_DB_DATABASE "$STAGING_DB_DATABASE"
 require_identifier STAGING_DB_USERNAME "$STAGING_DB_USERNAME"
@@ -34,8 +34,8 @@ require_identifier PRODUCTION_DB_DATABASE "$PRODUCTION_DB_DATABASE"
 require_identifier PRODUCTION_DB_USERNAME "$PRODUCTION_DB_USERNAME"
 require_identifier PRODUCTION_MIGRATOR_USERNAME "$PRODUCTION_MIGRATOR_USERNAME"
 
-[ "$STAGING_DB_DATABASE:$STAGING_DB_USERNAME:$STAGING_MIGRATOR_USERNAME" = "matahari_staging:matahari_staging_app:matahari_staging_migrator" ] || exit 1
-[ "$PRODUCTION_DB_DATABASE:$PRODUCTION_DB_USERNAME:$PRODUCTION_MIGRATOR_USERNAME" = "matahari_production:matahari_production_app:matahari_production_migrator" ] || exit 1
+[ "$STAGING_DB_DATABASE:$STAGING_DB_USERNAME:$STAGING_MIGRATOR_USERNAME" = "rylay_staging:rylay_staging_app:rylay_staging_migrator" ] || exit 1
+[ "$PRODUCTION_DB_DATABASE:$PRODUCTION_DB_USERNAME:$PRODUCTION_MIGRATOR_USERNAME" = "rylay_production:rylay_production_app:rylay_production_migrator" ] || exit 1
 
 staging_app_password="$(read_secret /run/secrets/staging_app_password)"
 staging_migrator_password="$(read_secret /run/secrets/staging_migrator_password)"

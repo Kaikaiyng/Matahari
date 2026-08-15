@@ -15,7 +15,7 @@ async function writeFixture(root, relativePath, content = 'fixture\n') {
 }
 
 async function createFixture() {
-  const root = await mkdtemp(join(tmpdir(), 'matahari-release-'))
+  const root = await mkdtemp(join(tmpdir(), 'rylay-release-'))
   const files = [
     'backend/app/Example.php',
     'backend/bootstrap/app.php',

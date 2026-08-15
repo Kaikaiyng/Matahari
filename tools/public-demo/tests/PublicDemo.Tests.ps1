@@ -13,7 +13,7 @@ function Assert-Throws([scriptblock]$Action, [string]$Pattern) {
     if ($caught.Exception.Message -notmatch $Pattern) { throw $caught }
 }
 
-$tempRoot = Join-Path ([IO.Path]::GetTempPath()) ('matahari-public-demo-' + [guid]::NewGuid())
+$tempRoot = Join-Path ([IO.Path]::GetTempPath()) ('rylay-public-demo-' + [guid]::NewGuid())
 $listener = $null
 $httpJob = $null
 New-Item -ItemType Directory -Path $tempRoot | Out-Null

@@ -1,6 +1,6 @@
 # Change Log — 2026-08-12
 
-**Product:** Matahari International School Administration & Finance System
+**Product:** RYLAY — Matahari International School tenant, Administration & Finance
 **Status:** Development demo; not production-ready
 
 ## Included

@@ -516,8 +516,8 @@ git commit -m "feat: add immutable release builder"
 - Create: `deploy/tests/runtime-contract.test.mjs`
 
 **Interfaces:**
-- Consumes: an extracted release mounted read-only at `/var/www/matahari/current` and a writable Laravel storage volume at `/var/www/matahari/current/backend/storage/runtime`.
-- Produces: `matahari-php:8.4.21-1` listening on FastCGI port 9000 and Nginx serving the React build plus `/api`, `/health`, and `/up` through Laravel.
+- Consumes: an extracted release mounted read-only at `/var/www/rylay/current` and a writable Laravel storage volume at `/var/www/rylay/current/backend/storage/runtime`.
+- Produces: `rylay-php:8.4.21-1` listening on FastCGI port 9000 and Nginx serving the React build plus `/api`, `/health`, and `/up` through Laravel.
 
 - [ ] **Step 1: Write static contract tests**
 
@@ -546,7 +546,7 @@ Expected: FAIL because the runtime files do not exist.
 
 - [ ] **Step 3: Add the PHP runtime image**
 
-Use `php:8.4.21-fpm-bookworm`, install only runtime libraries and the `bcmath`, `intl`, `opcache`, `pcntl`, `pdo_mysql`, and `zip` extensions, copy the two INI files, create an unprivileged `matahari` user, set the FPM pool to that user, and set `WORKDIR /var/www/matahari/current/backend`. The image must not copy source code, Composer, Node, npm, or any environment file.
+Use `php:8.4.21-fpm-bookworm`, install only runtime libraries and the `bcmath`, `intl`, `opcache`, `pcntl`, `pdo_mysql`, and `zip` extensions, copy the two INI files, create an unprivileged `rylay` user, set the FPM pool to that user, and set `WORKDIR /var/www/rylay/current/backend`. The image must not copy source code, Composer, Node, npm, or any environment file.
 
 The final Dockerfile health check must be process-level only:
 
@@ -584,7 +584,7 @@ opcache.jit=off
 
 - [ ] **Step 5: Add the application Nginx server**
 
-The server listens internally on port 8080, sets `server_tokens off`, serves `/var/www/matahari/current/frontend/dist`, uses SPA fallback for non-API routes, and sends `/api/*`, `/health`, and `/up` to `/var/www/matahari/current/backend/public/index.php` through `php:9000`. It denies dotfiles, `.env`, Composer manifests, storage internals, and PHP paths other than the front controller. It emits conservative security headers and leaves TLS/HSTS to the later edge-proxy plan.
+The server listens internally on port 8080, sets `server_tokens off`, serves `/var/www/rylay/current/frontend/dist`, uses SPA fallback for non-API routes, and sends `/api/*`, `/health`, and `/up` to `/var/www/rylay/current/backend/public/index.php` through `php:9000`. It denies dotfiles, `.env`, Composer manifests, storage internals, and PHP paths other than the front controller. It emits conservative security headers and leaves TLS/HSTS to the later edge-proxy plan.
 
 - [ ] **Step 6: Run static tests**
 
@@ -643,11 +643,11 @@ assert.match(applicationCompose, /read_only: true/)
 assert.match(applicationCompose, /no-new-privileges:true/)
 assert.match(applicationCompose, /\/health/)
 assert.match(stagingEnv, /APP_ENV_NAME=staging/)
-assert.match(stagingEnv, /DB_DATABASE=matahari_staging/)
-assert.match(stagingEnv, /DB_USERNAME=matahari_staging_app/)
+assert.match(stagingEnv, /DB_DATABASE=rylay_staging/)
+assert.match(stagingEnv, /DB_USERNAME=rylay_staging_app/)
 assert.match(productionEnv, /APP_ENV_NAME=production/)
-assert.match(productionEnv, /DB_DATABASE=matahari_production/)
-assert.match(productionEnv, /DB_USERNAME=matahari_production_app/)
+assert.match(productionEnv, /DB_DATABASE=rylay_production/)
+assert.match(productionEnv, /DB_USERNAME=rylay_production_app/)
 for (const file of envExamples) assert.doesNotMatch(file, /=.{16,}/)
 ```
 
@@ -665,14 +665,14 @@ Expected: FAIL because the Compose and environment files do not exist.
 
 - [ ] **Step 3: Define the private database service**
 
-`deploy/compose/database.yml` uses exact image tag `mariadb:11.4.8`, an internal Docker network named `matahari_database`, a named data volume, `utf8mb4`, UTC, binary logging, 15-minute binlog expiry safety floor of 31 days, and a health check using a dedicated health-check user. It has no host `ports` mapping.
+`deploy/compose/database.yml` uses exact image tag `mariadb:11.4.8`, an internal Docker network named `rylay_database`, a named data volume, `utf8mb4`, UTC, binary logging, 15-minute binlog expiry safety floor of 31 days, and a health check using a dedicated health-check user. It has no host `ports` mapping.
 
-Mount `deploy/database/init-databases.sh` read-only into `/docker-entrypoint-initdb.d/10-matahari.sh`. The initialization script validates database/user identifiers with `^[A-Za-z0-9_]+$` and generated secret values with `^[A-Za-z0-9_-]{32,}$`, creates:
+Mount `deploy/database/init-databases.sh` read-only into `/docker-entrypoint-initdb.d/10-rylay.sh`. The initialization script validates database/user identifiers with `^[A-Za-z0-9_]+$` and generated secret values with `^[A-Za-z0-9_-]{32,}$`, creates:
 
-- `matahari_staging`;
-- `matahari_production`;
-- `matahari_staging_app` and `matahari_production_app` without schema privileges;
-- `matahari_staging_migrator` and `matahari_production_migrator`, each with schema privileges only on its own database.
+- `rylay_staging`;
+- `rylay_production`;
+- `rylay_staging_app` and `rylay_production_app` without schema privileges;
+- `rylay_staging_migrator` and `rylay_production_migrator`, each with schema privileges only on its own database.
 
 No SQL or password is echoed.
 
@@ -690,10 +690,10 @@ It exits non-zero if `audit_logs` is absent or if the runtime user/database pair
 
 `deploy/compose/application.yml` defines `php`, `scheduler`, and `web` services. It uses:
 
-- `COMPOSE_PROJECT_NAME=matahari_staging` or `matahari_production` from the invoking environment file;
-- a read-only bind mount `${RELEASE_ROOT}/current:/var/www/matahari/current:ro`;
+- `COMPOSE_PROJECT_NAME=rylay_staging` or `rylay_production` from the invoking environment file;
+- a read-only bind mount `${RELEASE_ROOT}/current:/var/www/rylay/current:ro`;
 - a per-environment writable storage volume mounted only at Laravel runtime storage;
-- a private application network plus the external `matahari_database` network for PHP/scheduler only;
+- a private application network plus the external `rylay_database` network for PHP/scheduler only;
 - a web binding on `127.0.0.1:${APP_HTTP_PORT}:8080` so the application is not directly public;
 - `read_only: true`, `tmpfs`, dropped Linux capabilities, and `no-new-privileges:true` wherever supported;
 - a web health check against `http://127.0.0.1:8080/health`.
@@ -743,7 +743,7 @@ git commit -m "feat: define isolated deployment environments"
 
 **Interfaces:**
 - Consumes: pushes to `master`, the committed lockfiles, and the release builder from Task 3.
-- Produces: one GitHub artifact named `matahari-<40-character-commit>.zip`, a sibling `.sha256` file, quick-check status, and full-qualification status. It performs no SSH deployment in this plan.
+- Produces: one GitHub artifact named `rylay-<40-character-commit>.zip`, a sibling `.sha256` file, quick-check status, and full-qualification status. It performs no SSH deployment in this plan.
 
 - [ ] **Step 1: Write workflow contract tests**
 
@@ -796,8 +796,8 @@ permissions:
 
 ```bash
 TZ=UTC find . -exec touch -h -d '@0' {} +
-zip -X -q -r "../matahari-${commit}.zip" .
-sha256sum "matahari-${commit}.zip" > "matahari-${commit}.zip.sha256"
+zip -X -q -r "../rylay-${commit}.zip" .
+sha256sum "rylay-${commit}.zip" > "rylay-${commit}.zip.sha256"
 ```
 
 from the staged release directory, then validates that the ZIP contains exactly one `release-manifest.json` and no `.env`, `.sqlite`, `node_modules`, test results, PEM/key files, or absolute paths.

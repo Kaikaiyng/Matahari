@@ -39,7 +39,7 @@ class MariaDbDestructiveTestGateTest extends TestCase
                 optIn: '1',
                 driver: 'mysql',
                 databaseUrl: null,
-                configuredDatabase: 'matahari_audit_test',
+                configuredDatabase: 'rylay_audit_test',
                 probe: function () use (&$probeWasCalled): array {
                     $probeWasCalled = true;
 
@@ -63,7 +63,7 @@ class MariaDbDestructiveTestGateTest extends TestCase
                 optIn: '1',
                 driver: 'mariadb',
                 databaseUrl: 'mariadb://root@localhost/production',
-                configuredDatabase: 'matahari_audit_test',
+                configuredDatabase: 'rylay_audit_test',
                 probe: function () use (&$probeWasCalled): array {
                     $probeWasCalled = true;
 
@@ -87,9 +87,9 @@ class MariaDbDestructiveTestGateTest extends TestCase
             optIn: '1',
             driver: 'mariadb',
             databaseUrl: '   ',
-            configuredDatabase: 'matahari_audit_test',
+            configuredDatabase: 'rylay_audit_test',
             probe: fn (): array => [
-                'database' => 'matahari_audit_test',
+                'database' => 'rylay_audit_test',
                 'version' => '11.4.2-MariaDB',
             ],
         );
@@ -104,7 +104,7 @@ class MariaDbDestructiveTestGateTest extends TestCase
                 optIn: '1',
                 driver: 'mariadb',
                 databaseUrl: null,
-                configuredDatabase: 'matahari',
+                configuredDatabase: 'rylay',
                 probe: function () use (&$probeWasCalled): array {
                     $probeWasCalled = true;
 
@@ -128,9 +128,9 @@ class MariaDbDestructiveTestGateTest extends TestCase
             optIn: '1',
             driver: 'mariadb',
             databaseUrl: null,
-            configuredDatabase: 'matahari_audit_test',
+            configuredDatabase: 'rylay_audit_test',
             probe: fn (): array => [
-                'database' => 'matahari',
+                'database' => 'rylay',
                 'version' => '11.4.2-MariaDB',
             ],
         );
@@ -145,9 +145,9 @@ class MariaDbDestructiveTestGateTest extends TestCase
             optIn: '1',
             driver: 'mariadb',
             databaseUrl: null,
-            configuredDatabase: 'matahari_audit_test',
+            configuredDatabase: 'rylay_audit_test',
             probe: fn (): array => [
-                'database' => 'matahari_audit_test',
+                'database' => 'rylay_audit_test',
                 'version' => '8.4.0 MySQL Community Server',
             ],
         );
@@ -159,9 +159,9 @@ class MariaDbDestructiveTestGateTest extends TestCase
             optIn: '1',
             driver: 'mariadb',
             databaseUrl: '',
-            configuredDatabase: 'matahari_audit_test',
+            configuredDatabase: 'rylay_audit_test',
             probe: fn (): array => [
-                'database' => 'matahari_audit_test',
+                'database' => 'rylay_audit_test',
                 'version' => '11.4.2-MariaDB',
             ],
         );

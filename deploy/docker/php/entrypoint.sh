@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-storage_path="${MATAHARI_STORAGE_PATH:-/var/www/matahari/current/backend/storage}"
+storage_path="${RYLAY_STORAGE_PATH:-/var/www/rylay/current/backend/storage}"
 
 mkdir -p \
   "$storage_path/app/private" \

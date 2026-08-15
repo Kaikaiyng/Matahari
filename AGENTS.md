@@ -1,4 +1,4 @@
-# Matahari Agent Instructions
+# RYLAY Agent Instructions
 
 ## Project Summary
 

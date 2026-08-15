@@ -10,6 +10,8 @@ The shared backend resolves an active tenant from an explicitly verified request
 
 Admin (`frontend/`) and App (`app/`) are separate builds on separate tenant domains. Each calls `/api/tenant-context`, rejects the wrong surface, and uses same-origin `/api` session/CSRF requests. See [SaaS Multi-Tenancy](saas-multitenancy.md).
 
+Every tenant runs the same Admin and App source builds and the same Laravel backend. Tenant variation is limited to host-resolved `branding` and `features`; tenant-specific frontend copies, tenant branches, and tenant-specific authorization behavior are outside the architecture.
+
 ## High-Level Architecture
 
 ```mermaid

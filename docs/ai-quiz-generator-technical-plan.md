@@ -8,7 +8,7 @@
 
 ## Purpose and Implementation Gate
 
-Matahari will eventually provide an AI-assisted Quiz Generator for authorized teachers and administrators. Matahari remains authoritative for authorization, school and teaching scope, question types, validation, persistence, publication, assignment, marking, and audit. AI generates question content only; it is not an unrestricted chatbot.
+RYLAY will eventually provide an AI-assisted Quiz Generator for authorized teachers and administrators. RYLAY remains authoritative for authorization, school and teaching scope, question types, validation, persistence, publication, assignment, marking, and audit. AI generates question content only; it is not an unrestricted chatbot.
 
 This document records the approved design so the implementation can begin when the wider product roadmap reaches the Quiz stage. It does not authorize implementation now. Until that stage is explicitly started:
 
@@ -75,7 +75,7 @@ Reasons for the decision:
 - configurable provider, model, timeout, and failover;
 - built-in fakes and prompt assertions for tests.
 
-`openai-php/client` is a valid lower-level alternative but would require more Matahari-owned provider, schema, and retry plumbing. `cognesy/instructor-php` offers stronger typed-output abstractions but is unnecessary for the initial two-type generator. Do not install multiple AI abstraction layers.
+`openai-php/client` is a valid lower-level alternative but would require more RYLAY-owned provider, schema, and retry plumbing. `cognesy/instructor-php` offers stronger typed-output abstractions but is unnecessary for the initial two-type generator. Do not install multiple AI abstraction layers.
 
 The provider and model must be deployment configuration, not Controller constants. OpenAI may be the initial provider, but no model name or price assumption in this document is permanent.
 
@@ -129,7 +129,7 @@ Controllers should remain thin. Provider-specific code, prompts, output repair, 
 
 ## Preview and Persistence Decision
 
-Generated content remains frontend-only until the teacher confirms it. The teacher may edit, remove, or regenerate questions before confirmation. Confirmation submits the complete edited payload to Matahari, where it is validated again and saved as a Quiz draft.
+Generated content remains frontend-only until the teacher confirms it. The teacher may edit, remove, or regenerate questions before confirmation. Confirmation submits the complete edited payload to RYLAY, where it is validated again and saved as a Quiz draft.
 
 This avoids filling `quizzes` with abandoned generations and guarantees that AI cannot publish directly. A refresh may discard an unconfirmed preview; that is acceptable for V1.
 
@@ -176,7 +176,7 @@ V1 should use one options-based representation for both enabled types:
 }
 ```
 
-Provider-level structured output is necessary but not sufficient. Matahari must independently validate:
+Provider-level structured output is necessary but not sufficient. RYLAY must independently validate:
 
 - exact total question count and exact count per requested type;
 - enabled question-type enum membership;
@@ -186,7 +186,7 @@ Provider-level structured output is necessary but not sufficient. Matahari must 
 - the approved MCQ option count, initially four;
 - non-empty, non-duplicate options;
 - reasonable duplicate-question detection;
-- points assigned by Matahari rather than AI.
+- points assigned by RYLAY rather than AI.
 
 Correct-answer fields must be excluded from all student delivery responses.
 
@@ -240,13 +240,13 @@ Recommended initial configurable limits are:
 - approximately 30 seconds provider timeout;
 - client request UUID and disabled submit controls to reduce duplicate calls.
 
-The exact production limits require usage and cost evidence and should remain configurable. Laravel route/action rate limiting should key on both actor and school. Provider rate limits do not replace Matahari limits.
+The exact production limits require usage and cost evidence and should remain configurable. Laravel route/action rate limiting should key on both actor and school. Provider rate limits do not replace RYLAY limits.
 
 User-controlled fields must be treated as data, length-limited, normalized, and clearly delimited in the prompt. Users never control the system instruction. Prompt wording is not a security boundary; schema validation, authorization, enabled-type checks, and persistence validation remain mandatory.
 
 ## Failure Handling
 
-Return stable Matahari errors rather than raw provider responses:
+Return stable RYLAY errors rather than raw provider responses:
 
 - `AI_GENERATION_TIMEOUT`;
 - `AI_PROVIDER_UNAVAILABLE`;
@@ -351,6 +351,6 @@ Because SDK releases, provider models, prices, and structured-output behavior ca
 - provider data-retention settings and school privacy requirements;
 - current pricing and operational limits;
 - MariaDB migration and constraint behavior;
-- the then-current Matahari Quiz schema and roadmap.
+- the then-current RYLAY Quiz schema and roadmap.
 
 No implementation should proceed merely because this document exists; the Quiz stage must be explicitly started.

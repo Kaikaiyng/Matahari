@@ -120,7 +120,7 @@ No PHPStan, Psalm, Larastan, or equivalent PHP static-analysis command is config
 Use an explicit disposable file, never the demo database or a database with valuable data:
 
 ```powershell
-$migrationDb = Join-Path $env:TEMP 'matahari-migration-check.sqlite'
+$migrationDb = Join-Path $env:TEMP 'rylay-migration-check.sqlite'
 if (Test-Path -LiteralPath $migrationDb) { Remove-Item -LiteralPath $migrationDb }
 New-Item -ItemType File -Path $migrationDb | Out-Null
 
@@ -146,7 +146,7 @@ After checking every exit code, remove only the exact disposable path and clear 
 MariaDB is required for database-sensitive release evidence. Provision a disposable local/test server and a database named exactly:
 
 ```text
-matahari_audit_test
+rylay_audit_test
 ```
 
 The guarded destructive tests refuse to run unless all of these are true:
@@ -154,7 +154,7 @@ The guarded destructive tests refuse to run unless all of these are true:
 - `AUDIT_MARIADB_DESTRUCTIVE_TEST=1` is explicitly set.
 - Laravel driver is exactly `mariadb`.
 - `DB_URL` is empty.
-- Configured and actual database names are exactly `matahari_audit_test`.
+- Configured and actual database names are exactly `rylay_audit_test`.
 - Server version identifies MariaDB.
 
 Set private values in the current process only; the placeholders below are not credentials:
@@ -165,7 +165,7 @@ $env:DB_CONNECTION = 'mariadb'
 $env:DB_URL = ''
 $env:DB_HOST = '127.0.0.1'
 $env:DB_PORT = '3306'
-$env:DB_DATABASE = 'matahari_audit_test'
+$env:DB_DATABASE = 'rylay_audit_test'
 
 cd backend
 ..\tools\php\php-local.cmd vendor\bin\phpunit --group mariadb
@@ -239,7 +239,7 @@ The fixed timestamp above is for a deterministic local rehearsal, not a real rel
 When Docker is available, validation also requires:
 
 ```bash
-docker build -f deploy/docker/php/Dockerfile -t matahari-php:8.4.21-1 .
+docker build -f deploy/docker/php/Dockerfile -t rylay-php:8.4.21-1 .
 docker compose --env-file /path/to/private/database.env -f deploy/compose/database.yml config
 docker compose --env-file /path/to/private/staging.env -f deploy/compose/application.yml config
 docker compose --env-file /path/to/private/production.env -f deploy/compose/application.yml config
