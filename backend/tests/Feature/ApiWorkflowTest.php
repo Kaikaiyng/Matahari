@@ -75,7 +75,7 @@ class ApiWorkflowTest extends TestCase
     {
         $this->seed();
 
-        $otherSchool = School::query()->create([
+        $otherSchool = $this->createTenantSchool([
             'code' => 'OTH',
             'name' => 'Other School',
             'receipt_prefix' => 'OTH',
@@ -156,7 +156,7 @@ class ApiWorkflowTest extends TestCase
         $this->seed();
 
         $school = School::query()->where('code', 'MIS')->firstOrFail();
-        $otherSchool = School::query()->create([
+        $otherSchool = $this->createTenantSchool([
             'code' => 'OTH',
             'name' => 'Other School',
             'receipt_prefix' => 'OTH',

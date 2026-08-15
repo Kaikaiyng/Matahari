@@ -50,7 +50,7 @@ class TenantAdministrationService
                 'tenant_id' => $tenant->id, 'user_id' => $owner->id, 'default_school_id' => $school->id,
                 'access_all_schools' => true, 'status' => 'active',
             ]);
-            $membership->schools()->attach($school);
+            $membership->schools()->attach($school->id, ['tenant_id' => $tenant->id]);
             $membership->roles()->attach($tenantOwnerRole);
             foreach ($data['domains'] ?? [] as $domain) {
                 $tenant->domains()->create([...$domain, 'hostname' => strtolower($domain['hostname']), 'status' => 'pending']);
@@ -184,7 +184,7 @@ class TenantAdministrationService
             $membership ??= new TenantUserMembership(['tenant_id' => $tenant->id, 'user_id' => $user->id]);
             $membership->fill(['default_school_id' => $data['default_school_id'], 'access_all_schools' => $data['access_all_schools'] ?? false, 'status' => $data['status']]);
             $membership->save();
-            $membership->schools()->sync($foundSchoolIds);
+            $membership->schools()->syncWithPivotValues($foundSchoolIds, ['tenant_id' => $tenant->id]);
             $membership->roles()->sync($roles->pluck('id')->all());
             if ($user->school_id === null) {
                 $user->update(['school_id' => $data['default_school_id']]);

@@ -6,7 +6,7 @@
 
 Tenant-sensitive changes must additionally cover known/unknown/pending/inactive hosts, wrong-tenant login, membership roles, membership school restrictions, surface mismatch, tenant suspension, feature enforcement, platform-versus-tenant administration and transactional audit rollback. Production smoke tests must use the real Admin/App hostnames; sending a tenant ID in a request is not a substitute.
 
-The full qualification workflow runs `TenantFoundationMariaDbSchemaTest` after a disposable MariaDB migrate/rollback/re-migrate lifecycle. It inspects the tenant foreign-key delete rules and exact domain, feature, membership, pivot and tenant-local school-code unique indexes through `information_schema`.
+The full qualification workflow runs `TenantFoundationMariaDbSchemaTest` after a disposable MariaDB migrate/rollback/re-migrate lifecycle. It inspects tenant-column nullability, same-tenant composite foreign keys/delete rules, the generated primary-surface guard, and exact domain, feature, membership, pivot and tenant-local school-code unique indexes through `information_schema`.
 
 Run commands from a clean feature branch/worktree. Record the exact command, exit code, counts, skipped cases, and limitations. Never convert a skipped or unavailable check into a pass.
 
@@ -169,6 +169,7 @@ $env:DB_DATABASE = 'rylay_audit_test'
 
 cd backend
 ..\tools\php\php-local.cmd vendor\bin\phpunit --group mariadb
+..\tools\php\php-local.cmd vendor\bin\phpunit --group mariadb-tenant-foundation
 ```
 
 Set `DB_USERNAME` and `DB_PASSWORD` privately in the process before running the command. Do not paste their values into documentation, shell history, or test reports.
@@ -185,6 +186,8 @@ For a schema-changing release, also run explicit MariaDB lifecycle checks agains
 ```
 
 Validate any migration-specific rollback, foreign keys, exact indexes, JSON behavior, row locking, and concurrent financial paths relevant to the change. Stop on any unexpected schema definition or data loss.
+
+Because MariaDB DDL is not transactional, corrective migrations must also be safe to retry after a partial failure. For tenant hardening, verify a retry does not duplicate referenced-key indexes, foreign keys, the generated primary-surface column or its unique index.
 
 For Phase A, the MariaDB lifecycle must additionally inspect the exact nullable current-slot unique indexes, portal-user unique indexes, and all academic/portal foreign-key delete rules. The existing-data upgrade test must prove that no academic dates, enrolment history, identity association, or guardian access is inferred.
 

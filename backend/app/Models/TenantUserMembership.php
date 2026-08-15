@@ -32,7 +32,9 @@ class TenantUserMembership extends Model
 
     public function schools(): BelongsToMany
     {
-        return $this->belongsToMany(School::class, 'tenant_membership_schools')->withTimestamps();
+        return $this->belongsToMany(School::class, 'tenant_membership_schools')
+            ->withPivot('tenant_id')
+            ->withTimestamps();
     }
 
     public function roles(): BelongsToMany

@@ -61,7 +61,7 @@ Route::middleware($sessionMiddleware)->group(function (): void {
     });
 });
 
-Route::middleware([...$sessionMiddleware, 'auth', 'active', 'tenant.member'])->group(function (): void {
+Route::middleware([...$sessionMiddleware, 'auth', 'active', 'tenant.member', 'tenant.surface:admin'])->group(function (): void {
     Route::prefix('v1/platform')->middleware('platform.owner')->group(function (): void {
         Route::get('/tenants', [PlatformTenantController::class, 'index']);
         Route::post('/tenants', [PlatformTenantController::class, 'store']);
@@ -160,7 +160,7 @@ Route::middleware([...$sessionMiddleware, 'auth', 'active', 'tenant.member'])->g
 });
 
 Route::prefix('v1')->middleware([...$sessionMiddleware, 'auth', 'active', 'tenant.member', 'school.context'])->group(function (): void {
-    Route::prefix('community')->middleware(['tenant.feature:community', 'permission:community.view'])->group(function (): void {
+    Route::prefix('community')->middleware(['tenant.surface:app', 'tenant.feature:community', 'permission:community.view'])->group(function (): void {
         Route::get('/posts', [CommunityController::class, 'index']);
         Route::post('/posts', [CommunityController::class, 'store'])->middleware('permission:community.publish');
         Route::post('/posts/{communityPost}/reaction', [CommunityController::class, 'reaction'])->middleware('permission:community.interact');
@@ -170,7 +170,7 @@ Route::prefix('v1')->middleware([...$sessionMiddleware, 'auth', 'active', 'tenan
         Route::post('/posts/{communityPost}/hide', [CommunityController::class, 'hide'])->middleware('permission:community.moderate');
     });
 
-    Route::prefix('admin')->group(function (): void {
+    Route::prefix('admin')->middleware('tenant.surface:admin')->group(function (): void {
         Route::get('/academic-years', [AcademicYearController::class, 'index'])->middleware('permission:academic_years.view');
         Route::post('/academic-years', [AcademicYearController::class, 'store'])->middleware('permission:academic_years.manage');
         Route::patch('/academic-years/{academicYear}', [AcademicYearController::class, 'update'])->middleware('permission:academic_years.manage');
@@ -204,27 +204,27 @@ Route::prefix('v1')->middleware([...$sessionMiddleware, 'auth', 'active', 'tenan
         Route::post('/staff', [StaffController::class, 'store'])->middleware('permission:foundation_accounts.manage');
     });
 
-    Route::prefix('teacher')->middleware('permission:teaching_scope.view')->group(function (): void {
+    Route::prefix('teacher')->middleware(['tenant.surface:app', 'permission:teaching_scope.view'])->group(function (): void {
         Route::get('/teaching-assignments', [TeacherScopeController::class, 'assignments']);
         Route::get('/classes/{schoolClass}/students', [TeacherScopeController::class, 'students']);
         Route::get('/attendance/daily', [TeacherAttendanceController::class, 'showDaily'])->middleware('tenant.feature:attendance');
         Route::post('/attendance/daily', [TeacherAttendanceController::class, 'storeDaily'])->middleware('tenant.feature:attendance');
     });
 
-    Route::prefix('assessments')->middleware(['tenant.feature:assessments', 'permission:assessments.manage'])->group(function (): void {
+    Route::prefix('assessments')->middleware(['tenant.surface:app', 'tenant.feature:assessments', 'permission:assessments.manage'])->group(function (): void {
         Route::get('/', [AssessmentController::class, 'index']);
         Route::post('/', [AssessmentController::class, 'store']);
         Route::put('/{assessment}/results', [AssessmentController::class, 'saveResults']);
         Route::post('/{assessment}/publish', [AssessmentController::class, 'publish']);
     });
 
-    Route::prefix('quizzes')->middleware(['tenant.feature:formal_quiz', 'permission:quizzes.manage'])->group(function (): void {
+    Route::prefix('quizzes')->middleware(['tenant.surface:app', 'tenant.feature:formal_quiz', 'permission:quizzes.manage'])->group(function (): void {
         Route::post('/', [QuizController::class, 'store']);
         Route::post('/{quiz}/assignments', [QuizController::class, 'assign']);
         Route::post('/assignments/{quizAssignment}/publish', [QuizController::class, 'publish']);
     });
 
-    Route::prefix('portal')->group(function (): void {
+    Route::prefix('portal')->middleware('tenant.surface:app')->group(function (): void {
         // Parent portal — requires active guardian link per resource
         Route::prefix('parent')->middleware('permission:parent.self_service')->group(function (): void {
             Route::get('/me', [ParentPortalController::class, 'me']);

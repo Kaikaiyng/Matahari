@@ -4,6 +4,7 @@ use App\Http\Middleware\AssignRequestId;
 use App\Http\Middleware\EnsurePlatformOwner;
 use App\Http\Middleware\EnsureTenantFeatureEnabled;
 use App\Http\Middleware\EnsureTenantMembership;
+use App\Http\Middleware\EnsureTenantSurface;
 use App\Http\Middleware\EnsureUserHasPermission;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\ResolveSchoolContext;
@@ -29,6 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'active' => EnsureUserIsActive::class,
             'tenant.member' => EnsureTenantMembership::class,
+            'tenant.surface' => EnsureTenantSurface::class,
             'tenant.feature' => EnsureTenantFeatureEnabled::class,
             'platform.owner' => EnsurePlatformOwner::class,
             'permission' => EnsureUserHasPermission::class,

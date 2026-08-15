@@ -10,7 +10,6 @@ use App\Models\AcademicYear;
 use App\Models\AuditLog;
 use App\Models\ClassEnrolment;
 use App\Models\ClassScheduleEntry;
-use App\Models\School;
 use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Models\TeachingAssignment;
@@ -28,19 +27,20 @@ class ScheduleApiTest extends TestCase
     {
         parent::setUp();
         $this->seed();
+        $this->withServerVariables(['HTTP_HOST' => '127.0.0.1']);
     }
 
     public function test_admin_publishes_schedule_visible_only_through_student_and_guardian_relationships(): void
     {
         [$admin, $student, $assignment] = $this->fixture();
-        $draft = $this->actingAs($admin)->postJson('/api/v1/admin/class-schedules', $this->payload($assignment, 'draft'))->assertCreated()->json('data.id');
+        $draft = $this->actingAs($admin)->postJson('http://localhost/api/v1/admin/class-schedules', $this->payload($assignment, 'draft'))->assertCreated()->json('data.id');
         $studentUser = User::query()->where('username', 'alyssa.tan')->firstOrFail();
         $parent = User::query()->where('username', 'rachel.wong')->firstOrFail();
 
-        $this->actingAs($studentUser)->getJson('/api/v1/portal/student/schedule')->assertOk()->assertJsonCount(0, 'data.entries');
-        $this->actingAs($admin)->patchJson("/api/v1/admin/class-schedules/{$draft}", ['status' => 'published'])->assertOk();
-        $this->actingAs($studentUser)->getJson('/api/v1/portal/student/schedule')->assertOk()->assertJsonPath('data.entries.0.title', 'English')->assertJsonPath('data.entries.0.starts_at', '08:00');
-        $this->actingAs($parent)->getJson("/api/v1/portal/parent/children/{$student->id}/schedule")->assertOk()->assertJsonPath('data.entries.0.teacher', $assignment->teacher->name);
+        $this->actingAs($studentUser)->getJson('http://127.0.0.1/api/v1/portal/student/schedule')->assertOk()->assertJsonCount(0, 'data.entries');
+        $this->actingAs($admin)->patchJson("http://localhost/api/v1/admin/class-schedules/{$draft}", ['status' => 'published'])->assertOk();
+        $this->actingAs($studentUser)->getJson('http://127.0.0.1/api/v1/portal/student/schedule')->assertOk()->assertJsonPath('data.entries.0.title', 'English')->assertJsonPath('data.entries.0.starts_at', '08:00');
+        $this->actingAs($parent)->getJson("http://127.0.0.1/api/v1/portal/parent/children/{$student->id}/schedule")->assertOk()->assertJsonPath('data.entries.0.teacher', $assignment->teacher->name);
         $this->assertDatabaseHas('audit_logs', ['action' => 'class_schedule.updated', 'entity_id' => $draft]);
     }
 
@@ -49,13 +49,13 @@ class ScheduleApiTest extends TestCase
         [$admin, $student, $assignment] = $this->fixture();
         $parent = User::query()->where('username', 'rachel.wong')->firstOrFail();
         $parent->guardianProfile->students()->updateExistingPivot($student->id, ['can_view_academics' => false]);
-        $this->actingAs($parent)->getJson("/api/v1/portal/parent/children/{$student->id}/schedule")->assertForbidden();
+        $this->actingAs($parent)->getJson("http://127.0.0.1/api/v1/portal/parent/children/{$student->id}/schedule")->assertForbidden();
 
-        $otherSchool = School::query()->create(['name' => 'Other School', 'code' => 'OTHER', 'receipt_prefix' => 'OTH', 'invoice_prefix' => 'OTH']);
+        $otherSchool = $this->createTenantSchool(['name' => 'Other School', 'code' => 'OTHER', 'receipt_prefix' => 'OTH', 'invoice_prefix' => 'OTH']);
         $otherYear = AcademicYear::query()->create(['school_id' => $otherSchool->id, 'code' => '2027', 'name' => '2027']);
         $otherClass = SchoolClass::query()->create(['school_id' => $otherSchool->id, 'name' => 'O1', 'status' => 'active']);
         $entry = ClassScheduleEntry::query()->create(['school_id' => $otherSchool->id, 'academic_year_id' => $otherYear->id, 'class_id' => $otherClass->id, 'title' => 'Private', 'day_of_week' => 1, 'starts_at' => '08:00', 'ends_at' => '09:00', 'status' => 'published', 'created_by_user_id' => $admin->id]);
-        $this->actingAs($admin)->patchJson("/api/v1/admin/class-schedules/{$entry->id}", ['title' => 'Changed'])->assertForbidden();
+        $this->actingAs($admin)->patchJson("http://localhost/api/v1/admin/class-schedules/{$entry->id}", ['title' => 'Changed'])->assertForbidden();
     }
 
     public function test_schedule_creation_rolls_back_when_audit_fails(): void

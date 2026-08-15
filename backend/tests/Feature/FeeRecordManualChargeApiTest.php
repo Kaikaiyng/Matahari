@@ -141,7 +141,7 @@ class FeeRecordManualChargeApiTest extends TestCase
     public function test_manual_charge_rejects_other_school_student_or_fee_item(): void
     {
         [$school, , $admin] = $this->schoolStudentAndUser(['fee_record.manage']);
-        $otherSchool = School::query()->create([
+        $otherSchool = $this->createTenantSchool([
             'code' => 'OTH',
             'name' => 'Other School',
             'receipt_prefix' => 'OTH',
@@ -227,7 +227,7 @@ class FeeRecordManualChargeApiTest extends TestCase
      */
     private function schoolStudentAndUser(array $permissionSlugs, string $schoolCode = 'MIS'): array
     {
-        $school = School::query()->create([
+        $school = $this->createTenantSchool([
             'code' => $schoolCode,
             'name' => $schoolCode.' School',
             'receipt_prefix' => $schoolCode,

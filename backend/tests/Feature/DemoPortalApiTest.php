@@ -21,6 +21,7 @@ class DemoPortalApiTest extends TestCase
     {
         parent::setUp();
         $this->seed();
+        $this->withServerVariables(['HTTP_HOST' => '127.0.0.1']);
     }
 
     public function test_mis_demo_seed_creates_explicit_portal_identities_and_academic_scope(): void
@@ -34,7 +35,7 @@ class DemoPortalApiTest extends TestCase
         $this->assertTrue($teacher->hasPermissionTo('teaching_scope.view'));
 
         $parentResponse = $this->actingAs($parent)
-            ->getJson('/api/v1/portal/parent/me')
+            ->getJson('http://127.0.0.1/api/v1/portal/parent/me')
             ->assertOk()
             ->assertJsonCount(3, 'children')
             ->assertJsonPath('data.full_name', 'Rachel Wong');
@@ -42,7 +43,7 @@ class DemoPortalApiTest extends TestCase
         $this->assertSame('2026', data_get($alyssa, 'academic_year.code'));
 
         $this->actingAs($studentUser)
-            ->getJson('/api/v1/portal/student/enrolments')
+            ->getJson('http://127.0.0.1/api/v1/portal/student/enrolments')
             ->assertOk()
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.class.name', 'MB1')
@@ -56,20 +57,20 @@ class DemoPortalApiTest extends TestCase
         $student = Student::query()->where('student_no', 'MIS-2026-001')->firstOrFail();
 
         $this->actingAs($parent)
-            ->getJson("/api/v1/portal/parent/children/{$student->id}/outstanding?academic_year=2026")
+            ->getJson("http://127.0.0.1/api/v1/portal/parent/children/{$student->id}/outstanding?academic_year=2026")
             ->assertOk();
 
         $parent->guardianProfile->students()->updateExistingPivot($student->id, ['can_view_finance' => false]);
 
         $this->actingAs($parent)
-            ->getJson("/api/v1/portal/parent/children/{$student->id}/outstanding?academic_year=2026")
+            ->getJson("http://127.0.0.1/api/v1/portal/parent/children/{$student->id}/outstanding?academic_year=2026")
             ->assertForbidden();
     }
 
     public function test_parent_and_student_portal_access_rejects_cross_school_records(): void
     {
         $parent = User::query()->where('username', 'rachel.wong')->firstOrFail();
-        $otherSchool = School::query()->create([
+        $otherSchool = $this->createTenantSchool([
             'name' => 'Other School',
             'code' => 'OTHER',
             'receipt_prefix' => 'OTHER',
@@ -86,7 +87,7 @@ class DemoPortalApiTest extends TestCase
         ]);
 
         $this->actingAs($parent)
-            ->getJson("/api/v1/portal/parent/children/{$otherStudent->id}/payments")
+            ->getJson("http://127.0.0.1/api/v1/portal/parent/children/{$otherStudent->id}/payments")
             ->assertForbidden();
     }
 
@@ -110,17 +111,17 @@ class DemoPortalApiTest extends TestCase
         ]);
 
         $this->actingAs($parent)
-            ->getJson('/api/v1/portal/notifications')
+            ->getJson('http://127.0.0.1/api/v1/portal/notifications')
             ->assertOk()
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.id', $own->id);
 
         $this->actingAs($parent)
-            ->patchJson("/api/v1/portal/notifications/{$other->id}/read")
+            ->patchJson("http://127.0.0.1/api/v1/portal/notifications/{$other->id}/read")
             ->assertForbidden();
 
         $this->actingAs($parent)
-            ->patchJson("/api/v1/portal/notifications/{$own->id}/read")
+            ->patchJson("http://127.0.0.1/api/v1/portal/notifications/{$own->id}/read")
             ->assertOk();
         $this->assertNotNull($own->fresh()->read_at);
         $this->assertNull($other->fresh()->read_at);
@@ -131,12 +132,12 @@ class DemoPortalApiTest extends TestCase
         $admin = User::query()->where('username', 'admin')->firstOrFail();
 
         $this->actingAs($admin)
-            ->getJson('/api/v1/admin/staff')
+            ->getJson('http://localhost/api/v1/admin/staff')
             ->assertOk()
             ->assertJsonFragment(['username' => 'teacher.lim']);
 
         $this->actingAs($admin)
-            ->postJson('/api/v1/admin/staff', [
+            ->postJson('http://localhost/api/v1/admin/staff', [
                 'name' => 'Demo Teacher',
                 'username' => 'demo.teacher',
                 'password' => 'demo-password-2026',
@@ -169,11 +170,11 @@ class DemoPortalApiTest extends TestCase
         $membership = TenantUserMembership::query()->create([
             'tenant_id' => $school->tenant_id, 'user_id' => $user->id, 'default_school_id' => $school->id, 'status' => 'active',
         ]);
-        $membership->schools()->attach($school);
+        $membership->schools()->attach($school->id, ['tenant_id' => $membership->tenant_id]);
         $membership->roles()->attach($role);
 
         $this->actingAs($user)
-            ->postJson('/api/v1/admin/staff', [
+            ->postJson('http://localhost/api/v1/admin/staff', [
                 'name' => 'Escalated User',
                 'username' => 'escalated.user',
                 'password' => 'escalated-password-2026',
@@ -182,7 +183,7 @@ class DemoPortalApiTest extends TestCase
 
         $admin = User::query()->where('username', 'admin')->firstOrFail();
         $this->actingAs($admin)
-            ->postJson('/api/v1/admin/staff', [
+            ->postJson('http://localhost/api/v1/admin/staff', [
                 'name' => 'Escalated User',
                 'username' => 'escalated.user',
                 'password' => 'escalated-password-2026',

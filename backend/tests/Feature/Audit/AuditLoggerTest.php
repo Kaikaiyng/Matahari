@@ -9,7 +9,6 @@ use App\Audit\AuditEvent;
 use App\Audit\AuditModule;
 use App\Audit\AuditSubject;
 use App\Contracts\AuditLoggerContract;
-use App\Models\School;
 use App\Models\User;
 use App\Services\Audit\AuditLogger;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -28,14 +27,14 @@ class AuditLoggerTest extends TestCase
 
     public function test_logger_uses_affected_school_and_sanitizes_payloads(): void
     {
-        $school = School::query()->create([
+        $school = $this->createTenantSchool([
             'code' => 'AUD',
             'name' => 'Audit School',
             'receipt_prefix' => 'AUD',
             'invoice_prefix' => 'AUD-INV',
             'status' => 'active',
         ]);
-        $actorSchool = School::query()->create([
+        $actorSchool = $this->createTenantSchool([
             'code' => 'ACT',
             'name' => 'Actor School',
             'receipt_prefix' => 'ACT',
@@ -85,7 +84,7 @@ class AuditLoggerTest extends TestCase
 
     public function test_logger_uses_actor_school_when_event_has_no_school(): void
     {
-        $actorSchool = School::query()->create([
+        $actorSchool = $this->createTenantSchool([
             'code' => 'FBK',
             'name' => 'Fallback School',
             'receipt_prefix' => 'FBK',

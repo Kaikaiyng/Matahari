@@ -6,7 +6,6 @@ use App\Audit\AuditContextFactory;
 use App\Audit\AuditContextType;
 use App\Http\Middleware\AssignRequestId;
 use App\Models\Role;
-use App\Models\School;
 use App\Models\User;
 use Closure;
 use Illuminate\Contracts\Debug\ExceptionHandler;
@@ -125,7 +124,7 @@ class AuditRequestContextTest extends TestCase
 
     public function test_factory_snapshots_sorted_roles_and_actor_school(): void
     {
-        $school = School::query()->create([
+        $school = $this->createTenantSchool([
             'code' => 'CTX',
             'name' => 'Context School',
             'receipt_prefix' => 'CTX',

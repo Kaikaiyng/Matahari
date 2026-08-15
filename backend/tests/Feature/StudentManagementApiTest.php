@@ -17,7 +17,7 @@ class StudentManagementApiTest extends TestCase
 
     public function test_student_list_defaults_to_active_students_and_exposes_student_no(): void
     {
-        $school = School::query()->create([
+        $school = $this->createTenantSchool([
             'code' => 'MIS',
             'name' => 'Matahari International School',
             'receipt_prefix' => 'MIS',
@@ -61,7 +61,7 @@ class StudentManagementApiTest extends TestCase
 
     public function test_student_status_is_changed_only_through_status_endpoint(): void
     {
-        $school = School::query()->create([
+        $school = $this->createTenantSchool([
             'code' => 'MIS',
             'name' => 'Matahari International School',
             'receipt_prefix' => 'MIS',
@@ -100,7 +100,7 @@ class StudentManagementApiTest extends TestCase
 
     public function test_finance_user_can_view_students_but_cannot_create_students(): void
     {
-        $school = School::query()->create([
+        $school = $this->createTenantSchool([
             'code' => 'MIS',
             'name' => 'Matahari International School',
             'receipt_prefix' => 'MIS',
@@ -126,7 +126,7 @@ class StudentManagementApiTest extends TestCase
 
     public function test_class_catalog_returns_the_configured_classes_grouped_by_level(): void
     {
-        $school = School::query()->create([
+        $school = $this->createTenantSchool([
             'code' => 'MIS',
             'name' => 'Matahari International School',
             'receipt_prefix' => 'MIS',
@@ -164,7 +164,7 @@ class StudentManagementApiTest extends TestCase
 
     public function test_student_class_must_match_the_selected_level_group(): void
     {
-        $school = School::query()->create([
+        $school = $this->createTenantSchool([
             'code' => 'MIS',
             'name' => 'Matahari International School',
             'receipt_prefix' => 'MIS',
@@ -192,14 +192,14 @@ class StudentManagementApiTest extends TestCase
 
     public function test_student_class_must_belong_to_the_signed_in_school(): void
     {
-        $school = School::query()->create([
+        $school = $this->createTenantSchool([
             'code' => 'MIS',
             'name' => 'Matahari International School',
             'receipt_prefix' => 'MIS',
             'invoice_prefix' => 'MIS-INV',
             'status' => 'active',
         ]);
-        $otherSchool = School::query()->create([
+        $otherSchool = $this->createTenantSchool([
             'code' => 'OTHER',
             'name' => 'Other School',
             'receipt_prefix' => 'OTH',

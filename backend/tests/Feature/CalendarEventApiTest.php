@@ -266,7 +266,7 @@ class CalendarEventApiTest extends TestCase
 
     private function school(string $code, string $status = 'active'): School
     {
-        return School::query()->create([
+        return $this->createTenantSchool([
             'code' => $code,
             'name' => $code.' School',
             'receipt_prefix' => $code,

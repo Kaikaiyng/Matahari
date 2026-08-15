@@ -19,7 +19,17 @@ class PhaseAExistingDataUpgradeMigrationTest extends TestCase
         $academicMigration->down();
 
         $now = now();
+        $tenantId = DB::table('tenants')->insertGetId([
+            'slug' => 'legacy',
+            'name' => 'Legacy Tenant',
+            'status' => 'active',
+            'timezone' => 'Asia/Kuala_Lumpur',
+            'locale' => 'en',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
         $schoolId = DB::table('schools')->insertGetId([
+            'tenant_id' => $tenantId,
             'code' => 'LEGACY',
             'name' => 'Legacy School',
             'receipt_prefix' => 'LEG',

@@ -51,7 +51,7 @@ class TenantIsolationApiTest extends TestCase
         [$alpha, $alphaDomain, $alphaSchool] = $this->tenantFixture('alpha', 'alpha.admin.example.test', 'admin');
         [, $betaDomain] = $this->tenantFixture('beta', 'beta.admin.example.test', 'admin');
         $user = User::query()->create(['school_id' => $alphaSchool->id, 'name' => 'Alpha Admin', 'username' => 'alpha.admin', 'password' => Hash::make('password'), 'status' => 'active']);
-        TenantUserMembership::query()->create(['tenant_id' => $alpha->id, 'user_id' => $user->id, 'default_school_id' => $alphaSchool->id, 'status' => 'active'])->schools()->attach($alphaSchool->id);
+        TenantUserMembership::query()->create(['tenant_id' => $alpha->id, 'user_id' => $user->id, 'default_school_id' => $alphaSchool->id, 'status' => 'active'])->schools()->attach($alphaSchool->id, ['tenant_id' => $alpha->id]);
 
         $this->postJson("http://{$betaDomain->hostname}/api/login", ['username' => 'alpha.admin', 'password' => 'password'])->assertUnprocessable();
         $this->assertGuest();
@@ -69,7 +69,7 @@ class TenantIsolationApiTest extends TestCase
         $user = User::query()->create(['school_id' => $school->id, 'name' => 'Admin', 'username' => 'admin', 'password' => 'password', 'status' => 'active']);
         $user->roles()->attach($role);
         $membership = TenantUserMembership::query()->create(['tenant_id' => $tenant->id, 'user_id' => $user->id, 'default_school_id' => $school->id, 'status' => 'active']);
-        $membership->schools()->attach($school);
+        $membership->schools()->attach($school->id, ['tenant_id' => $tenant->id]);
 
         $this->actingAs($user)->getJson("http://{$domain->hostname}/api/students")->assertForbidden();
 
@@ -87,11 +87,11 @@ class TenantIsolationApiTest extends TestCase
         $role->permissions()->syncWithoutDetaching([$permission->id]);
         $user = User::query()->create(['school_id' => $firstSchool->id, 'name' => 'Admin', 'username' => 'admin', 'password' => 'password', 'status' => 'active']);
         $membership = TenantUserMembership::query()->create(['tenant_id' => $tenant->id, 'user_id' => $user->id, 'default_school_id' => $firstSchool->id, 'status' => 'active']);
-        $membership->schools()->attach($firstSchool);
+        $membership->schools()->attach($firstSchool->id, ['tenant_id' => $tenant->id]);
         $membership->roles()->attach($role);
 
         $this->actingAs($user)->getJson("http://{$domain->hostname}/api/v1/admin/academic-years?school_id={$secondSchool->id}")->assertForbidden();
-        $membership->schools()->attach($secondSchool);
+        $membership->schools()->attach($secondSchool->id, ['tenant_id' => $tenant->id]);
         $this->actingAs($user)->getJson("http://{$domain->hostname}/api/v1/admin/academic-years?school_id={$secondSchool->id}")->assertOk();
         $this->actingAs($user)->getJson("http://{$domain->hostname}/api/v1/admin/academic-years?school_id={$otherSchool->id}")->assertForbidden();
         $this->assertNotSame($tenant->id, $otherTenant->id);
@@ -133,7 +133,7 @@ class TenantIsolationApiTest extends TestCase
         [$tenant, $domain, $school] = $this->tenantFixture('alpha', 'alpha.admin.example.test', 'admin');
         $user = User::query()->create(['school_id' => $school->id, 'name' => 'Tenant Admin', 'username' => 'tenant.admin', 'password' => 'password', 'status' => 'active']);
         $membership = TenantUserMembership::query()->create(['tenant_id' => $tenant->id, 'user_id' => $user->id, 'default_school_id' => $school->id, 'status' => 'active']);
-        $membership->schools()->attach($school);
+        $membership->schools()->attach($school->id, ['tenant_id' => $tenant->id]);
 
         $this->actingAs($user)->postJson("http://{$domain->hostname}/api/v1/platform/tenants", $this->newTenantPayload())->assertForbidden();
         $this->assertDatabaseMissing('tenants', ['slug' => 'bravo']);
@@ -160,7 +160,7 @@ class TenantIsolationApiTest extends TestCase
         $role->permissions()->syncWithoutDetaching([$settings->id, $community->id]);
         $owner = User::query()->create(['school_id' => $school->id, 'name' => 'Tenant Owner', 'username' => 'alpha.owner', 'password' => 'password', 'status' => 'active']);
         $membership = TenantUserMembership::query()->create(['tenant_id' => $tenant->id, 'user_id' => $owner->id, 'default_school_id' => $school->id, 'access_all_schools' => true, 'status' => 'active']);
-        $membership->schools()->attach($school);
+        $membership->schools()->attach($school->id, ['tenant_id' => $tenant->id]);
         $membership->roles()->attach($role);
 
         $this->actingAs($owner)->putJson("http://{$domain->hostname}/api/v1/tenant/features/community", ['enabled' => false])
@@ -176,7 +176,9 @@ class TenantIsolationApiTest extends TestCase
         $user = User::query()->create(['school_id' => $school->id, 'name' => 'Legacy User', 'username' => 'legacy.user', 'password' => 'password', 'status' => 'active']);
         $user->roles()->attach($role);
         $migration = require database_path('migrations/2026_08_14_000001_create_tenant_foundation.php');
+        $hardening = require database_path('migrations/2026_08_15_000001_harden_tenant_foundation.php');
 
+        $hardening->down();
         $migration->down();
         $this->assertFalse(Schema::hasTable('tenants'));
         $this->assertDatabaseHas('schools', ['id' => $school->id, 'code' => 'LEGACY']);
@@ -204,6 +206,49 @@ class TenantIsolationApiTest extends TestCase
 
         $this->expectException(QueryException::class);
         $this->school($firstTenant, 'ALPHA');
+    }
+
+    public function test_backend_enforces_admin_and_app_surfaces_while_session_routes_are_shared(): void
+    {
+        [$tenant, $adminDomain, $school] = $this->tenantFixture('alpha', 'alpha.admin.example.test', 'admin');
+        $appDomain = TenantDomain::query()->create([
+            'tenant_id' => $tenant->id,
+            'hostname' => 'alpha.app.example.test',
+            'surface' => 'app',
+            'status' => 'active',
+            'verified_at' => now(),
+        ]);
+        TenantFeature::query()->create(['tenant_id' => $tenant->id, 'feature_key' => 'community', 'enabled' => true]);
+        $role = Role::query()->firstOrCreate(['slug' => 'staff'], ['name' => 'Staff']);
+        foreach (['students.view', 'community.view'] as $slug) {
+            $permission = Permission::query()->firstOrCreate(['slug' => $slug], ['name' => $slug]);
+            $role->permissions()->syncWithoutDetaching([$permission->id]);
+        }
+        $user = User::query()->create([
+            'school_id' => $school->id,
+            'name' => 'Surface User',
+            'username' => 'surface.user',
+            'password' => 'password',
+            'status' => 'active',
+        ]);
+        $membership = TenantUserMembership::query()->create([
+            'tenant_id' => $tenant->id,
+            'user_id' => $user->id,
+            'default_school_id' => $school->id,
+            'status' => 'active',
+        ]);
+        $membership->schools()->attach($school->id, ['tenant_id' => $tenant->id]);
+        $membership->roles()->attach($role);
+
+        $this->actingAs($user)->getJson("http://{$adminDomain->hostname}/api/students")->assertOk();
+        $this->actingAs($user)->getJson("http://{$appDomain->hostname}/api/students")->assertNotFound();
+        $this->actingAs($user)->getJson("http://{$appDomain->hostname}/api/v1/community/posts")->assertOk();
+        $this->actingAs($user)->getJson("http://{$adminDomain->hostname}/api/v1/community/posts")->assertNotFound();
+
+        $this->actingAs($user)->getJson("http://{$adminDomain->hostname}/api/me")->assertOk();
+        $this->actingAs($user)->getJson("http://{$appDomain->hostname}/api/me")->assertOk();
+        $this->getJson("http://{$adminDomain->hostname}/api/tenant-context")->assertOk()->assertJsonPath('data.surface', 'admin');
+        $this->getJson("http://{$appDomain->hostname}/api/tenant-context")->assertOk()->assertJsonPath('data.surface', 'app');
     }
 
     private function tenantFixture(string $slug, string $hostname, string $surface): array

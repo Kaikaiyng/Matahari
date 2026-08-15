@@ -316,7 +316,9 @@ class DatabaseSeeder extends Seeder
                 ['tenant_id' => $tenant->id, 'user_id' => $user->id],
                 ['default_school_id' => $school->id, 'access_all_schools' => $user->is_platform_owner, 'status' => 'active'],
             );
-            $membership->schools()->syncWithoutDetaching([$school->id]);
+            $membership->schools()->syncWithoutDetaching([
+                $school->id => ['tenant_id' => $tenant->id],
+            ]);
             $membership->roles()->sync($user->roles()->pluck('roles.id')->all());
         }
 

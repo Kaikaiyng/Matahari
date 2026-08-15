@@ -304,7 +304,7 @@ class ReceiptBuilderApiTest extends TestCase
         $this->assertFalse(Schema::hasColumn('receipt_sequences', 'year'));
         $this->assertFalse(Schema::hasColumn('receipt_sequences', 'month'));
 
-        $school = School::query()->create([
+        $school = $this->createTenantSchool([
             'code' => 'MIS',
             'name' => 'Matahari International School',
             'receipt_prefix' => 'MIS',
@@ -335,7 +335,7 @@ class ReceiptBuilderApiTest extends TestCase
      */
     private function schoolStudentAndUser(array $permissionSlugs): array
     {
-        $school = School::query()->create([
+        $school = $this->createTenantSchool([
             'code' => 'MIS',
             'name' => 'Matahari International School',
             'receipt_prefix' => 'MIS',

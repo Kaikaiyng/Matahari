@@ -12,6 +12,8 @@ Admin (`frontend/`) and App (`app/`) are separate builds on separate tenant doma
 
 Every tenant runs the same Admin and App source builds and the same Laravel backend. Tenant variation is limited to host-resolved `branding` and `features`; tenant-specific frontend copies, tenant branches, and tenant-specific authorization behavior are outside the architecture.
 
+Laravel's `tenant.surface` middleware is the authoritative browser-surface boundary. Admin/platform/tenant-management and legacy finance APIs require `admin`; Community, Teacher, Assessment, Quiz and Portal APIs require `app`; tenant context and session bootstrap/authentication remain shared. A surface mismatch returns 404 and does not replace membership, permission, feature, school or resource authorization.
+
 ## High-Level Architecture
 
 ```mermaid

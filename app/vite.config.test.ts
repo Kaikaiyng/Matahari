@@ -7,6 +7,8 @@ describe('app development boundary', () => {
     expect(config.server?.port).toBe(5174)
     expect(config.server?.strictPort).toBe(true)
     expect(config.server?.allowedHosts).toContain('127.0.0.1')
-    expect(config.server?.proxy).toEqual({ '/api': 'http://127.0.0.1:8000' })
+    expect(config.server?.proxy).toEqual({
+      '/api': { target: 'http://127.0.0.1:8000', changeOrigin: false },
+    })
   })
 })

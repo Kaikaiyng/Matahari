@@ -44,7 +44,7 @@ class FoundationAccountService
                     'access_all_schools' => false,
                     'status' => 'active',
                 ]);
-                $membership->schools()->attach($schoolId);
+                $membership->schools()->attach($schoolId, ['tenant_id' => $school->tenant_id]);
                 $membership->roles()->attach($roles->pluck('id'));
             }
             $this->auditLogger->record(new AuditEvent(

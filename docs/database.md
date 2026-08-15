@@ -21,6 +21,8 @@ The schema has no currency column and amount-to-words currently assumes Ringgit.
 
 The migration is additive and leaves finance/academic ownership on `school_id`. Existing schools are conservatively assigned one generated tenant each; explicit existing `users.school_id` relationships and role assignments are copied to membership records. No production domain, campus grouping, guardian link, portal activation, academic date, or enrolment date is inferred. See [SaaS Multi-Tenancy](saas-multitenancy.md).
 
+The corrective hardening migration requires `schools.tenant_id` and `tenant_membership_schools.tenant_id`. Composite foreign keys enforce that membership default/allowed schools share the membership tenant. A generated nullable `tenant_domains.primary_surface` and unique `(tenant_id, primary_surface)` key enforce at most one primary domain per tenant/surface. The migration is safe to retry after partial MariaDB DDL and preflights inconsistent legacy rows before applying constraints.
+
 ## Schema Inventory
 
 The migrated disposable schema contains 61 non-SQLite-internal tables.
@@ -101,7 +103,9 @@ No model uses soft deletes. Historical preservation is implemented through statu
 
 Verified uniqueness includes:
 
-- `schools.code`; `users.username`; role and permission slugs.
+- `(schools.tenant_id, schools.code)`; `users.username`; role and permission slugs.
+- `(schools.tenant_id, schools.id)` and `(tenant_user_memberships.tenant_id, tenant_user_memberships.id)` as referenced keys for same-tenant composite foreign keys.
+- `(tenant_domains.tenant_id, tenant_domains.primary_surface)` for at most one primary Admin/App/API domain per tenant; non-primary rows produce `NULL` and do not collide.
 - Role/user and role/permission pivot pairs.
 - `(school_id, name)` for classes and fee/discount item names.
 - `(school_id, student_no)` for students.
@@ -207,6 +211,7 @@ The payment-allocation agreement-item foreign key is now created by the later co
 - The username migration removed staff email/reset data; rollback recreates empty structures and cannot restore previous values.
 - Fee Agreement/Fee Record rollbacks remove historical finance data.
 - Secure audit rollback removes only the added secure columns/indexes after reversing all three phases; the original audit rows/columns remain. Its backfill migration intentionally has a no-op `down()`.
+- Tenant-foundation hardening rollback removes its generated primary-surface column, composite foreign keys, referenced-key indexes and membership-pivot tenant column. It preserves every row and retains tenant-local school-code uniqueness; it does not restore the obsolete global school-code index.
 
 Do not describe repository-wide rollback as safe. Releases that include schema changes require backups, a tested restore path, and a migration-specific recovery plan.
 

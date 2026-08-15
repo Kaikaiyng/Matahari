@@ -1,8 +1,8 @@
 # SaaS Multi-Tenancy
 
-**Status:** Implemented foundation on `feature/saas-multitenancy`; production rollout pending
+**Status:** Implemented and locally hardened; production rollout pending
 
-**Reviewed:** 2026-08-14
+**Reviewed:** 2026-08-15
 
 ## Product Model
 
@@ -43,6 +43,7 @@ The host is authoritative. A client-supplied tenant ID cannot switch context. Un
 - Both load `GET /api/tenant-context` before rendering, apply tenant branding and feature flags, and use same-origin session/CSRF requests.
 - Both can be deployed under separate subdomains while reverse-proxying `/api` to the same Laravel application.
 - All tenants use the same Admin/App code and backend release. Supported differences are limited to the active tenant's `branding` and `features`; tenant-specific code copies or branches are not supported.
+- Laravel enforces the resolved surface: Admin business APIs return 404 on App hosts, and App business APIs return 404 on Admin hosts. Tenant context and session bootstrap/authentication routes remain shared.
 
 The current app remains web technology. Capacitor, Firebase, Sanctum, native authentication and store packaging are not installed.
 
@@ -112,9 +113,11 @@ Tenant creation and all sensitive tenant mutations write audit records in the sa
 
 ## Additive Migration and Existing Data
 
-The migration is additive. It does not rewrite finance history, fee agreements, payments, receipts, receipt numbers, students or role assignments. `schools.tenant_id` remains nullable during the compatibility transition so legacy test/setup and controlled upgrade tooling can still construct pre-tenant records; the migration backfills every existing school and all new management APIs always assign a tenant. Making the column non-null is a later live-data verification gate.
+The corrective migration is additive. It does not rewrite finance history, fee agreements, payments, receipts, receipt numbers, students or role assignments. `schools.tenant_id` is required. `tenant_membership_schools.tenant_id` is backfilled from its membership and is also required; composite foreign keys require the membership, default school and allowed schools to belong to the same tenant.
 
-School codes are unique within a tenant rather than globally, so separate customers may use the same campus code. A rollback after introducing duplicate codes across tenants intentionally fails its uniqueness precondition rather than deleting or renaming data; operators must resolve that controlled rollback gate first.
+School codes are unique within a tenant rather than globally, so separate customers may use the same campus code. The stale global school-code index is removed when present. A generated nullable primary-surface key plus a unique index permits at most one primary domain for each tenant/surface while allowing multiple non-primary domains.
+
+The corrective migration preflights missing tenant ownership, duplicate tenant-local school codes, cross-tenant membership-school relationships, unsupported domain surfaces and duplicate primary domains. It fails with an operator-visible error instead of deleting, merging, renaming or guessing data. Its rollback removes only the new hardening constraints/column and deliberately does not restore the obsolete global school-code rule.
 
 For an existing installation, each existing school is conservatively placed in its own new tenant. Existing explicit `users.school_id` links become memberships and existing assigned roles are copied to those memberships. This is a mechanical preservation step, not a guess that separately stored schools belong to one customer.
 
@@ -129,7 +132,7 @@ Before a production rollout:
 - register and verify each Admin/App/API domain and provision DNS/TLS externally;
 - explicitly review which schools belong to each customer tenant;
 - explicitly review tenant memberships, platform owners and tenant owners;
-- validate the migration lifecycle and FK/index behavior on disposable MariaDB;
+- repeat the migration lifecycle and FK/index checks on the exact release artifact and deployment MariaDB version;
 - configure proxy trusted-host/session/cookie behavior for the chosen domains;
 - run cross-tenant, cross-school, role, feature and suspended-tenant smoke tests;
 - retain the existing controlled gates for guardian links, portal access and historical academic data.
