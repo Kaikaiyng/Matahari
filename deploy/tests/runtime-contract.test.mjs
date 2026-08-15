@@ -7,7 +7,7 @@ test('PHP image is pinned and contains only runtime dependencies', async () => {
 
   assert.match(dockerfile, /^FROM php:8\.4\.21-fpm-bookworm$/m)
   assert.match(dockerfile, /docker-php-ext-install[\s\S]*bcmath[\s\S]*pdo_mysql/)
-  assert.match(dockerfile, /USER matahari/)
+  assert.match(dockerfile, /USER rylay/)
   assert.doesNotMatch(dockerfile, /COPY\s+(backend|frontend)/i)
   assert.doesNotMatch(dockerfile, /composer|nodejs|npm/i)
 })
@@ -27,7 +27,7 @@ test('application Nginx serves the SPA and only forwards controlled Laravel entr
 test('mobile App Nginx serves the independent App build and shared Laravel API', async () => {
   const nginx = await readFile('deploy/docker/nginx/mobile-app.conf', 'utf8')
 
-  assert.match(nginx, /root \/var\/www\/matahari\/current\/app\/dist/)
+  assert.match(nginx, /root \/var\/www\/rylay\/current\/app\/dist/)
   assert.match(nginx, /location \/api\//)
   assert.match(nginx, /fastcgi_pass php:9000/)
   assert.match(nginx, /try_files \$uri \$uri\/ \/index\.html/)

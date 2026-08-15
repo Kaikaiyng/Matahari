@@ -1,4 +1,4 @@
-name: matahari_database
+name: rylay_database
 
 services:
   mariadb:
@@ -16,12 +16,12 @@ services:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
       - --default-time-zone=+00:00
-      - --log-bin=matahari-bin
+      - --log-bin=rylay-bin
       - --binlog-format=ROW
       - --binlog-expire-logs-seconds=2678400
     volumes:
       - mariadb_data:/var/lib/mysql
-      - ../database/init-databases.sh:/docker-entrypoint-initdb.d/10-matahari.sh:ro
+      - ../database/init-databases.sh:/docker-entrypoint-initdb.d/10-rylay.sh:ro
       - ../database/apply-runtime-grants.sh:/usr/local/sbin/apply-runtime-grants:ro
     secrets:
       - mariadb_root_password
@@ -42,11 +42,11 @@ services:
 
 volumes:
   mariadb_data:
-    name: matahari_mariadb_data
+    name: rylay_mariadb_data
 
 networks:
   database:
-    name: matahari_database
+    name: rylay_database
     internal: true
 
 secrets:

@@ -161,7 +161,7 @@ class AuditMariaDbSchemaTest extends TestCase
         $this->assertSame([[
             'name' => 'payment_allocations_fee_agreement_item_ensured_foreign',
             'columns' => ['fee_agreement_item_id'],
-            'foreign_schema' => 'matahari_audit_test',
+            'foreign_schema' => 'rylay_audit_test',
             'foreign_table' => 'fee_agreement_items',
             'foreign_columns' => ['id'],
             'on_update' => 'restrict',

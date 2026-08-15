@@ -16,11 +16,20 @@ export interface CurrentUser {
   school_id: number | null
 }
 
-const REMEMBERED_USERNAME_KEY = 'matahari.rememberedUsername'
+const REMEMBERED_USERNAME_KEY = 'rylay.rememberedUsername'
+const LEGACY_REMEMBERED_USERNAME_KEY = 'matahari.rememberedUsername'
 
 function rememberedUsername(): string {
   try {
-    return window.localStorage.getItem(REMEMBERED_USERNAME_KEY) ?? ''
+    const remembered = window.localStorage.getItem(REMEMBERED_USERNAME_KEY)
+    if (remembered !== null) return remembered
+
+    const legacyRemembered = window.localStorage.getItem(LEGACY_REMEMBERED_USERNAME_KEY)
+    if (legacyRemembered === null) return ''
+
+    window.localStorage.setItem(REMEMBERED_USERNAME_KEY, legacyRemembered)
+    window.localStorage.removeItem(LEGACY_REMEMBERED_USERNAME_KEY)
+    return legacyRemembered
   } catch {
     return ''
   }

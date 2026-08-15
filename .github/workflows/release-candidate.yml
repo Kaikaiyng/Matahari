@@ -112,14 +112,14 @@ jobs:
             --node-version "$node_version"
           deploy/scripts/package-release.sh deploy/.build/release deploy/artifacts "${GITHUB_SHA}"
           cd deploy/artifacts
-          sha256sum --check matahari-"${GITHUB_SHA}".zip.sha256
+          sha256sum --check rylay-"${GITHUB_SHA}".zip.sha256
       - name: Upload the only release artifact
         uses: actions/upload-artifact@v4
         with:
-          name: matahari-${{ github.sha }}
+          name: rylay-${{ github.sha }}
           path: |
-            deploy/artifacts/matahari-${{ github.sha }}.zip
-            deploy/artifacts/matahari-${{ github.sha }}.zip.sha256
+            deploy/artifacts/rylay-${{ github.sha }}.zip
+            deploy/artifacts/rylay-${{ github.sha }}.zip.sha256
             deploy/.build/release/release-manifest.json
           if-no-files-found: error
           retention-days: 30

@@ -27,7 +27,7 @@ if find "$release_directory" -type l -print -quit | grep -q .; then
   exit 1
 fi
 
-archive="$artifact_directory/matahari-$commit.zip"
+archive="$artifact_directory/rylay-$commit.zip"
 checksum="$archive.sha256"
 
 (

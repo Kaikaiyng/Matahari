@@ -6,7 +6,7 @@ database="$1"
 runtime_user="$2"
 
 case "$database:$runtime_user" in
-  matahari_staging:matahari_staging_app|matahari_production:matahari_production_app) ;;
+  rylay_staging:rylay_staging_app|rylay_production:rylay_production_app) ;;
   *) echo "Refusing an unapproved database/runtime-user pair." >&2; exit 1 ;;
 esac
 

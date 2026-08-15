@@ -2,7 +2,7 @@ name: ${COMPOSE_PROJECT_NAME}
 
 services:
   storage-init:
-    image: ${PHP_FPM_IMAGE:-matahari-php:8.4.21-1}
+    image: ${PHP_FPM_IMAGE:-rylay-php:8.4.21-1}
     user: "0:0"
     entrypoint: ["/bin/sh", "-c"]
     command:
@@ -23,14 +23,14 @@ services:
       - no-new-privileges:true
 
   php:
-    image: ${PHP_FPM_IMAGE:-matahari-php:8.4.21-1}
+    image: ${PHP_FPM_IMAGE:-rylay-php:8.4.21-1}
     restart: unless-stopped
     env_file:
       - ${APP_ENV_FILE}
     volumes:
-      - ${RELEASE_ROOT}/current:/var/www/matahari/current:ro
-      - runtime_storage:/var/www/matahari/current/backend/storage
-      - bootstrap_cache:/var/www/matahari/current/backend/bootstrap/cache
+      - ${RELEASE_ROOT}/current:/var/www/rylay/current:ro
+      - runtime_storage:/var/www/rylay/current/backend/storage
+      - bootstrap_cache:/var/www/rylay/current/backend/bootstrap/cache
     networks:
       - application
       - database
@@ -51,15 +51,15 @@ services:
       retries: 3
 
   scheduler:
-    image: ${PHP_FPM_IMAGE:-matahari-php:8.4.21-1}
+    image: ${PHP_FPM_IMAGE:-rylay-php:8.4.21-1}
     restart: unless-stopped
     command: ["php", "artisan", "schedule:work", "--no-interaction"]
     env_file:
       - ${APP_ENV_FILE}
     volumes:
-      - ${RELEASE_ROOT}/current:/var/www/matahari/current:ro
-      - runtime_storage:/var/www/matahari/current/backend/storage
-      - bootstrap_cache:/var/www/matahari/current/backend/bootstrap/cache
+      - ${RELEASE_ROOT}/current:/var/www/rylay/current:ro
+      - runtime_storage:/var/www/rylay/current/backend/storage
+      - bootstrap_cache:/var/www/rylay/current/backend/bootstrap/cache
     networks:
       - database
     read_only: true
@@ -82,7 +82,7 @@ services:
     ports:
       - "127.0.0.1:${APP_HTTP_PORT}:8080"
     volumes:
-      - ${RELEASE_ROOT}/current:/var/www/matahari/current:ro
+      - ${RELEASE_ROOT}/current:/var/www/rylay/current:ro
       - ../docker/nginx/app.conf:/etc/nginx/conf.d/default.conf:ro
     networks:
       - application
@@ -113,7 +113,7 @@ services:
     ports:
       - "127.0.0.1:${MOBILE_APP_HTTP_PORT}:8080"
     volumes:
-      - ${RELEASE_ROOT}/current:/var/www/matahari/current:ro
+      - ${RELEASE_ROOT}/current:/var/www/rylay/current:ro
       - ../docker/nginx/mobile-app.conf:/etc/nginx/conf.d/default.conf:ro
     networks:
       - application
@@ -146,4 +146,4 @@ networks:
     internal: true
   database:
     external: true
-    name: matahari_database
+    name: rylay_database
