@@ -16,6 +16,8 @@
 - Matahari International School remains the MIS tenant and retains its tenant branding, seeded data, and tenant-facing presentation.
 - Every tenant uses the same Admin/App code and Laravel backend. Tenant differences are limited to host-resolved `branding` and `features`; per-tenant code forks are not supported.
 - Existing databases are not renamed or rewritten by this repository change. New environment examples use `rylay_*`; any physical database move requires a separate backup, copy, verification, and connection cutover.
+- Rename validation on 2026-08-15 passed: backend PHPUnit 294 tests (282 passed, 12 MariaDB-only skipped) and 1,495 assertions; Pint; 116 API routes; Admin 172 Vitest tests, lint and production build; App 22 Vitest tests, lint and production build; and 19 deployment contract tests. Admin lint retained 9 known Fast Refresh warnings.
+- **Not verified:** Bash syntax validation was unavailable because this Windows environment has no `bash`; no MariaDB schema/data change was made, and no live MariaDB or Docker lifecycle was required or run for the rename.
 
 ## 2026-08-14 RYLAY Brand and Domain Decision
 
