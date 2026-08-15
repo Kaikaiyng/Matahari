@@ -1,6 +1,6 @@
 # Tenant Foundation Hardening Design
 
-**Status:** Approved design awaiting implementation planning
+**Status:** Implemented and verified locally
 
 **Date:** 2026-08-15
 
@@ -80,7 +80,7 @@ The generated expression will be implemented explicitly for SQLite and MariaDB/M
 
 ### Rollback
 
-`down()` will remove only constraints and columns introduced by the corrective migration. It will first reject rollback if tenant-local duplicate school codes would violate restoration of the legacy global school-code uniqueness rule. Rollback will never delete, merge, or rename tenant, school, membership, student, or financial records.
+`down()` removes only constraints and columns introduced by the corrective migration. It retains tenant-local school-code uniqueness and deliberately does not restore the obsolete global school-code rule. Rollback never deletes, merges, or renames tenant, school, membership, student, or financial records.
 
 ## API Surface Enforcement
 

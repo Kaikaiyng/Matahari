@@ -1,6 +1,6 @@
 # Current Status
 
-**Snapshot date:** 2026-08-14
+**Snapshot date:** 2026-08-15
 
 **Inspected Phase A implementation commit:** `ecaa0a1f177292ae99c9338e255a1f93312971f5`
 
@@ -9,6 +9,17 @@
 **Current merged delivery:** `ddd7e193179129be35f7a2b1c408eb809734f8d4` (`Merge project-wide documentation update`)
 
 **Overall status:** SaaS multi-tenant foundation in final validation, with MIS as the first tenant; separate Admin and multi-role App clients, live Community, daily Attendance, Assessment publication, Parent Finance reads, class Schedule, and formal Quiz V1 remain shared tenant-aware modules. Practice/AI Quiz, native/store delivery, automated DNS/TLS and production operations remain incomplete.
+
+## 2026-08-15 Tenant Foundation Hardening
+
+- `schools.tenant_id` and membership-school tenant ownership are now required. Database composite foreign keys reject a default/allowed school from another tenant.
+- Tenant-local school-code uniqueness replaces the stale global code index. A generated nullable key enforces one primary domain per tenant and surface.
+- Laravel now enforces Admin/App route surfaces in addition to tenant membership, feature, permission, school and resource scope. Shared tenant-context and session/authentication endpoints remain available on both surfaces.
+- The ignored MIS SQLite demo database was copied before migration; the source and backup SHA-256 matched. In-place migration preserved the original IDs and counts for tenants, schools, users, students, payments, receipts, audit logs, memberships, membership-school rows and domains. SQLite foreign-key and tenant-consistency checks returned zero failures.
+- Disposable local MariaDB 10.4.32 passed hardening schema inspection (2 tests, 79 assertions), the guarded MariaDB group (8 tests, 33 assertions), and migrate/rollback/re-migrate. A partial-DDL retry found during testing was corrected and the same interrupted database then migrated successfully.
+- Final local regression passed: backend PHPUnit discovered 304 tests (292 passed, 12 MariaDB-only skipped) with 1,528 assertions; Pint and 116 API-route loading passed; Admin passed 172 Vitest tests, lint and production build; App passed 22 Vitest tests, lint and production build. Admin lint retained 9 known Fast Refresh warnings.
+- Local runtime smoke checks returned HTTP 200 and the MIS tenant context with `admin` on `localhost:5173` and `app` on `127.0.0.1:5174`.
+- Production DNS/TLS, deployed MariaDB grants/backups/restores, CI for this exact branch and production smoke tests remain **Not verified**.
 
 ## 2026-08-15 RYLAY Platform Rename
 

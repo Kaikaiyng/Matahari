@@ -124,7 +124,7 @@ Limit the non-SQLite branch to `mariadb` and `mysql`; throw for unsupported prod
 
 - [ ] **Step 6: Implement guarded rollback**
 
-`down()` must preflight global duplicate school codes before restoring `schools_code_unique`, then drop only the generated column, new indexes, pivot tenant column, and composite foreign keys added by this migration. It must leave all rows and original single-column foreign keys intact.
+`down()` must drop only the generated column, new referenced-key indexes, pivot tenant column, and composite foreign keys added by this migration. It must leave all rows, original single-column foreign keys, and tenant-local `schools_tenant_code_unique` intact; the obsolete global `schools_code_unique` is not restored.
 
 - [ ] **Step 7: Expand RED tests for every invariant and constraint**
 
@@ -137,7 +137,7 @@ public function test_upgrade_rejects_cross_tenant_allowed_school(): void
 public function test_database_rejects_cross_tenant_membership_school_after_upgrade(): void
 public function test_database_allows_school_code_reuse_across_tenants_only(): void
 public function test_database_rejects_duplicate_primary_surface(): void
-public function test_rollback_rejects_global_school_code_collision_without_data_loss(): void
+public function test_rollback_preserves_rows_and_tenant_local_school_code_uniqueness(): void
 ```
 
 Run after writing each test and verify it fails for the missing invariant before adding its minimal migration behavior.
