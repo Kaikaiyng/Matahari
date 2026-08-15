@@ -10,6 +10,13 @@
 
 **Overall status:** SaaS multi-tenant foundation in final validation, with MIS as the first tenant; separate Admin and multi-role App clients, live Community, daily Attendance, Assessment publication, Parent Finance reads, class Schedule, and formal Quiz V1 remain shared tenant-aware modules. Practice/AI Quiz, native/store delivery, automated DNS/TLS and production operations remain incomplete.
 
+## 2026-08-15 RYLAY Platform Rename
+
+- Active package, deployment, CI artifact, Docker path/network/user, and new-database defaults now use the RYLAY name.
+- Matahari International School remains the MIS tenant and retains its tenant branding, seeded data, and tenant-facing presentation.
+- Every tenant uses the same Admin/App code and Laravel backend. Tenant differences are limited to host-resolved `branding` and `features`; per-tenant code forks are not supported.
+- Existing databases are not renamed or rewritten by this repository change. New environment examples use `rylay_*`; any physical database move requires a separate backup, copy, verification, and connection cutover.
+
 ## 2026-08-14 RYLAY Brand and Domain Decision
 
 - The software/SaaS platform name is **RYLAY**. MIS remains the first customer tenant and keeps its own organization branding.
@@ -28,10 +35,10 @@
 - Focused tenant isolation, wrong-domain login, membership-role, cross-school, feature enforcement, platform/tenant authorization, audit rollback, suspension, tenant-local school-code uniqueness and existing-data upgrade tests passed (11 tests, 56 assertions).
 - Full backend regression passed in CI: 294 discovered, 282 passed, 12 MariaDB-specific tests skipped in the default SQLite run, and 1,495 assertions. Pint and 116-route API loading passed. Disposable SQLite fresh/seed, latest rollback and re-migration passed locally.
 - Admin passed 172 tests across 16 files, lint (with only 9 pre-existing Calendar Fast Refresh organization warnings), TypeScript and production build. App passed 22 tests across 4 files, lint, TypeScript and production build. Deployment contracts passed all 18 tests.
-- Disposable MariaDB 11.4.8 migrate/rollback/re-migrate passed in [full qualification run 31778478959](https://github.com/Kaikaiyng/Matahari/actions/runs/31778478959). Community/Quiz schema inspection passed 2 tests/59 assertions; tenant FK/delete-rule and exact-index inspection passed 2 tests/54 assertions. The complete Admin/App audits reported 0 vulnerabilities. No local MariaDB service, client or Docker executable was available, so MariaDB evidence comes from CI.
+- Disposable MariaDB 11.4.8 migrate/rollback/re-migrate passed in [full qualification run 31778478959](https://github.com/Kaikaiyng/RYLAY/actions/runs/31778478959). Community/Quiz schema inspection passed 2 tests/59 assertions; tenant FK/delete-rule and exact-index inspection passed 2 tests/54 assertions. The complete Admin/App audits reported 0 vulnerabilities. No local MariaDB service, client or Docker executable was available, so MariaDB evidence comes from CI.
 - See [SaaS Multi-Tenancy](saas-multitenancy.md) for the architecture and rollout gates.
 
-The Phase A commit above remains in the delivery history and is now included in `master`. The earlier white-label feature was delivered through [pull request #8](https://github.com/Kaikaiyng/Matahari/pull/8) and merged into `master` as `2f4c6bd199a7fae149658d3993aba370203746de` on 2026-08-04.
+The Phase A commit above remains in the delivery history and is now included in `master`. The earlier white-label feature was delivered through [pull request #8](https://github.com/Kaikaiyng/RYLAY/pull/8) and merged into `master` as `2f4c6bd199a7fae149658d3993aba370203746de` on 2026-08-04.
 
 ## Runtime Demo Identity
 
@@ -97,7 +104,7 @@ Merged delivery `816ea1d` redesigns the Admin staff login and all App role surfa
 - Students see only assignments where they are recipients. Correct-answer flags never leave the server before submission; attempt limits and availability windows are enforced.
 - Creation, publication, attempt start, and submission/scoring are audited transactionally. Practice and AI generation remain disabled according to the deferred technical plan.
 - Local SQLite verification: all 61 tables migrated from fresh; the three new migrations rolled back in reverse FK order; existing seeded school/student data remained; re-migration returned to 61 tables. The focused schema suite passed 3 tests/24 assertions, and the backend regression passed 250 tests with 8 existing MariaDB-only skips and 1,339 assertions before the non-SQLite inspection test was added.
-- GitHub [Full qualification run 31661265923](https://github.com/Kaikaiyng/Matahari/actions/runs/31661265923) passed on exact commit `f047c2d`: backend 250 passed/10 skipped/1,339 assertions, disposable MariaDB 11.4 full migrate/rollback/re-migrate, and 2 dedicated FK/index inspection tests with 59 assertions. Pint, 74 API routes, dependency audits, Admin 169 tests/build, App 16 tests/build, and 18 deployment tests passed. Admin lint retained the 9 known Fast Refresh warnings; App lint was clean.
+- GitHub [Full qualification run 31661265923](https://github.com/Kaikaiyng/RYLAY/actions/runs/31661265923) passed on exact commit `f047c2d`: backend 250 passed/10 skipped/1,339 assertions, disposable MariaDB 11.4 full migrate/rollback/re-migrate, and 2 dedicated FK/index inspection tests with 59 assertions. Pint, 74 API routes, dependency audits, Admin 169 tests/build, App 16 tests/build, and 18 deployment tests passed. Admin lint retained the 9 known Fast Refresh warnings; App lint was clean.
 
 ## 2026-08-13 Role and Client Boundary Checkpoint
 
@@ -283,7 +290,7 @@ White-label branch validation on 2026-08-04:
 - Controller QA reset the ignored disposable SQLite demo database, then used the in-app browser against temporary local backend/frontend processes on ports 8010/5180. Login/checking-session, sidebar/drawer, Dashboard, Students list, Student Detail, Calendar, Super Admin Audit Trail, and receipt view were checked at 1440x900, 1180x820, 820x1180, and 390x844. No page-level horizontal overflow or legacy runtime branding was observed, and `DEMO` identifiers were visible.
 - Receipt `DEMO.A0001` displayed the exact `SAMPLE — NOT A VALID RECEIPT` notice. With print media emulated at an A4-like 794x1123 viewport, the receipt and notice remained visible with no document horizontal overflow or legacy branding.
 - QA used a temporary ignored `backend/.env`, generated from `.env.example` to provide `APP_KEY`, and removed it afterward. Unknown existing services on ports 8000/5173 were left untouched; only the exact temporary processes on 8010/5180 were stopped. The gstack browse package lacked Playwright in this environment, so the Codex in-app browser was used as the fallback; this is an environment limitation, not a product issue.
-- Release delivery is verified: [pull request #8](https://github.com/Kaikaiyng/Matahari/pull/8) was merged into `master` as `2f4c6bd199a7fae149658d3993aba370203746de` on 2026-08-04. The remote feature branch was retained, matching existing repository practice.
+- Release delivery is verified: [pull request #8](https://github.com/Kaikaiyng/RYLAY/pull/8) was merged into `master` as `2f4c6bd199a7fae149658d3993aba370203746de` on 2026-08-04. The remote feature branch was retained, matching existing repository practice.
 
 Deployment-foundation local validation on 2026-08-06:
 

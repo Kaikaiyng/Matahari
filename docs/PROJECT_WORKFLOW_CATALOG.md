@@ -1,4 +1,4 @@
-# Matahari Project Workflow Catalog
+# RYLAY Project Workflow Catalog
 
 Status: Evidence-backed current-state catalog
 
@@ -6,7 +6,7 @@ Last reviewed: 2026-08-13
 
 This catalog is the source checklist for the editable FigJam workflow board and the final Notion documentation. It distinguishes runtime behavior from approved-but-unimplemented design and historical/deferred scope.
 
-Published FigJam board: [Matahari Complete Project Workflow Atlas](https://www.figma.com/board/sGDlrRbsbHsuT5laZEzKa8?utm_source=other&utm_content=edit_in_figjam&oai_id=v1%2FwOVdpwOgFVs6eNhbOHdwC1cOfCUWewcVQHceqgjBVtixXsxAsX2TAY&request_id=5a0a7805-91cc-4e9d-8bc8-d191c5b72bb5)
+Published FigJam board: [RYLAY Complete Project Workflow Atlas](https://www.figma.com/board/sGDlrRbsbHsuT5laZEzKa8?utm_source=other&utm_content=edit_in_figjam&oai_id=v1%2FwOVdpwOgFVs6eNhbOHdwC1cOfCUWewcVQHceqgjBVtixXsxAsX2TAY&request_id=5a0a7805-91cc-4e9d-8bc8-d191c5b72bb5)
 
 The board contains 15 numbered diagrams (`00` through `14`) and 15 matching Mermaid sources under `docs/workflow-diagrams/`.
 

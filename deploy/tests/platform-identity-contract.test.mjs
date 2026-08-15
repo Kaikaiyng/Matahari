@@ -9,6 +9,9 @@ const platformFiles = [
   'frontend/package-lock.json',
   'app/package.json',
   'app/package-lock.json',
+  'backend/.env.example',
+  'backend/composer.json',
+  'backend/config/app.php',
   'deploy/compose/application.yml',
   'deploy/compose/database.yml',
   'deploy/database/apply-runtime-grants.sh',
@@ -31,5 +34,7 @@ test('active platform identifiers use the RYLAY name', async () => {
 
   assert.equal(JSON.parse(await readFile('frontend/package.json', 'utf8')).name, 'rylay-admin')
   assert.equal(JSON.parse(await readFile('app/package.json', 'utf8')).name, 'rylay-community-app')
+  assert.equal(JSON.parse(await readFile('backend/composer.json', 'utf8')).name, 'rylay/platform-api')
+  assert.match(await readFile('backend/.env.example', 'utf8'), /^APP_NAME=RYLAY$/m)
   assert.match(await readFile('deploy/scripts/package-release.sh', 'utf8'), /rylay-\$commit\.zip/)
 })

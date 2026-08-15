@@ -1,4 +1,4 @@
-# Matahari Backend
+# RYLAY Backend
 
 The backend is the shared Laravel 13 JSON API for the MIS Admin Panel and Community App. It owns authentication, authorization, school scope, academic foundations, portal relationship scope, daily Attendance, audit integration, financial validation, Fee Record charges, payment allocation, and receipt integrity.
 
@@ -36,7 +36,7 @@ For MariaDB, use local values and a restricted application account:
 DB_CONNECTION=mariadb
 DB_HOST=127.0.0.1
 DB_PORT=3306
-DB_DATABASE=matahari
+DB_DATABASE=rylay
 DB_USERNAME=your_local_app_user
 DB_PASSWORD=your_local_password
 ```

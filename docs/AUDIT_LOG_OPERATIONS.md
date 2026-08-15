@@ -6,7 +6,7 @@ The same append-only and least-privilege rules apply to Admin, Phase A foundatio
 
 ## Security Boundary
 
-Matahari treats `audit_logs` as append-only for the application runtime. Laravel model guards prevent ordinary instance updates and deletes, but they do not stop bulk queries, raw SQL, migration credentials, or database administrators.
+RYLAY treats `audit_logs` as append-only for the application runtime. Laravel model guards prevent ordinary instance updates and deletes, but they do not stop bulk queries, raw SQL, migration credentials, or database administrators.
 
 Before Production launch, use separate deployment, recovery, and web-runtime
 database identities. The web-runtime identity must start from a
@@ -16,12 +16,12 @@ wildcard grants, no roles granted at all (including default roles), and no
 needs. For `audit_logs`, that allowlist is exactly `SELECT, INSERT`:
 
 ```sql
-CREATE USER 'matahari_app'@'%' IDENTIFIED BY '<runtime-secret>';
-GRANT SELECT, INSERT ON `matahari`.`audit_logs` TO 'matahari_app'@'%';
-SHOW GRANTS FOR 'matahari_app'@'%';
+CREATE USER 'rylay_app'@'%' IDENTIFIED BY '<runtime-secret>';
+GRANT SELECT, INSERT ON `rylay`.`audit_logs` TO 'rylay_app'@'%';
+SHOW GRANTS FOR 'rylay_app'@'%';
 ```
 
-Replace `matahari`, `matahari_app`, the host pattern, and the secret with the
+Replace `rylay`, `rylay_app`, the host pattern, and the secret with the
 deployed values. `CREATE USER` is shown to emphasize a new, clean runtime
 identity; follow the hosting provider's approved identity-creation process.
 For an existing broadly privileged account, either rebuild it as a clean
@@ -33,8 +33,8 @@ process before use. Provider-managed accounts may require the provider to make
 these changes rather than accepting direct SQL:
 
 ```sql
-REVOKE `matahari_runtime_role` FROM 'matahari_app'@'%';
-SET DEFAULT ROLE NONE FOR 'matahari_app'@'%';
+REVOKE `rylay_runtime_role` FROM 'rylay_app'@'%';
+SET DEFAULT ROLE NONE FOR 'rylay_app'@'%';
 ```
 
 Repeat the `REVOKE` for every role granted to the runtime account. A
@@ -79,7 +79,7 @@ A controlled rollback must run all three Phase 1 stages in reverse order. It rem
 ## Verification Before Launch
 
 Run the following checks only against an explicitly disposable staging or
-restore database, for example `matahari_audit_grant_probe`. It must contain no
+restore database, for example `rylay_audit_grant_probe`. It must contain no
 valuable data and must not be Production. Before the runtime account connects,
 an operator using a separate administrative identity creates three disposable
 probe tables in that database:
@@ -93,11 +93,11 @@ CREATE TABLE `audit_privilege_probe_truncate` (`id` INT NOT NULL PRIMARY KEY);
 The disposable database must reproduce the runtime identity's direct,
 per-table allowlist for its restored `audit_logs` table, with no roles granted
 to the runtime account. For example, if the probe database is
-`matahari_audit_grant_probe`, the operator grants the same runtime identity
+`rylay_audit_grant_probe`, the operator grants the same runtime identity
 only the equivalent audit-table access there:
 
 ```sql
-GRANT SELECT, INSERT ON `matahari_audit_grant_probe`.`audit_logs` TO 'matahari_app'@'%';
+GRANT SELECT, INSERT ON `rylay_audit_grant_probe`.`audit_logs` TO 'rylay_app'@'%';
 ```
 
 Do not add a database/schema or global grant merely to make this probe run;

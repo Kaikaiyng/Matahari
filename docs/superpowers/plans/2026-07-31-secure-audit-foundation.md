@@ -1608,14 +1608,14 @@ Create `docs/AUDIT_LOG_OPERATIONS.md` with these exact sections and content:
 
 ## Security Boundary
 
-Matahari treats `audit_logs` as append-only for the application runtime. Laravel model guards prevent ordinary instance updates and deletes, but they do not stop bulk queries, raw SQL, migration credentials, or database administrators.
+RYLAY treats `audit_logs` as append-only for the application runtime. Laravel model guards prevent ordinary instance updates and deletes, but they do not stop bulk queries, raw SQL, migration credentials, or database administrators.
 
-Before Production launch, use separate deployment and runtime database identities. Replace `matahari` and `matahari_app` below with the deployed database and runtime account:
+Before Production launch, use separate deployment and runtime database identities. Replace `rylay` and `rylay_app` below with the deployed database and runtime account:
 
 ```sql
-REVOKE UPDATE, DELETE ON `matahari`.`audit_logs` FROM 'matahari_app'@'%';
-GRANT SELECT, INSERT ON `matahari`.`audit_logs` TO 'matahari_app'@'%';
-SHOW GRANTS FOR 'matahari_app'@'%';
+REVOKE UPDATE, DELETE ON `rylay`.`audit_logs` FROM 'rylay_app'@'%';
+GRANT SELECT, INSERT ON `rylay`.`audit_logs` TO 'rylay_app'@'%';
+SHOW GRANTS FOR 'rylay_app'@'%';
 ```
 
 Do not run these statements until the actual hosting account, host pattern, migration process, and recovery access are confirmed. Keep migration credentials outside the web runtime.
@@ -1650,9 +1650,9 @@ The default PHPUnit suite uses in-memory SQLite and cannot prove MariaDB JSON, i
 $env:DB_CONNECTION='mariadb'
 $env:DB_HOST='127.0.0.1'
 $env:DB_PORT='3306'
-$env:DB_DATABASE='matahari_audit_test'
-$env:DB_USERNAME='matahari_test'
-$env:DB_PASSWORD='matahari_test'
+$env:DB_DATABASE='rylay_audit_test'
+$env:DB_USERNAME='rylay_test'
+$env:DB_PASSWORD='rylay_test'
 tools\php\php-local.cmd backend\artisan migrate:fresh --env=testing
 tools\php\php-local.cmd backend\artisan test --group=mariadb
 ```
@@ -1662,7 +1662,7 @@ The database must contain no valuable data because `migrate:fresh` drops its tab
 
 - [ ] **Step 3: Run the MariaDB schema test against a disposable database**
 
-First verify that `matahari_audit_test` resolves to a disposable test database. Then run the commands documented above.
+First verify that `rylay_audit_test` resolves to a disposable test database. Then run the commands documented above.
 
 Expected: migrations pass and `AuditMariaDbSchemaTest` passes without being skipped. If no MariaDB test server is available, record Phase 1 as incomplete rather than treating SQLite as substitute evidence.
 

@@ -10,6 +10,8 @@
 
 The product is the owner's configurable school-software SaaS named **RYLAY**, using the registered primary domain `rylay.my`. It serves multiple customer tenants from one Laravel backend and authoritative MariaDB database; each tenant can contain multiple schools/campuses and has separate Admin/App domains, branding, features, memberships and role scopes. MIS is the first tenant/demo configuration. It is not yet a production-complete academic ERP.
 
+All tenants share the same Admin/App code and backend release. Tenant variation is configuration-only through host-resolved `branding` and `features`; per-tenant code forks are not an approved customization mechanism.
+
 ## Intended Users
 
 The seeded implementation contains these stored role slugs:

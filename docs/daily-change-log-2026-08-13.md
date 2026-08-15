@@ -1,6 +1,6 @@
 # Change Log — 2026-08-13
 
-**Product:** Matahari International School Administration, Finance, and Community System
+**Product:** RYLAY — Matahari International School tenant, Administration, Finance, and Community
 
 **Merged baseline:** `master` at `ddd7e193179129be35f7a2b1c408eb809734f8d4`
 

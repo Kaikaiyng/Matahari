@@ -42,6 +42,7 @@ The host is authoritative. A client-supplied tenant ID cannot switch context. Un
 - `app/` is the mobile-first role app build. It accepts only a domain whose surface is `app`.
 - Both load `GET /api/tenant-context` before rendering, apply tenant branding and feature flags, and use same-origin session/CSRF requests.
 - Both can be deployed under separate subdomains while reverse-proxying `/api` to the same Laravel application.
+- All tenants use the same Admin/App code and backend release. Supported differences are limited to the active tenant's `branding` and `features`; tenant-specific code copies or branches are not supported.
 
 The current app remains web technology. Capacitor, Firebase, Sanctum, native authentication and store packaging are not installed.
 

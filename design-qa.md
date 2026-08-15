@@ -5,7 +5,7 @@
 ## Evidence
 
 - Source visual truth path: user-provided conversation attachment showing the expanded sidebar brand crop (508 x 213 pixels), received 2026-08-07.
-- Implementation screenshot path: `C:\Users\chong\AppData\Local\Temp\matahari-sidebar-icon-after.jpg`.
+- Implementation screenshot path: `C:\Users\chong\AppData\Local\Temp\rylay-sidebar-icon-after.jpg`.
 - Viewport: expanded authenticated desktop shell at 1920 x 911 CSS pixels.
 - Source pixels: 508 x 213. Implementation pixels: 1920 x 911. The Chrome capture was normalized to CSS size even though the browser reported device pixel ratio 2.
 - State: Dashboard selected, sidebar expanded.

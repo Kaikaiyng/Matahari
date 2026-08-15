@@ -10,11 +10,11 @@
 
 ## 1. Purpose
 
-Matahari will use a repeatable local-to-staging-to-production release process. Development happens only in the local repository. Every push to `master` goes through quick checks, produces one immutable ZIP release, and deploys that ZIP to staging. Production receives the exact ZIP that was qualified in staging; production is never rebuilt and server files are never edited manually.
+RYLAY will use a repeatable local-to-staging-to-production release process. Development happens only in the local repository. Every push to `master` goes through quick checks, produces one immutable ZIP release, and deploys that ZIP to staging. Production receives the exact ZIP that was qualified in staging; production is never rebuilt and server files are never edited manually.
 
 The initial operating target is one school, no more than approximately 500 students, and approximately 10 concurrent users. This is a planning target, not a verified capacity claim. The first VPS can therefore remain a simple single-node deployment; Kubernetes, multi-node application servers, and separate database hosts are outside the initial scope.
 
-This design does not claim that Matahari is production-ready. It records the agreed direction for the infrastructure and the controls that implementation must verify.
+This design does not claim that RYLAY is production-ready. It records the agreed direction for the infrastructure and the controls that implementation must verify.
 
 ## 2. Selected Architecture
 
@@ -30,13 +30,13 @@ Nginx edge proxy (TLS, routing, Basic Auth)
 staging application stack          production application stack
 staging.example.com                app.example.com
    |                               |
-   | matahari_staging_app          | matahari_production_app
+   | rylay_staging_app          | rylay_production_app
    |                               |
    +-------------+-----------------+
                  v
           one private MariaDB service
-          - matahari_staging
-          - matahari_production
+          - rylay_staging
+          - rylay_production
 ```
 
 The placeholder hostnames will be replaced after the real domains are chosen. MariaDB must not expose a public port. Docker networks, application environment files, release directories, logs, and container names must make the staging and production boundaries obvious.
@@ -54,7 +54,7 @@ The edge proxy is the only public entry point. Infrastructure images and Compose
 
 The alternative native Nginx/PHP-FPM/MariaDB installation would be initially simpler, but it would make runtime drift and VPS replacement harder to control. Fully immutable container images or separate VPSs would provide stronger isolation, but add cost and operational complexity beyond the current scale and would replace the preferred ZIP workflow.
 
-The selected design keeps the useful operational idea observed in `AdminSystem_Update`: clear staging and production targets and a packaged release. It does not copy that system's monolithic PHP API, duplicated environment trees, request-time schema changes, or web-accessible maintenance scripts. Matahari keeps Laravel controllers, requests, services, migrations, authorization, tests, and audit boundaries as the maintainable source architecture.
+The selected design keeps the useful operational idea observed in `AdminSystem_Update`: clear staging and production targets and a packaged release. It does not copy that system's monolithic PHP API, duplicated environment trees, request-time schema changes, or web-accessible maintenance scripts. RYLAY keeps Laravel controllers, requests, services, migrations, authorization, tests, and audit boundaries as the maintainable source architecture.
 
 ## 4. Environment and Data Separation
 
@@ -94,8 +94,8 @@ The minimum runtime databases and accounts are:
 
 | Environment | Database | Runtime account | Boundary |
 | --- | --- | --- | --- |
-| Staging | `matahari_staging` | `matahari_staging_app` | Access only to the staging database |
-| Production | `matahari_production` | `matahari_production_app` | Access only to the production database |
+| Staging | `rylay_staging` | `rylay_staging_app` | Access only to the staging database |
+| Production | `rylay_production` | `rylay_production_app` | Access only to the production database |
 
 Runtime accounts must not receive global privileges or routine schema-alteration privileges. Deployment implementation should add environment-specific migration identities that are available only during a migration job, plus a restricted backup identity where MariaDB tooling requires it. These operational identities must remain separate from the long-running application containers.
 
@@ -175,10 +175,10 @@ Force pushes to `master` are prohibited. A failed quick or full check prevents p
 Each environment uses versioned directories such as:
 
 ```text
-/srv/matahari/staging/releases/<release-id>
-/srv/matahari/staging/current
-/srv/matahari/production/releases/<release-id>
-/srv/matahari/production/current
+/srv/rylay/staging/releases/<release-id>
+/srv/rylay/staging/current
+/srv/rylay/production/releases/<release-id>
+/srv/rylay/production/current
 ```
 
 Deployment performs these steps against the target environment only:
