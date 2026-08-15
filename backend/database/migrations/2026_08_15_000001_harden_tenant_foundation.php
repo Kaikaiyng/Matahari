@@ -60,18 +60,54 @@ return new class extends Migration
             if (! $this->hasIndex('schools', 'schools_tenant_code_unique')) {
                 $table->unique(['tenant_id', 'code'], 'schools_tenant_code_unique');
             }
-            $table->unique(['tenant_id', 'id'], 'schools_tenant_id_id_unique');
+            if (! $this->hasIndex('schools', 'schools_tenant_id_id_unique')) {
+                $table->unique(['tenant_id', 'id'], 'schools_tenant_id_id_unique');
+            }
         });
+
+        $this->removeOrphanedForeignKeyIndex(
+            'tenant_user_memberships',
+            'tum_default_school_tenant_fk',
+            ['tenant_id', 'default_school_id'],
+        );
+        $this->removeOrphanedForeignKeyIndex(
+            'tenant_membership_schools',
+            'tms_membership_tenant_fk',
+            ['tenant_id', 'tenant_user_membership_id'],
+        );
+        $this->removeOrphanedForeignKeyIndex(
+            'tenant_membership_schools',
+            'tms_school_tenant_fk',
+            ['tenant_id', 'school_id'],
+        );
+
         Schema::table('tenant_user_memberships', function (Blueprint $table): void {
-            $table->unique(['tenant_id', 'id'], 'tenant_memberships_tenant_id_id_unique');
-            $table->foreign(['tenant_id', 'default_school_id'])
-                ->references(['tenant_id', 'id'])->on('schools')->restrictOnDelete();
+            if (! $this->hasIndex('tenant_user_memberships', 'tenant_memberships_tenant_id_id_unique')) {
+                $table->unique(['tenant_id', 'id'], 'tenant_memberships_tenant_id_id_unique');
+            }
+            if (! $this->hasForeignKey('tenant_user_memberships', ['tenant_id', 'default_school_id'])) {
+                $table->foreign(
+                    ['tenant_id', 'default_school_id'],
+                    DB::getDriverName() === 'sqlite' ? null : 'tum_default_school_tenant_fk',
+                )
+                    ->references(['tenant_id', 'id'])->on('schools')->restrictOnDelete();
+            }
         });
         Schema::table('tenant_membership_schools', function (Blueprint $table): void {
-            $table->foreign(['tenant_id', 'tenant_user_membership_id'])
-                ->references(['tenant_id', 'id'])->on('tenant_user_memberships')->cascadeOnDelete();
-            $table->foreign(['tenant_id', 'school_id'])
-                ->references(['tenant_id', 'id'])->on('schools')->cascadeOnDelete();
+            if (! $this->hasForeignKey('tenant_membership_schools', ['tenant_id', 'tenant_user_membership_id'])) {
+                $table->foreign(
+                    ['tenant_id', 'tenant_user_membership_id'],
+                    DB::getDriverName() === 'sqlite' ? null : 'tms_membership_tenant_fk',
+                )
+                    ->references(['tenant_id', 'id'])->on('tenant_user_memberships')->cascadeOnDelete();
+            }
+            if (! $this->hasForeignKey('tenant_membership_schools', ['tenant_id', 'school_id'])) {
+                $table->foreign(
+                    ['tenant_id', 'school_id'],
+                    DB::getDriverName() === 'sqlite' ? null : 'tms_school_tenant_fk',
+                )
+                    ->references(['tenant_id', 'id'])->on('schools')->cascadeOnDelete();
+            }
         });
 
         $this->addPrimarySurfaceGuard();
@@ -98,15 +134,31 @@ return new class extends Migration
         }
 
         Schema::table('tenant_membership_schools', function (Blueprint $table): void {
-            $table->dropForeign(['tenant_id', 'tenant_user_membership_id']);
-            $table->dropForeign(['tenant_id', 'school_id']);
+            if ($this->hasForeignKey('tenant_membership_schools', ['tenant_id', 'tenant_user_membership_id'])) {
+                $table->dropForeign(DB::getDriverName() === 'sqlite'
+                    ? ['tenant_id', 'tenant_user_membership_id']
+                    : 'tms_membership_tenant_fk');
+            }
+            if ($this->hasForeignKey('tenant_membership_schools', ['tenant_id', 'school_id'])) {
+                $table->dropForeign(DB::getDriverName() === 'sqlite'
+                    ? ['tenant_id', 'school_id']
+                    : 'tms_school_tenant_fk');
+            }
         });
         Schema::table('tenant_user_memberships', function (Blueprint $table): void {
-            $table->dropForeign(['tenant_id', 'default_school_id']);
-            $table->dropUnique('tenant_memberships_tenant_id_id_unique');
+            if ($this->hasForeignKey('tenant_user_memberships', ['tenant_id', 'default_school_id'])) {
+                $table->dropForeign(DB::getDriverName() === 'sqlite'
+                    ? ['tenant_id', 'default_school_id']
+                    : 'tum_default_school_tenant_fk');
+            }
+            if ($this->hasIndex('tenant_user_memberships', 'tenant_memberships_tenant_id_id_unique')) {
+                $table->dropUnique('tenant_memberships_tenant_id_id_unique');
+            }
         });
         Schema::table('schools', function (Blueprint $table): void {
-            $table->dropUnique('schools_tenant_id_id_unique');
+            if ($this->hasIndex('schools', 'schools_tenant_id_id_unique')) {
+                $table->dropUnique('schools_tenant_id_id_unique');
+            }
         });
 
         Schema::table('schools', function (Blueprint $table): void {
@@ -182,16 +234,20 @@ return new class extends Migration
     private function addPrimarySurfaceGuard(): void
     {
         $driver = DB::getDriverName();
-        if ($driver === 'sqlite') {
-            DB::statement('ALTER TABLE tenant_domains ADD COLUMN primary_surface TEXT GENERATED ALWAYS AS (CASE WHEN is_primary = 1 THEN surface ELSE NULL END) VIRTUAL');
-        } elseif (in_array($driver, ['mariadb', 'mysql'], true)) {
-            DB::statement('ALTER TABLE tenant_domains ADD COLUMN primary_surface VARCHAR(20) GENERATED ALWAYS AS (CASE WHEN is_primary = 1 THEN surface ELSE NULL END) STORED');
-        } else {
-            throw new RuntimeException("Tenant hardening does not support the {$driver} database driver.");
+        if (! Schema::hasColumn('tenant_domains', 'primary_surface')) {
+            if ($driver === 'sqlite') {
+                DB::statement('ALTER TABLE tenant_domains ADD COLUMN primary_surface TEXT GENERATED ALWAYS AS (CASE WHEN is_primary = 1 THEN surface ELSE NULL END) VIRTUAL');
+            } elseif (in_array($driver, ['mariadb', 'mysql'], true)) {
+                DB::statement('ALTER TABLE tenant_domains ADD COLUMN primary_surface VARCHAR(20) GENERATED ALWAYS AS (CASE WHEN is_primary = 1 THEN surface ELSE NULL END) STORED');
+            } else {
+                throw new RuntimeException("Tenant hardening does not support the {$driver} database driver.");
+            }
         }
 
         Schema::table('tenant_domains', function (Blueprint $table): void {
-            $table->unique(['tenant_id', 'primary_surface'], 'tenant_domains_one_primary_surface_unique');
+            if (! $this->hasIndex('tenant_domains', 'tenant_domains_one_primary_surface_unique')) {
+                $table->unique(['tenant_id', 'primary_surface'], 'tenant_domains_one_primary_surface_unique');
+            }
         });
     }
 
@@ -199,5 +255,24 @@ return new class extends Migration
     {
         return collect(Schema::getIndexes($table))
             ->contains(fn (array $index): bool => $index['name'] === $name);
+    }
+
+    /** @param list<string> $columns */
+    private function hasForeignKey(string $table, array $columns): bool
+    {
+        return collect(Schema::getForeignKeys($table))
+            ->contains(fn (array $foreignKey): bool => array_values($foreignKey['columns']) === $columns);
+    }
+
+    /** @param list<string> $columns */
+    private function removeOrphanedForeignKeyIndex(string $table, string $name, array $columns): void
+    {
+        if (DB::getDriverName() === 'sqlite' || $this->hasForeignKey($table, $columns) || ! $this->hasIndex($table, $name)) {
+            return;
+        }
+
+        Schema::table($table, function (Blueprint $blueprint) use ($name): void {
+            $blueprint->dropIndex($name);
+        });
     }
 };
