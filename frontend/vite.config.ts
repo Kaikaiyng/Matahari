@@ -4,6 +4,7 @@ import { defineConfig, type ViteUserConfig } from 'vitest/config'
 
 export function createViteConfig(env: Record<string, string | undefined> = process.env): ViteUserConfig {
   const apiProxyTarget = env.VITE_API_PROXY_TARGET ?? 'http://127.0.0.1:8000'
+  const apiProxy = { target: apiProxyTarget, changeOrigin: false }
 
   return {
     plugins: [react()],
@@ -15,7 +16,7 @@ export function createViteConfig(env: Record<string, string | undefined> = proce
     server: {
       allowedHosts: ['localhost', '.trycloudflare.com'],
       proxy: {
-        '/api': apiProxyTarget,
+        '/api': apiProxy,
       },
     },
     preview: {
@@ -24,7 +25,7 @@ export function createViteConfig(env: Record<string, string | undefined> = proce
       strictPort: true,
       allowedHosts: ['localhost', '.trycloudflare.com'],
       proxy: {
-        '/api': apiProxyTarget,
+        '/api': apiProxy,
       },
     },
   }

@@ -12,10 +12,12 @@ describe('public demo preview config', () => {
       port: 4175,
       strictPort: true,
       allowedHosts: ['localhost', '.trycloudflare.com'],
-      proxy: { '/api': 'http://127.0.0.1:8002' },
+      proxy: {
+        '/api': { target: 'http://127.0.0.1:8002', changeOrigin: false },
+      },
     })
     expect(config.server?.proxy).toEqual({
-      '/api': 'http://127.0.0.1:8002',
+      '/api': { target: 'http://127.0.0.1:8002', changeOrigin: false },
     })
     expect(config.server?.allowedHosts).toEqual(['localhost', '.trycloudflare.com'])
   })
@@ -24,7 +26,7 @@ describe('public demo preview config', () => {
     const config = createViteConfig({})
 
     expect(config.server?.proxy).toEqual({
-      '/api': 'http://127.0.0.1:8000',
+      '/api': { target: 'http://127.0.0.1:8000', changeOrigin: false },
     })
     expect(config.server?.allowedHosts).toEqual(['localhost', '.trycloudflare.com'])
   })
