@@ -24,6 +24,7 @@ class AttendanceApiTest extends TestCase
     {
         parent::setUp();
         $this->seed();
+        $this->withServerVariables(['HTTP_HOST' => '127.0.0.1']);
     }
 
     public function test_teacher_records_scoped_daily_attendance_and_portal_users_can_read_it(): void
@@ -31,7 +32,7 @@ class AttendanceApiTest extends TestCase
         [$teacher, $year, $class, $student] = $this->attendanceFixture();
 
         $this->actingAs($teacher)
-            ->postJson('/api/v1/teacher/attendance/daily', $this->payload($year, $class, $student, 'present'))
+            ->postJson('http://127.0.0.1/api/v1/teacher/attendance/daily', $this->payload($year, $class, $student, 'present'))
             ->assertOk()
             ->assertJsonPath('data.class.name', 'MB1')
             ->assertJsonPath('data.records.0.status', 'present');
@@ -47,13 +48,13 @@ class AttendanceApiTest extends TestCase
 
         $parent = User::query()->where('username', 'rachel.wong')->firstOrFail();
         $this->actingAs($parent)
-            ->getJson("/api/v1/portal/parent/children/{$student->id}/attendance")
+            ->getJson("http://127.0.0.1/api/v1/portal/parent/children/{$student->id}/attendance")
             ->assertOk()
             ->assertJsonPath('data.0.status', 'present');
 
         $studentUser = User::query()->where('username', 'alyssa.tan')->firstOrFail();
         $this->actingAs($studentUser)
-            ->getJson('/api/v1/portal/student/attendance')
+            ->getJson('http://127.0.0.1/api/v1/portal/student/attendance')
             ->assertOk()
             ->assertJsonPath('data.0.status', 'present');
     }
@@ -64,7 +65,7 @@ class AttendanceApiTest extends TestCase
         $unrelatedClass = SchoolClass::query()->where('name', 'MC1')->firstOrFail();
 
         $this->actingAs($teacher)
-            ->postJson('/api/v1/teacher/attendance/daily', $this->payload($year, $unrelatedClass, $student, 'absent'))
+            ->postJson('http://127.0.0.1/api/v1/teacher/attendance/daily', $this->payload($year, $unrelatedClass, $student, 'absent'))
             ->assertForbidden();
 
         $this->assertDatabaseCount('attendance_sessions', 0);
@@ -74,18 +75,18 @@ class AttendanceApiTest extends TestCase
     {
         [$teacher, $year, $class, $student] = $this->attendanceFixture();
         $this->actingAs($teacher)
-            ->postJson('/api/v1/teacher/attendance/daily', $this->payload($year, $class, $student, 'present'))
+            ->postJson('http://127.0.0.1/api/v1/teacher/attendance/daily', $this->payload($year, $class, $student, 'present'))
             ->assertOk();
 
         $this->actingAs($teacher)
-            ->postJson('/api/v1/teacher/attendance/daily', $this->payload($year, $class, $student, 'late'))
+            ->postJson('http://127.0.0.1/api/v1/teacher/attendance/daily', $this->payload($year, $class, $student, 'late'))
             ->assertUnprocessable()
             ->assertJsonValidationErrors('correction_reason');
 
         $corrected = $this->payload($year, $class, $student, 'late');
         $corrected['correction_reason'] = 'Teacher corrected the arrival status.';
         $this->actingAs($teacher)
-            ->postJson('/api/v1/teacher/attendance/daily', $corrected)
+            ->postJson('http://127.0.0.1/api/v1/teacher/attendance/daily', $corrected)
             ->assertOk();
 
         $this->assertDatabaseHas('attendance_records', [
@@ -106,7 +107,7 @@ class AttendanceApiTest extends TestCase
         $parent->guardianProfile->students()->updateExistingPivot($student->id, ['can_view_academics' => false]);
 
         $this->actingAs($parent)
-            ->getJson("/api/v1/portal/parent/children/{$student->id}/attendance")
+            ->getJson("http://127.0.0.1/api/v1/portal/parent/children/{$student->id}/attendance")
             ->assertForbidden();
     }
 

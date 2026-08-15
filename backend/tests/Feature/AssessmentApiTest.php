@@ -27,28 +27,29 @@ class AssessmentApiTest extends TestCase
     {
         parent::setUp();
         $this->seed();
+        $this->withServerVariables(['HTTP_HOST' => '127.0.0.1']);
     }
 
     public function test_teacher_creates_scores_and_publishes_results_visible_to_linked_parent_and_student(): void
     {
         [$teacher, $assignment, $students] = $this->fixture();
-        $assessmentId = $this->actingAs($teacher)->postJson('/api/v1/assessments', $this->assessmentPayload($assignment))
+        $assessmentId = $this->actingAs($teacher)->postJson('http://127.0.0.1/api/v1/assessments', $this->assessmentPayload($assignment))
             ->assertCreated()->assertJsonPath('data.status', 'draft')->json('data.id');
 
         $parent = User::query()->where('username', 'rachel.wong')->firstOrFail();
         $linkedStudent = Student::query()->where('user_id', User::query()->where('username', 'alyssa.tan')->value('id'))->firstOrFail();
-        $this->actingAs($parent)->getJson("/api/v1/portal/parent/children/{$linkedStudent->id}/assessment-results")->assertOk()->assertJsonCount(0, 'data');
+        $this->actingAs($parent)->getJson("http://127.0.0.1/api/v1/portal/parent/children/{$linkedStudent->id}/assessment-results")->assertOk()->assertJsonCount(0, 'data');
 
         $rows = $students->map(fn (Student $student) => ['student_id' => $student->id, 'score' => 82, 'grade_label' => 'A', 'teacher_comment' => 'Good progress.'])->all();
-        $this->actingAs($teacher)->putJson("/api/v1/assessments/{$assessmentId}/results", ['results' => $rows])->assertOk();
-        $this->actingAs($teacher)->postJson("/api/v1/assessments/{$assessmentId}/publish")->assertOk()->assertJsonPath('data.status', 'published');
+        $this->actingAs($teacher)->putJson("http://127.0.0.1/api/v1/assessments/{$assessmentId}/results", ['results' => $rows])->assertOk();
+        $this->actingAs($teacher)->postJson("http://127.0.0.1/api/v1/assessments/{$assessmentId}/publish")->assertOk()->assertJsonPath('data.status', 'published');
 
         $studentUser = User::query()->where('username', 'alyssa.tan')->firstOrFail();
-        $this->actingAs($studentUser)->getJson('/api/v1/portal/student/assessment-results')->assertOk()->assertJsonPath('data.0.score', 82);
-        $this->actingAs($parent)->getJson("/api/v1/portal/parent/children/{$linkedStudent->id}/assessment-results")->assertOk()->assertJsonPath('data.0.teacher_comment', 'Good progress.');
+        $this->actingAs($studentUser)->getJson('http://127.0.0.1/api/v1/portal/student/assessment-results')->assertOk()->assertJsonPath('data.0.score', 82);
+        $this->actingAs($parent)->getJson("http://127.0.0.1/api/v1/portal/parent/children/{$linkedStudent->id}/assessment-results")->assertOk()->assertJsonPath('data.0.teacher_comment', 'Good progress.');
         $this->assertDatabaseHas('audit_logs', ['action' => 'assessment.published', 'entity_id' => $assessmentId]);
 
-        $this->actingAs($teacher)->putJson("/api/v1/assessments/{$assessmentId}/results", ['results' => $rows])->assertStatus(409);
+        $this->actingAs($teacher)->putJson("http://127.0.0.1/api/v1/assessments/{$assessmentId}/results", ['results' => $rows])->assertStatus(409);
     }
 
     public function test_teacher_cannot_target_an_unrelated_class(): void
@@ -56,18 +57,18 @@ class AssessmentApiTest extends TestCase
         [$teacher, $assignment] = $this->fixture();
         $payload = $this->assessmentPayload($assignment);
         $payload['class_ids'] = [SchoolClass::query()->where('name', 'MC1')->value('id')];
-        $this->actingAs($teacher)->postJson('/api/v1/assessments', $payload)->assertForbidden();
+        $this->actingAs($teacher)->postJson('http://127.0.0.1/api/v1/assessments', $payload)->assertForbidden();
         $this->assertDatabaseCount('assessments', 0);
     }
 
     public function test_publication_requires_scores_for_every_current_target_student(): void
     {
         [$teacher, $assignment, $students] = $this->fixture();
-        $assessmentId = $this->actingAs($teacher)->postJson('/api/v1/assessments', $this->assessmentPayload($assignment))->json('data.id');
+        $assessmentId = $this->actingAs($teacher)->postJson('http://127.0.0.1/api/v1/assessments', $this->assessmentPayload($assignment))->json('data.id');
         if ($students->count() > 1) {
-            $this->actingAs($teacher)->putJson("/api/v1/assessments/{$assessmentId}/results", ['results' => [['student_id' => $students->first()->id, 'score' => 70]]])->assertOk();
+            $this->actingAs($teacher)->putJson("http://127.0.0.1/api/v1/assessments/{$assessmentId}/results", ['results' => [['student_id' => $students->first()->id, 'score' => 70]]])->assertOk();
         }
-        $this->actingAs($teacher)->postJson("/api/v1/assessments/{$assessmentId}/publish")->assertUnprocessable()->assertJsonValidationErrors('results');
+        $this->actingAs($teacher)->postJson("http://127.0.0.1/api/v1/assessments/{$assessmentId}/publish")->assertUnprocessable()->assertJsonValidationErrors('results');
     }
 
     public function test_parent_academic_capability_is_required_for_published_results(): void
@@ -76,7 +77,7 @@ class AssessmentApiTest extends TestCase
         $student = $students->first();
         $parent = User::query()->where('username', 'rachel.wong')->firstOrFail();
         $parent->guardianProfile->students()->updateExistingPivot($student->id, ['can_view_academics' => false]);
-        $this->actingAs($parent)->getJson("/api/v1/portal/parent/children/{$student->id}/assessment-results")->assertForbidden();
+        $this->actingAs($parent)->getJson("http://127.0.0.1/api/v1/portal/parent/children/{$student->id}/assessment-results")->assertForbidden();
     }
 
     public function test_assessment_creation_rolls_back_when_audit_fails(): void
@@ -103,7 +104,7 @@ class AssessmentApiTest extends TestCase
     {
         $admin = User::query()->where('username', 'admin')->firstOrFail();
         $yearId = TeachingAssignment::query()->value('academic_year_id');
-        $response = $this->actingAs($admin)->postJson('/api/v1/admin/academic-terms', ['academic_year_id' => $yearId, 'code' => 'T1', 'name' => 'Term 1'])
+        $response = $this->actingAs($admin)->postJson('http://localhost/api/v1/admin/academic-terms', ['academic_year_id' => $yearId, 'code' => 'T1', 'name' => 'Term 1'])
             ->assertCreated()->assertJsonPath('data.starts_on', null);
         $this->assertDatabaseHas('audit_logs', ['action' => 'academic_term.created', 'entity_id' => $response->json('data.id')]);
     }
@@ -115,7 +116,7 @@ class AssessmentApiTest extends TestCase
         $year = AcademicYear::query()->create(['school_id' => $otherSchool->id, 'code' => '2027', 'name' => '2027']);
         $term = AcademicTerm::query()->create(['school_id' => $otherSchool->id, 'academic_year_id' => $year->id, 'code' => 'T1', 'name' => 'Term 1']);
 
-        $this->actingAs($admin)->patchJson("/api/v1/admin/academic-terms/{$term->id}", ['name' => 'Changed'])->assertForbidden();
+        $this->actingAs($admin)->patchJson("http://localhost/api/v1/admin/academic-terms/{$term->id}", ['name' => 'Changed'])->assertForbidden();
         $this->assertDatabaseHas('academic_terms', ['id' => $term->id, 'name' => 'Term 1']);
     }
 

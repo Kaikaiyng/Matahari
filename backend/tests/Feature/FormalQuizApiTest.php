@@ -29,19 +29,20 @@ class FormalQuizApiTest extends TestCase
     {
         parent::setUp();
         $this->seed();
+        $this->withServerVariables(['HTTP_HOST' => '127.0.0.1']);
     }
 
     public function test_teacher_publishes_materialized_assignment_and_student_is_scored_server_side(): void
     {
         [$teacher,$assignment,$students] = $this->fixture();
-        $quizId = $this->actingAs($teacher)->postJson('/api/v1/quizzes', $this->quizPayload($assignment))->assertCreated()->json('data.id');
-        $assignmentId = $this->actingAs($teacher)->postJson("/api/v1/quizzes/{$quizId}/assignments", ['academic_year_id' => $assignment->academic_year_id, 'class_ids' => [$assignment->class_id], 'student_ids' => [$students->first()->id], 'attempt_limit' => 1])->assertCreated()->json('data.id');
-        $this->actingAs($teacher)->postJson("/api/v1/quizzes/assignments/{$assignmentId}/publish")->assertOk();
+        $quizId = $this->actingAs($teacher)->postJson('http://127.0.0.1/api/v1/quizzes', $this->quizPayload($assignment))->assertCreated()->json('data.id');
+        $assignmentId = $this->actingAs($teacher)->postJson("http://127.0.0.1/api/v1/quizzes/{$quizId}/assignments", ['academic_year_id' => $assignment->academic_year_id, 'class_ids' => [$assignment->class_id], 'student_ids' => [$students->first()->id], 'attempt_limit' => 1])->assertCreated()->json('data.id');
+        $this->actingAs($teacher)->postJson("http://127.0.0.1/api/v1/quizzes/assignments/{$assignmentId}/publish")->assertOk();
         $this->assertDatabaseCount('quiz_assignment_recipients', $students->count());
         $studentUser = User::query()->where('username', 'alyssa.tan')->firstOrFail();
-        $list = $this->actingAs($studentUser)->getJson('/api/v1/portal/student/quizzes')->assertOk()->assertJsonPath('data.0.title', 'Fractions')->json('data.0');
+        $list = $this->actingAs($studentUser)->getJson('http://127.0.0.1/api/v1/portal/student/quizzes')->assertOk()->assertJsonPath('data.0.title', 'Fractions')->json('data.0');
         $this->assertArrayNotHasKey('questions', $list);
-        $attempt = $this->actingAs($studentUser)->postJson("/api/v1/portal/student/quizzes/assignments/{$assignmentId}/attempts")->assertCreated()->json('data');
+        $attempt = $this->actingAs($studentUser)->postJson("http://127.0.0.1/api/v1/portal/student/quizzes/assignments/{$assignmentId}/attempts")->assertCreated()->json('data');
         foreach ($attempt['questions'] as $question) {
             foreach ($question['options'] as $option) {
                 $this->assertArrayNotHasKey('is_correct', $option);
@@ -49,8 +50,8 @@ class FormalQuizApiTest extends TestCase
         }
         $quiz = Quiz::query()->with('questions.options')->findOrFail($quizId);
         $answers = $quiz->questions->map(fn ($q) => ['question_id' => $q->id, 'option_id' => $q->options->firstWhere('is_correct', true)->id])->all();
-        $this->actingAs($studentUser)->postJson("/api/v1/portal/student/quizzes/attempts/{$attempt['id']}/submit", ['answers' => $answers])->assertOk()->assertJsonPath('data.score', 3)->assertJsonPath('data.max_score', 3);
-        $this->actingAs($studentUser)->postJson("/api/v1/portal/student/quizzes/assignments/{$assignmentId}/attempts")->assertStatus(409);
+        $this->actingAs($studentUser)->postJson("http://127.0.0.1/api/v1/portal/student/quizzes/attempts/{$attempt['id']}/submit", ['answers' => $answers])->assertOk()->assertJsonPath('data.score', 3)->assertJsonPath('data.max_score', 3);
+        $this->actingAs($studentUser)->postJson("http://127.0.0.1/api/v1/portal/student/quizzes/assignments/{$assignmentId}/attempts")->assertStatus(409);
         $this->assertDatabaseHas('audit_logs', ['action' => 'quiz_attempt.submitted', 'entity_id' => $attempt['id']]);
     }
 
@@ -59,11 +60,11 @@ class FormalQuizApiTest extends TestCase
         [$teacher,$assignment] = $this->fixture();
         $payload = $this->quizPayload($assignment);
         $payload['class_ids'] = [SchoolClass::query()->where('name', 'MC1')->value('id')];
-        $this->actingAs($teacher)->postJson('/api/v1/quizzes', $payload)->assertForbidden();
-        $quizId = $this->actingAs($teacher)->postJson('/api/v1/quizzes', $this->quizPayload($assignment))->json('data.id');
+        $this->actingAs($teacher)->postJson('http://127.0.0.1/api/v1/quizzes', $payload)->assertForbidden();
+        $quizId = $this->actingAs($teacher)->postJson('http://127.0.0.1/api/v1/quizzes', $this->quizPayload($assignment))->json('data.id');
         $target = Student::query()->where('user_id', User::query()->where('username', 'alyssa.tan')->value('id'))->firstOrFail();
-        $assignmentId = $this->actingAs($teacher)->postJson("/api/v1/quizzes/{$quizId}/assignments", ['academic_year_id' => $assignment->academic_year_id, 'student_ids' => [$target->id], 'attempt_limit' => 1])->json('data.id');
-        $this->actingAs($teacher)->postJson("/api/v1/quizzes/assignments/{$assignmentId}/publish")->assertOk();
+        $assignmentId = $this->actingAs($teacher)->postJson("http://127.0.0.1/api/v1/quizzes/{$quizId}/assignments", ['academic_year_id' => $assignment->academic_year_id, 'student_ids' => [$target->id], 'attempt_limit' => 1])->json('data.id');
+        $this->actingAs($teacher)->postJson("http://127.0.0.1/api/v1/quizzes/assignments/{$assignmentId}/publish")->assertOk();
         $otherStudent = Student::query()->where('student_no', 'MIS-2026-002')->firstOrFail();
         $other = User::query()->create(['school_id' => $teacher->school_id, 'name' => 'Other Student', 'username' => 'other.student', 'password' => Hash::make('password'), 'status' => 'active']);
         $studentRoleId = Role::query()->where('slug', 'student')->value('id');
@@ -74,7 +75,7 @@ class FormalQuizApiTest extends TestCase
         $membership->schools()->attach($teacher->school_id, ['tenant_id' => $membership->tenant_id]);
         $membership->roles()->attach($studentRoleId);
         $otherStudent->update(['user_id' => $other->id]);
-        $this->actingAs($other)->postJson("/api/v1/portal/student/quizzes/assignments/{$assignmentId}/attempts")->assertForbidden();
+        $this->actingAs($other)->postJson("http://127.0.0.1/api/v1/portal/student/quizzes/assignments/{$assignmentId}/attempts")->assertForbidden();
     }
 
     public function test_invalid_true_false_options_are_rejected(): void
@@ -82,7 +83,7 @@ class FormalQuizApiTest extends TestCase
         [$teacher,$assignment] = $this->fixture();
         $payload = $this->quizPayload($assignment);
         $payload['questions'][1]['options'][1]['option_text'] = 'Maybe';
-        $this->actingAs($teacher)->postJson('/api/v1/quizzes', $payload)->assertUnprocessable()->assertJsonValidationErrors('questions.1.options');
+        $this->actingAs($teacher)->postJson('http://127.0.0.1/api/v1/quizzes', $payload)->assertUnprocessable()->assertJsonValidationErrors('questions.1.options');
     }
 
     public function test_quiz_creation_rolls_back_when_audit_fails(): void

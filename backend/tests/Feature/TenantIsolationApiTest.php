@@ -208,6 +208,49 @@ class TenantIsolationApiTest extends TestCase
         $this->school($firstTenant, 'ALPHA');
     }
 
+    public function test_backend_enforces_admin_and_app_surfaces_while_session_routes_are_shared(): void
+    {
+        [$tenant, $adminDomain, $school] = $this->tenantFixture('alpha', 'alpha.admin.example.test', 'admin');
+        $appDomain = TenantDomain::query()->create([
+            'tenant_id' => $tenant->id,
+            'hostname' => 'alpha.app.example.test',
+            'surface' => 'app',
+            'status' => 'active',
+            'verified_at' => now(),
+        ]);
+        TenantFeature::query()->create(['tenant_id' => $tenant->id, 'feature_key' => 'community', 'enabled' => true]);
+        $role = Role::query()->firstOrCreate(['slug' => 'staff'], ['name' => 'Staff']);
+        foreach (['students.view', 'community.view'] as $slug) {
+            $permission = Permission::query()->firstOrCreate(['slug' => $slug], ['name' => $slug]);
+            $role->permissions()->syncWithoutDetaching([$permission->id]);
+        }
+        $user = User::query()->create([
+            'school_id' => $school->id,
+            'name' => 'Surface User',
+            'username' => 'surface.user',
+            'password' => 'password',
+            'status' => 'active',
+        ]);
+        $membership = TenantUserMembership::query()->create([
+            'tenant_id' => $tenant->id,
+            'user_id' => $user->id,
+            'default_school_id' => $school->id,
+            'status' => 'active',
+        ]);
+        $membership->schools()->attach($school->id, ['tenant_id' => $tenant->id]);
+        $membership->roles()->attach($role);
+
+        $this->actingAs($user)->getJson("http://{$adminDomain->hostname}/api/students")->assertOk();
+        $this->actingAs($user)->getJson("http://{$appDomain->hostname}/api/students")->assertNotFound();
+        $this->actingAs($user)->getJson("http://{$appDomain->hostname}/api/v1/community/posts")->assertOk();
+        $this->actingAs($user)->getJson("http://{$adminDomain->hostname}/api/v1/community/posts")->assertNotFound();
+
+        $this->actingAs($user)->getJson("http://{$adminDomain->hostname}/api/me")->assertOk();
+        $this->actingAs($user)->getJson("http://{$appDomain->hostname}/api/me")->assertOk();
+        $this->getJson("http://{$adminDomain->hostname}/api/tenant-context")->assertOk()->assertJsonPath('data.surface', 'admin');
+        $this->getJson("http://{$appDomain->hostname}/api/tenant-context")->assertOk()->assertJsonPath('data.surface', 'app');
+    }
+
     private function tenantFixture(string $slug, string $hostname, string $surface): array
     {
         $tenant = Tenant::query()->create(['slug' => $slug, 'name' => ucfirst($slug).' Academy', 'status' => 'active']);
