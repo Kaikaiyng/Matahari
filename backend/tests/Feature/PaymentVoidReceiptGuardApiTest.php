@@ -135,7 +135,7 @@ class PaymentVoidReceiptGuardApiTest extends TestCase
      */
     private function schoolStudentAndUser(array $permissionSlugs): array
     {
-        $school = School::query()->create([
+        $school = $this->createTenantSchool([
             'code' => 'MIS',
             'name' => 'Matahari International School',
             'receipt_prefix' => 'MIS',

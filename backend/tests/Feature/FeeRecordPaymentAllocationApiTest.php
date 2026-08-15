@@ -63,7 +63,7 @@ class FeeRecordPaymentAllocationApiTest extends TestCase
             'level_group' => 'primary',
             'status' => 'active',
         ]);
-        $otherSchool = School::query()->create([
+        $otherSchool = $this->createTenantSchool([
             'code' => 'OTHER',
             'name' => 'Other School',
             'receipt_prefix' => 'OTH',
@@ -346,7 +346,7 @@ class FeeRecordPaymentAllocationApiTest extends TestCase
      */
     private function schoolStudentAndUser(array $permissionSlugs): array
     {
-        $school = School::query()->create([
+        $school = $this->createTenantSchool([
             'code' => 'MIS',
             'name' => 'Matahari International School',
             'receipt_prefix' => 'MIS',

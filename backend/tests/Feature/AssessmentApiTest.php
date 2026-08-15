@@ -10,7 +10,6 @@ use App\Models\AcademicTerm;
 use App\Models\AcademicYear;
 use App\Models\AuditLog;
 use App\Models\ClassEnrolment;
-use App\Models\School;
 use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Models\TeachingAssignment;
@@ -112,7 +111,7 @@ class AssessmentApiTest extends TestCase
     public function test_school_admin_cannot_update_another_schools_academic_term(): void
     {
         $admin = User::query()->where('username', 'admin')->firstOrFail();
-        $otherSchool = School::query()->create(['name' => 'Other School', 'code' => 'OTHER', 'receipt_prefix' => 'OTH', 'invoice_prefix' => 'OTH']);
+        $otherSchool = $this->createTenantSchool(['name' => 'Other School', 'code' => 'OTHER', 'receipt_prefix' => 'OTH', 'invoice_prefix' => 'OTH']);
         $year = AcademicYear::query()->create(['school_id' => $otherSchool->id, 'code' => '2027', 'name' => '2027']);
         $term = AcademicTerm::query()->create(['school_id' => $otherSchool->id, 'academic_year_id' => $year->id, 'code' => 'T1', 'name' => 'Term 1']);
 

@@ -126,7 +126,7 @@ class PhaseAAcademicFoundationMigrationTest extends TestCase
     /** @return array{School, SchoolClass, Student} */
     private function schoolClassAndStudent(): array
     {
-        $school = School::query()->create([
+        $school = $this->createTenantSchool([
             'code' => 'MIS',
             'name' => 'Matahari International School',
             'receipt_prefix' => 'MIS',

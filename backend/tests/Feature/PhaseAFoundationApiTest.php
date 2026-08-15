@@ -373,7 +373,7 @@ class PhaseAFoundationApiTest extends TestCase
     /** @return array{School, SchoolClass, Student} */
     private function schoolFixture(string $code): array
     {
-        $school = School::query()->create([
+        $school = $this->createTenantSchool([
             'code' => $code,
             'name' => "{$code} School",
             'receipt_prefix' => $code,

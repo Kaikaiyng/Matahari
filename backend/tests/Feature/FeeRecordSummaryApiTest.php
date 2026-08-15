@@ -97,7 +97,7 @@ class FeeRecordSummaryApiTest extends TestCase
         [$school, $admin] = $this->schoolAndUser(['fee_record.view']);
         $active = $this->student($school, 'MIS-2026-001', 'Alyssa Tan');
         $withdrawn = $this->student($school, 'MIS-2026-002', 'Daniel Lim', status: 'withdraw');
-        $otherSchool = School::query()->create([
+        $otherSchool = $this->createTenantSchool([
             'code' => 'OTHER',
             'name' => 'Other School',
             'receipt_prefix' => 'OTH',
@@ -274,7 +274,7 @@ class FeeRecordSummaryApiTest extends TestCase
      */
     private function schoolAndUser(array $permissionSlugs): array
     {
-        $school = School::query()->create([
+        $school = $this->createTenantSchool([
             'code' => 'MIS',
             'name' => 'Matahari International School',
             'receipt_prefix' => 'MIS',

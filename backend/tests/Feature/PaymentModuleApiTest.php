@@ -321,7 +321,7 @@ class PaymentModuleApiTest extends TestCase
     public function test_cannot_create_payment_for_another_schools_student(): void
     {
         [$school, $student] = $this->schoolStudentAndUser([]);
-        $otherSchool = School::query()->create([
+        $otherSchool = $this->createTenantSchool([
             'code' => 'OTHER',
             'name' => 'Other School',
             'receipt_prefix' => 'OTH',
@@ -347,7 +347,7 @@ class PaymentModuleApiTest extends TestCase
     public function test_cross_school_payment_status_is_not_exposed_during_verify(): void
     {
         [$school, $student, $admin] = $this->schoolStudentAndUser(['payments.view', 'payments.create']);
-        $otherSchool = School::query()->create([
+        $otherSchool = $this->createTenantSchool([
             'code' => 'OTHER',
             'name' => 'Other School',
             'receipt_prefix' => 'OTH',
@@ -440,7 +440,7 @@ class PaymentModuleApiTest extends TestCase
      */
     private function schoolStudentAndUser(array $permissionSlugs): array
     {
-        $school = School::query()->create([
+        $school = $this->createTenantSchool([
             'code' => 'MIS',
             'name' => 'Matahari International School',
             'receipt_prefix' => 'MIS',

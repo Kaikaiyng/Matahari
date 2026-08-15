@@ -69,7 +69,7 @@ class DemoPortalApiTest extends TestCase
     public function test_parent_and_student_portal_access_rejects_cross_school_records(): void
     {
         $parent = User::query()->where('username', 'rachel.wong')->firstOrFail();
-        $otherSchool = School::query()->create([
+        $otherSchool = $this->createTenantSchool([
             'name' => 'Other School',
             'code' => 'OTHER',
             'receipt_prefix' => 'OTHER',
@@ -169,7 +169,7 @@ class DemoPortalApiTest extends TestCase
         $membership = TenantUserMembership::query()->create([
             'tenant_id' => $school->tenant_id, 'user_id' => $user->id, 'default_school_id' => $school->id, 'status' => 'active',
         ]);
-        $membership->schools()->attach($school);
+        $membership->schools()->attach($school->id, ['tenant_id' => $membership->tenant_id]);
         $membership->roles()->attach($role);
 
         $this->actingAs($user)

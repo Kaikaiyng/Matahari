@@ -10,7 +10,6 @@ use App\Models\AcademicYear;
 use App\Models\AuditLog;
 use App\Models\ClassEnrolment;
 use App\Models\ClassScheduleEntry;
-use App\Models\School;
 use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Models\TeachingAssignment;
@@ -51,7 +50,7 @@ class ScheduleApiTest extends TestCase
         $parent->guardianProfile->students()->updateExistingPivot($student->id, ['can_view_academics' => false]);
         $this->actingAs($parent)->getJson("/api/v1/portal/parent/children/{$student->id}/schedule")->assertForbidden();
 
-        $otherSchool = School::query()->create(['name' => 'Other School', 'code' => 'OTHER', 'receipt_prefix' => 'OTH', 'invoice_prefix' => 'OTH']);
+        $otherSchool = $this->createTenantSchool(['name' => 'Other School', 'code' => 'OTHER', 'receipt_prefix' => 'OTH', 'invoice_prefix' => 'OTH']);
         $otherYear = AcademicYear::query()->create(['school_id' => $otherSchool->id, 'code' => '2027', 'name' => '2027']);
         $otherClass = SchoolClass::query()->create(['school_id' => $otherSchool->id, 'name' => 'O1', 'status' => 'active']);
         $entry = ClassScheduleEntry::query()->create(['school_id' => $otherSchool->id, 'academic_year_id' => $otherYear->id, 'class_id' => $otherClass->id, 'title' => 'Private', 'day_of_week' => 1, 'starts_at' => '08:00', 'ends_at' => '09:00', 'status' => 'published', 'created_by_user_id' => $admin->id]);

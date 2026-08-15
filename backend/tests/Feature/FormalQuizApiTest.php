@@ -71,7 +71,7 @@ class FormalQuizApiTest extends TestCase
         $membership = TenantUserMembership::query()->create([
             'tenant_id' => $teacher->school->tenant_id, 'user_id' => $other->id, 'default_school_id' => $teacher->school_id, 'status' => 'active',
         ]);
-        $membership->schools()->attach($teacher->school_id);
+        $membership->schools()->attach($teacher->school_id, ['tenant_id' => $membership->tenant_id]);
         $membership->roles()->attach($studentRoleId);
         $otherStudent->update(['user_id' => $other->id]);
         $this->actingAs($other)->postJson("/api/v1/portal/student/quizzes/assignments/{$assignmentId}/attempts")->assertForbidden();

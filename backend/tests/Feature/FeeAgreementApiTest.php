@@ -296,7 +296,7 @@ class FeeAgreementApiTest extends TestCase
         [$school, $student, $admin] = $this->schoolStudentAndUser(['fee_agreements.create']);
         $tuition = $this->feeItem($school, 'TUITION', 'Tuition Fee', 'mandatory');
         $misc = $this->feeItem($school, 'MISC', 'Misc Fee', 'mandatory');
-        $otherSchool = School::query()->create([
+        $otherSchool = $this->createTenantSchool([
             'code' => 'OTH',
             'name' => 'Other School',
             'receipt_prefix' => 'OTH',
@@ -380,7 +380,7 @@ class FeeAgreementApiTest extends TestCase
      */
     private function schoolStudentAndUser(array $permissionSlugs): array
     {
-        $school = School::query()->create([
+        $school = $this->createTenantSchool([
             'code' => 'MIS',
             'name' => 'Matahari International School',
             'receipt_prefix' => 'MIS',

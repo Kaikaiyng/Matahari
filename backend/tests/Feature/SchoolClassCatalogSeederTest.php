@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\School;
 use App\Models\SchoolClass;
 use App\Models\Student;
 use Database\Seeders\DatabaseSeeder;
@@ -26,7 +25,7 @@ class SchoolClassCatalogSeederTest extends TestCase
 
     public function test_class_seeder_moves_existing_students_from_legacy_year_names(): void
     {
-        $school = School::query()->create([
+        $school = $this->createTenantSchool([
             'code' => 'MIS',
             'name' => 'Matahari International School',
             'receipt_prefix' => 'MIS',
