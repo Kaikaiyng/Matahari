@@ -82,7 +82,7 @@ function App() {
       userName={user.name}
       environment={environment}
     >
-      {activeRole === 'student' && <StudentPortalView studentName={user.name} activeTab={activeTab} onLogout={() => void logout()} />}
+      {activeRole === 'student' && <StudentPortalView studentName={user.name} activeTab={activeTab} onTabChange={setActiveTab} onLogout={() => void logout()} />}
       {activeRole === 'parent' && <ParentPortalView parentName={user.name} activeTab={activeTab} onTabChange={setActiveTab} onLogout={() => void logout()} />}
       {(activeRole === 'teacher' || activeRole === 'staff') && <TeacherPortalView teacherName={user.name} activeTab={activeTab} onTabChange={setActiveTab} onLogout={() => void logout()} staffMode={activeRole === 'staff'} />}
     </MobileShell>

@@ -113,6 +113,32 @@ class CommunityReportAndBlockApiTest extends TestCase
         $this->assertDatabaseCount('community_reports', 2);
     }
 
+    public function test_feed_exposes_only_safe_report_and_block_capabilities(): void
+    {
+        $post = $this->publishedPost();
+        $parent = $this->user('rachel.wong');
+        $admin = $this->user('admin');
+        $commentId = $this->actingAs($admin)->postJson("http://127.0.0.1/api/v1/community/posts/{$post->id}/comments", [
+            'body' => 'Visible moderator comment',
+        ])->assertCreated()->json('data.id');
+
+        $this->actingAs($parent)->getJson('http://127.0.0.1/api/v1/community/posts')
+            ->assertOk()
+            ->assertJsonPath('data.0.can_report_content', true)
+            ->assertJsonPath('data.0.can_report_user', true)
+            ->assertJsonPath('data.0.comments.0.id', $commentId)
+            ->assertJsonPath('data.0.comments.0.author_user_id', $admin->id)
+            ->assertJsonPath('data.0.comments.0.can_report_content', true)
+            ->assertJsonPath('data.0.comments.0.can_report_user', true);
+
+        $this->actingAs($admin)->getJson('http://127.0.0.1/api/v1/community/posts')
+            ->assertOk()
+            ->assertJsonPath('data.0.can_report_content', false)
+            ->assertJsonPath('data.0.can_report_user', false)
+            ->assertJsonPath('data.0.comments.0.can_report_content', false)
+            ->assertJsonPath('data.0.comments.0.can_report_user', false);
+    }
+
     public function test_report_targets_require_current_audience_visibility_and_never_accept_client_scope(): void
     {
         $foreignPost = $this->foreignTenantPost();
@@ -208,7 +234,8 @@ class CommunityReportAndBlockApiTest extends TestCase
         $mediaUrl = $created->json('data.media.0.url');
 
         $this->actingAs($teacher)->getJson('http://127.0.0.1/api/v1/community/content/mine')
-            ->assertOk()->assertJsonPath('data.0.id', $postId)->assertJsonPath('data.0.status', 'pending_review');
+            ->assertOk()->assertJsonPath('data.0.id', $postId)->assertJsonPath('data.0.status', 'pending_review')
+            ->assertJsonPath('data.0.report_id', fn ($value) => is_int($value));
         $this->actingAs($this->user('rachel.wong'))->getJson('http://127.0.0.1/api/v1/community/content/mine')
             ->assertOk()->assertJsonCount(0, 'data');
         $this->actingAs($teacher)->get($mediaUrl)->assertForbidden();

@@ -87,17 +87,29 @@ class CommunityController extends Controller
         $data = $request->validate(['body' => ['required', 'string', 'max:2000']]);
         $comment = $service->comment(SchoolContext::fromRequest($request)->schoolId, $communityPost, $data['body'], $request->user(), $contexts->fromRequest($request))->load('user:id,name');
 
-        return response()->json(['data' => ['id' => $comment->id, 'body' => $comment->body, 'status' => $comment->status, 'author' => $comment->user->name, 'created_at' => $comment->created_at?->toIso8601String()]], 201);
+        return response()->json(['data' => [
+            'id' => $comment->id, 'body' => $comment->body, 'status' => $comment->status,
+            'author' => $comment->user->name, 'author_user_id' => $comment->user_id,
+            'created_at' => $comment->created_at?->toIso8601String(),
+            'can_report_content' => false, 'can_report_user' => false,
+        ]], 201);
     }
 
     private function response(CommunityPost $post): array
     {
         return ['id' => $post->id, 'body' => $post->body, 'status' => $post->status, 'comments_enabled' => $post->comments_enabled, 'published_at' => $post->published_at?->toIso8601String(),
             'author' => ['id' => $post->author->id, 'name' => $post->author->name],
+            'can_report_content' => $post->author_user_id !== auth()->id(),
+            'can_report_user' => $post->author_user_id !== auth()->id(),
             'audiences' => $post->audiences->map(fn ($a) => ['type' => $a->audience_type, 'class_id' => $a->class_id, 'student_id' => $a->student_id]),
             'media' => $post->media->map(fn ($m) => ['id' => $m->id, 'type' => $m->media_type, 'name' => $m->original_name, 'url' => "/api/v1/community/media/{$m->id}"]),
             'reaction_count' => (int) ($post->reactions_count ?? 0), 'reacted_by_me' => (bool) ($post->reacted_by_me ?? false),
-            'comments' => $post->comments->map(fn ($c) => ['id' => $c->id, 'body' => $c->body, 'author' => $c->user->name, 'created_at' => $c->created_at?->toIso8601String(), 'can_remove' => $c->user_id === auth()->id() || $post->author_user_id === auth()->id() || auth()->user()?->hasPermissionTo('community.moderate')]),
+            'comments' => $post->comments->map(fn ($c) => [
+                'id' => $c->id, 'body' => $c->body, 'author' => $c->user->name, 'author_user_id' => $c->user_id,
+                'created_at' => $c->created_at?->toIso8601String(),
+                'can_remove' => $c->user_id === auth()->id() || $post->author_user_id === auth()->id() || auth()->user()?->hasPermissionTo('community.moderate'),
+                'can_report_content' => $c->user_id !== auth()->id(), 'can_report_user' => $c->user_id !== auth()->id(),
+            ]),
             'can_moderate' => (bool) auth()->user()?->hasPermissionTo('community.moderate'),
         ];
     }

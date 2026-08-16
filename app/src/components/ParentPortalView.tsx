@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { AlertCircle, BookOpenCheck, CalendarCheck2, ChevronRight, LogOut, Mail, Phone, Printer, ReceiptText, UserRound, X } from 'lucide-react'
 import { portalApi, type AttendanceRecord, type GuardianMe, type OutstandingCharge, type PortalPayment, type PortalReceipt, type PublishedAssessmentResult } from '../api/portalApi'
 import { CommunityFeed } from './CommunityFeed'
+import { CommunitySafetyCentre } from '../features/community-safety/CommunitySafetyCentre'
+import { CommunitySafetyLinks } from '../features/community-safety/CommunitySafetyLinks'
 
 export function ParentPortalView({ parentName, activeTab, onTabChange, onLogout }: { parentName: string; activeTab: string; onTabChange: (tab: string) => void; onLogout: () => void }) {
   const [guardian, setGuardian] = useState<GuardianMe | null>(null)
@@ -10,6 +12,7 @@ export function ParentPortalView({ parentName, activeTab, onTabChange, onLogout 
   useEffect(() => { portalApi.getGuardianMe().then(setGuardian).catch(() => setError('Unable to load your linked children.')).finally(() => setLoading(false)) }, [])
 
   if (activeTab === 'home') return <CommunityFeed role="parent" userName={parentName} onOpenFinance={() => onTabChange('finance')} />
+  if (activeTab === 'safety') return <CommunitySafetyCentre />
   if (loading) return <PageLoading />
   if (error) return <PageError message={error} />
 
@@ -17,7 +20,7 @@ export function ParentPortalView({ parentName, activeTab, onTabChange, onLogout 
   if (activeTab === 'children') return <ChildrenPage children={children} />
   if (activeTab === 'academics') return <ParentAcademics children={children} />
   if (activeTab === 'finance') return <ParentFinance children={children} />
-  return <ParentMore name={guardian?.data?.full_name ?? parentName} phone={guardian?.data?.phone} email={guardian?.data?.email} childrenCount={children.length} onLogout={onLogout} />
+  return <><ParentMore name={guardian?.data?.full_name ?? parentName} phone={guardian?.data?.phone} email={guardian?.data?.email} childrenCount={children.length} onSafety={() => onTabChange('safety')} onLogout={onLogout} /><CommunitySafetyLinks /></>
 }
 
 function PageTitle({ eyebrow, title, copy }: { eyebrow: string; title: string; copy: string }) {
@@ -114,7 +117,7 @@ function ReceiptDialog({ receipt, onClose }: { receipt: PortalReceipt; onClose: 
   </section></div>
 }
 
-function ParentMore({ name, phone, email, childrenCount, onLogout }: { name: string; phone?: string | null; email?: string | null; childrenCount: number; onLogout: () => void }) { return <div className="record-page"><PageTitle eyebrow="Account" title="Profile and settings" copy="Your private MIS App access." /><section className="profile-card"><span className="profile-avatar">{name.split(' ').map((part) => part[0]).slice(0, 2).join('')}</span><h2>{name}</h2><p>Parent · {childrenCount} linked child{childrenCount === 1 ? '' : 'ren'}</p></section><section className="settings-list"><div><Phone /><span><small>Phone</small><strong>{phone ?? 'Not provided'}</strong></span></div><div><Mail /><span><small>Email</small><strong>{email ?? 'Not provided'}</strong></span></div><div><ChevronRight/><span><small>Notifications</small><strong>Open the bell in the header</strong></span></div><div><ChevronRight/><span><small>Privacy</small><strong>Only reviewed child links and authorized audiences are shown</strong></span></div></section><button type="button" className="logout-action" aria-label="Sign out" onClick={onLogout}><LogOut /><span><strong>Sign out</strong><small>End this session on this device</small></span></button></div> }
+function ParentMore({ name, phone, email, childrenCount, onSafety, onLogout }: { name: string; phone?: string | null; email?: string | null; childrenCount: number; onSafety: () => void; onLogout: () => void }) { return <div className="record-page"><PageTitle eyebrow="Account" title="Profile and settings" copy="Your private MIS App access." /><section className="profile-card"><span className="profile-avatar">{name.split(' ').map((part) => part[0]).slice(0, 2).join('')}</span><h2>{name}</h2><p>Parent · {childrenCount} linked child{childrenCount === 1 ? '' : 'ren'}</p></section><section className="settings-list"><div><Phone /><span><small>Phone</small><strong>{phone ?? 'Not provided'}</strong></span></div><div><Mail /><span><small>Email</small><strong>{email ?? 'Not provided'}</strong></span></div><button type="button" onClick={onSafety}><span><small>Community</small><strong>Safety centre, reports and blocked users</strong></span><ChevronRight /></button><div><ChevronRight/><span><small>Notifications</small><strong>Open the bell in the header</strong></span></div><div><ChevronRight/><span><small>Privacy</small><strong>Only reviewed child links and authorized audiences are shown</strong></span></div></section><button type="button" className="logout-action" aria-label="Sign out" onClick={onLogout}><LogOut /><span><strong>Sign out</strong><small>End this session on this device</small></span></button></div> }
 function money(value: number) { return new Intl.NumberFormat('en-MY', { style: 'currency', currency: 'MYR' }).format(value) }
 function countAttendance(records: AttendanceRecord[]) { return { present: records.filter((item) => item.status === 'present').length, late: records.filter((item) => item.status === 'late').length, absent: records.filter((item) => item.status === 'absent').length } }
 function percent(value: number, total: number) { return total === 0 ? 0 : (value / total) * 100 }

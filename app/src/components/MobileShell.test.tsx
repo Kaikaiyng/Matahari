@@ -15,6 +15,10 @@ vi.mock('../api/portalApi', () => ({
     createCommunityPost: vi.fn(),
     removeCommunityComment: vi.fn(),
     hideCommunityPost: vi.fn(),
+    getCurrentCommunityPolicies: vi.fn().mockResolvedValue({ data: {
+      terms: { id: 1, title: 'Terms of Use', accepted: true },
+      community_standards: { id: 2, title: 'Community Standards', accepted: true },
+    } }),
     getGuardianMe: vi.fn().mockResolvedValue({
       data: { id: 1, full_name: 'Rachel Wong', phone: null, email: null },
       children: [

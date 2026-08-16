@@ -112,20 +112,28 @@ class CommunitySafetyController extends Controller
     {
         [$tenantId, $schoolId] = $this->scope($request);
         $posts = CommunityPost::query()
+            ->addSelect(['report_id' => CommunityReport::query()->select('id')
+                ->whereColumn('community_reports.community_post_id', 'community_posts.id')
+                ->where('source', 'submission')->latest('id')->limit(1)])
             ->where('tenant_id', $tenantId)->where('school_id', $schoolId)
             ->where('author_user_id', $request->user()->id)
             ->whereIn('status', [CommunityPost::STATUS_PENDING_REVIEW, CommunityPost::STATUS_REJECTED, CommunityPost::STATUS_HIDDEN])
             ->latest()->get()->map(fn (CommunityPost $post) => [
                 'id' => $post->id, 'type' => 'post', 'body' => $post->body, 'status' => $post->status,
-                'moderation_reason_code' => $post->moderation_reason_code, 'created_at' => $post->created_at?->toIso8601String(),
+                'moderation_reason_code' => $post->moderation_reason_code, 'report_id' => $post->getAttribute('report_id'),
+                'created_at' => $post->created_at?->toIso8601String(),
             ]);
         $comments = CommunityComment::query()
+            ->addSelect(['report_id' => CommunityReport::query()->select('id')
+                ->whereColumn('community_reports.community_comment_id', 'community_comments.id')
+                ->where('source', 'submission')->latest('id')->limit(1)])
             ->where('tenant_id', $tenantId)->where('school_id', $schoolId)
             ->where('user_id', $request->user()->id)
             ->whereIn('status', [CommunityComment::STATUS_PENDING_REVIEW, CommunityComment::STATUS_REJECTED, CommunityComment::STATUS_HIDDEN])
             ->latest()->get()->map(fn (CommunityComment $comment) => [
                 'id' => $comment->id, 'type' => 'comment', 'body' => $comment->body, 'status' => $comment->status,
-                'moderation_reason_code' => $comment->moderation_reason_code, 'created_at' => $comment->created_at?->toIso8601String(),
+                'moderation_reason_code' => $comment->moderation_reason_code, 'report_id' => $comment->getAttribute('report_id'),
+                'created_at' => $comment->created_at?->toIso8601String(),
             ]);
 
         return response()->json(['data' => $posts->concat($comments)->sortByDesc('created_at')->values()]);

@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react'
 import { BookOpen, CalendarDays, ChevronRight, GraduationCap, Lightbulb, LockKeyhole, LogOut, PlayCircle, Sparkles, UserRound } from 'lucide-react'
 import { portalApi, type AttendanceRecord, type FormalQuizAssignment, type FormalQuizAttempt, type PublishedAssessmentResult, type StudentEnrolment, type StudentMe, type StudentSchedule as StudentScheduleData } from '../api/portalApi'
 import { CommunityFeed } from './CommunityFeed'
+import { CommunitySafetyCentre } from '../features/community-safety/CommunitySafetyCentre'
+import { CommunitySafetyLinks } from '../features/community-safety/CommunitySafetyLinks'
 
-export function StudentPortalView({ studentName, activeTab, onLogout }: { studentName: string; activeTab: string; onLogout: () => void }) {
+export function StudentPortalView({ studentName, activeTab, onTabChange = () => undefined, onLogout }: { studentName: string; activeTab: string; onTabChange?: (tab: string) => void; onLogout: () => void }) {
   const [student, setStudent] = useState<StudentMe['data']>(null)
   const [enrolments, setEnrolments] = useState<StudentEnrolment[]>([])
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([])
@@ -12,11 +14,12 @@ export function StudentPortalView({ studentName, activeTab, onLogout }: { studen
   const [loading, setLoading] = useState(true)
   useEffect(() => { Promise.all([portalApi.getStudentMe(), portalApi.getStudentEnrolments(), portalApi.getStudentAttendance(), portalApi.getStudentAssessmentResults(), portalApi.getStudentSchedule()]).then(([self, history, attendanceResponse, resultResponse, scheduleResponse]) => { setStudent(self.data); setEnrolments(history.data); setAttendance(attendanceResponse.data); setResults(resultResponse.data); setSchedule(scheduleResponse.data) }).finally(() => setLoading(false)) }, [])
   if (activeTab === 'home') return <CommunityFeed role="student" userName={student?.full_name ?? studentName} />
+  if (activeTab === 'safety') return <CommunitySafetyCentre />
   if (loading) return <div className="record-page"><div className="app-skeleton large" /><div className="app-skeleton" /><div className="app-skeleton" /></div>
   if (activeTab === 'learn') return <StudentLearn student={student} enrolments={enrolments} attendance={attendance} results={results} />
   if (activeTab === 'quiz') return <StudentQuiz />
   if (activeTab === 'schedule') return <StudentSchedule schedule={schedule} />
-  return <StudentMore student={student} fallbackName={studentName} onLogout={onLogout} />
+  return <><StudentMore student={student} fallbackName={studentName} onSafety={() => onTabChange('safety')} onLogout={onLogout} /><CommunitySafetyLinks /></>
 }
 
 function Title({ eyebrow, title, copy }: { eyebrow: string; title: string; copy: string }) { return <header className="record-page-title"><p>{eyebrow}</p><h1>{title}</h1><span>{copy}</span></header> }
@@ -45,4 +48,4 @@ function StudentSchedule({ schedule }: { schedule: StudentScheduleData }) {
 }
 function ScheduleItem({ time, title, detail }: { time: string; title: string; detail: string }) { return <div className="timeline-row"><time>{time}</time><i /><span><strong>{title}</strong><small>{detail}</small></span></div> }
 
-function StudentMore({ student, fallbackName, onLogout }: { student: StudentMe['data']; fallbackName: string; onLogout: () => void }) { const name = student?.full_name ?? fallbackName; return <div className="record-page"><Title eyebrow="Account" title="Profile and settings" copy="Your private student access." /><section className="profile-card"><span className="profile-avatar">{name.split(' ').map((part) => part[0]).slice(0, 2).join('')}</span><h2>{name}</h2><p>{student?.student_no ?? 'Student account'} · {student?.class?.name ?? 'No class'}</p></section><section className="settings-list"><div><UserRound /><span><small>Role</small><strong>Student self-service</strong></span></div><div><ChevronRight/><span><small>Notifications</small><strong>Open the bell in the header</strong></span></div><div><ChevronRight/><span><small>Privacy</small><strong>Only your own records and authorized class content are shown</strong></span></div></section><button type="button" className="logout-action" aria-label="Sign out" onClick={onLogout}><LogOut /><span><strong>Sign out</strong><small>End this session on this device</small></span></button></div> }
+function StudentMore({ student, fallbackName, onSafety, onLogout }: { student: StudentMe['data']; fallbackName: string; onSafety: () => void; onLogout: () => void }) { const name = student?.full_name ?? fallbackName; return <div className="record-page"><Title eyebrow="Account" title="Profile and settings" copy="Your private student access." /><section className="profile-card"><span className="profile-avatar">{name.split(' ').map((part) => part[0]).slice(0, 2).join('')}</span><h2>{name}</h2><p>{student?.student_no ?? 'Student account'} · {student?.class?.name ?? 'No class'}</p></section><section className="settings-list"><div><UserRound /><span><small>Role</small><strong>Student self-service</strong></span></div><button type="button" onClick={onSafety}><span><small>Community</small><strong>Safety centre, reports and blocked users</strong></span><ChevronRight /></button><div><ChevronRight/><span><small>Notifications</small><strong>Open the bell in the header</strong></span></div><div><ChevronRight/><span><small>Privacy</small><strong>Only your own records and authorized class content are shown</strong></span></div></section><button type="button" className="logout-action" aria-label="Sign out" onClick={onLogout}><LogOut /><span><strong>Sign out</strong><small>End this session on this device</small></span></button></div> }

@@ -340,7 +340,7 @@ git commit -m "feat: add UGC review and appeals workflow"
 - Typed client methods mirror Task 3/4 App endpoints and never accept tenant/school IDs.
 - `CommunitySafetyMenu` receives only response-provided `can_report_content`, `can_report_user`, and author ID.
 
-- [ ] **Step 1: Write failing App tests**
+- [x] **Step 1: Write failing App tests**
 
 Test first-contribution policy gate, Student safety/adult-authorization message, separate report-content/report-user/block labels, reason submission, immediate blocked removal, My Reports privacy, unblock, pending/rejected author state, appeal entry, and API errors.
 
@@ -351,19 +351,19 @@ await user.click(screen.getByRole('button', { name: 'Submit report' }))
 expect(api.reportCommunityContent).toHaveBeenCalledWith(post.id, 'bullying_harassment', '')
 ```
 
-- [ ] **Step 2: Run the focused Vitest file and confirm RED**
+- [x] **Step 2: Run the focused Vitest file and confirm RED**
 
 Run: `npm.cmd test -- --run src/features/community-safety/CommunitySafety.test.tsx` from `app/`.
 
-- [ ] **Step 3: Implement accessible mobile-first UX**
+- [x] **Step 3: Implement accessible mobile-first UX**
 
 Use a clearly labelled overflow menu; do not combine report and block into one action. Report confirmation explains emergency limitations. Block confirmation states that only Community content is affected. Pending content is separate from the public feed and labelled “Only you and moderators can see this.” Add My Reports, Blocked Users, Appeals, Community Standards, Child Safety, Privacy, and Contact Support to role More/Profile pages.
 
-- [ ] **Step 4: Run App test, lint, and build**
+- [x] **Step 4: Run App test, lint, and build**
 
 Run from `app/`: `npm.cmd test`, `npm.cmd run lint`, `npm.cmd run build`. Expected: all PASS, no Oxlint warnings, TypeScript clean.
 
-- [ ] **Step 5: Commit the App slice**
+- [x] **Step 5: Commit the App slice**
 
 ```powershell
 git add -- app/src/api/portalApi.ts app/src/components/CommunityFeed.tsx app/src/components/ParentPortalView.tsx app/src/components/StudentPortalView.tsx app/src/components/TeacherPortalView.tsx app/src/features/community-safety/CommunityPolicyGate.tsx app/src/features/community-safety/CommunitySafetyMenu.tsx app/src/features/community-safety/CommunitySafetyCentre.tsx app/src/features/community-safety/CommunitySafety.css app/src/features/community-safety/CommunitySafety.test.tsx
