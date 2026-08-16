@@ -234,6 +234,7 @@ Route::prefix('v1')->middleware([...$sessionMiddleware, 'auth', 'active', 'tenan
             Route::get('/children/{student}/outstanding', [ParentPortalController::class, 'childOutstanding'])->middleware('tenant.feature:parent_finance');
             Route::get('/children/{student}/payments', [ParentPortalController::class, 'childPayments'])->middleware('tenant.feature:parent_finance');
             Route::get('/children/{student}/receipts', [ParentPortalController::class, 'childReceipts'])->middleware('tenant.feature:parent_finance');
+            Route::get('/children/{student}/receipts/{receipt}', [ParentPortalController::class, 'childReceipt'])->middleware('tenant.feature:parent_finance');
             Route::get('/children/{student}/attendance', [ParentPortalController::class, 'childAttendance'])->middleware('tenant.feature:attendance');
             Route::get('/children/{student}/assessment-results', [ParentPortalController::class, 'childAssessmentResults'])->middleware(['tenant.feature:assessments', 'permission:assessments.view_published']);
             Route::get('/children/{student}/schedule', [ParentPortalController::class, 'childSchedule'])->middleware(['tenant.feature:schedule', 'permission:schedule.view']);
