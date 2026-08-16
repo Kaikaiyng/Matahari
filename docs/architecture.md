@@ -54,7 +54,7 @@ The Admin frontend, multi-role Community App, and backend are separate applicati
 - `app/Services/Foundation/`: academic foundation, teacher scope, portal-link, and minimum foundation-account transactions.
 - `app/Services/Attendance/`: teaching-assignment-scoped daily attendance and transactional correction audit.
 - `app/Services/FeeAgreements/`: agreement creation and superseding transactions.
-- `app/Services/Billing/`: Fee Record generation/summary, payment, receipt, numbering, and legacy invoice services.
+- `app/Services/Billing/`: Fee Record generation/summary, payment, receipt, numbering, manual in-app payment reminders, and legacy invoice services.
 - `app/Services/Audit/` and `app/Audit/`: audit events, trusted context, sanitization, and persistence.
 - `app/Models/`: Eloquent entities and relationships.
 - `database/migrations/`: schema history and corrective migrations.
@@ -162,7 +162,7 @@ Implemented:
 - Secret-key payload sanitization.
 - Central `AuditLoggerContract`/`AuditLogger` binding.
 - Secure audit columns, indexes, event UUID uniqueness, legacy backfill, and Eloquent instance immutability.
-- Required transactional events for student create/update/status, agreement create/supersede, Fee Record activation/manual charges, payment record/verify/void, and receipt issue/void.
+- Required transactional events for student create/update/status, agreement create/supersede, Fee Record activation/manual charges, payment record/verify/void, receipt issue/void, and manual payment-reminder send.
 - Required transactional events for daily attendance submission and correction.
 - Best-effort login success/failure/logout events with a dedicated redacted security-log fallback if audit storage fails.
 - `GET /api/audit-logs` and `GET /api/audit-logs/{auditLog}` with validated filters, stable cursor pagination, output re-sanitization, and `audit.view` backend enforcement.
