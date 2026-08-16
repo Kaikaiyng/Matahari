@@ -22,9 +22,11 @@ use App\Http\Controllers\Api\V1\AssessmentController;
 use App\Http\Controllers\Api\V1\ClassEnrolmentController;
 use App\Http\Controllers\Api\V1\ClassScheduleController;
 use App\Http\Controllers\Api\V1\CommunityController;
+use App\Http\Controllers\Api\V1\CommunityModerationController;
 use App\Http\Controllers\Api\V1\CommunitySafetyController;
 use App\Http\Controllers\Api\V1\FoundationAccountController;
 use App\Http\Controllers\Api\V1\ParentPortalController;
+use App\Http\Controllers\Api\V1\PlatformCommunityModerationController;
 use App\Http\Controllers\Api\V1\PlatformTenantController;
 use App\Http\Controllers\Api\V1\PortalLinkController;
 use App\Http\Controllers\Api\V1\PortalNotificationController;
@@ -74,6 +76,11 @@ Route::middleware([...$sessionMiddleware, 'auth', 'active', 'tenant.member', 'te
         Route::put('/tenants/{tenant}/features/{featureKey}', [PlatformTenantController::class, 'updateFeature']);
         Route::post('/tenants/{tenant}/schools', [PlatformTenantController::class, 'storeSchool']);
         Route::put('/tenants/{tenant}/memberships/{user}', [PlatformTenantController::class, 'updateMembership']);
+        Route::prefix('community-moderation')->middleware('permission:community.moderate_platform')->group(function (): void {
+            Route::get('/summary', [PlatformCommunityModerationController::class, 'summary']);
+            Route::get('/reports/{communityReport}', [PlatformCommunityModerationController::class, 'show']);
+            Route::post('/reports/{communityReport}/decision', [PlatformCommunityModerationController::class, 'intervene']);
+        });
     });
     Route::prefix('v1/tenant')->middleware('permission:tenant.settings.manage')->group(function (): void {
         Route::patch('/branding', [TenantSettingsController::class, 'updateBranding']);
@@ -174,6 +181,8 @@ Route::prefix('v1')->middleware([...$sessionMiddleware, 'auth', 'active', 'tenan
         Route::delete('/users/{user}/block', [CommunitySafetyController::class, 'unblock']);
         Route::get('/blocked-users', [CommunitySafetyController::class, 'blockedUsers']);
         Route::get('/content/mine', [CommunitySafetyController::class, 'myContent']);
+        Route::post('/appeals', [CommunitySafetyController::class, 'submitAppeal']);
+        Route::get('/appeals/mine', [CommunitySafetyController::class, 'myAppeals']);
         Route::post('/students/{student}/authorization', [CommunitySafetyController::class, 'authorizeStudent']);
         Route::delete('/students/{student}/authorization', [CommunitySafetyController::class, 'revokeStudentAuthorization']);
         Route::post('/posts', [CommunityController::class, 'store'])->middleware('permission:community.publish');
@@ -185,6 +194,14 @@ Route::prefix('v1')->middleware([...$sessionMiddleware, 'auth', 'active', 'tenan
     });
 
     Route::prefix('admin')->middleware('tenant.surface:admin')->group(function (): void {
+        Route::prefix('community-moderation')->middleware('permission:community.moderate')->group(function (): void {
+            Route::get('/reports', [CommunityModerationController::class, 'index']);
+            Route::get('/reports/{communityReport}', [CommunityModerationController::class, 'show']);
+            Route::post('/reports/{communityReport}/decision', [CommunityModerationController::class, 'decide']);
+            Route::post('/users/{user}/restrictions', [CommunityModerationController::class, 'restrict']);
+            Route::delete('/restrictions/{communityUserRestriction}', [CommunityModerationController::class, 'revokeRestriction']);
+            Route::post('/appeals/{communityAppeal}/decision', [CommunityModerationController::class, 'decideAppeal']);
+        });
         Route::get('/academic-years', [AcademicYearController::class, 'index'])->middleware('permission:academic_years.view');
         Route::post('/academic-years', [AcademicYearController::class, 'store'])->middleware('permission:academic_years.manage');
         Route::patch('/academic-years/{academicYear}', [AcademicYearController::class, 'update'])->middleware('permission:academic_years.manage');

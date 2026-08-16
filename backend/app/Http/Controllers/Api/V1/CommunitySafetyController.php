@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Audit\AuditContextFactory;
 use App\Http\Controllers\Controller;
+use App\Models\CommunityAppeal;
 use App\Models\CommunityComment;
 use App\Models\CommunityPolicyVersion;
 use App\Models\CommunityPost;
@@ -70,6 +71,7 @@ class CommunitySafetyController extends Controller
         [$tenantId, $schoolId] = $this->scope($request);
         $reports = CommunityReport::query()
             ->where('tenant_id', $tenantId)->where('school_id', $schoolId)
+            ->where('source', 'user_report')
             ->where('reporter_user_id', $request->user()->id)->latest()->get();
 
         return response()->json(['data' => $reports->map(fn (CommunityReport $report) => $this->reporterReport($report))]);
@@ -145,6 +147,25 @@ class CommunitySafetyController extends Controller
         return response()->json(['data' => ['id' => $authorization->id, 'student_id' => $student->id, 'active' => false]]);
     }
 
+    public function submitAppeal(Request $request, CommunityModerationService $service, AuditContextFactory $contexts): JsonResponse
+    {
+        $data = $request->validate(['report_id' => ['required', 'integer'], 'statement' => ['required', 'string', 'max:2000']]);
+        [$tenantId, $schoolId] = $this->scope($request);
+        $report = CommunityReport::query()->findOrFail($data['report_id']);
+        $appeal = $service->submitAppeal($report, $request->user(), $tenantId, $schoolId, $data['statement'], $contexts->fromRequest($request));
+
+        return response()->json(['data' => $this->appealResponse($appeal)], 201);
+    }
+
+    public function myAppeals(Request $request): JsonResponse
+    {
+        [$tenantId, $schoolId] = $this->scope($request);
+        $appeals = CommunityAppeal::query()->where('tenant_id', $tenantId)->where('school_id', $schoolId)
+            ->where('appellant_user_id', $request->user()->id)->latest()->get();
+
+        return response()->json(['data' => $appeals->map(fn (CommunityAppeal $appeal) => $this->appealResponse($appeal))]);
+    }
+
     /** @return array{int, int} */
     private function scope(Request $request): array
     {
@@ -180,6 +201,16 @@ class CommunitySafetyController extends Controller
             'user' => ['id' => $block->blockedUser->id, 'name' => $block->blockedUser->name],
             'blocked_at' => $block->blocked_at?->toIso8601String(),
             'active' => $block->revoked_at === null,
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function appealResponse(CommunityAppeal $appeal): array
+    {
+        return [
+            'id' => $appeal->id, 'report_id' => $appeal->community_report_id, 'status' => $appeal->status,
+            'decision' => $appeal->decision, 'decision_reason' => $appeal->decision_reason,
+            'created_at' => $appeal->created_at?->toIso8601String(), 'reviewed_at' => $appeal->reviewed_at?->toIso8601String(),
         ];
     }
 }

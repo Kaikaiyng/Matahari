@@ -15,7 +15,7 @@ class CommunityReport extends Model
     public const STATUS_RESOLVED = 'resolved';
 
     protected $fillable = [
-        'tenant_id', 'school_id', 'reporter_user_id', 'target_type', 'community_post_id',
+        'tenant_id', 'school_id', 'reporter_user_id', 'source', 'target_type', 'community_post_id',
         'community_comment_id', 'reported_user_id', 'reason_code', 'details', 'priority',
         'status', 'target_snapshot', 'due_at', 'assigned_to_user_id', 'resolved_at',
         'resolution_code', 'evidence_held_at', 'evidence_held_by_user_id',

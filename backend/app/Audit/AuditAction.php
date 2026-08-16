@@ -69,6 +69,7 @@ enum AuditAction: string
     case CommunityReportEscalated = 'community.report_escalated';
     case CommunityAppealSubmitted = 'community.appeal_submitted';
     case CommunityAppealDecided = 'community.appeal_decided';
+    case CommunityPlatformCaseViewed = 'community.platform_case_viewed';
     case AssessmentCreated = 'assessment.created';
     case AssessmentResultsSaved = 'assessment.results_saved';
     case AssessmentPublished = 'assessment.published';

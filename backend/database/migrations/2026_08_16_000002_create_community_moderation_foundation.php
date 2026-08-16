@@ -143,6 +143,7 @@ return new class extends Migration
                 $table->id();
                 $this->tenantSchool($table);
                 $table->foreignId('reporter_user_id')->constrained('users')->restrictOnDelete();
+                $table->string('source', 24)->default('user_report');
                 $table->string('target_type', 24);
                 $table->foreignId('community_post_id')->nullable()->constrained('community_posts')->restrictOnDelete();
                 $table->foreignId('community_comment_id')->nullable()->constrained('community_comments')->restrictOnDelete();

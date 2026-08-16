@@ -257,7 +257,7 @@ git add -- backend/app/Services/Community/CommunityModerationService.php backend
 git commit -m "feat: add Community reporting and blocking"
 ```
 
-### Task 4: School Queue, Platform Escalation, Restrictions, and Appeals
+### Task 4: School Queue, Platform Escalation, Restrictions, and Appeals (complete: `feat: add UGC review and appeals workflow`)
 
 **Files:**
 - Create: `backend/app/Http/Controllers/Api/V1/CommunityModerationController.php`
@@ -273,7 +273,7 @@ git commit -m "feat: add Community reporting and blocking"
 - Produces platform summary/severe detail/intervention endpoints protected by `community.moderate_platform`.
 - Produces `reviewReport(...)`, `applyRestriction(...)`, `submitAppeal(...)`, and `decideAppeal(...)` state transitions.
 
-- [ ] **Step 1: Write failing queue and appeal tests**
+- [x] **Step 1: Write failing queue and appeal tests**
 
 Cover same-school queue, platform aggregate, explicit severe detail access and access logging, ordinary cross-tenant content absence, required reasons, valid transition matrix, restriction scope/expiry, unrelated module access, media release only after approval, rejected media remaining quarantined, evidence-hold preservation, one appeal, and different-reviewer enforcement.
 
@@ -284,11 +284,11 @@ $this->actingAs($originalModerator)
     ])->assertUnprocessable()->assertJsonValidationErrors('reviewer');
 ```
 
-- [ ] **Step 2: Run both focused tests and confirm RED**
+- [x] **Step 2: Run both focused tests and confirm RED**
 
 Run the two test files directly with PHPUnit.
 
-- [ ] **Step 3: Implement queue and state transitions**
+- [x] **Step 3: Implement queue and state transitions**
 
 School queue queries always begin with resolved `tenant_id` and `school_id`. Platform list returns counts/severity/deadline metadata; case detail requires an explicit severe/escalated case and logs access. Each decision locks the report/content/restriction rows, validates the transition, writes an append-only action, sends a recipient-scoped notification, and persists the audit event in one transaction.
 
@@ -311,11 +311,11 @@ Platform summary/detail/intervention routes live under the existing platform gro
 
 Community restrictions use scopes `comment`, `publish`, `media`, or `all`; they never alter attendance, finance, assessment, schedule, or account status.
 
-- [ ] **Step 4: Run focused tests, Community regression, routes, and Pint**
+- [x] **Step 4: Run focused tests, Community regression, routes, and Pint**
 
 Expected: all PASS; school moderator cross-school tests return 403; platform endpoints deny School Admin.
 
-- [ ] **Step 5: Commit the moderation workflow**
+- [x] **Step 5: Commit the moderation workflow**
 
 ```powershell
 git add -- backend/app/Http/Controllers/Api/V1/CommunityModerationController.php backend/app/Http/Controllers/Api/V1/PlatformCommunityModerationController.php backend/app/Http/Controllers/Api/V1/CommunitySafetyController.php backend/app/Services/Community/CommunityModerationService.php backend/routes/api.php backend/tests/Feature/CommunityModerationQueueApiTest.php backend/tests/Feature/CommunityAppealApiTest.php

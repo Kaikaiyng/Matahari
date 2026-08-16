@@ -11,6 +11,7 @@ use App\Contracts\AuditLoggerContract;
 use App\Models\CommunityComment;
 use App\Models\CommunityPost;
 use App\Models\CommunityPostReaction;
+use App\Models\CommunityReport;
 use App\Models\School;
 use App\Models\SchoolClass;
 use App\Models\Student;
@@ -35,6 +36,10 @@ class CommunityService
         $school = School::query()->findOrFail($schoolId);
         $tenantId = (int) $school->tenant_id;
         $this->policy->assertCanContribute($actor, $tenantId, $schoolId);
+        $this->policy->assertNotRestricted($actor, $tenantId, $schoolId, 'publish');
+        if (($data['media'] ?? []) !== []) {
+            $this->policy->assertNotRestricted($actor, $tenantId, $schoolId, 'media');
+        }
         $this->access->assertCanPublish($actor, $schoolId, $data['audiences']);
         $inspection = $this->safetyFilter->inspect($data['body']);
         if (! $inspection->allowed) {
@@ -74,6 +79,9 @@ class CommunityService
                         'mime_type' => $file->getMimeType(), 'size_bytes' => $file->getSize(), 'sort_order' => $index, 'status' => $isModerator ? 'ready' : 'quarantined',
                     ]);
                 }
+                if (! $isModerator) {
+                    $this->createSubmissionCase($post, null, $actor, $tenantId, $schoolId, $inspection->reasonCode);
+                }
                 $this->audit->record(new AuditEvent(action: $isModerator ? AuditAction::CommunityPostPublished : AuditAction::CommunityPostSubmitted, module: AuditModule::Community, schoolId: $schoolId, subjectType: AuditSubject::CommunityPost, subjectId: $post->id, newValues: ['audiences' => $post->audiences()->pluck('audience_key')->all(), 'comments_enabled' => $post->comments_enabled, 'status' => $post->status]), $context);
 
                 return $post;
@@ -106,6 +114,7 @@ class CommunityService
         $this->access->findVisible($actor, $schoolId, $post);
         abort_unless($post->comments_enabled, 409, 'Comments are disabled for this post.');
         $this->policy->assertCanContribute($actor, (int) $post->tenant_id, $schoolId);
+        $this->policy->assertNotRestricted($actor, (int) $post->tenant_id, $schoolId, 'comment');
         $inspection = $this->safetyFilter->inspect($body);
         if (! $inspection->allowed) {
             throw ValidationException::withMessages(['body' => 'This content is not allowed under the Community Standards.']);
@@ -120,6 +129,9 @@ class CommunityService
                 'reviewed_at' => $isModerator ? now() : null, 'reviewed_by_user_id' => $isModerator ? $actor->id : null,
                 'moderation_reason_code' => $inspection->reasonCode,
             ]);
+            if (! $isModerator) {
+                $this->createSubmissionCase($post, $comment, $actor, (int) $post->tenant_id, $schoolId, $inspection->reasonCode);
+            }
             $this->audit->record(new AuditEvent(action: $isModerator ? AuditAction::CommunityCommentCreated : AuditAction::CommunityCommentSubmitted, module: AuditModule::Community, schoolId: $schoolId, subjectType: AuditSubject::CommunityComment, subjectId: $comment->id, newValues: ['post_id' => $post->id, 'status' => $comment->status]), $context);
 
             return $comment;
@@ -144,5 +156,33 @@ class CommunityService
             $post->update(['status' => 'hidden', 'hidden_at' => now(), 'hidden_by_user_id' => $actor->id, 'moderation_reason' => trim($reason)]);
             $this->audit->record(new AuditEvent(action: AuditAction::CommunityPostHidden, module: AuditModule::Community, schoolId: $schoolId, subjectType: AuditSubject::CommunityPost, subjectId: $post->id, newValues: ['reason' => trim($reason)]), $context);
         });
+    }
+
+    private function createSubmissionCase(CommunityPost $post, ?CommunityComment $comment, User $actor, int $tenantId, int $schoolId, ?string $reasonCode): void
+    {
+        $post->loadMissing('media');
+        $report = CommunityReport::query()->create([
+            'tenant_id' => $tenantId,
+            'school_id' => $schoolId,
+            'reporter_user_id' => $actor->id,
+            'source' => 'submission',
+            'target_type' => $comment ? 'comment' : 'post',
+            'community_post_id' => $post->id,
+            'community_comment_id' => $comment?->id,
+            'reported_user_id' => $actor->id,
+            'reason_code' => $reasonCode ?? 'other',
+            'priority' => 'normal',
+            'status' => CommunityReport::STATUS_SUBMITTED,
+            'target_snapshot' => [
+                'post' => ['id' => $post->id, 'body' => $post->body, 'status' => $post->status, 'author_user_id' => $post->author_user_id,
+                    'media' => $post->media->map(fn ($media) => ['id' => $media->id, 'type' => $media->media_type, 'name' => $media->original_name, 'mime_type' => $media->mime_type, 'size_bytes' => $media->size_bytes, 'status' => $media->status])->all()],
+                'comment' => $comment ? ['id' => $comment->id, 'body' => $comment->body, 'status' => $comment->status, 'author_user_id' => $comment->user_id] : null,
+            ],
+            'due_at' => now()->addHours((int) config('community_safety.sla_hours.normal', 24)),
+        ]);
+        $report->actions()->create([
+            'tenant_id' => $tenantId, 'school_id' => $schoolId, 'actor_user_id' => $actor->id,
+            'action' => 'submitted_for_review', 'reason_code' => $reasonCode,
+        ]);
     }
 }

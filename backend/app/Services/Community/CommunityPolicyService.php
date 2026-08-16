@@ -10,6 +10,7 @@ use App\Audit\AuditSubject;
 use App\Contracts\AuditLoggerContract;
 use App\Models\CommunityPolicyAcceptance;
 use App\Models\CommunityPolicyVersion;
+use App\Models\CommunityUserRestriction;
 use App\Models\Student;
 use App\Models\StudentCommunityAuthorization;
 use App\Models\User;
@@ -40,6 +41,19 @@ class CommunityPolicyService
                     'community_policy' => 'Student freeform Community interaction requires active adult authorization.',
                 ]);
             }
+        }
+    }
+
+    public function assertNotRestricted(User $user, int $tenantId, int $schoolId, string $scope): void
+    {
+        $restricted = CommunityUserRestriction::query()
+            ->where('tenant_id', $tenantId)->where('school_id', $schoolId)->where('user_id', $user->id)
+            ->where('status', CommunityUserRestriction::STATUS_ACTIVE)->whereNull('revoked_at')
+            ->where('starts_at', '<=', now())
+            ->where(fn ($query) => $query->whereNull('ends_at')->orWhere('ends_at', '>', now()))
+            ->whereIn('scope', [$scope, 'all'])->exists();
+        if ($restricted) {
+            throw ValidationException::withMessages(['community_restriction' => 'This Community action is temporarily restricted.']);
         }
     }
 

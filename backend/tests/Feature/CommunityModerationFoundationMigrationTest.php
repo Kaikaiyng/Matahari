@@ -39,7 +39,7 @@ class CommunityModerationFoundationMigrationTest extends TestCase
             'tenant_id', 'reviewed_at', 'reviewed_by_user_id', 'moderation_reason_code',
         ]));
         $this->assertTrue(Schema::hasColumns('community_reports', [
-            'target_snapshot', 'due_at', 'evidence_held_at', 'evidence_held_by_user_id',
+            'source', 'target_snapshot', 'due_at', 'evidence_held_at', 'evidence_held_by_user_id',
         ]));
 
         $this->assertSame(
