@@ -62,5 +62,4 @@ Admin UI visibility is only a usability control; the reminder endpoint independe
 
 ## Verification
 
-Backend tests cover correct balance/payment/receipt data, parent cross-child and cross-tenant denial, receipt IDOR denial, capability denial, recipient resolution, no-balance/no-recipient behavior, permissions, duplicate recipient handling and transactional audit rollback. App tests cover child-card switching, complete histories, receipt detail/print and notification display. Admin tests cover permission-aware Remind behavior, success/error states and the exact endpoint contract.
-
+Backend tests cover receipt snapshots, cross-child denial, finance-capability denial, reminder recipient resolution, no-enrolment/no-balance/no-recipient behavior, permissions, cross-school denial, and transactional audit rollback. App tests cover child-card switching and receipt detail/print. Admin tests cover the permission-aware reminder action, success state, and exact endpoint contract.
