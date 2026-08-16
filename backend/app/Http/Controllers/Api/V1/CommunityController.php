@@ -83,12 +83,12 @@ class CommunityController extends Controller
         $data = $request->validate(['body' => ['required', 'string', 'max:2000']]);
         $comment = $service->comment(SchoolContext::fromRequest($request)->schoolId, $communityPost, $data['body'], $request->user(), $contexts->fromRequest($request))->load('user:id,name');
 
-        return response()->json(['data' => ['id' => $comment->id, 'body' => $comment->body, 'author' => $comment->user->name, 'created_at' => $comment->created_at?->toIso8601String()]], 201);
+        return response()->json(['data' => ['id' => $comment->id, 'body' => $comment->body, 'status' => $comment->status, 'author' => $comment->user->name, 'created_at' => $comment->created_at?->toIso8601String()]], 201);
     }
 
     private function response(CommunityPost $post): array
     {
-        return ['id' => $post->id, 'body' => $post->body, 'comments_enabled' => $post->comments_enabled, 'published_at' => $post->published_at?->toIso8601String(),
+        return ['id' => $post->id, 'body' => $post->body, 'status' => $post->status, 'comments_enabled' => $post->comments_enabled, 'published_at' => $post->published_at?->toIso8601String(),
             'author' => ['id' => $post->author->id, 'name' => $post->author->name],
             'audiences' => $post->audiences->map(fn ($a) => ['type' => $a->audience_type, 'class_id' => $a->class_id, 'student_id' => $a->student_id]),
             'media' => $post->media->map(fn ($m) => ['id' => $m->id, 'type' => $m->media_type, 'name' => $m->original_name, 'url' => "/api/v1/community/media/{$m->id}"]),

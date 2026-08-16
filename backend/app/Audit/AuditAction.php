@@ -48,8 +48,10 @@ enum AuditAction: string
     case AttendanceRecorded = 'attendance.recorded';
     case AttendanceCorrected = 'attendance.corrected';
     case CommunityPostPublished = 'community.post_published';
+    case CommunityPostSubmitted = 'community.post_submitted';
     case CommunityReactionUpdated = 'community.reaction_updated';
     case CommunityCommentCreated = 'community.comment_created';
+    case CommunityCommentSubmitted = 'community.comment_submitted';
     case CommunityCommentRemoved = 'community.comment_removed';
     case CommunityPostHidden = 'community.post_hidden';
     case CommunityPolicyAccepted = 'community.policy_accepted';

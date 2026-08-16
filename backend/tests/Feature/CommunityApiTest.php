@@ -7,7 +7,10 @@ use App\Audit\AuditContextFactory;
 use App\Audit\AuditEvent;
 use App\Contracts\AuditLoggerContract;
 use App\Models\AuditLog;
+use App\Models\CommunityPolicyAcceptance;
+use App\Models\CommunityPolicyVersion;
 use App\Models\SchoolClass;
+use App\Models\StudentCommunityAuthorization;
 use App\Models\User;
 use App\Services\Community\CommunityService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -25,6 +28,30 @@ class CommunityApiTest extends TestCase
         parent::setUp();
         $this->seed();
         $this->withServerVariables(['HTTP_HOST' => '127.0.0.1']);
+
+        $policies = CommunityPolicyVersion::query()->whereIn('policy_type', ['terms', 'community_standards'])->get();
+        foreach (User::query()->get() as $user) {
+            foreach ($policies as $policy) {
+                CommunityPolicyAcceptance::query()->create([
+                    'tenant_id' => $user->school->tenant_id,
+                    'school_id' => $user->school_id,
+                    'user_id' => $user->id,
+                    'community_policy_version_id' => $policy->id,
+                    'accepted_at' => now(),
+                ]);
+            }
+        }
+
+        $student = User::query()->where('username', 'alyssa.tan')->firstOrFail();
+        $guardian = User::query()->where('username', 'rachel.wong')->firstOrFail();
+        StudentCommunityAuthorization::query()->create([
+            'tenant_id' => $student->school->tenant_id,
+            'school_id' => $student->school_id,
+            'student_user_id' => $student->id,
+            'authorized_by_user_id' => $guardian->id,
+            'capability' => StudentCommunityAuthorization::CAPABILITY_FREEFORM_INTERACTION,
+            'effective_at' => now(),
+        ]);
     }
 
     public function test_teacher_publishes_only_to_an_assigned_class_and_linked_portal_users_can_interact(): void
@@ -34,10 +61,15 @@ class CommunityApiTest extends TestCase
         $created = $this->actingAs($teacher)->postJson('http://127.0.0.1/api/v1/community/posts', [
             'body' => 'Today we measured shadows.', 'comments_enabled' => true,
             'audiences' => [['type' => 'class', 'class_id' => $class->id]],
-        ])->assertCreated()->assertJsonPath('data.body', 'Today we measured shadows.');
-        $postId = $created->json('data.id');
+        ])->assertCreated()->assertJsonPath('data.status', 'pending_review');
 
-        $this->assertDatabaseHas('audit_logs', ['action' => 'community.post_published', 'entity_id' => $postId]);
+        $this->assertDatabaseHas('audit_logs', ['action' => 'community.post_submitted', 'entity_id' => $created->json('data.id')]);
+
+        $admin = User::query()->where('username', 'admin')->firstOrFail();
+        $postId = $this->actingAs($admin)->postJson('http://127.0.0.1/api/v1/community/posts', [
+            'body' => 'Today we measured shadows.', 'comments_enabled' => true,
+            'audiences' => [['type' => 'class', 'class_id' => $class->id]],
+        ])->assertCreated()->json('data.id');
 
         foreach (['rachel.wong', 'alyssa.tan'] as $username) {
             $user = User::query()->where('username', $username)->firstOrFail();
@@ -46,8 +78,8 @@ class CommunityApiTest extends TestCase
 
         $student = User::query()->where('username', 'alyssa.tan')->firstOrFail();
         $this->actingAs($student)->postJson("http://127.0.0.1/api/v1/community/posts/{$postId}/reaction")->assertOk()->assertJsonPath('data.reacted', true);
-        $this->actingAs($student)->postJson("http://127.0.0.1/api/v1/community/posts/{$postId}/comments", ['body' => 'That was fun.'])->assertCreated();
-        $this->assertDatabaseHas('community_comments', ['community_post_id' => $postId, 'body' => 'That was fun.']);
+        $this->actingAs($student)->postJson("http://127.0.0.1/api/v1/community/posts/{$postId}/comments", ['body' => 'That was fun.'])->assertCreated()->assertJsonPath('data.status', 'pending_review');
+        $this->assertDatabaseHas('community_comments', ['community_post_id' => $postId, 'body' => 'That was fun.', 'status' => 'pending_review']);
     }
 
     public function test_teacher_cannot_publish_to_an_unrelated_class_or_the_whole_school(): void
@@ -77,9 +109,9 @@ class CommunityApiTest extends TestCase
     public function test_private_media_is_stored_and_downloaded_only_through_an_authorized_post(): void
     {
         Storage::fake('local');
-        $teacher = User::query()->where('username', 'teacher.lim')->firstOrFail();
+        $publisher = User::query()->where('username', 'admin')->firstOrFail();
         $class = SchoolClass::query()->where('name', 'MB1')->firstOrFail();
-        $created = $this->actingAs($teacher)->post('http://127.0.0.1/api/v1/community/posts', [
+        $created = $this->actingAs($publisher)->post('http://127.0.0.1/api/v1/community/posts', [
             'body' => 'Class photo', 'audiences' => [['type' => 'class', 'class_id' => $class->id]],
             'media' => [UploadedFile::fake()->create('lesson.pdf', 10, 'application/pdf')],
         ])->assertCreated();

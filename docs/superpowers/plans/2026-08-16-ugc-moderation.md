@@ -124,7 +124,7 @@ git add -- backend/database/migrations/2026_08_16_000002_create_community_modera
 git commit -m "feat: add UGC moderation foundation"
 ```
 
-### Task 2: Policy Gate, Student Adult Authorization, and Safety Filter
+### Task 2: Policy Gate, Student Adult Authorization, and Safety Filter (complete: `feat: gate and filter Community contributions`)
 
 **Files:**
 - Create: `backend/config/community_safety.php`
@@ -141,7 +141,7 @@ git commit -m "feat: add UGC moderation foundation"
 - Produces `CommunitySafetyFilter::inspect(string $text): SafetyInspection`, where `SafetyInspection` exposes `normalized`, `allowed`, `reasonCode`, and `requiresManualReview`.
 - Changes `CommunityService::publish()` and `comment()` so non-moderator content is stored pending and not returned as public content.
 
-- [ ] **Step 1: Write failing unit and feature tests**
+- [x] **Step 1: Write failing unit and feature tests**
 
 Cover Unicode/zero-width normalization, prohibited patterns, link/contact detection, policy-version acceptance, revoked student authorization, reviewed Guardian authorization, School Admin authorization, and moderator direct publication.
 
@@ -156,11 +156,11 @@ $this->actingAs($studentUser)
     ->assertJsonValidationErrors('community_policy');
 ```
 
-- [ ] **Step 2: Run focused tests and confirm RED**
+- [x] **Step 2: Run focused tests and confirm RED**
 
 Run: `tools\php\php-local.cmd backend\vendor\bin\phpunit backend\tests\Unit\CommunitySafetyFilterTest.php backend\tests\Feature\CommunityPolicyGateApiTest.php`
 
-- [ ] **Step 3: Implement shared configuration and services**
+- [x] **Step 3: Implement shared configuration and services**
 
 `community_safety.php` defines the approved reason codes, `severe` codes, SLA hours (`4` severe, `24` normal), normalized blocked patterns, maximum report rate, and environment-backed public/support contact values. `SafetyInspection` is a readonly value object with constructor `__construct(public string $normalized, public bool $allowed, public ?string $reasonCode, public bool $requiresManualReview)`. No real contact or secret is committed.
 
@@ -176,7 +176,7 @@ $mediaStatus = $isModerator ? 'ready' : 'quarantined';
 
 Rejected text creates no post/comment/media. Pending content is visible only through an explicit author/moderator query, never the existing public feed query.
 
-- [ ] **Step 4: Run focused Community regression and Pint**
+- [x] **Step 4: Run focused Community regression and Pint**
 
 Run:
 
@@ -186,7 +186,7 @@ cd backend
 ..\tools\php\php-local.cmd vendor\bin\pint --test
 ```
 
-- [ ] **Step 5: Commit the policy/filter slice**
+- [x] **Step 5: Commit the policy/filter slice**
 
 ```powershell
 git add -- backend/config/community_safety.php backend/app/Services/Community/CommunityPolicyService.php backend/app/Services/Community/CommunitySafetyFilter.php backend/app/Services/Community/SafetyInspection.php backend/app/Services/Community/CommunityService.php backend/app/Http/Controllers/Api/V1/CommunityController.php backend/tests/Unit/CommunitySafetyFilterTest.php backend/tests/Feature/CommunityPolicyGateApiTest.php

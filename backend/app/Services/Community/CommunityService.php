@@ -18,25 +18,40 @@ use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 class CommunityService
 {
-    public function __construct(private readonly CommunityAccessService $access, private readonly AuditLoggerContract $audit) {}
+    public function __construct(
+        private readonly CommunityAccessService $access,
+        private readonly CommunityPolicyService $policy,
+        private readonly CommunitySafetyFilter $safetyFilter,
+        private readonly AuditLoggerContract $audit,
+    ) {}
 
     public function publish(int $schoolId, array $data, User $actor, AuditContext $context): CommunityPost
     {
+        $school = School::query()->findOrFail($schoolId);
+        $tenantId = (int) $school->tenant_id;
+        $this->policy->assertCanContribute($actor, $tenantId, $schoolId);
         $this->access->assertCanPublish($actor, $schoolId, $data['audiences']);
-        $tenantId = School::query()->whereKey($schoolId)->value('tenant_id');
-        abort_unless($tenantId !== null, 404);
+        $inspection = $this->safetyFilter->inspect($data['body']);
+        if (! $inspection->allowed) {
+            throw ValidationException::withMessages(['body' => 'This content is not allowed under the Community Standards.']);
+        }
+        $isModerator = $actor->hasPermissionTo('community.moderate');
+        $status = $isModerator ? CommunityPost::STATUS_PUBLISHED : CommunityPost::STATUS_PENDING_REVIEW;
 
         $storedPaths = [];
         try {
-            return DB::transaction(function () use ($tenantId, $schoolId, $data, $actor, $context, &$storedPaths): CommunityPost {
+            return DB::transaction(function () use ($inspection, $status, $isModerator, $tenantId, $schoolId, $data, $actor, $context, &$storedPaths): CommunityPost {
                 $post = CommunityPost::query()->create([
                     'tenant_id' => $tenantId, 'school_id' => $schoolId, 'author_user_id' => $actor->id, 'post_type' => 'post',
-                    'body' => trim($data['body']), 'comments_enabled' => $data['comments_enabled'] ?? true,
-                    'status' => 'published', 'published_at' => now(),
+                    'body' => $inspection->normalized, 'comments_enabled' => $data['comments_enabled'] ?? true,
+                    'status' => $status, 'published_at' => $isModerator ? now() : null,
+                    'reviewed_at' => $isModerator ? now() : null, 'reviewed_by_user_id' => $isModerator ? $actor->id : null,
+                    'moderation_reason_code' => $inspection->reasonCode,
                 ]);
                 foreach ($data['audiences'] as $audience) {
                     if ($audience['type'] === 'class') {
@@ -56,10 +71,10 @@ class CommunityService
                     $post->media()->create([
                         'school_id' => $schoolId, 'media_type' => str_starts_with((string) $file->getMimeType(), 'image/') ? 'image' : (str_starts_with((string) $file->getMimeType(), 'video/') ? 'video' : 'file'),
                         'storage_disk' => 'local', 'storage_path' => $path, 'original_name' => $file->getClientOriginalName(),
-                        'mime_type' => $file->getMimeType(), 'size_bytes' => $file->getSize(), 'sort_order' => $index, 'status' => 'ready',
+                        'mime_type' => $file->getMimeType(), 'size_bytes' => $file->getSize(), 'sort_order' => $index, 'status' => $isModerator ? 'ready' : 'quarantined',
                     ]);
                 }
-                $this->audit->record(new AuditEvent(action: AuditAction::CommunityPostPublished, module: AuditModule::Community, schoolId: $schoolId, subjectType: AuditSubject::CommunityPost, subjectId: $post->id, newValues: ['audiences' => $post->audiences()->pluck('audience_key')->all(), 'comments_enabled' => $post->comments_enabled]), $context);
+                $this->audit->record(new AuditEvent(action: $isModerator ? AuditAction::CommunityPostPublished : AuditAction::CommunityPostSubmitted, module: AuditModule::Community, schoolId: $schoolId, subjectType: AuditSubject::CommunityPost, subjectId: $post->id, newValues: ['audiences' => $post->audiences()->pluck('audience_key')->all(), 'comments_enabled' => $post->comments_enabled, 'status' => $post->status]), $context);
 
                 return $post;
             });
@@ -90,10 +105,22 @@ class CommunityService
     {
         $this->access->findVisible($actor, $schoolId, $post);
         abort_unless($post->comments_enabled, 409, 'Comments are disabled for this post.');
+        $this->policy->assertCanContribute($actor, (int) $post->tenant_id, $schoolId);
+        $inspection = $this->safetyFilter->inspect($body);
+        if (! $inspection->allowed) {
+            throw ValidationException::withMessages(['body' => 'This content is not allowed under the Community Standards.']);
+        }
+        $isModerator = $actor->hasPermissionTo('community.moderate');
 
-        return DB::transaction(function () use ($schoolId, $post, $body, $actor, $context): CommunityComment {
-            $comment = CommunityComment::query()->create(['tenant_id' => $post->tenant_id, 'school_id' => $schoolId, 'community_post_id' => $post->id, 'user_id' => $actor->id, 'body' => trim($body), 'status' => 'visible']);
-            $this->audit->record(new AuditEvent(action: AuditAction::CommunityCommentCreated, module: AuditModule::Community, schoolId: $schoolId, subjectType: AuditSubject::CommunityComment, subjectId: $comment->id, newValues: ['post_id' => $post->id]), $context);
+        return DB::transaction(function () use ($inspection, $isModerator, $schoolId, $post, $actor, $context): CommunityComment {
+            $comment = CommunityComment::query()->create([
+                'tenant_id' => $post->tenant_id, 'school_id' => $schoolId, 'community_post_id' => $post->id,
+                'user_id' => $actor->id, 'body' => $inspection->normalized,
+                'status' => $isModerator ? CommunityComment::STATUS_VISIBLE : CommunityComment::STATUS_PENDING_REVIEW,
+                'reviewed_at' => $isModerator ? now() : null, 'reviewed_by_user_id' => $isModerator ? $actor->id : null,
+                'moderation_reason_code' => $inspection->reasonCode,
+            ]);
+            $this->audit->record(new AuditEvent(action: $isModerator ? AuditAction::CommunityCommentCreated : AuditAction::CommunityCommentSubmitted, module: AuditModule::Community, schoolId: $schoolId, subjectType: AuditSubject::CommunityComment, subjectId: $comment->id, newValues: ['post_id' => $post->id, 'status' => $comment->status]), $context);
 
             return $comment;
         });
