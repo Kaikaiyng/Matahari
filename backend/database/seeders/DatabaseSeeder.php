@@ -193,6 +193,7 @@ class DatabaseSeeder extends Seeder
             'community.publish' => 'Publish authorized community posts',
             'community.interact' => 'React to and comment on authorized community posts',
             'community.moderate' => 'Moderate community content',
+            'community.moderate_platform' => 'Moderate severe Community cases across the platform',
             'assessments.manage' => 'Manage authorized assessments and results',
             'assessments.manage_school' => 'Manage all assessments in the school',
             'assessments.view_published' => 'View own authorized published assessment results',
@@ -207,7 +208,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $roles['super-admin']->permissions()->sync($permissions->pluck('id')->all());
-        $roles['tenant-owner']->permissions()->sync($permissions->except(['audit.view', 'audit.correct_generic'])->pluck('id')->all());
+        $roles['tenant-owner']->permissions()->sync($permissions->except(['audit.view', 'audit.correct_generic', 'community.moderate_platform'])->pluck('id')->all());
         $roles['ceo']->permissions()->sync($permissions->only([
             'fee_record.view',
             'calendar.view',

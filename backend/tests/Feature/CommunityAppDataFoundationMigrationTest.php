@@ -66,6 +66,7 @@ class CommunityAppDataFoundationMigrationTest extends TestCase
         [$school, $class, , $user] = $this->schoolContext();
         $now = now();
         $postId = DB::table('community_posts')->insertGetId([
+            'tenant_id' => $school->tenant_id,
             'school_id' => $school->id,
             'author_user_id' => $user->id,
             'body' => 'School update',

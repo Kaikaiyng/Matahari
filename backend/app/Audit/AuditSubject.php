@@ -21,6 +21,12 @@ enum AuditSubject: string
     case AttendanceSession = 'attendance_session';
     case CommunityPost = 'community_post';
     case CommunityComment = 'community_comment';
+    case CommunityPolicyAcceptance = 'community_policy_acceptance';
+    case CommunityReport = 'community_report';
+    case CommunityUserBlock = 'community_user_block';
+    case CommunityUserRestriction = 'community_user_restriction';
+    case CommunityAppeal = 'community_appeal';
+    case StudentCommunityAuthorization = 'student_community_authorization';
     case Assessment = 'assessment';
     case AcademicTerm = 'academic_term';
     case ClassScheduleEntry = 'class_schedule_entry';

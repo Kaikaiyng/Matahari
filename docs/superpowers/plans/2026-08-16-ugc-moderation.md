@@ -48,7 +48,7 @@ Client additions stay outside large shell files:
 - `frontend/src/features/moderation/UgcModerationPage.tsx`: school/platform moderation queue and decision UI.
 - `frontend/src/features/moderation/moderationApi.ts`: typed Admin moderation API boundary.
 
-### Task 1: Additive Moderation Schema, Models, and Permissions
+### Task 1: Additive Moderation Schema, Models, and Permissions (complete: `feat: add UGC moderation foundation`)
 
 **Files:**
 - Create: `backend/database/migrations/2026_08_16_000002_create_community_moderation_foundation.php`
@@ -64,7 +64,7 @@ Client additions stay outside large shell files:
 - Produces model status constants and relations used by every later task.
 - Produces permissions `community.moderate_platform` (Super Admin only) while retaining `community.moderate` for School/Super Admin.
 
-- [ ] **Step 1: Write migration tests before the migration**
+- [x] **Step 1: Write migration tests before the migration**
 
 Assert table/column/index presence, legacy published-row preservation, tenant backfill from `schools.tenant_id`, permission grants, reverse-FK rollback, and re-migration. Use a legacy Community post/comment fixture created before invoking the new migration `up()`.
 
@@ -75,13 +75,13 @@ $this->assertTrue($superAdmin->fresh()->hasPermissionTo('community.moderate_plat
 $this->assertFalse($schoolAdmin->fresh()->hasPermissionTo('community.moderate_platform'));
 ```
 
-- [ ] **Step 2: Run the focused migration test and confirm RED**
+- [x] **Step 2: Run the focused migration test and confirm RED**
 
 Run: `tools\php\php-local.cmd backend\vendor\bin\phpunit backend\tests\Feature\CommunityModerationFoundationMigrationTest.php`
 
 Expected: FAIL because migration/tables/columns do not exist.
 
-- [ ] **Step 3: Implement the additive migration and models**
+- [x] **Step 3: Implement the additive migration and models**
 
 The migration must preflight that every existing Community post/comment resolves through a school with non-null `tenant_id`, then add `tenant_id`, `reviewed_at`, `reviewed_by_user_id`, and `moderation_reason_code` to posts/comments. Backfill before making tenant ownership non-null. Create the eight tables from the approved design with restrictive FKs for evidence and indexes beginning with `(tenant_id, school_id, ...)` for tenant-local queues. Reports include nullable `evidence_held_at` and `evidence_held_by_user_id` fields so severe cases can preserve snapshots and quarantined media against ordinary cleanup. Insert immutable version `2026-08-16` records for Terms, Privacy, Community Standards, and Child Safety using structured JSON sections; rollback removes only those exact version records and the new schema.
 
@@ -105,7 +105,7 @@ final class CommunityReport extends Model
 
 Add audit actions for policy acceptance, adult authorization/revocation, report submitted/reviewed, content approved/rejected/hidden, user block/unblock, restriction applied/revoked, escalation, appeal submitted/decided.
 
-- [ ] **Step 4: Run focused tests, Pint, and SQLite lifecycle**
+- [x] **Step 4: Run focused tests, Pint, and SQLite lifecycle**
 
 Run:
 
@@ -117,7 +117,7 @@ cd backend
 
 Expected: focused suite and Pint PASS; isolated SQLite migrate/rollback/re-migrate PASS.
 
-- [ ] **Step 5: Commit the schema slice**
+- [x] **Step 5: Commit the schema slice**
 
 ```powershell
 git add -- backend/database/migrations/2026_08_16_000002_create_community_moderation_foundation.php backend/app/Models/CommunityPolicyVersion.php backend/app/Models/CommunityPolicyAcceptance.php backend/app/Models/CommunityReport.php backend/app/Models/CommunityReportAction.php backend/app/Models/CommunityUserBlock.php backend/app/Models/CommunityUserRestriction.php backend/app/Models/CommunityAppeal.php backend/app/Models/StudentCommunityAuthorization.php backend/app/Models/CommunityPost.php backend/app/Models/CommunityComment.php backend/app/Audit/AuditAction.php backend/app/Audit/AuditSubject.php backend/database/seeders/DatabaseSeeder.php backend/tests/Feature/CommunityModerationFoundationMigrationTest.php
