@@ -30,6 +30,7 @@ use App\Http\Controllers\Api\V1\PlatformCommunityModerationController;
 use App\Http\Controllers\Api\V1\PlatformTenantController;
 use App\Http\Controllers\Api\V1\PortalLinkController;
 use App\Http\Controllers\Api\V1\PortalNotificationController;
+use App\Http\Controllers\Api\V1\PublicCommunityPolicyController;
 use App\Http\Controllers\Api\V1\QuizController;
 use App\Http\Controllers\Api\V1\StaffController;
 use App\Http\Controllers\Api\V1\StudentPortalController;
@@ -47,6 +48,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/deployment-info', DeploymentInfoController::class)->name('deployment-info');
 Route::get('/tenant-context', TenantContextController::class)->name('tenant-context');
+Route::get('/v1/public/community-policies/{slug}', [PublicCommunityPolicyController::class, 'show']);
 
 $sessionMiddleware = [
     EncryptCookies::class,

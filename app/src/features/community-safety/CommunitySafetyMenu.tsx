@@ -5,8 +5,8 @@ import './CommunitySafety.css'
 
 const reasons = [
   ['bullying_harassment', 'Bullying or harassment'], ['child_safety', 'Child safety concern'],
-  ['hate_speech', 'Hate speech'], ['sexual_content', 'Sexual content'], ['violence_threat', 'Violence or threat'],
-  ['spam', 'Spam'], ['impersonation', 'Impersonation'], ['privacy', 'Privacy concern'], ['other', 'Other'],
+  ['hate', 'Hate speech'], ['sexual_content', 'Sexual content'], ['threats_violence', 'Violence or threat'],
+  ['self_harm', 'Self-harm concern'], ['spam', 'Spam'], ['impersonation', 'Impersonation'], ['privacy_exposure', 'Privacy concern'], ['other', 'Other'],
 ] as const
 
 type Props = { targetType: 'post' | 'comment'; targetId: number; authorUserId: number; canReportContent: boolean; canReportUser: boolean; onBlocked: () => void }

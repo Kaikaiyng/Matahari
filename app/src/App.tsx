@@ -7,6 +7,7 @@ import { TeacherPortalView } from './components/TeacherPortalView'
 import type { AppRole } from './components/MobileShell'
 import { PortalLogin } from './PortalLogin'
 import { useTenantConfiguration } from './tenant'
+import { PublicPolicyPage } from './features/community-safety/PublicPolicyPage'
 
 export type CurrentUser = {
   id: number
@@ -18,6 +19,7 @@ export type CurrentUser = {
 }
 
 function App() {
+  const publicPolicySlug = legalPolicySlug(window.location.pathname)
   const tenant = useTenantConfiguration()
   const [authState, setAuthState] = useState<'checking' | 'guest' | 'authenticated'>('checking')
   const [user, setUser] = useState<CurrentUser | null>(null)
@@ -25,6 +27,7 @@ function App() {
   const [selectedRole, setSelectedRole] = useState<AppRole | null>(null)
 
   useEffect(() => {
+    if (publicPolicySlug) return
     apiRequest<{ user: CurrentUser }>('/me')
       .then(({ user: currentUser }) => {
         setUser(currentUser)
@@ -36,7 +39,7 @@ function App() {
         }
         setAuthState('guest')
       })
-  }, [])
+  }, [publicPolicySlug])
 
   const allowedRoles = useMemo<AppRole[]>(() => {
     if (!user) return []
@@ -59,6 +62,8 @@ function App() {
       setAuthState('guest')
     }
   }
+
+  if (publicPolicySlug) return <PublicPolicyPage slug={publicPolicySlug} />
 
   if (authState === 'checking') {
     return <main className="portal-state-screen"><img src={tenant.branding.logo_url ?? '/logo.jpeg'} alt="" /><h1>Loading {tenant.branding.organization_short_name} App</h1><p>Checking your secure session…</p></main>
@@ -90,3 +95,8 @@ function App() {
 }
 
 export default App
+
+function legalPolicySlug(pathname: string): string | null {
+  const match = pathname.match(/^\/legal\/(terms|privacy|community-standards|child-safety|support)\/?$/)
+  return match?.[1] ?? null
+}

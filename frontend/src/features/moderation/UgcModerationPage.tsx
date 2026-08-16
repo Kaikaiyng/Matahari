@@ -4,7 +4,7 @@ import { ApiError } from '../../api'
 import { moderationApi, type ModerationCase, type ModerationDecision, type PlatformCase, type PlatformSummary } from './moderationApi'
 import './UgcModerationPage.css'
 
-const reasons = ['no_violation', 'bullying_harassment', 'child_safety', 'hate_speech', 'sexual_content', 'violence_threat', 'spam', 'impersonation', 'privacy', 'other']
+const reasons = ['no_violation', 'bullying_harassment', 'child_safety', 'hate', 'sexual_content', 'threats_violence', 'self_harm', 'spam', 'impersonation', 'privacy_exposure', 'other']
 const human = (value: string) => { const words = value.replaceAll('_', ' '); return words.charAt(0).toUpperCase() + words.slice(1) }
 
 export function UgcModerationPage({ permissions, currentUserId }: { permissions: string[]; currentUserId: number }) {

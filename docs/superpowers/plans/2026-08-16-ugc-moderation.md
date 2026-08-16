@@ -423,7 +423,7 @@ git commit -m "feat: add Admin UGC moderation workspace"
 - Public GET endpoint returns effective policy sections and non-secret support metadata without authentication.
 - `php artisan app:store-readiness` returns non-zero when public URLs, platform support, child-safety contact, or an effective standards version is missing.
 
-- [ ] **Step 1: Write failing public-page and readiness tests**
+- [x] **Step 1: Write failing public-page and readiness tests**
 
 Assert no-login access, tenant branding support display, explicit CSAE/CSAM prohibitions, App/developer name presence, no private case data, missing-config failure, and configured success.
 
@@ -433,19 +433,19 @@ $this->artisan('app:store-readiness')
     ->assertFailed();
 ```
 
-- [ ] **Step 2: Run focused Backend/App tests and confirm RED**
+- [x] **Step 2: Run focused Backend/App tests and confirm RED**
 
 Run the two backend files and the public-page Vitest file.
 
-- [ ] **Step 3: Implement public policy delivery and readiness command**
+- [x] **Step 3: Implement public policy delivery and readiness command**
 
 Support `/legal/terms`, `/legal/privacy`, `/legal/community-standards`, `/legal/child-safety`, and `/legal/support` before the App authentication check. Render structured API content without adding a Markdown/HTML package. Use only escaped React text. `deploy/env/production.env.example` documents keys but contains no real person, credential, or false claim.
 
-- [ ] **Step 4: Run focused tests, link checks, lint, and builds**
+- [x] **Step 4: Run focused tests, link checks, lint, and builds**
 
 Expected: public pages render without session; readiness fails on missing production contact and passes only under explicit test configuration.
 
-- [ ] **Step 5: Commit public compliance surfaces**
+- [x] **Step 5: Commit public compliance surfaces**
 
 ```powershell
 git add -- backend/app/Http/Controllers/Api/V1/PublicCommunityPolicyController.php backend/app/Console/Commands/CheckStoreReadiness.php backend/routes/api.php backend/tests/Feature/PublicCommunityPolicyApiTest.php backend/tests/Feature/StoreReadinessCommandTest.php app/src/features/community-safety/PublicPolicyPage.tsx app/src/features/community-safety/PublicPolicyPage.test.tsx app/src/App.tsx deploy/env/production.env.example
