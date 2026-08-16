@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\FeeItemController;
 use App\Http\Controllers\Api\FeeRecordController;
 use App\Http\Controllers\Api\InvoiceGenerationController;
 use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\PaymentReminderController;
 use App\Http\Controllers\Api\ReceiptController;
 use App\Http\Controllers\Api\SchoolClassController;
 use App\Http\Controllers\Api\StudentController;
@@ -142,6 +143,8 @@ Route::middleware([...$sessionMiddleware, 'auth', 'active', 'tenant.member', 'te
         ->middleware('permission:payments.view');
     Route::post('/students/{student}/payments', [PaymentController::class, 'store'])
         ->middleware('permission:payments.create');
+    Route::post('/students/{student}/payment-reminders', [PaymentReminderController::class, 'store'])
+        ->middleware('permission:payment_reminders.send');
     Route::post('/payments/{payment}/verify', [PaymentController::class, 'verify'])
         ->middleware('permission:payments.verify');
     Route::post('/payments/{payment}/void', [PaymentController::class, 'void'])
