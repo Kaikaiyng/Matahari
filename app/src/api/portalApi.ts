@@ -53,10 +53,18 @@ export interface PortalReceipt {
   id: number
   receipt_no: string
   receipt_date: string
+  student_no: string
+  student_name: string
   amount: number
+  amount_in_words: string
   paid_by: string | null
   payment_method: string | null
+  payment_date: string
+  received_date: string | null
   status: string
+  issued_at: string | null
+  voided_at: string | null
+  void_reason: string | null
   items: ReceiptItem[]
 }
 
@@ -204,6 +212,8 @@ export const portalApi = {
     portalRequest<{ data: PortalPayment[] }>(`/parent/children/${studentId}/payments`),
   getChildReceipts: (studentId: number) =>
     portalRequest<{ data: PortalReceipt[] }>(`/parent/children/${studentId}/receipts`),
+  getChildReceipt: (studentId: number, receiptId: number) =>
+    portalRequest<{ data: PortalReceipt }>(`/parent/children/${studentId}/receipts/${receiptId}`),
   getChildAttendance: (studentId: number) =>
     portalRequest<{ data: AttendanceRecord[] }>(`/parent/children/${studentId}/attendance`),
   getChildAssessmentResults: (studentId: number) => portalRequest<{ data: PublishedAssessmentResult[] }>(`/parent/children/${studentId}/assessment-results`),

@@ -8,7 +8,7 @@
 
 **Current merged delivery:** `ddd7e193179129be35f7a2b1c408eb809734f8d4` (`Merge project-wide documentation update`)
 
-**Overall status:** SaaS multi-tenant foundation in final validation, with MIS as the first tenant; separate Admin and multi-role App clients, live Community, daily Attendance, Assessment publication, Parent Finance reads, class Schedule, and formal Quiz V1 remain shared tenant-aware modules. Practice/AI Quiz, native/store delivery, automated DNS/TLS and production operations remain incomplete.
+**Overall status:** SaaS multi-tenant foundation in final validation, with MIS as the first tenant; separate Admin and multi-role App clients, live Community, daily Attendance, Assessment publication, Parent Finance reads/receipt access/manual in-app reminders, class Schedule, and formal Quiz V1 remain shared tenant-aware modules. Practice/AI Quiz, native/store delivery, automated DNS/TLS and production operations remain incomplete.
 
 ## 2026-08-15 Tenant Foundation Hardening
 
@@ -119,13 +119,22 @@ Merged delivery `816ea1d` redesigns the Admin staff login and all App role surfa
 - Local SQLite verification: all 61 tables migrated from fresh; the three new migrations rolled back in reverse FK order; existing seeded school/student data remained; re-migration returned to 61 tables. The focused schema suite passed 3 tests/24 assertions, and the backend regression passed 250 tests with 8 existing MariaDB-only skips and 1,339 assertions before the non-SQLite inspection test was added.
 - GitHub [Full qualification run 31661265923](https://github.com/Kaikaiyng/RYLAY/actions/runs/31661265923) passed on exact commit `f047c2d`: backend 250 passed/10 skipped/1,339 assertions, disposable MariaDB 11.4 full migrate/rollback/re-migrate, and 2 dedicated FK/index inspection tests with 59 assertions. Pint, 74 API routes, dependency audits, Admin 169 tests/build, App 16 tests/build, and 18 deployment tests passed. Admin lint retained the 9 known Fast Refresh warnings; App lint was clean.
 
+## 2026-08-16 Parent Finance and Manual Reminder Checkpoint
+
+- Parent Finance now presents only active linked children with `can_view_finance = true` as switchable cards. Each selection loads that child's current-year Fee Record balance, complete payment history, and receipt list from the shared backend.
+- Receipt detail is child-scoped and returns the stored immutable receipt snapshot. The App supports viewing and browser print/save-as-PDF; no online payment or server-side PDF generator was added.
+- Admin users with `payment_reminders.send` can send a manual in-app reminder from Student Detail. The backend rejects cross-school students, missing current enrolment, non-positive outstanding, and missing eligible guardian accounts.
+- Reminder notifications go only to active same-school tenant members connected through an active finance-enabled guardian link. Notification rows and the `payment.reminder_sent` audit event commit in one transaction.
+- Automatic scheduling, email, WhatsApp, SMS, push delivery, and parent online payments remain outside this V1.
+- Qualification passed: backend 314 tests discovered (302 passed, 12 environment-gated skipped), 1,566 assertions, Pint, and 118 API routes; Admin 173 tests, build, and lint with the 9 known Fast Refresh warnings; App 24 tests, clean lint, and build. Disposable SQLite and XAMPP MariaDB 10.4 migration/rollback/re-migration passed, and the 10 focused reminder/receipt tests passed on MariaDB.
+
 ## 2026-08-13 Role and Client Boundary Checkpoint
 
 - Admin Panel access is limited to Super Admin, School Admin, Finance, and CEO. Teacher-only, Parent-only, and Student-only accounts are rejected by the Admin client; backend route permissions remain authoritative.
 - The Community App admits Parent, Student, Teacher, and derived Staff personas. Finance-only and CEO-only accounts do not receive App personas. Multi-role App users may switch only among personas derived from their stored roles.
 - Teacher Classes loads current teaching assignments and each assignment's scoped roster count from the same protected APIs used by Attendance. It does not expose unrelated classes or students.
 - Parent Finance no longer embeds a demo balance or hard-codes `2026`. The parent summary includes the child's explicitly stored current enrolment academic year, and finance queries stop when no current year exists.
-- Formal Quiz, Schedule, Assessment results, Community moderation, and notifications use live scoped APIs. Practice/AI Quiz and native/store features remain explicitly unavailable. Receipt rows are viewing-only rather than fake download controls.
+- Formal Quiz, Schedule, Assessment results, Community moderation, and notifications use live scoped APIs. Practice/AI Quiz and native/store features remain explicitly unavailable. Parent receipt rows open authoritative snapshots and support browser printing/save-as-PDF.
 - Local checkpoint regression: backend 250 passed/10 MariaDB-only skipped/1,340 assertions; Admin 170 tests; App 19 tests; Pint, both lints, both builds, and 74 API routes passed. Admin retains the 9 known Fast Refresh warnings. SQLite fresh/seed created 61 tables, rolling back the three data-foundation migrations left 43 tables and preserved the school row, and re-migration restored 61 tables.
 
 Later school-specific branding requires explicit approval and a controlled update to the presentation configuration and, if needed, a fresh disposable demo seed. It must not rename existing tenant data or rewrite financial history.
@@ -185,15 +194,15 @@ The confirmed earlier technology direction named Laravel 10, but this repository
 - Discount definitions are stored as snapshots, but approved formulas and eligibility rules do not exist. Charge preview/activation is blocked for non-zero discounts.
 - Payments and receipts work inside Student Detail; there are no independent top-level modules.
 - Legacy invoices remain separate from the implemented Fee Record ledger and have no frontend workflow.
-- Audit covers implemented critical authentication, student, agreement, Fee Record, payment, and receipt actions. Generic correction, recovery, and export are not implemented.
+- Audit covers implemented critical authentication, student, agreement, Fee Record, payment, receipt, and manual payment-reminder actions. Generic correction, recovery, and export are not implemented.
 
 ## Known Incomplete Features
 
 - Existing guardian links remain `unreviewed` with nullable access flags, and no live parent/student user association or enrolment history is inferred. Portal activation and production backfill require a separately approved workflow.
-- The independent `app/` workspace now provides user-scoped notifications, Parent/Student self-service, Teacher daily Attendance, read-only guardian finance, scoped Community, published Assessment results, recurring Schedule, and formal Quiz delivery/scoring. Admin remains in `frontend/`; both clients share the backend/database but have independent builds and intended domains. Production Parent Finance operations, payment reminders, Practice/AI Quiz, Firebase, Capacitor, native authentication, and native packaging remain unimplemented.
+- The independent `app/` workspace now provides user-scoped notifications, Parent/Student self-service, Teacher daily Attendance, read-only guardian finance with linked-child switching and receipt viewing/browser PDF saving, scoped Community, published Assessment results, recurring Schedule, and formal Quiz delivery/scoring. Admin remains in `frontend/`; both clients share the backend/database but have independent builds and intended domains. Manual in-app payment reminders are implemented; automatic/external reminders, online parent payment, Practice/AI Quiz, Firebase, Capacitor, native authentication, and native packaging remain unimplemented.
 
 - Parent CRUD, fee catalogue management, user/role management, password reset, and a global school selector.
-- Reports beyond Fee Record views, exports, statements, reminders, parent portal, and server-side PDF.
+- Reports beyond Fee Record views, exports, statements, automatic/external reminders, full parent portal operations, and server-side PDF.
 - Refund, credit, overpayment, write-off, and approved correction/recovery workflows.
 - Full academic ERP modules.
 - Stable production deployment, automatic staging delivery, production promotion, monitoring, backup scheduling, and restore tooling. Repository CI/runtime configuration exists but external execution remains incomplete.

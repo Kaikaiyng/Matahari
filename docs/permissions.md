@@ -40,6 +40,7 @@ Tenant requests use roles from the active `tenant_user_memberships` record, not 
 | Record payments | Allowed | Allowed | Denied | Denied | `payments.create` route middleware |
 | Verify payments | Allowed | Denied | Allowed | Denied | `payments.verify` route middleware |
 | Void payments | Allowed | Denied | Allowed | Denied | `payments.void` route middleware |
+| Send manual in-app payment reminders | Allowed | Allowed | Allowed | Denied | `payment_reminders.send`; backend rechecks student school, current enrolment, current outstanding, and eligible guardian accounts |
 | View receipts | Allowed | Allowed | Allowed | Denied | `receipts.view` route middleware |
 | Issue receipts | Allowed | Allowed | Allowed | Denied | `receipts.create` route middleware |
 | Void receipts | Allowed | Denied | Allowed | Denied | `receipts.void` route middleware |
@@ -60,7 +61,7 @@ Phase A permission defaults:
 - Super Admin: all Phase A permissions.
 - School Admin: academic year, subject, enrolment, teaching-assignment, portal-link, and foundation-role management.
 - Teacher: academic-year/subject read plus `teaching_scope.view`.
-- Parent: `parent.self_service`; experimental portal reads additionally require an active same-school guardian-child link and the relevant reviewed pivot capability. This is not approval of a production Parent Finance workflow.
+- Parent: `parent.self_service`; portal reads additionally require an active same-school guardian-child link and the relevant reviewed pivot capability. Parent Finance remains read-only and is not approval of a payment workflow.
 - Student: `student.self_service` only; no student-finance permission.
 - Finance and CEO: no new Phase A permissions.
 
@@ -125,7 +126,7 @@ It does not grant receipt view/print, student view, payment view, or a general r
 
 Phase A policies are present for new foundation resources. Legacy modules retain their existing route/controller/request/service enforcement until migrated deliberately.
 
-Portal navigation must not treat `parent.self_service`, `student.self_service`, or `teaching_scope.view` as sufficient resource authorization by itself. Each API also validates the active guardian-child, student-self, or teaching-assignment relationship and same-school ownership. Notification reads and read-state updates are restricted to the authenticated recipient and school. Daily Attendance currently reuses `teaching_scope.view` plus an active same-school assignment for Teacher writes; Parent reads additionally require `can_view_academics = true`, and Student reads resolve only the linked self record. Production Parent Finance and notification administration still require their own approved permission design.
+Portal navigation must not treat `parent.self_service`, `student.self_service`, or `teaching_scope.view` as sufficient resource authorization by itself. Each API also validates the active guardian-child, student-self, or teaching-assignment relationship and same-school ownership. Notification reads and read-state updates are restricted to the authenticated recipient and school. Daily Attendance currently reuses `teaching_scope.view` plus an active same-school assignment for Teacher writes; Parent reads additionally require `can_view_academics = true`, and Student reads resolve only the linked self record. Manual payment reminder sending is separately protected by `payment_reminders.send`; it does not grant recipient notification access.
 
 Community uses `community.view`, `community.publish`, `community.interact`, and `community.moderate`; Staff publishing does not imply school-wide academic access, and Teacher scope remains bounded by active Teaching Assignments. Assessment uses `assessments.manage`, `assessments.manage_school`, and `assessments.view_published`. Schedule uses `schedule.manage` and `schedule.view`, with relationship/enrolment scope enforced in addition to permission middleware. Attendance continues to reuse its established scope permission. Formal Quiz uses `quizzes.manage`, `quizzes.manage_school`, and `quizzes.attempt`; Practice/AI Quiz permissions remain planned until that separately approved feature is implemented.
 

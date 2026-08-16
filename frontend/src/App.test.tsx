@@ -29,6 +29,7 @@ const currentUser = {
     'payments.create',
     'payments.verify',
     'payments.void',
+    'payment_reminders.send',
     'receipts.view',
     'receipts.create',
     'receipts.void',
@@ -1017,6 +1018,30 @@ describe('demo shell', () => {
     await user.click(screen.getByRole('button', { name: 'Cancel' }))
 
   }, 10_000)
+
+  it('sends an in-app payment reminder for the selected student', async () => {
+    const user = userEvent.setup()
+    const fetchMock = vi.mocked(globalThis.fetch)
+    const installedImplementation = fetchMock.getMockImplementation()
+    if (!installedImplementation) throw new Error('API mock is not installed')
+
+    fetchMock.mockImplementation((input, init) => {
+      const url = new URL(String(input), window.location.origin)
+      if (url.pathname.endsWith('/students/1/payment-reminders') && init?.method === 'POST') {
+        return json({ data: { student_id: 1, academic_year: '2026', outstanding_amount: 2670, recipient_count: 1 } }, 201)
+      }
+      return installedImplementation(input, init)
+    })
+
+    await openSelectedStudentPayments(user)
+    await user.click(screen.getByRole('button', { name: 'Send payment reminder' }))
+
+    expect(await screen.findByText('Payment reminder sent to 1 parent account.')).toBeInTheDocument()
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringMatching(/\/students\/1\/payment-reminders$/),
+      expect.objectContaining({ method: 'POST' }),
+    )
+  })
 
   it('shows the selected payment before verification', async () => {
     const user = userEvent.setup()

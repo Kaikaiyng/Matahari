@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { AlertCircle, BookOpenCheck, CalendarCheck2, ChevronRight, LogOut, Mail, Phone, ReceiptText, UserRound } from 'lucide-react'
+import { AlertCircle, BookOpenCheck, CalendarCheck2, ChevronRight, LogOut, Mail, Phone, Printer, ReceiptText, UserRound, X } from 'lucide-react'
 import { portalApi, type AttendanceRecord, type GuardianMe, type OutstandingCharge, type PortalPayment, type PortalReceipt, type PublishedAssessmentResult } from '../api/portalApi'
 import { CommunityFeed } from './CommunityFeed'
 
@@ -59,12 +59,59 @@ function ParentFinance({ children }: { children: GuardianMe['children'] }) {
   const [charges, setCharges] = useState<OutstandingCharge[]>([])
   const [payments, setPayments] = useState<PortalPayment[]>([])
   const [receipts, setReceipts] = useState<PortalReceipt[]>([])
+  const [selectedReceipt, setSelectedReceipt] = useState<PortalReceipt | null>(null)
   const [loading, setLoading] = useState(false)
+  const [receiptLoading, setReceiptLoading] = useState(false)
+  const [error, setError] = useState('')
   const selectedChild = financeChildren.find((child) => child.id === selectedId)
   const academicYear = selectedChild?.academic_year?.code
-  useEffect(() => { if (!selectedId || !academicYear) return; setLoading(true); Promise.all([portalApi.getChildOutstanding(selectedId, academicYear), portalApi.getChildPayments(selectedId), portalApi.getChildReceipts(selectedId)]).then(([chargeResponse, paymentResponse, receiptResponse]) => { setCharges(chargeResponse.data); setPayments(paymentResponse.data); setReceipts(receiptResponse.data) }).catch(() => { setCharges([]); setPayments([]); setReceipts([]) }).finally(() => setLoading(false)) }, [selectedId, academicYear])
+  useEffect(() => {
+    setSelectedReceipt(null)
+    if (!selectedId || !academicYear) return
+    setLoading(true)
+    setError('')
+    Promise.all([portalApi.getChildOutstanding(selectedId, academicYear), portalApi.getChildPayments(selectedId), portalApi.getChildReceipts(selectedId)])
+      .then(([chargeResponse, paymentResponse, receiptResponse]) => { setCharges(chargeResponse.data); setPayments(paymentResponse.data); setReceipts(receiptResponse.data) })
+      .catch(() => { setCharges([]); setPayments([]); setReceipts([]); setError('Unable to load finance records for this child.') })
+      .finally(() => setLoading(false))
+  }, [selectedId, academicYear])
+
+  function openReceipt(receiptId: number) {
+    if (!selectedId) return
+    setReceiptLoading(true)
+    setError('')
+    portalApi.getChildReceipt(selectedId, receiptId)
+      .then((response) => setSelectedReceipt(response.data))
+      .catch(() => setError('Unable to open this receipt.'))
+      .finally(() => setReceiptLoading(false))
+  }
+
   const total = charges.reduce((sum, charge) => sum + Number(charge.outstanding_amount), 0)
-  return <div className="record-page"><PageTitle eyebrow="Finance" title="School account" copy="Read-only records from the MIS finance ledger. No online payment is offered." /><ChildSelector children={financeChildren} selectedId={selectedId} onChange={setSelectedId} />{financeChildren.length === 0 ? <div className="app-empty"><ReceiptText /><h2>Finance access unavailable</h2><p>No reviewed guardian link grants finance access.</p></div> : !academicYear ? <div className="app-empty"><ReceiptText /><h2>Academic year unavailable</h2><p>The school must confirm a current enrolment before finance records can be shown.</p></div> : loading ? <PageLoading /> : <><section className="finance-balance"><small>Outstanding balance</small><strong>{money(total)}</strong><span>{charges.length} open charge{charges.length === 1 ? '' : 's'}</span></section><section className="record-section"><div className="section-heading"><span><b>Outstanding items</b><small>Academic year {academicYear}</small></span></div>{charges.length ? charges.map((charge) => <div className="finance-row" key={charge.id}><span><strong>{charge.description}</strong><small>{charge.billing_month} · {charge.fee_code}</small></span><b>{money(Number(charge.outstanding_amount))}</b></div>) : <p className="quiet-empty">No outstanding charges.</p>}</section><section className="record-section"><div className="section-heading"><span><b>Verified payments</b><small>{payments.length} records</small></span></div>{payments.slice(0, 3).map((payment) => <div className="finance-row" key={payment.id}><span><strong>{payment.issued_receipt?.receipt_no ?? 'Verified payment'}</strong><small>{payment.payment_date} · {payment.payment_method ?? 'Method not recorded'}</small></span><b>{money(Number(payment.amount))}</b></div>)}{payments.length === 0 && <p className="quiet-empty">No verified payments found.</p>}</section><section className="record-section"><div className="section-heading"><span><b>Receipts</b><small>Official MIS records · viewing only</small></span></div>{receipts.slice(0, 3).map((receipt) => <div className="receipt-row" key={receipt.id}><ReceiptText /><span><strong>{receipt.receipt_no}</strong><small>{receipt.receipt_date}</small></span><b>{money(Number(receipt.amount))}</b></div>)}{receipts.length === 0 && <p className="quiet-empty">No receipts found.</p>}</section></>}</div>
+  return <div className="record-page">
+    <PageTitle eyebrow="Finance" title="School account" copy="Read-only records from the school finance ledger. No online payment is offered." />
+    {financeChildren.length > 0 && <div className="finance-child-cards" aria-label="Choose a child">{financeChildren.map((child) => <button type="button" key={child.id} className={`finance-child-card${child.id === selectedId ? ' active' : ''}`} aria-label={`View ${child.full_name} finance`} aria-pressed={child.id === selectedId} onClick={() => setSelectedId(child.id)}><span className="student-avatar small">{child.full_name[0]}</span><span><strong>{child.full_name}</strong><small>{child.class?.name ?? 'No class'} · {child.student_no}</small></span></button>)}</div>}
+    {financeChildren.length === 0 ? <div className="app-empty"><ReceiptText /><h2>Finance access unavailable</h2><p>No reviewed guardian link grants finance access.</p></div> : !academicYear ? <div className="app-empty"><ReceiptText /><h2>Academic year unavailable</h2><p>The school must confirm a current enrolment before finance records can be shown.</p></div> : loading ? <PageLoading /> : <>
+      {error && <p className="form-error" role="alert">{error}</p>}
+      <section className="finance-balance"><small>Outstanding balance</small><strong>{money(total)}</strong><span>{charges.length} open charge{charges.length === 1 ? '' : 's'}</span></section>
+      <section className="record-section"><div className="section-heading"><span><b>Outstanding items</b><small>Academic year {academicYear}</small></span></div>{charges.length ? charges.map((charge) => <div className="finance-row" key={charge.id}><span><strong>{charge.description}</strong><small>{charge.billing_month} · {charge.fee_code}</small></span><b>{money(Number(charge.outstanding_amount))}</b></div>) : <p className="quiet-empty">No outstanding charges.</p>}</section>
+      <section className="record-section"><div className="section-heading"><span><b>Payment history</b><small>{payments.length} record{payments.length === 1 ? '' : 's'}</small></span></div>{payments.map((payment) => <div className="finance-row" key={payment.id}><span><strong>{payment.issued_receipt?.receipt_no ?? 'Verified payment'}</strong><small>{payment.payment_date} · {payment.payment_method ?? 'Method not recorded'} · {payment.status}</small></span><b>{money(Number(payment.amount))}</b></div>)}{payments.length === 0 && <p className="quiet-empty">No payments found.</p>}</section>
+      <section className="record-section"><div className="section-heading"><span><b>Receipts</b><small>View, print or save as PDF</small></span></div>{receipts.map((receipt) => <button type="button" className="receipt-row" key={receipt.id} aria-label={`View receipt ${receipt.receipt_no}`} onClick={() => openReceipt(receipt.id)} disabled={receiptLoading}><ReceiptText /><span><strong>{receipt.receipt_no}</strong><small>{receipt.receipt_date} · {receipt.status}</small></span><b>{money(Number(receipt.amount))}</b><ChevronRight /></button>)}{receipts.length === 0 && <p className="quiet-empty">No receipts found.</p>}</section>
+    </>}
+    {selectedReceipt && <ReceiptDialog receipt={selectedReceipt} onClose={() => setSelectedReceipt(null)} />}
+  </div>
+}
+
+function ReceiptDialog({ receipt, onClose }: { receipt: PortalReceipt; onClose: () => void }) {
+  return <div className="receipt-dialog-backdrop" role="presentation"><section className="receipt-dialog" role="dialog" aria-modal="true" aria-label={`Receipt ${receipt.receipt_no}`}>
+    <header><span><small>Official receipt</small><h2>{receipt.receipt_no}</h2></span><button type="button" aria-label="Close receipt" onClick={onClose}><X /></button></header>
+    <div className="receipt-paper">
+      <dl><div><dt>Student</dt><dd>{receipt.student_name}<small>{receipt.student_no}</small></dd></div><div><dt>Receipt date</dt><dd>{receipt.receipt_date}</dd></div><div><dt>Paid by</dt><dd>{receipt.paid_by ?? 'Not recorded'}</dd></div><div><dt>Method</dt><dd>{receipt.payment_method ?? 'Not recorded'}</dd></div></dl>
+      <div className="receipt-items">{receipt.items.map((item, index) => <div key={`${item.fee_code}-${index}`}><span><strong>{item.description}</strong><small>{item.fee_code}</small></span><b>{money(Number(item.amount))}</b></div>)}</div>
+      <div className="receipt-total"><span>Total paid</span><strong>{money(Number(receipt.amount))}</strong></div>
+      <p className="receipt-words">{receipt.amount_in_words}</p><span className={`status-label ${receipt.status === 'issued' ? 'success' : 'neutral'}`}>{receipt.status}</span>
+    </div>
+    <footer><button type="button" className="receipt-print" aria-label="Print or save receipt as PDF" onClick={() => window.print()}><Printer />Print / save PDF</button></footer>
+  </section></div>
 }
 
 function ParentMore({ name, phone, email, childrenCount, onLogout }: { name: string; phone?: string | null; email?: string | null; childrenCount: number; onLogout: () => void }) { return <div className="record-page"><PageTitle eyebrow="Account" title="Profile and settings" copy="Your private MIS App access." /><section className="profile-card"><span className="profile-avatar">{name.split(' ').map((part) => part[0]).slice(0, 2).join('')}</span><h2>{name}</h2><p>Parent · {childrenCount} linked child{childrenCount === 1 ? '' : 'ren'}</p></section><section className="settings-list"><div><Phone /><span><small>Phone</small><strong>{phone ?? 'Not provided'}</strong></span></div><div><Mail /><span><small>Email</small><strong>{email ?? 'Not provided'}</strong></span></div><div><ChevronRight/><span><small>Notifications</small><strong>Open the bell in the header</strong></span></div><div><ChevronRight/><span><small>Privacy</small><strong>Only reviewed child links and authorized audiences are shown</strong></span></div></section><button type="button" className="logout-action" aria-label="Sign out" onClick={onLogout}><LogOut /><span><strong>Sign out</strong><small>End this session on this device</small></span></button></div> }

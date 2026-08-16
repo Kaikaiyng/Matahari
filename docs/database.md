@@ -132,6 +132,8 @@ The approved mobile product does not introduce a second database or duplicate pa
 
 Parent Finance must continue to derive outstanding amounts from `fee_record_charges` and verified payment allocations. A separate mobile balance table or `fee_installments` ledger is not approved for V1.
 
+Manual payment reminders reuse `portal_notifications`; no tenant-specific reminder or finance database is introduced. Each row stores the resolved school and recipient user plus a child/year/outstanding snapshot in `context_json`. Current balance remains authoritative in Fee Record and is recalculated before sending.
+
 The experimental portal adds `portal_notifications`, scoped by `school_id` and `recipient_user_id`, with JSON context and nullable read time. It does not add device tokens or push delivery.
 
 The first Attendance slice adds `attendance_sessions` and `attendance_records` through an additive migration. Sessions are school/year/class scoped and use a school-unique key such as `daily:2026-08-12:class:4`; the general columns also leave room for later `lesson` and `event` sessions. Records enforce one row per session/student, use `present`, `late`, `absent`, or `excused`, retain the original marker, and preserve correction actor/reason/time. No historical attendance is inferred or backfilled.

@@ -21,6 +21,7 @@ enum AuditAction: string
     case PaymentVoided = 'payment.voided';
     case PaymentReversed = 'payment.reversed';
     case PaymentCorrected = 'payment.corrected';
+    case PaymentReminderSent = 'payment.reminder_sent';
     case ReceiptIssued = 'receipt.issued';
     case ReceiptVoided = 'receipt.voided';
     case ReceiptReplaced = 'receipt.replaced';

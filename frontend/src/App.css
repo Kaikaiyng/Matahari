@@ -1749,6 +1749,13 @@ th {
   gap: 8px;
 }
 
+.payment-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .fee-record-preview-block,
 .fee-record-warning-list,
 .manual-charge-form,

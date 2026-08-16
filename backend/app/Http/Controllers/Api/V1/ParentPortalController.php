@@ -113,22 +113,24 @@ class ParentPortalController extends Controller
             ->latest('receipt_date')
             ->latest('id')
             ->get()
-            ->map(fn (Receipt $receipt) => [
-                'id' => $receipt->id,
-                'receipt_no' => $receipt->receipt_no,
-                'receipt_date' => $receipt->receipt_date->toDateString(),
-                'amount' => (float) $receipt->amount,
-                'paid_by' => $receipt->paid_by,
-                'payment_method' => $receipt->payment_method,
-                'status' => $receipt->status,
-                'items' => $receipt->items->map(fn ($item) => [
-                    'fee_code' => $item->fee_code,
-                    'description' => $item->description,
-                    'amount' => (float) $item->amount,
-                ])->values(),
-            ]);
+            ->map(fn (Receipt $receipt) => $this->receiptResponse($receipt));
 
         return response()->json(['data' => $receipts]);
+    }
+
+    /**
+     * Return one immutable receipt snapshot for a finance-enabled linked child.
+     */
+    public function childReceipt(Request $request, Student $student, Receipt $receipt): JsonResponse
+    {
+        $this->assertGuardianAccess($request, $student, 'can_view_finance');
+
+        if ((int) $receipt->school_id !== (int) $student->school_id
+            || (int) $receipt->student_id !== (int) $student->id) {
+            abort(403, 'Receipt does not belong to this student.');
+        }
+
+        return response()->json(['data' => $this->receiptResponse($receipt->load('items'))]);
     }
 
     public function childAttendance(Request $request, Student $student): JsonResponse
@@ -222,6 +224,33 @@ class ParentPortalController extends Controller
             ] : null,
             'can_view_finance' => (bool) $student->pivot?->can_view_finance,
             'can_view_academics' => (bool) $student->pivot?->can_view_academics,
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function receiptResponse(Receipt $receipt): array
+    {
+        return [
+            'id' => $receipt->id,
+            'receipt_no' => $receipt->receipt_no,
+            'receipt_date' => $receipt->receipt_date->toDateString(),
+            'student_no' => $receipt->student_no,
+            'student_name' => $receipt->student_name,
+            'amount' => (float) $receipt->amount,
+            'amount_in_words' => $receipt->amount_in_words,
+            'paid_by' => $receipt->paid_by,
+            'payment_method' => $receipt->payment_method,
+            'payment_date' => $receipt->payment_date->toDateString(),
+            'received_date' => $receipt->received_date?->toDateString(),
+            'status' => $receipt->status,
+            'issued_at' => $receipt->issued_at?->toIso8601String(),
+            'voided_at' => $receipt->voided_at?->toIso8601String(),
+            'void_reason' => $receipt->void_reason,
+            'items' => $receipt->items->map(fn ($item) => [
+                'fee_code' => $item->fee_code,
+                'description' => $item->description,
+                'amount' => (float) $item->amount,
+            ])->values(),
         ];
     }
 

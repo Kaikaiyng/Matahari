@@ -29,7 +29,7 @@ Implemented workflows include:
 Important boundaries:
 
 - `frontend/` is Admin-only. `app/` is the separate multi-role Community App surface. Attendance, Community, Assessment results, class Schedule, and formal Teacher-assigned Quiz use live scoped APIs. Practice/AI Quiz remains disabled.
-- Parent finance is read-only and has no payment interface. Payment reminders, native authentication, Firebase, Capacitor, and app-store packaging remain unimplemented. See [Mobile Product Architecture and Roadmap](docs/mobile-product-roadmap.md).
+- Parent finance is read-only and has no payment interface. Parents can switch among finance-authorized linked children, review balances and full payment history, and view or browser-print/save authoritative receipt snapshots. Authorized Admin users can send recalculated in-app payment reminders; automatic reminders, external delivery, native authentication, Firebase, Capacitor, and app-store packaging remain unimplemented. See [Mobile Product Architecture and Roadmap](docs/mobile-product-roadmap.md).
 
 - Payments and receipts are implemented inside Student Detail; unimplemented top-level placeholder navigation has been removed.
 - The parent directory and fee catalogue top-level pages remain display-only; parent mutations, fee catalogue management, reports, exports, settings, user management, password reset, and production deployment are incomplete or not implemented.
@@ -214,5 +214,5 @@ The Community App uses the same three commands from `app/`.
 - The default automated backend suite uses SQLite and cannot prove MariaDB JSON, index, locking, foreign-key, or rollback behavior.
 - No stable hosting or production environment exists. CI and portable Docker/Compose source are included, but real container startup, remote deployment, monitoring, and backup/restore remain unverified.
 - User administration and password reset are not implemented.
-- General reports, exports, statements, payment reminders, production-ready Parent Finance, Practice/AI Quiz, PDF generation, and complete academic ERP modules are not implemented. Community, Attendance, Assessment, Schedule, formal Quiz, notifications, and read-only Parent Finance now use live scoped APIs; native/store delivery remains a separate controlled gate.
+- General reports, exports, statements, automatic/external payment reminders, server-side PDF generation, production-ready Parent Finance operations, Practice/AI Quiz, and complete academic ERP modules are not implemented. Community, Attendance, Assessment, Schedule, formal Quiz, notifications, read-only Parent Finance, receipt viewing/browser PDF saving, and manual in-app reminders now use live scoped APIs; native/store delivery remains a separate controlled gate.
 - Operational readiness remains incomplete: production hosting, remote release operations, monitoring, runtime grant execution, backups, restore drills, and approved discount/correction policies are not verified. See [Current Status](docs/current-status.md).

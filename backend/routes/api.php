@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\FeeItemController;
 use App\Http\Controllers\Api\FeeRecordController;
 use App\Http\Controllers\Api\InvoiceGenerationController;
 use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\PaymentReminderController;
 use App\Http\Controllers\Api\ReceiptController;
 use App\Http\Controllers\Api\SchoolClassController;
 use App\Http\Controllers\Api\StudentController;
@@ -142,6 +143,8 @@ Route::middleware([...$sessionMiddleware, 'auth', 'active', 'tenant.member', 'te
         ->middleware('permission:payments.view');
     Route::post('/students/{student}/payments', [PaymentController::class, 'store'])
         ->middleware('permission:payments.create');
+    Route::post('/students/{student}/payment-reminders', [PaymentReminderController::class, 'store'])
+        ->middleware('permission:payment_reminders.send');
     Route::post('/payments/{payment}/verify', [PaymentController::class, 'verify'])
         ->middleware('permission:payments.verify');
     Route::post('/payments/{payment}/void', [PaymentController::class, 'void'])
@@ -231,6 +234,7 @@ Route::prefix('v1')->middleware([...$sessionMiddleware, 'auth', 'active', 'tenan
             Route::get('/children/{student}/outstanding', [ParentPortalController::class, 'childOutstanding'])->middleware('tenant.feature:parent_finance');
             Route::get('/children/{student}/payments', [ParentPortalController::class, 'childPayments'])->middleware('tenant.feature:parent_finance');
             Route::get('/children/{student}/receipts', [ParentPortalController::class, 'childReceipts'])->middleware('tenant.feature:parent_finance');
+            Route::get('/children/{student}/receipts/{receipt}', [ParentPortalController::class, 'childReceipt'])->middleware('tenant.feature:parent_finance');
             Route::get('/children/{student}/attendance', [ParentPortalController::class, 'childAttendance'])->middleware('tenant.feature:attendance');
             Route::get('/children/{student}/assessment-results', [ParentPortalController::class, 'childAssessmentResults'])->middleware(['tenant.feature:assessments', 'permission:assessments.view_published']);
             Route::get('/children/{student}/schedule', [ParentPortalController::class, 'childSchedule'])->middleware(['tenant.feature:schedule', 'permission:schedule.view']);

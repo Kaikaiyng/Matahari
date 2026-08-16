@@ -778,6 +778,7 @@ function StudentsPage({
   const [isSavingFeeAgreement, setIsSavingFeeAgreement] = useState(false)
   const [payments, setPayments] = useState<StudentPayment[]>([])
   const [isLoadingPayments, setIsLoadingPayments] = useState(false)
+  const [isSendingPaymentReminder, setIsSendingPaymentReminder] = useState(false)
   const [showPaymentForm, setShowPaymentForm] = useState(false)
   const paymentAmountRef = useRef<HTMLInputElement>(null)
   const [paymentDetailsOpen, setPaymentDetailsOpen] = useState(false)
@@ -852,6 +853,7 @@ function StudentsPage({
   const canCreatePayments = hasPermission(user, 'payments.create')
   const canVerifyPayments = hasPermission(user, 'payments.verify')
   const canVoidPayments = hasPermission(user, 'payments.void')
+  const canSendPaymentReminders = hasPermission(user, 'payment_reminders.send')
   const canViewReceipts = hasPermission(user, 'receipts.view')
   const canCreateReceipts = hasPermission(user, 'receipts.create')
   const canVoidReceipts = hasPermission(user, 'receipts.void')
@@ -1603,6 +1605,25 @@ function StudentsPage({
 
     if (selectedStudent) {
       void loadOutstandingCharges(selectedStudent.id, nextForm.academic_year)
+    }
+  }
+
+  const sendPaymentReminder = async () => {
+    if (!selectedStudent || !canSendPaymentReminders) return
+
+    setIsSendingPaymentReminder(true)
+    setError('')
+    setMessage('')
+    try {
+      const response = await apiRequest<{ data: { recipient_count: number } }>(
+        `/students/${selectedStudent.id}/payment-reminders`,
+        { method: 'POST' },
+      )
+      setMessage(`Payment reminder sent to ${response.data.recipient_count} parent account${response.data.recipient_count === 1 ? '' : 's'}.`)
+    } catch (reminderError) {
+      handleApiError(reminderError)
+    } finally {
+      setIsSendingPaymentReminder(false)
     }
   }
 
@@ -3125,13 +3146,20 @@ function StudentsPage({
                 <p className="eyebrow">Payments</p>
                 <h2>Payment History</h2>
               </div>
-              {canCreatePayments ? (
-                <button className="secondary-action" onClick={showPaymentForm ? () => setShowPaymentForm(false) : beginCreatePayment}>
-                  {showPaymentForm ? 'Close Payment Form' : 'Create Payment'}
-                </button>
-              ) : (
-                <span className="permission-note">Payment create unavailable</span>
-              )}
+              <div className="payment-header-actions">
+                {canSendPaymentReminders && (
+                  <button type="button" className="secondary-action" onClick={sendPaymentReminder} disabled={isSendingPaymentReminder}>
+                    {isSendingPaymentReminder ? 'Sending...' : 'Send payment reminder'}
+                  </button>
+                )}
+                {canCreatePayments ? (
+                  <button className="secondary-action" onClick={showPaymentForm ? () => setShowPaymentForm(false) : beginCreatePayment}>
+                    {showPaymentForm ? 'Close Payment Form' : 'Create Payment'}
+                  </button>
+                ) : !canSendPaymentReminders ? (
+                  <span className="permission-note">Payment actions unavailable</span>
+                ) : null}
+              </div>
             </div>
 
             {!canViewPayments && <Message tone="info">You do not have permission to view payments.</Message>}
