@@ -383,23 +383,23 @@ git commit -m "feat: add in-app UGC safety controls"
 - `moderationApi` exposes school queue/detail/action/appeal methods and platform summary/detail methods.
 - The page mode derives from backend permissions; it never accepts a tenant ID from a normal School Admin.
 
-- [ ] **Step 1: Write failing Admin tests**
+- [x] **Step 1: Write failing Admin tests**
 
 Cover permission-filtered navigation, school queue cards, severe/SLA ordering, overdue indicator, evidence display, required reason, approve/reject/hide/restrict/escalate actions, reporter privacy, platform aggregate, explicit severe detail, and different-reviewer appeal block.
 
-- [ ] **Step 2: Run focused Admin test and confirm RED**
+- [x] **Step 2: Run focused Admin test and confirm RED**
 
 Run: `npm.cmd test -- --run src/features/moderation/UgcModerationPage.test.tsx` from `frontend/`.
 
-- [ ] **Step 3: Implement the workspace**
+- [x] **Step 3: Implement the workspace**
 
 Keep queue, case detail, decision form, restrictions, and appeal review in the new feature directory. `App.tsx` only adds permission-aware navigation and mounts the page. Require a selected reason before mutation; show server validation without weakening backend enforcement. The parent layout owns a 16px gap between case cards/panels.
 
-- [ ] **Step 4: Run Admin test, lint, and build**
+- [x] **Step 4: Run Admin test, lint, and build**
 
 Run from `frontend/`: `npm.cmd test`, `npm.cmd run lint`, `npm.cmd run build`. Existing nine Fast Refresh warnings may remain; no new warning is accepted.
 
-- [ ] **Step 5: Commit the Admin slice**
+- [x] **Step 5: Commit the Admin slice**
 
 ```powershell
 git add -- frontend/src/App.tsx frontend/src/features/moderation/UgcModerationPage.tsx frontend/src/features/moderation/moderationApi.ts frontend/src/features/moderation/UgcModerationPage.css frontend/src/features/moderation/UgcModerationPage.test.tsx

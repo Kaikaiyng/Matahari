@@ -640,6 +640,13 @@ describe('demo shell', () => {
     expect(within(navigation).queryByRole('button', { name: 'Audit Trail' })).not.toBeInTheDocument()
   })
 
+  it('shows Community Safety only with a moderation permission', async () => {
+    installApiUser({ ...currentUser, permissions: [...currentUser.permissions, 'community.moderate'] })
+    await renderAuthenticatedApp()
+
+    expect(within(screen.getByRole('navigation', { name: 'Main navigation' })).getByRole('button', { name: 'Community Safety' })).toBeInTheDocument()
+  })
+
   it('rejects a parent-only account from the Admin Panel', async () => {
     installApiUser({
       ...currentUser,

@@ -60,6 +60,7 @@ import {
 } from './features/fee-agreements/feeAgreementEditorModel'
 import { FeeAgreementEditor } from './features/fee-agreements/FeeAgreementEditor'
 import { AuditTrailPage } from './features/audit/AuditTrailPage'
+import { UgcModerationPage } from './features/moderation/UgcModerationPage'
 import { PaymentAllocationEditor } from './features/payments/PaymentAllocationEditor'
 import type {
   FeeAgreement,
@@ -94,6 +95,7 @@ type PageKey =
   | 'fees'
   | 'fee-record'
   | 'audit'
+  | 'moderation'
   | 'settings'
 
 type CurrentUser = {
@@ -397,6 +399,7 @@ const navGroups: NavigationGroup<PageKey>[] = [
     label: 'Administration',
     items: [
       { key: 'audit', label: 'Audit Trail', icon: IconlyAudit as any, requiredPermission: 'audit.view' },
+      { key: 'moderation', label: 'Community Safety', icon: ShieldCheck as any, requiredAnyPermissions: ['community.moderate', 'community.moderate_platform'] },
       { key: 'settings', label: 'Settings', icon: IconlySettings as any, requiredPermission: 'foundation_accounts.manage' },
     ],
   },
@@ -4839,7 +4842,7 @@ function App() {
 
   const handleSelectPage = (page: PageKey) => {
     const featureKey = page === 'schedule' ? 'schedule' : null
-    if (!user || (featureKey && tenant.features[featureKey] === false) || !navItems.some((item) => item.key === page && (!item.requiredPermission || hasPermission(user, item.requiredPermission)))) {
+    if (!user || (featureKey && tenant.features[featureKey] === false) || !navItems.some((item) => item.key === page && (!item.requiredPermission || hasPermission(user, item.requiredPermission)) && (!item.requiredAnyPermissions || item.requiredAnyPermissions.some((permission) => hasPermission(user, permission))))) {
       return
     }
 
@@ -4851,7 +4854,7 @@ function App() {
   const availableNavGroups = navGroups
     .map((group) => ({
       ...group,
-      items: group.items.filter((item) => (item.key !== 'schedule' || tenant.features.schedule !== false) && (!item.requiredPermission || (user && hasPermission(user, item.requiredPermission)))),
+      items: group.items.filter((item) => (item.key !== 'schedule' || tenant.features.schedule !== false) && (!item.requiredPermission || (user && hasPermission(user, item.requiredPermission))) && (!item.requiredAnyPermissions || (user && item.requiredAnyPermissions.some((permission) => hasPermission(user, permission))))),
     }))
     .filter((group) => group.items.length > 0)
   const availableNavItems = availableNavGroups.flatMap((group) => group.items)
@@ -4950,6 +4953,10 @@ function App() {
 
     if (activePage === 'audit') {
       return <AuditTrailPage onUnauthorized={handleUnauthorized} />
+    }
+
+    if (activePage === 'moderation') {
+      return <UgcModerationPage permissions={user.permissions} currentUserId={user.id} />
     }
 
     if (activePage === 'settings') {

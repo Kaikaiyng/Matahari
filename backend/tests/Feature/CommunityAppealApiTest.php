@@ -41,6 +41,13 @@ class CommunityAppealApiTest extends TestCase
             'report_id' => $reportId, 'statement' => 'Second appeal.',
         ])->assertUnprocessable()->assertJsonValidationErrors('appeal');
 
+        $this->actingAs($originalModerator)->getJson("http://localhost/api/v1/admin/community-moderation/reports/{$reportId}")
+            ->assertOk()->assertJsonPath('data.appeals.0.id', $appeal['id'])
+            ->assertJsonPath('data.appeals.0.source_moderator_user_id', $originalModerator->id);
+        $this->actingAs($originalModerator)->getJson('http://localhost/api/v1/admin/community-moderation/reports')
+            ->assertOk()->assertJsonPath('data.0.id', $reportId)
+            ->assertJsonPath('data.0.has_pending_appeal', true);
+
         $this->actingAs($originalModerator)->postJson("http://localhost/api/v1/admin/community-moderation/appeals/{$appeal['id']}/decision", [
             'decision' => 'upheld', 'reason' => 'Reviewed evidence.',
         ])->assertUnprocessable()->assertJsonValidationErrors('reviewer');

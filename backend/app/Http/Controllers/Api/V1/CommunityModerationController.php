@@ -21,7 +21,10 @@ class CommunityModerationController extends Controller
     {
         [$tenantId, $schoolId] = $this->scope($request);
         $reports = CommunityReport::query()->where('tenant_id', $tenantId)->where('school_id', $schoolId)
-            ->whereIn('status', [CommunityReport::STATUS_SUBMITTED, CommunityReport::STATUS_REVIEWING])
+            ->where(fn ($query) => $query
+                ->whereIn('status', [CommunityReport::STATUS_SUBMITTED, CommunityReport::STATUS_REVIEWING])
+                ->orWhereHas('appeals', fn ($appeals) => $appeals->where('status', CommunityAppeal::STATUS_SUBMITTED)))
+            ->withExists(['appeals as has_pending_appeal' => fn ($appeals) => $appeals->where('status', CommunityAppeal::STATUS_SUBMITTED)])
             ->orderByRaw("CASE WHEN priority = 'severe' THEN 0 ELSE 1 END")->orderBy('due_at')->limit(100)->get();
 
         return response()->json(['data' => $reports->map(fn (CommunityReport $report) => $this->response($report))]);
@@ -32,7 +35,7 @@ class CommunityModerationController extends Controller
         [$tenantId, $schoolId] = $this->scope($request);
         abort_unless((int) $communityReport->tenant_id === $tenantId && (int) $communityReport->school_id === $schoolId, 403);
 
-        return response()->json(['data' => $this->response($communityReport->load(['actions.actor:id,name', 'reporter:id,name', 'reportedUser:id,name']))]);
+        return response()->json(['data' => $this->response($communityReport->load(['actions.actor:id,name', 'appeals.sourceAction', 'reportedUser:id,name']))]);
     }
 
     public function decide(Request $request, CommunityReport $communityReport, CommunityModerationService $service, AuditContextFactory $contexts): JsonResponse
@@ -93,9 +96,16 @@ class CommunityModerationController extends Controller
         return [
             'id' => $report->id, 'source' => $report->source, 'target_type' => $report->target_type,
             'reason_code' => $report->reason_code, 'priority' => $report->priority, 'status' => $report->status,
+            'has_pending_appeal' => (bool) $report->getAttribute('has_pending_appeal'),
             'due_at' => $report->due_at?->toIso8601String(), 'overdue' => $report->due_at?->isPast() && $report->status !== CommunityReport::STATUS_RESOLVED,
             'target_snapshot' => $report->target_snapshot, 'resolution_code' => $report->resolution_code,
             'actions' => $report->relationLoaded('actions') ? $report->actions : [],
+            'appeals' => $report->relationLoaded('appeals') ? $report->appeals->map(fn (CommunityAppeal $appeal) => [
+                'id' => $appeal->id, 'status' => $appeal->status, 'statement' => $appeal->statement,
+                'source_moderator_user_id' => $appeal->sourceAction?->actor_user_id,
+                'decision' => $appeal->decision, 'decision_reason' => $appeal->decision_reason,
+                'created_at' => $appeal->created_at?->toIso8601String(),
+            ]) : [],
         ];
     }
 

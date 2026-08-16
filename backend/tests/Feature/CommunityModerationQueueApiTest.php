@@ -115,7 +115,9 @@ class CommunityModerationQueueApiTest extends TestCase
 
         $super = $this->user('superadmin');
         $this->actingAs($super)->getJson('http://localhost/api/v1/platform/community-moderation/summary')
-            ->assertOk()->assertJsonPath('data.severe_open', 1);
+            ->assertOk()->assertJsonPath('data.severe_open', 1)
+            ->assertJsonPath('data.severe_cases.0.id', $reportId)
+            ->assertJsonPath('data.severe_cases.0.tenant_id', $post->tenant_id);
         $this->actingAs($super)->getJson("http://localhost/api/v1/platform/community-moderation/reports/{$reportId}")
             ->assertOk()->assertJsonPath('data.id', $reportId);
         $this->assertDatabaseHas('audit_logs', ['action' => 'community.platform_case_viewed', 'entity_id' => $reportId]);

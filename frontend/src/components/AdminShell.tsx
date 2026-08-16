@@ -14,6 +14,7 @@ export type NavigationItem<PageKey extends string> = {
   label: string
   icon: LucideIcon
   requiredPermission?: string
+  requiredAnyPermissions?: string[]
 }
 
 export type NavigationGroup<PageKey extends string> = {
