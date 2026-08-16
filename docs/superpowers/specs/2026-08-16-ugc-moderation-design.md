@@ -1,7 +1,7 @@
 # RYLAY UGC Moderation and Store-Safety Design
 
-**Date:** 2026-08-16  
-**Status:** Approved design; implementation not started  
+**Date:** 2026-08-16
+**Status:** Approved design; implementation complete on the feature branch pending merge
 **Scope:** Shared RYLAY Community moderation for every tenant. Tenant differences remain limited to approved branding and feature configuration.
 
 ## Objective

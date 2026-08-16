@@ -21,6 +21,7 @@ Implemented workflows include:
 - Independent `app/` Community App views for Parent, Student, Teacher, and authorized Staff roles, with role-aware liquid-glass navigation, self-service identity endpoints, personal in-app notifications, read-only parent finance, and MIS demo personas.
 - Daily class Attendance: assignment-scoped Teacher roster marking, Parent/Student history reads, correction reasons, and transactional audit logging.
 - Scoped Community publishing and feeds with private authorized media, appreciations, controlled comments, moderation history, and transactional audit logging.
+- Strict in-app UGC safety controls: policy acceptance, pending review, separate content/user reports, Community-only blocking, private case status, appeals, school moderation, severe platform escalation, and public legal/safety pages.
 - Teaching Assignment-scoped Assessments with draft result entry, explicit complete-roster publication, and authorized Parent/Student published-result views.
 - Permission-filtered navigation and a Super Admin-only, read-only Audit Trail with filters and event detail.
 - Responsive desktop, tablet, and mobile administration UI.
@@ -170,6 +171,8 @@ npm.cmd run build
 ```
 
 The Community App uses the same three commands from `app/`.
+
+Before Apple App Store or Google Play submission, configure the real HTTPS policy/support URLs and monitored contacts, then run `..\tools\php\php-local.cmd artisan app:store-readiness` from `backend/`. Passing is a configuration gate, not a guarantee of approval. See [UGC Store Submission Checklist](docs/store-submission-ugc-checklist.md).
 
 `npm.cmd run build` runs `tsc -b` before the Vite production build. No PHP static-analysis command is currently configured. GitHub Actions now defines quick checks, one immutable ZIP build, full application validation, dependency audits, and a disposable MariaDB migration lifecycle; its current execution result must still be checked in GitHub. See [Testing and Release](docs/testing-and-release.md) and [Deployment Foundation](docs/deployment-foundation.md).
 

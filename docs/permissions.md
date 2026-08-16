@@ -80,6 +80,7 @@ Foundation role management synchronizes only `teacher`, `parent`, and `student`;
 | Community publish | `community.publish` | Teacher: current assigned classes only; School/Super Admin: school, class, or direct-student audience |
 | Community interaction | `community.interact` | Only posts visible to the authenticated user; comments must be enabled |
 | Community moderation | `community.moderate` | School/Super Admin only; hiding requires a reason and preserves history |
+| Community platform moderation | `community.moderate_platform` plus platform-owner gate | Cross-tenant aggregate; explicit detail/intervention only for severe or escalated cases; detail access is audited |
 | Assessment management | `assessments.manage` | Teacher: current assigned class/year/subject combinations; School/Super Admin: same-school resources |
 | Schedule management | `schedule.manage` | School/Super Admin only; same-school year/class/subject/Teaching Assignment validation |
 | Schedule viewing | `schedule.view` | Student current enrolment; Guardian active reviewed academic link; Teacher permission is reserved for assigned-scope UI |
@@ -98,6 +99,8 @@ Client entry-point checkpoint:
 - These client gates are usability boundaries. Backend permission middleware and resource scope remain authoritative.
 
 The current Attendance slice deliberately reuses `teaching_scope.view`; dedicated future Attendance/Community/Assessment/Quiz permissions must be introduced only with their backend modules and tests.
+
+All authenticated Community viewers may use their own policy/report/block/content-status/appeal endpoints, but backend visibility and ownership checks remain mandatory. Admin `Community Safety` navigation requires `community.moderate` or `community.moderate_platform`; this UI check is not authorization. School moderation begins from resolved tenant/school scope and never accepts a tenant ID.
 
 ## CEO Intended Versus Implemented Access
 

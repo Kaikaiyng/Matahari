@@ -10,6 +10,15 @@
 
 **Overall status:** SaaS multi-tenant foundation in final validation, with MIS as the first tenant; separate Admin and multi-role App clients, live Community, daily Attendance, Assessment publication, Parent Finance reads/receipt access/manual in-app reminders, class Schedule, and formal Quiz V1 remain shared tenant-aware modules. Practice/AI Quiz, native/store delivery, automated DNS/TLS and production operations remain incomplete.
 
+## 2026-08-16 Strict UGC Moderation Foundation
+
+- Community now has versioned policy acceptance, deterministic filtering, pending review/quarantined media, separate content/user reporting, Community-only blocking, scoped restrictions, private status, appeals and adult authorization for Student freeform interaction.
+- School moderation is permission-filtered and school-scoped. Severe/escalated cases use a platform-owner workspace; explicit platform case access is audited. Review mutations require reasons and transactional audit history.
+- The App has a Safety Centre and public Terms, Privacy, Community Standards, Child Safety and Support routes. `app:store-readiness` fails closed on missing HTTPS URLs, monitored contacts or effective policies.
+- Apple/Google approval is **Not verified and cannot be guaranteed by code**. Native packaging, reviewer accounts, real contacts, legal reporting procedure, moderator staffing, declarations, screenshots and store review remain external blockers.
+- Final local qualification for this branch: Backend 351 discovered (339 passed, 12 existing MariaDB-gated skips), 1,814 assertions, Pint and 140 API routes; Admin 177/177 with build and only the 9 existing Calendar Fast Refresh warnings; App 29/29 with clean lint/build; deployment contracts 19/19.
+- Disposable SQLite fresh/UGC rollback/re-migrate passed. XAMPP MariaDB 10.4.32 passed fresh/UGC rollback/re-migrate and all 47 Community tests with 357 assertions; the exact disposable `rylay_audit_test` database was then removed. Production MariaDB, contacts, legal operations and store submission remain **Not verified**.
+
 ## 2026-08-15 Tenant Foundation Hardening
 
 - `schools.tenant_id` and membership-school tenant ownership are now required. Database composite foreign keys reject a default/allowed school from another tenant.

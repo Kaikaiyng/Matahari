@@ -66,6 +66,17 @@ Approved future rules:
 
 Community, Assessment, and Quiz persistence preserves the approved school scope, audience/target shapes, result publication state, Quiz revisions, question options, materialized assignment recipients, and attempt history. Community enforces scoped publishing, feed visibility, private media delivery, reactions/comments, removal/moderation history, and transactional audit. Assessment enforces Teaching Assignment targets, draft-only editing, complete current-roster publication, published-only portal reads, and transactional audit. Class Schedule records are school/year/class scoped, portal-visible only after explicit publication, and read through current enrolment plus guardian academic access. Internal Calendar records are not implicitly family-visible. No grade formulas, historical dates, or timetable records are inferred. Formal Quiz uses only `multiple_choice` and `true_false`, exactly one correct option, explicit academic-year recipient materialization, hidden answer keys, and server scoring. Practice Quiz generation, AI, automatic/external reminders, push, and native packaging remain unimplemented.
 
+## Community UGC Safety
+
+- Current Terms and Community Standards must be accepted before contribution. Reporting and blocking remain available without contribution acceptance.
+- Student freeform interaction also requires active reviewed adult authorization; Students cannot self-authorize.
+- Non-moderator posts/comments are private `pending_review` submissions. Approval publishes/releases them; rejection preserves author, audit and appeal history. Public feeds exclude pending/rejected content.
+- Content reports, user reports and blocks are distinct. Blocks affect only mutual Community content/reactions, not official records or school communications.
+- Report lifecycle is `submitted` → `reviewing` → `resolved`. Severe cases target 4 hours and normal cases 24 hours; these are operational targets, not automated legal deadlines.
+- Decisions require a reason category and written reason. Material report/content/restriction/appeal changes and audit records share a transaction.
+- One appeal is permitted for the applicable decision; its source moderator cannot decide it.
+- Evidence hold/history are preserved. Automated retention/deletion is not implemented; lawful CSAM reporting and retention procedures require external legal and operational approval.
+
 ## Fee Agreements
 
 Verified rules:

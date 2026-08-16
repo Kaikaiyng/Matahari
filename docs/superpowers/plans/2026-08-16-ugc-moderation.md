@@ -467,11 +467,11 @@ git commit -m "feat: add public Community safety policies"
 **Interfaces:**
 - Produces honest current-status and store-operator evidence; does not claim store approval or legal completion.
 
-- [ ] **Step 1: Update canonical documentation and submission checklist**
+- [x] **Step 1: Update canonical documentation and submission checklist**
 
 Document exact lifecycle/statuses, permissions, adult authorization, report/block/appeal behavior, SLA targets, public URLs, support/child-safety deployment gates, data retention caveat, and external operational items. Checklist includes reviewer accounts, screenshot paths, Play declarations, Apple review notes, real contact confirmation, legal reporting procedure, and moderator staffing.
 
-- [ ] **Step 2: Run full local qualification**
+- [x] **Step 2: Run full local qualification**
 
 Backend:
 
@@ -484,15 +484,15 @@ cd backend
 
 Admin and App, separately: `npm.cmd test`, `npm.cmd run lint`, `npm.cmd run build`.
 
-- [ ] **Step 3: Run disposable SQLite and MariaDB lifecycle plus focused MariaDB tests**
+- [x] **Step 3: Run disposable SQLite and MariaDB lifecycle plus focused MariaDB tests**
 
 Run fresh migrate, rollback of the new migration, and re-migrate on an isolated SQLite file and an explicitly created disposable XAMPP MariaDB database. Run all Community moderation feature tests against MariaDB. Drop only the named disposable database after verifying its exact name.
 
-- [ ] **Step 4: Review diff and security evidence**
+- [x] **Step 4: Review diff and security evidence**
 
 Run `git diff --check origin/master...HEAD`, inspect every changed filename, confirm no generated database/media/build artifact, scan for secret-bearing filenames/signatures, verify public links, and record known warnings/skips accurately.
 
-- [ ] **Step 5: Commit documentation and qualify GitHub publication**
+- [x] **Step 5: Commit documentation and qualify GitHub publication**
 
 ```powershell
 git add -- README.md docs/architecture.md docs/business-rules.md docs/current-status.md docs/database.md docs/permissions.md docs/testing-and-release.md docs/store-submission-ugc-checklist.md

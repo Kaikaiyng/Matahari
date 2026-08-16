@@ -40,6 +40,7 @@ The migrated disposable schema contains 61 non-SQLite-internal tables.
 | Academic foundation | `academic_years`, `class_enrolments`, `subjects`, `teaching_assignments` |
 | Portal and Attendance | `portal_notifications`, `attendance_sessions`, `attendance_records` |
 | Community content | `community_posts`, `community_post_audiences`, `community_post_media`, `community_post_reactions`, `community_comments` |
+| Community safety | `community_policy_versions`, `community_policy_acceptances`, `community_reports`, `community_report_actions`, `community_user_blocks`, `community_user_restrictions`, `community_appeals`, `student_community_authorizations` |
 | Assessments | `academic_terms`, `assessments`, `assessment_class_targets`, `assessment_results` |
 | Quiz | `quizzes`, `quiz_questions`, `quiz_options`, `quiz_assignments`, `quiz_assignment_class_targets`, `quiz_assignment_student_targets`, `quiz_assignment_recipients`, `quiz_attempts`, `quiz_attempt_answers` |
 
@@ -150,6 +151,8 @@ Known integrity gaps:
 
 - Most status columns are unconstrained strings rather than enums/checks.
 - Actor `user_id` and financial row `school_id` are not protected by composite foreign keys.
+
+Community safety rows carry tenant and school ownership, including composite tenant/school foreign-key guards. Reports preserve snapshots, priority, due time, resolution and evidence hold; actions preserve append-only history. Blocks are revocable, restrictions are scope/expiry based, appeals reference the source action, and student authorizations preserve authorizer/revoker timestamps. No automatic evidence-retention schedule exists.
 
 ## Financial Columns
 

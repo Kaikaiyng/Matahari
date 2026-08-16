@@ -115,6 +115,12 @@ cd backend
 
 No PHPStan, Psalm, Larastan, or equivalent PHP static-analysis command is configured. Do not claim PHP static analysis passed. Frontend lint and TypeScript checking are covered by the commands above.
 
+## UGC Store-Readiness Gate
+
+Run `..\tools\php\php-local.cmd artisan app:store-readiness` from `backend/`. It fails unless all five public policy/support URLs are HTTPS, monitored support and child-safety emails are configured, the developer name is present, and effective Terms, Privacy, Community Standards and Child Safety versions exist.
+
+This does not validate mailbox staffing, legal reporting arrangements, reviewer credentials, native binaries, declarations or store approval. Complete [UGC Store Submission Checklist](store-submission-ugc-checklist.md). Community-sensitive releases require all Community tests plus disposable SQLite and MariaDB migrate/rollback/re-migrate. Record MariaDB as **Not verified** if unavailable.
+
 ## SQLite Migration Lifecycle
 
 Use an explicit disposable file, never the demo database or a database with valuable data:

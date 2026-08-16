@@ -41,6 +41,14 @@ flowchart LR
 
 The Admin frontend, multi-role Community App, and backend are separate applications. Laravel remains the shared security and persistence boundary; neither React client is authoritative for permissions or financial state. Both clients reuse the same API, database, identity/RBAC, and domain services rather than creating a second mobile backend.
 
+## Community Safety Boundary
+
+Community contribution always follows host-resolved tenant, active membership, permission and school/audience scope. The client never submits a tenant or school ID for policy acceptance, reporting, blocking, moderation or appeals. Laravel is authoritative for policy versions, adult authorization, restrictions, visibility and state transitions.
+
+Ordinary contributions enter `pending_review`; authorized moderators may publish directly. Media remains quarantined until approval. Reports snapshot evidence transactionally; severe child-safety, sexual-content and violence categories quarantine content immediately. School moderators cannot access another school. Platform detail is limited to severe or explicitly escalated cases and access is audited.
+
+The App exposes public `/legal/*` routes backed by a no-session public API. Responses contain effective policy sections, tenant presentation and configured support contacts only—never report, reporter or evidence data.
+
 ## Backend Structure
 
 - `routes/api.php`: JSON API routes with manually assembled cookie, session, and native CSRF middleware.
