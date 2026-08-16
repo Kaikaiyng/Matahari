@@ -22,6 +22,7 @@ use App\Http\Controllers\Api\V1\AssessmentController;
 use App\Http\Controllers\Api\V1\ClassEnrolmentController;
 use App\Http\Controllers\Api\V1\ClassScheduleController;
 use App\Http\Controllers\Api\V1\CommunityController;
+use App\Http\Controllers\Api\V1\CommunitySafetyController;
 use App\Http\Controllers\Api\V1\FoundationAccountController;
 use App\Http\Controllers\Api\V1\ParentPortalController;
 use App\Http\Controllers\Api\V1\PlatformTenantController;
@@ -165,6 +166,16 @@ Route::middleware([...$sessionMiddleware, 'auth', 'active', 'tenant.member', 'te
 Route::prefix('v1')->middleware([...$sessionMiddleware, 'auth', 'active', 'tenant.member', 'school.context'])->group(function (): void {
     Route::prefix('community')->middleware(['tenant.surface:app', 'tenant.feature:community', 'permission:community.view'])->group(function (): void {
         Route::get('/posts', [CommunityController::class, 'index']);
+        Route::get('/policies/current', [CommunitySafetyController::class, 'currentPolicies']);
+        Route::post('/policies/{communityPolicyVersion}/accept', [CommunitySafetyController::class, 'acceptPolicy']);
+        Route::post('/reports', [CommunitySafetyController::class, 'storeReport']);
+        Route::get('/reports/mine', [CommunitySafetyController::class, 'myReports']);
+        Route::post('/users/{user}/block', [CommunitySafetyController::class, 'block']);
+        Route::delete('/users/{user}/block', [CommunitySafetyController::class, 'unblock']);
+        Route::get('/blocked-users', [CommunitySafetyController::class, 'blockedUsers']);
+        Route::get('/content/mine', [CommunitySafetyController::class, 'myContent']);
+        Route::post('/students/{student}/authorization', [CommunitySafetyController::class, 'authorizeStudent']);
+        Route::delete('/students/{student}/authorization', [CommunitySafetyController::class, 'revokeStudentAuthorization']);
         Route::post('/posts', [CommunityController::class, 'store'])->middleware('permission:community.publish');
         Route::post('/posts/{communityPost}/reaction', [CommunityController::class, 'reaction'])->middleware('permission:community.interact');
         Route::post('/posts/{communityPost}/comments', [CommunityController::class, 'comment'])->middleware('permission:community.interact');

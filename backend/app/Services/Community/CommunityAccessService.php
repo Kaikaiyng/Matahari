@@ -4,6 +4,8 @@ namespace App\Services\Community;
 
 use App\Models\ClassEnrolment;
 use App\Models\CommunityPost;
+use App\Models\CommunityUserBlock;
+use App\Models\School;
 use App\Models\TeachingAssignment;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
@@ -12,18 +14,35 @@ class CommunityAccessService
 {
     public function visiblePosts(User $user, int $schoolId): Builder
     {
+        $tenantId = (int) School::query()->whereKey($schoolId)->value('tenant_id');
         $classIds = $this->visibleClassIds($user, $schoolId);
         $studentId = $user->studentProfile?->id;
+        $blockedUserIds = $this->blockedUserIds($user, $tenantId, $schoolId);
 
         return CommunityPost::query()
+            ->where('tenant_id', $tenantId)
             ->where('school_id', $schoolId)
             ->where('status', 'published')
             ->whereNull('hidden_at')
+            ->when($blockedUserIds !== [], fn (Builder $query) => $query->whereNotIn('author_user_id', $blockedUserIds))
             ->whereHas('audiences', function (Builder $query) use ($classIds, $studentId): void {
                 $query->where('audience_type', 'school')
                     ->when($classIds !== [], fn (Builder $q) => $q->orWhere(fn (Builder $nested) => $nested->where('audience_type', 'class')->whereIn('class_id', $classIds)))
                     ->when($studentId, fn (Builder $q) => $q->orWhere(fn (Builder $nested) => $nested->where('audience_type', 'student')->where('student_id', $studentId)));
             });
+    }
+
+    /** @return list<int> */
+    public function blockedUserIds(User $user, int $tenantId, int $schoolId): array
+    {
+        return CommunityUserBlock::query()
+            ->where('tenant_id', $tenantId)
+            ->where('school_id', $schoolId)
+            ->whereNull('revoked_at')
+            ->where(fn (Builder $query) => $query->where('blocker_user_id', $user->id)->orWhere('blocked_user_id', $user->id))
+            ->get(['blocker_user_id', 'blocked_user_id'])
+            ->map(fn (CommunityUserBlock $block): int => (int) ($block->blocker_user_id === $user->id ? $block->blocked_user_id : $block->blocker_user_id))
+            ->unique()->values()->all();
     }
 
     public function findVisible(User $user, int $schoolId, CommunityPost $post): CommunityPost

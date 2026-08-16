@@ -193,7 +193,7 @@ git add -- backend/config/community_safety.php backend/app/Services/Community/Co
 git commit -m "feat: gate and filter Community contributions"
 ```
 
-### Task 3: Reporting, Blocking, Feed Filtering, and Media Protection APIs
+### Task 3: Reporting, Blocking, Feed Filtering, and Media Protection APIs (complete: `feat: add Community reporting and blocking`)
 
 **Files:**
 - Create: `backend/app/Services/Community/CommunityModerationService.php`
@@ -209,7 +209,7 @@ git commit -m "feat: gate and filter Community contributions"
 - Produces `blockUser(...)`, `unblockUser(...)`, and reporter-owned list methods.
 - Feed query excludes content from active blocked-user pairs and pending/rejected/hidden/quarantined records.
 
-- [ ] **Step 1: Write failing API security tests**
+- [x] **Step 1: Write failing API security tests**
 
 Test post, comment, and user reports; target visibility; cross-school/tenant IDOR; duplicate active report; rate limiting; severe immediate quarantine; ordinary report remaining visible; block/unblock; blocked feed/comments; self-block denial; reporter privacy; and media download denial.
 
@@ -223,11 +223,11 @@ $this->assertSame('hidden', $post->fresh()->status);
 $this->assertDatabaseHas('community_report_actions', ['action' => 'auto_quarantined']);
 ```
 
-- [ ] **Step 2: Run the focused test and confirm RED**
+- [x] **Step 2: Run the focused test and confirm RED**
 
 Run: `tools\php\php-local.cmd backend\vendor\bin\phpunit backend\tests\Feature\CommunityReportAndBlockApiTest.php`
 
-- [ ] **Step 3: Implement transactional reporting and blocking**
+- [x] **Step 3: Implement transactional reporting and blocking**
 
 Routes under authenticated App surface:
 
@@ -246,11 +246,11 @@ Route::delete('/community/students/{student}/authorization', [CommunitySafetyCon
 
 Resolve `target_id` only after applying current audience visibility into readonly `ReportTarget::__construct(public string $type, public ?CommunityPost $post, public ?CommunityComment $comment, public User $reportedUser)`. Snapshot body and media metadata inside the report transaction. Severe categories set hidden/quarantined state, place the report under evidence hold, and append `auto_quarantined`; audit failure rolls back all state changes.
 
-- [ ] **Step 4: Run focused backend regression and route loading**
+- [x] **Step 4: Run focused backend regression and route loading**
 
 Run focused tests, `artisan route:list --path=api/v1/community`, and Pint. Expected: all PASS and no unauthenticated mutation route.
 
-- [ ] **Step 5: Commit the report/block slice**
+- [x] **Step 5: Commit the report/block slice**
 
 ```powershell
 git add -- backend/app/Services/Community/CommunityModerationService.php backend/app/Services/Community/ReportTarget.php backend/app/Services/Community/CommunityAccessService.php backend/app/Http/Controllers/Api/V1/CommunitySafetyController.php backend/app/Http/Controllers/Api/V1/CommunityController.php backend/routes/api.php backend/tests/Feature/CommunityReportAndBlockApiTest.php

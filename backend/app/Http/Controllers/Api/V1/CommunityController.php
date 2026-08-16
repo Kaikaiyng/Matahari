@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\CommunityComment;
 use App\Models\CommunityPost;
 use App\Models\CommunityPostMedia;
+use App\Models\School;
 use App\Services\Community\CommunityAccessService;
 use App\Services\Community\CommunityService;
 use App\Support\SchoolContext;
@@ -21,9 +22,12 @@ class CommunityController extends Controller
     public function index(Request $request, CommunityAccessService $access): JsonResponse
     {
         $schoolId = SchoolContext::fromRequest($request)->schoolId;
+        $tenantId = (int) School::query()->whereKey($schoolId)->value('tenant_id');
+        $blockedUserIds = $access->blockedUserIds($request->user(), $tenantId, $schoolId);
         $posts = $access->visiblePosts($request->user(), $schoolId)
-            ->with(['author:id,name', 'audiences', 'media', 'comments' => fn ($q) => $q->where('status', 'visible')->with('user:id,name')->oldest()])
-            ->withCount('reactions')->withExists(['reactions as reacted_by_me' => fn ($q) => $q->where('user_id', $request->user()->id)])
+            ->with(['author:id,name', 'audiences', 'media', 'comments' => fn ($q) => $q->where('status', 'visible')->when($blockedUserIds !== [], fn ($comments) => $comments->whereNotIn('user_id', $blockedUserIds))->with('user:id,name')->oldest()])
+            ->withCount(['reactions' => fn ($q) => $q->when($blockedUserIds !== [], fn ($reactions) => $reactions->whereNotIn('user_id', $blockedUserIds))])
+            ->withExists(['reactions as reacted_by_me' => fn ($q) => $q->where('user_id', $request->user()->id)])
             ->latest('published_at')->limit(50)->get();
 
         return response()->json(['data' => $posts->map(fn (CommunityPost $post) => $this->response($post))]);
