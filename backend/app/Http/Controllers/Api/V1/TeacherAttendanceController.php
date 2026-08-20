@@ -41,7 +41,7 @@ class TeacherAttendanceController extends Controller
             'attendance_date' => ['required', 'date_format:Y-m-d'],
             'records' => ['required', 'array', 'min:1'],
             'records.*.student_id' => ['required', 'integer', 'distinct', 'exists:students,id'],
-            'records.*.status' => ['required', Rule::in(['present', 'absent', 'late', 'excused'])],
+            'records.*.status' => ['required', Rule::in(['present', 'absent', 'late', 'excused', 'unmarked'])],
             'records.*.public_note' => ['nullable', 'string', 'max:500'],
             'correction_reason' => ['nullable', 'string', 'max:500'],
         ]);

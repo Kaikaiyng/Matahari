@@ -121,7 +121,7 @@ export interface NotificationListResponse {
   meta: { unread_count: number }
 }
 
-export type AttendanceStatus = 'present' | 'late' | 'absent' | 'excused'
+export type AttendanceStatus = 'unmarked' | 'present' | 'late' | 'absent' | 'excused'
 
 export interface AttendanceRecord {
   id: number
@@ -163,11 +163,14 @@ export interface CommunityComment { id: number; body: string; author: string; au
 export interface CommunityPost {
   id: number
   body: string
+  status: 'pending_review' | 'published' | 'rejected' | 'hidden' | 'deleted'
   comments_enabled: boolean
   published_at: string | null
   author: { id: number; name: string }
   can_report_content: boolean
   can_report_user: boolean
+  can_edit: boolean
+  can_delete: boolean
   audiences: Array<{ type: 'school' | 'class' | 'student'; class_id: number | null; student_id: number | null }>
   media: Array<{ id: number; type: string; name: string | null; url: string }>
   reaction_count: number
@@ -209,10 +212,16 @@ export const portalApi = {
     files.forEach((file) => form.append('media[]', file))
     return apiRequest<{ data: CommunityPost }>('/v1/community/posts', { method: 'POST', body: form })
   },
+  updateCommunityPost: (postId: number, body: string, commentsEnabled?: boolean) =>
+    apiRequest<{ data: CommunityPost }>(`/v1/community/posts/${postId}`, {
+      method: 'PUT',
+      body: { body, comments_enabled: commentsEnabled },
+    }),
   toggleCommunityReaction: (postId: number) => apiRequest<{ data: { post_id: number; reacted: boolean; reaction_count: number } }>(`/v1/community/posts/${postId}/reaction`, { method: 'POST' }),
   addCommunityComment: (postId: number, body: string) => apiRequest<{ data: CommunityComment }>(`/v1/community/posts/${postId}/comments`, { method: 'POST', body: { body } }),
   removeCommunityComment: (commentId: number) => apiRequest<{ success: boolean }>(`/v1/community/comments/${commentId}`, { method: 'DELETE' }),
   hideCommunityPost: (postId: number, reason: string) => apiRequest<{ success: boolean }>(`/v1/community/posts/${postId}/hide`, { method: 'POST', body: { reason } }),
+  deleteCommunityPost: (postId: number) => apiRequest<{ success: boolean }>(`/v1/community/posts/${postId}`, { method: 'DELETE' }),
   getCurrentCommunityPolicies: () => apiRequest<{ data: Record<string, CommunityPolicy> }>('/v1/community/policies/current'),
   acceptCommunityPolicy: (policyId: number) => apiRequest<{ data: { accepted: boolean } }>(`/v1/community/policies/${policyId}/accept`, { method: 'POST' }),
   reportCommunityContent: (targetType: 'post' | 'comment', targetId: number, reasonCode: string, details: string) => apiRequest<{ data: { id: number; status: string } }>('/v1/community/reports', { method: 'POST', body: { target_type: targetType, target_id: targetId, reason_code: reasonCode, details: details || null } }),

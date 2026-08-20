@@ -49,6 +49,8 @@ enum AuditAction: string
     case AttendanceCorrected = 'attendance.corrected';
     case CommunityPostPublished = 'community.post_published';
     case CommunityPostSubmitted = 'community.post_submitted';
+    case CommunityPostUpdated = 'community.post_updated';
+    case CommunityPostDeleted = 'community.post_deleted';
     case CommunityReactionUpdated = 'community.reaction_updated';
     case CommunityCommentCreated = 'community.comment_created';
     case CommunityCommentSubmitted = 'community.comment_submitted';

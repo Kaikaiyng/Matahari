@@ -16,6 +16,8 @@ class CommunityPost extends Model
 
     public const STATUS_HIDDEN = 'hidden';
 
+    public const STATUS_DELETED = 'deleted';
+
     protected $fillable = ['tenant_id', 'school_id', 'author_user_id', 'calendar_event_id', 'post_type', 'body', 'comments_enabled', 'status', 'published_at', 'hidden_at', 'hidden_by_user_id', 'moderation_reason', 'reviewed_at', 'reviewed_by_user_id', 'moderation_reason_code'];
 
     protected function casts(): array

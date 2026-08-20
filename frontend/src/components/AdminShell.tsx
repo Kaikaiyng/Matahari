@@ -4,6 +4,7 @@ import type { LucideIcon } from 'lucide-react'
 import { ChevronLeft, Info, Menu, X } from 'lucide-react'
 import { IconlyBell, IconlyLogout } from './icons/IconlyIcons'
 import { BrandMark } from './BrandMark'
+import { AdminNotificationPopover } from './AdminNotificationPopover'
 import './AdminShell.css'
 
 const SIDEBAR_COLLAPSED_KEY = 'admin-sidebar-collapsed'
@@ -59,6 +60,8 @@ export function AdminShell<PageKey extends string>({
   const [isNarrowViewport, setIsNarrowViewport] = useState(() =>
     window.matchMedia(TABLET_NAV_QUERY).matches,
   )
+  const [isNotifOpen, setIsNotifOpen] = useState(false)
+  const [unreadNotifCount, setUnreadNotifCount] = useState(2)
   const menuRef = useRef<HTMLButtonElement>(null)
   const closeRef = useRef<HTMLButtonElement>(null)
   const shouldRestoreFocusRef = useRef(false)
@@ -252,10 +255,24 @@ export function AdminShell<PageKey extends string>({
                 Service temporarily unavailable
               </span>
             )}
-            <button type="button" className="header-notification-button" aria-label="Notifications">
-              <IconlyBell size={20} />
-              <span className="notification-dot" aria-hidden="true" />
-            </button>
+            <div className="header-notification-wrapper">
+              <button
+                type="button"
+                className={`header-notification-button ${isNotifOpen ? 'active' : ''}`}
+                aria-label="Notifications"
+                aria-expanded={isNotifOpen}
+                onClick={() => setIsNotifOpen((prev) => !prev)}
+              >
+                <IconlyBell size={20} />
+                {unreadNotifCount > 0 && <span className="notification-dot" aria-hidden="true" />}
+              </button>
+
+              <AdminNotificationPopover
+                isOpen={isNotifOpen}
+                onClose={() => setIsNotifOpen(false)}
+                onUnreadCountChange={setUnreadNotifCount}
+              />
+            </div>
             <div className="user-profile">
               <span className="user-avatar">{initial}</span>
               <span className="user-name">{user.name}</span>

@@ -100,6 +100,8 @@ Client entry-point checkpoint:
 
 The current Attendance slice deliberately reuses `teaching_scope.view`; dedicated future Attendance/Community/Assessment/Quiz permissions must be introduced only with their backend modules and tests.
 
+Admin Attendance uses the Admin surface plus resolved school context. Reads require `students.view`; daily and gate mutations require `students.create`. No legacy `/api/attendance/*` routes are exposed.
+
 All authenticated Community viewers may use their own policy/report/block/content-status/appeal endpoints, but backend visibility and ownership checks remain mandatory. Admin `Community Safety` navigation requires `community.moderate` or `community.moderate_platform`; this UI check is not authorization. School moderation begins from resolved tenant/school scope and never accepts a tenant ID.
 
 ## CEO Intended Versus Implemented Access

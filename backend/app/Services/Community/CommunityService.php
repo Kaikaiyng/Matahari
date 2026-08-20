@@ -92,6 +92,133 @@ class CommunityService
         }
     }
 
+    public function updatePost(int $schoolId, CommunityPost $post, array $data, User $actor, AuditContext $context): CommunityPost
+    {
+        if ((int) $post->school_id !== $schoolId) {
+            abort(403, 'Post is outside your school scope.');
+        }
+        if ($post->author_user_id !== $actor->id && ! $actor->hasPermissionTo('community.moderate')) {
+            abort(403, 'Only the author or an authorized moderator may edit this post.');
+        }
+        $inspection = $this->safetyFilter->inspect($data['body']);
+        if (! $inspection->allowed) {
+            throw ValidationException::withMessages(['body' => 'This content is not allowed under the Community Standards.']);
+        }
+
+        return DB::transaction(function () use ($schoolId, $post, $data, $actor, $context, $inspection): CommunityPost {
+            $locked = CommunityPost::query()->whereKey($post->id)->lockForUpdate()->firstOrFail();
+            abort_unless((int) $locked->school_id === $schoolId, 403, 'Post is outside your school scope.');
+            abort_unless($locked->author_user_id === $actor->id || $actor->hasPermissionTo('community.moderate'), 403, 'Only the author or an authorized moderator may edit this post.');
+            abort_if($locked->status === CommunityPost::STATUS_DELETED, 409, 'Deleted posts cannot be edited.');
+            abort_if($locked->status === CommunityPost::STATUS_HIDDEN && ! $actor->hasPermissionTo('community.moderate'), 403, 'Hidden posts cannot be edited by their author.');
+
+            $oldValues = [
+                'body' => $locked->body,
+                'comments_enabled' => $locked->comments_enabled,
+                'status' => $locked->status,
+                'published_at' => $locked->published_at?->toIso8601String(),
+            ];
+            $isModerator = $actor->hasPermissionTo('community.moderate');
+            $attributes = [
+                'body' => $inspection->normalized,
+                'comments_enabled' => $data['comments_enabled'] ?? $locked->comments_enabled,
+            ];
+            if (! $isModerator) {
+                $attributes = [...$attributes,
+                    'status' => CommunityPost::STATUS_PENDING_REVIEW,
+                    'published_at' => null,
+                    'reviewed_at' => null,
+                    'reviewed_by_user_id' => null,
+                    'moderation_reason_code' => $inspection->reasonCode,
+                ];
+            }
+            $locked->update($attributes);
+            if (! $isModerator) {
+                $this->refreshSubmissionCase($locked, $actor, $inspection->reasonCode);
+            }
+
+            $this->audit->record(new AuditEvent(
+                action: AuditAction::CommunityPostUpdated,
+                module: AuditModule::Community,
+                schoolId: $schoolId,
+                subjectType: AuditSubject::CommunityPost,
+                subjectId: $locked->id,
+                oldValues: $oldValues,
+                newValues: [
+                    'body' => $locked->body,
+                    'comments_enabled' => $locked->comments_enabled,
+                    'status' => $locked->status,
+                    'published_at' => $locked->published_at?->toIso8601String(),
+                ],
+            ), $context);
+
+            return $locked;
+        });
+    }
+
+    public function deletePost(int $schoolId, CommunityPost $post, User $actor, AuditContext $context): void
+    {
+        if ((int) $post->school_id !== $schoolId) {
+            abort(403, 'Post is outside your school scope.');
+        }
+        if ($post->author_user_id !== $actor->id && ! $actor->hasPermissionTo('community.moderate')) {
+            abort(403, 'Only the author or an authorized moderator may delete this post.');
+        }
+
+        DB::transaction(function () use ($schoolId, $post, $actor, $context): void {
+            $locked = CommunityPost::query()->whereKey($post->id)->lockForUpdate()->firstOrFail();
+            abort_unless((int) $locked->school_id === $schoolId, 403, 'Post is outside your school scope.');
+            abort_unless($locked->author_user_id === $actor->id || $actor->hasPermissionTo('community.moderate'), 403, 'Only the author or an authorized moderator may delete this post.');
+            abort_if($locked->status === CommunityPost::STATUS_DELETED, 409, 'Post is already deleted.');
+            $oldValues = [
+                'status' => $locked->status,
+                'hidden_at' => $locked->hidden_at?->toIso8601String(),
+                'hidden_by_user_id' => $locked->hidden_by_user_id,
+                'moderation_reason' => $locked->moderation_reason,
+            ];
+            $locked->update([
+                'status' => CommunityPost::STATUS_DELETED,
+                'hidden_at' => now(),
+                'hidden_by_user_id' => $actor->id,
+                'moderation_reason' => 'Deleted by an authorized user.',
+            ]);
+
+            $locked->reports()
+                ->whereIn('status', [CommunityReport::STATUS_SUBMITTED, CommunityReport::STATUS_REVIEWING])
+                ->lockForUpdate()
+                ->get()
+                ->each(function (CommunityReport $report) use ($actor): void {
+                    $report->update([
+                        'status' => CommunityReport::STATUS_RESOLVED,
+                        'resolved_at' => now(),
+                        'resolution_code' => 'author_deleted',
+                    ]);
+                    $report->actions()->create([
+                        'tenant_id' => $report->tenant_id,
+                        'school_id' => $report->school_id,
+                        'actor_user_id' => $actor->id,
+                        'action' => 'author_deleted',
+                        'reason_code' => 'author_deleted',
+                    ]);
+                });
+
+            $this->audit->record(new AuditEvent(
+                action: AuditAction::CommunityPostDeleted,
+                module: AuditModule::Community,
+                schoolId: $schoolId,
+                subjectType: AuditSubject::CommunityPost,
+                subjectId: $locked->id,
+                oldValues: $oldValues,
+                newValues: [
+                    'status' => $locked->status,
+                    'hidden_at' => $locked->hidden_at?->toIso8601String(),
+                    'hidden_by_user_id' => $locked->hidden_by_user_id,
+                    'moderation_reason' => $locked->moderation_reason,
+                ],
+            ), $context);
+        });
+    }
+
     public function toggleReaction(int $schoolId, CommunityPost $post, User $actor, AuditContext $context): CommunityPost
     {
         $this->access->findVisible($actor, $schoolId, $post);
@@ -184,5 +311,66 @@ class CommunityService
             'tenant_id' => $tenantId, 'school_id' => $schoolId, 'actor_user_id' => $actor->id,
             'action' => 'submitted_for_review', 'reason_code' => $reasonCode,
         ]);
+    }
+
+    private function refreshSubmissionCase(CommunityPost $post, User $actor, ?string $reasonCode): void
+    {
+        $active = CommunityReport::query()
+            ->where('community_post_id', $post->id)
+            ->where('source', 'submission')
+            ->where('target_type', 'post')
+            ->whereIn('status', [CommunityReport::STATUS_SUBMITTED, CommunityReport::STATUS_REVIEWING])
+            ->lockForUpdate()
+            ->latest('id')
+            ->first();
+
+        if (! $active) {
+            $this->createSubmissionCase($post, null, $actor, (int) $post->tenant_id, (int) $post->school_id, $reasonCode);
+
+            return;
+        }
+
+        $post->loadMissing('media');
+        $active->update([
+            'status' => CommunityReport::STATUS_SUBMITTED,
+            'reason_code' => $reasonCode ?? 'other',
+            'assigned_to_user_id' => null,
+            'due_at' => now()->addHours((int) config('community_safety.sla_hours.normal', 24)),
+            'target_snapshot' => [
+                'post' => [
+                    'id' => $post->id,
+                    'body' => $post->body,
+                    'status' => $post->status,
+                    'author_user_id' => $post->author_user_id,
+                    'media' => $post->media->map(fn ($media) => ['id' => $media->id, 'type' => $media->media_type, 'name' => $media->original_name, 'mime_type' => $media->mime_type, 'size_bytes' => $media->size_bytes, 'status' => $media->status])->all(),
+                ],
+                'comment' => null,
+            ],
+        ]);
+        $active->actions()->create([
+            'tenant_id' => $post->tenant_id,
+            'school_id' => $post->school_id,
+            'actor_user_id' => $actor->id,
+            'action' => 'resubmitted_after_edit',
+            'reason_code' => $reasonCode,
+        ]);
+    }
+
+    public function isAuthoritativePublisher(User $actor, int $schoolId): bool
+    {
+        if ($actor->hasPermissionTo('community.moderate')) {
+            return true;
+        }
+        if ($actor->teachingAssignments()->where('school_id', $schoolId)->exists()) {
+            return true;
+        }
+        if ($actor->tenantMemberships()->whereHas('roles', fn ($q) => $q->whereIn('slug', ['teacher', 'staff', 'admin', 'school_admin', 'super_admin']))->exists()) {
+            return true;
+        }
+        if (! $actor->guardianProfile && ! $actor->studentProfile) {
+            return true;
+        }
+
+        return false;
     }
 }

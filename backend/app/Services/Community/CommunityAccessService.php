@@ -22,13 +22,18 @@ class CommunityAccessService
         return CommunityPost::query()
             ->where('tenant_id', $tenantId)
             ->where('school_id', $schoolId)
-            ->where('status', 'published')
             ->whereNull('hidden_at')
             ->when($blockedUserIds !== [], fn (Builder $query) => $query->whereNotIn('author_user_id', $blockedUserIds))
-            ->whereHas('audiences', function (Builder $query) use ($classIds, $studentId): void {
-                $query->where('audience_type', 'school')
-                    ->when($classIds !== [], fn (Builder $q) => $q->orWhere(fn (Builder $nested) => $nested->where('audience_type', 'class')->whereIn('class_id', $classIds)))
-                    ->when($studentId, fn (Builder $q) => $q->orWhere(fn (Builder $nested) => $nested->where('audience_type', 'student')->where('student_id', $studentId)));
+            ->where(function (Builder $query) use ($classIds, $studentId, $user): void {
+                $query->where(fn (Builder $my) => $my->where('author_user_id', $user->id)->whereIn('status', ['published', 'pending_review']))
+                    ->orWhere(function (Builder $published) use ($classIds, $studentId): void {
+                        $published->where('status', 'published')
+                            ->whereHas('audiences', function (Builder $nested) use ($classIds, $studentId): void {
+                                $nested->where('audience_type', 'school')
+                                    ->when($classIds !== [], fn (Builder $q) => $q->orWhere(fn (Builder $inner) => $inner->where('audience_type', 'class')->whereIn('class_id', $classIds)))
+                                    ->when($studentId, fn (Builder $q) => $q->orWhere(fn (Builder $inner) => $inner->where('audience_type', 'student')->where('student_id', $studentId)));
+                            });
+                    });
             });
     }
 

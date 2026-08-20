@@ -162,6 +162,68 @@ describe('ClassesPage', () => {
     expect(await screen.findByText('No classes are configured.')).toBeInTheDocument()
   })
 
+  it('switches to Daily Attendance tab and allows recording attendance', async () => {
+    document.cookie = 'XSRF-TOKEN=test-token; path=/'
+    const user = userEvent.setup()
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
+      const url = new URL(String(input), window.location.origin)
+      const method = (init?.method || 'GET').toUpperCase()
+      if (url.pathname.endsWith('/csrf-cookie')) return Promise.resolve(new Response(null, { status: 204 }))
+      if (url.pathname.endsWith('/classes')) return json({ data: classes })
+      if (url.pathname.endsWith('/students')) return json({ data: students })
+      if (url.pathname.endsWith('/attendance/overview')) {
+        return json({
+          data: {
+            attendance_date: '2026-08-17',
+            academic_year: { id: 1, name: '2026' },
+            totals: { attendance_rate: 100, total_enrolled: 1, recorded_count: 1, present: 1, late: 0, absent: 0, excused: 0 },
+            classes: [
+              { class_id: 2, class_name: 'MA1', level_group: 'primary', enrolled_count: 1, is_submitted: false, submitted_at: null, counts: { present: 0, late: 0, absent: 0, excused: 0 } },
+            ],
+          },
+        })
+      }
+      if (url.pathname.endsWith('/attendance/daily') && method === 'POST') {
+        return json({ data: { status: 'submitted' } })
+      }
+      if (url.pathname.endsWith('/attendance/daily') && method === 'GET') {
+        return json({
+          data: {
+            class: { id: 2, name: 'MA1', level_group: 'primary' },
+            academic_year_id: 1,
+            attendance_date: '2026-08-17',
+            is_submitted: false,
+            submitted_at: null,
+            students: [
+              { student_id: 21, student_no: 'MIS-021', full_name: 'Amina Lee', status: 'present', public_note: null },
+            ],
+          },
+        })
+      }
+      return json({}, 404)
+    })
+
+    render(
+      <ClassesPage
+        permissions={['students.view', 'students.create']}
+        onOpenStudent={vi.fn()}
+        onUnauthorized={vi.fn()}
+      />,
+    )
+
+    await user.click(await screen.findByRole('button', { name: 'View MA1' }))
+    expect(screen.getByRole('heading', { name: 'MA1' })).toBeInTheDocument()
+
+    // Switch to Daily Attendance tab
+    await user.click(screen.getByRole('button', { name: 'Daily Attendance' }))
+    expect(await screen.findByText('ATTENDANCE RATE')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Mark All Present' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Submit Attendance' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Submit Attendance' }))
+    expect(await screen.findByText('Daily attendance submitted successfully.')).toBeInTheDocument()
+  })
+
   it('hands a 401 to the application session handler', async () => {
     const onUnauthorized = vi.fn()
     vi.spyOn(globalThis, 'fetch').mockImplementation(() => json({ message: 'Unauthenticated.' }, 401))

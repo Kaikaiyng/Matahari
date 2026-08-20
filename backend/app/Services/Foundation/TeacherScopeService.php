@@ -51,9 +51,10 @@ class TeacherScopeService
             ->where('class_id', $class->id)
             ->where('status', 'active')
             ->where('current_slot', 1)
-            ->orderBy('student_id')
             ->get()
             ->pluck('student')
-            ->filter();
+            ->filter()
+            ->sortBy('full_name')
+            ->values();
     }
 }

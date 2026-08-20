@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react'
 import { IconlyUserPlus } from './icons/IconlyIcons'
 import { apiRequest } from '../api'
 import {
+  CustomSelect,
   DataPanel,
   FilterToolbar,
   ModalFrame,
@@ -135,16 +136,17 @@ export const StaffPage: React.FC = () => {
               className="search-input"
               style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', flex: 1, minWidth: '200px' }}
             />
-            <select
+            <CustomSelect
+              ariaLabel="Filter by role"
               value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
-              style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', background: '#fff' }}
-            >
-              <option value="all">All Roles</option>
-              <option value="teacher">Teacher</option>
-              <option value="admin">School Admin</option>
-              <option value="finance">Finance</option>
-            </select>
+              onChange={(val) => setRoleFilter(String(val))}
+              options={[
+                { value: 'all', label: 'All Roles' },
+                { value: 'teacher', label: 'Teacher' },
+                { value: 'admin', label: 'School Admin' },
+                { value: 'finance', label: 'Finance' },
+              ]}
+            />
           </div>
         </FilterToolbar>
 

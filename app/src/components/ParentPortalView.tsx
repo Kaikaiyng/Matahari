@@ -1,26 +1,85 @@
 import { useEffect, useMemo, useState } from 'react'
-import { AlertCircle, BookOpenCheck, CalendarCheck2, ChevronRight, LogOut, Mail, Phone, Printer, ReceiptText, UserRound, X } from 'lucide-react'
+import { createPortal } from 'react-dom'
+import { AlertCircle, BookOpenCheck, CalendarCheck2, ChevronLeft, ChevronRight, LogOut, Mail, Phone, Printer, ReceiptText, UserRound } from 'lucide-react'
 import { portalApi, type AttendanceRecord, type GuardianMe, type OutstandingCharge, type PortalPayment, type PortalReceipt, type PublishedAssessmentResult } from '../api/portalApi'
 import { CommunityFeed } from './CommunityFeed'
 import { CommunitySafetyCentre } from '../features/community-safety/CommunitySafetyCentre'
 import { CommunitySafetyLinks } from '../features/community-safety/CommunitySafetyLinks'
+import { CustomSelect } from './CustomSelect'
+
+import { useSwipe } from './MobileShell'
 
 export function ParentPortalView({ parentName, activeTab, onTabChange, onLogout }: { parentName: string; activeTab: string; onTabChange: (tab: string) => void; onLogout: () => void }) {
+  const { dragOffset, isDragging } = useSwipe()
   const [guardian, setGuardian] = useState<GuardianMe | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   useEffect(() => { portalApi.getGuardianMe().then(setGuardian).catch(() => setError('Unable to load your linked children.')).finally(() => setLoading(false)) }, [])
 
-  if (activeTab === 'home') return <CommunityFeed role="parent" userName={parentName} onOpenFinance={() => onTabChange('finance')} />
-  if (activeTab === 'safety') return <CommunitySafetyCentre />
-  if (loading) return <PageLoading />
-  if (error) return <PageError message={error} />
+  const [previousTab, setPreviousTab] = useState<string>('home')
+
+  useEffect(() => {
+    if (activeTab !== 'safety') {
+      setPreviousTab(activeTab)
+    }
+  }, [activeTab])
+
+  if (activeTab === 'safety') return <CommunitySafetyCentre onBack={() => onTabChange(previousTab)} />
 
   const children = guardian?.children ?? []
-  if (activeTab === 'children') return <ChildrenPage children={children} />
-  if (activeTab === 'academics') return <ParentAcademics children={children} />
-  if (activeTab === 'finance') return <ParentFinance children={children} />
-  return <><ParentMore name={guardian?.data?.full_name ?? parentName} phone={guardian?.data?.phone} email={guardian?.data?.email} childrenCount={children.length} onSafety={() => onTabChange('safety')} onLogout={onLogout} /><CommunitySafetyLinks /></>
+  const primaryTabs = ['home', 'children', 'academics', 'finance', 'more']
+  const activeIndex = primaryTabs.indexOf(activeTab)
+
+  const trackTransform = activeIndex !== -1
+    ? `calc(-${activeIndex * 100}% + ${dragOffset}px)`
+    : '0px'
+
+  const renderChildrenTab = () => {
+    if (loading) return <PageLoading />
+    if (error) return <PageError message={error} />
+    return <ChildrenPage children={children} />
+  }
+
+  const renderAcademicsTab = () => {
+    if (loading) return <PageLoading />
+    if (error) return <PageError message={error} />
+    return <ParentAcademics children={children} />
+  }
+
+  const renderFinanceTab = () => {
+    if (loading) return <PageLoading />
+    if (error) return <PageError message={error} />
+    return <ParentFinance children={children} />
+  }
+
+  return (
+    <div className="portal-viewpager-container">
+      <div
+        className="portal-viewpager-track"
+        style={{
+          transform: `translateX(${trackTransform})`,
+          transition: isDragging ? 'none' : 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+          willChange: 'transform',
+        }}
+      >
+        <div className={`portal-tab-slide ${activeTab === 'home' ? 'active' : ''} ${isDragging ? 'swiping' : ''}`}>
+          <CommunityFeed role="parent" userName={parentName} onOpenFinance={() => onTabChange('finance')} activeTab={activeTab} />
+        </div>
+        <div className={`portal-tab-slide ${activeTab === 'children' ? 'active' : ''} ${isDragging ? 'swiping' : ''}`}>
+          {renderChildrenTab()}
+        </div>
+        <div className={`portal-tab-slide ${activeTab === 'academics' ? 'active' : ''} ${isDragging ? 'swiping' : ''}`}>
+          {renderAcademicsTab()}
+        </div>
+        <div className={`portal-tab-slide ${activeTab === 'finance' ? 'active' : ''} ${isDragging ? 'swiping' : ''}`}>
+          {renderFinanceTab()}
+        </div>
+        <div className={`portal-tab-slide ${activeTab === 'more' ? 'active' : ''} ${isDragging ? 'swiping' : ''}`}>
+          <ParentMore name={guardian?.data?.full_name ?? parentName} phone={guardian?.data?.phone} email={guardian?.data?.email} childrenCount={children.length} onSafety={() => onTabChange('safety')} onLogout={onLogout} />
+        </div>
+      </div>
+    </div>
+  )
 }
 
 function PageTitle({ eyebrow, title, copy }: { eyebrow: string; title: string; copy: string }) {
@@ -52,9 +111,37 @@ function ParentAcademics({ children }: { children: GuardianMe['children'] }) {
   return <div className="record-page"><PageTitle eyebrow="Academics" title="Learning progress" copy="Live attendance and teacher-published assessment results." /><ChildSelector children={academicChildren} selectedId={selectedId} onChange={setSelectedId} />{child ? <>{loading ? <div className="app-skeleton" /> : <section className="attendance-hero"><div><small>Recorded sessions</small><strong>{attendance.length}</strong><span>Attendance</span></div><div className="attendance-bars" aria-label={`${counts.present} present, ${counts.late} late, ${counts.absent} absent`}><i className="present" style={{ width: `${percent(counts.present, attendance.length)}%` }} /><i className="late" style={{ width: `${percent(counts.late, attendance.length)}%` }} /><i className="absent" style={{ width: `${percent(counts.absent, attendance.length)}%` }} /></div><p><span>{counts.present} Present</span><span>{counts.late} Late</span><span>{counts.absent} Absent</span></p>{error && <small className="form-error">{error}</small>}</section>}<div className="section-heading"><span><b>Published results</b><small>{results.length} result{results.length === 1 ? '' : 's'}</small></span></div>{results.map((result) => <ResultRow key={result.id} subject={result.subject} assessment={result.title} score={`${result.score} / ${result.max_score}`} grade={result.grade_label ?? '—'} comment={result.teacher_comment} />)}{results.length === 0 && !loading && <p className="quiet-empty">No assessment results have been published.</p>}</> : <div className="app-empty"><BookOpenCheck /><h2>No academic access</h2><p>No linked child with reviewed academic access is available.</p></div>}</div>
 }
 
+
 function ResultRow({ subject, assessment, score, grade, comment }: { subject: string; assessment: string; score: string; grade: string; comment: string | null }) { return <div className="result-row"><span><strong>{subject}</strong><small>{assessment}{comment ? ` · ${comment}` : ''}</small></span><b>{score}</b><i>{grade}</i><ChevronRight /></div> }
 
-function ChildSelector({ children, selectedId, onChange }: { children: GuardianMe['children']; selectedId: number; onChange: (id: number) => void }) { return children.length > 1 ? <label className="child-selector"><span>Viewing</span><select value={selectedId} onChange={(event) => onChange(Number(event.target.value))}>{children.map((child) => <option key={child.id} value={child.id}>{child.full_name} · {child.class?.name ?? 'No class'}</option>)}</select></label> : children[0] ? <div className="selected-child"><span className="student-avatar small">{children[0].full_name[0]}</span><span><strong>{children[0].full_name}</strong><small>{children[0].class?.name ?? 'No class'}</small></span></div> : null }
+function ChildSelector({ children, selectedId, onChange }: { children: GuardianMe['children']; selectedId: number; onChange: (id: number) => void }) {
+  if (children.length > 1) {
+    const options = children.map((c) => ({
+      value: c.id,
+      label: `${c.full_name} · ${c.class?.name ?? 'No class'}`,
+    }))
+    return (
+      <div className="child-selector" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--app-muted)' }}>Viewing:</span>
+        <CustomSelect
+          value={selectedId}
+          onChange={(val) => onChange(Number(val))}
+          options={options}
+          size="compact"
+        />
+      </div>
+    )
+  }
+  return children[0] ? (
+    <div className="selected-child">
+      <span className="student-avatar small">{children[0].full_name[0]}</span>
+      <span>
+        <strong>{children[0].full_name}</strong>
+        <small>{children[0].class?.name ?? 'No class'}</small>
+      </span>
+    </div>
+  ) : null
+}
 
 function ParentFinance({ children }: { children: GuardianMe['children'] }) {
   const financeChildren = useMemo(() => children.filter((child) => child.can_view_finance), [children])
@@ -105,19 +192,133 @@ function ParentFinance({ children }: { children: GuardianMe['children'] }) {
 }
 
 function ReceiptDialog({ receipt, onClose }: { receipt: PortalReceipt; onClose: () => void }) {
-  return <div className="receipt-dialog-backdrop" role="presentation"><section className="receipt-dialog" role="dialog" aria-modal="true" aria-label={`Receipt ${receipt.receipt_no}`}>
-    <header><span><small>Official receipt</small><h2>{receipt.receipt_no}</h2></span><button type="button" aria-label="Close receipt" onClick={onClose}><X /></button></header>
-    <div className="receipt-paper">
-      <dl><div><dt>Student</dt><dd>{receipt.student_name}<small>{receipt.student_no}</small></dd></div><div><dt>Receipt date</dt><dd>{receipt.receipt_date}</dd></div><div><dt>Paid by</dt><dd>{receipt.paid_by ?? 'Not recorded'}</dd></div><div><dt>Method</dt><dd>{receipt.payment_method ?? 'Not recorded'}</dd></div></dl>
-      <div className="receipt-items">{receipt.items.map((item, index) => <div key={`${item.fee_code}-${index}`}><span><strong>{item.description}</strong><small>{item.fee_code}</small></span><b>{money(Number(item.amount))}</b></div>)}</div>
-      <div className="receipt-total"><span>Total paid</span><strong>{money(Number(receipt.amount))}</strong></div>
-      <p className="receipt-words">{receipt.amount_in_words}</p><span className={`status-label ${receipt.status === 'issued' ? 'success' : 'neutral'}`}>{receipt.status}</span>
-    </div>
-    <footer><button type="button" className="receipt-print" aria-label="Print or save receipt as PDF" onClick={() => window.print()}><Printer />Print / save PDF</button></footer>
-  </section></div>
+  const [isExiting, setIsExiting] = useState(false)
+  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null)
+  const [dragOffset, setDragOffset] = useState<number>(0)
+  const [isDragging, setIsDragging] = useState<boolean>(false)
+
+  const handleClose = () => {
+    if (isExiting) return
+    setIsExiting(true)
+    setTimeout(() => {
+      onClose()
+      setIsExiting(false)
+    }, 200)
+  }
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    e.stopPropagation()
+    const touch = e.touches[0]
+    setTouchStart({ x: touch.clientX, y: touch.clientY })
+    setIsDragging(true)
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    e.stopPropagation()
+    if (!touchStart) return
+    const touch = e.touches[0]
+    const deltaX = touch.clientX - touchStart.x
+    const deltaY = touch.clientY - touchStart.y
+
+    if (deltaX > 0 && Math.abs(deltaX) > Math.abs(deltaY) * 1.1) {
+      setDragOffset(deltaX)
+    }
+  }
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    e.stopPropagation()
+    if (!touchStart) return
+    setIsDragging(false)
+
+    if (dragOffset > 80) {
+      handleClose()
+    }
+
+    setDragOffset(0)
+    setTouchStart(null)
+  }
+
+  return createPortal(
+    <div
+      className={`subpage-slide-overlay ${isExiting ? 'subpage-slide-out' : ''}`}
+      role="dialog"
+      aria-label={`Receipt ${receipt.receipt_no}`}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 99990,
+        background: '#f6f3ee',
+        overflowY: 'auto',
+        transform: dragOffset > 0 ? `translateX(${dragOffset}px)` : undefined,
+        opacity: dragOffset > 0 ? Math.max(0.2, 1 - dragOffset / 400) : undefined,
+        transition: isDragging ? 'none' : 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.22s ease',
+        willChange: 'transform, opacity',
+      }}
+    >
+      <div className="subpage-container">
+        <header className="subpage-header">
+          <button
+            type="button"
+            className="subpage-back-btn"
+            onClick={handleClose}
+            aria-label="Back to finance"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <h1 className="subpage-nav-title">Official Receipt</h1>
+          <div style={{ width: '38px', flexShrink: 0 }} />
+        </header>
+
+        <section className="receipt-paper" style={{ margin: '16px 0 0', boxShadow: '0 4px 20px rgba(23,32,51,0.06)' }}>
+          <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <span>
+              <small style={{ color: 'var(--app-muted)', fontSize: '11px', display: 'block' }}>Official receipt</small>
+              <h2 style={{ margin: '2px 0 0', font: '700 20px "DM Sans"' }}>{receipt.receipt_no}</h2>
+            </span>
+            <span className={`status-label ${receipt.status === 'issued' ? 'success' : 'neutral'}`}>{receipt.status}</span>
+          </header>
+
+          <dl>
+            <div><dt>Student</dt><dd>{receipt.student_name}<small>{receipt.student_no}</small></dd></div>
+            <div><dt>Receipt date</dt><dd>{receipt.receipt_date}</dd></div>
+            <div><dt>Paid by</dt><dd>{receipt.paid_by ?? 'Not recorded'}</dd></div>
+            <div><dt>Method</dt><dd>{receipt.payment_method ?? 'Not recorded'}</dd></div>
+          </dl>
+
+          <div className="receipt-items">
+            {receipt.items.map((item, index) => (
+              <div key={`${item.fee_code}-${index}`}>
+                <span>
+                  <strong>{item.description}</strong>
+                  <small>{item.fee_code}</small>
+                </span>
+                <b>{money(Number(item.amount))}</b>
+              </div>
+            ))}
+          </div>
+
+          <div className="receipt-total">
+            <span>Total paid</span>
+            <strong>{money(Number(receipt.amount))}</strong>
+          </div>
+          {receipt.amount_in_words && <p className="receipt-words">{receipt.amount_in_words}</p>}
+        </section>
+
+        <footer style={{ marginTop: '20px' }}>
+          <button type="button" className="receipt-print" aria-label="Print or save receipt as PDF" onClick={() => window.print()}>
+            <Printer size={18} /> Print or save as PDF
+          </button>
+        </footer>
+      </div>
+    </div>,
+    document.body
+  )
 }
 
-function ParentMore({ name, phone, email, childrenCount, onSafety, onLogout }: { name: string; phone?: string | null; email?: string | null; childrenCount: number; onSafety: () => void; onLogout: () => void }) { return <div className="record-page"><PageTitle eyebrow="Account" title="Profile and settings" copy="Your private MIS App access." /><section className="profile-card"><span className="profile-avatar">{name.split(' ').map((part) => part[0]).slice(0, 2).join('')}</span><h2>{name}</h2><p>Parent · {childrenCount} linked child{childrenCount === 1 ? '' : 'ren'}</p></section><section className="settings-list"><div><Phone /><span><small>Phone</small><strong>{phone ?? 'Not provided'}</strong></span></div><div><Mail /><span><small>Email</small><strong>{email ?? 'Not provided'}</strong></span></div><button type="button" onClick={onSafety}><span><small>Community</small><strong>Safety centre, reports and blocked users</strong></span><ChevronRight /></button><div><ChevronRight/><span><small>Notifications</small><strong>Open the bell in the header</strong></span></div><div><ChevronRight/><span><small>Privacy</small><strong>Only reviewed child links and authorized audiences are shown</strong></span></div></section><button type="button" className="logout-action" aria-label="Sign out" onClick={onLogout}><LogOut /><span><strong>Sign out</strong><small>End this session on this device</small></span></button></div> }
+function ParentMore({ name, phone, email, childrenCount, onLogout }: { name: string; phone?: string | null; email?: string | null; childrenCount: number; onSafety?: () => void; onLogout: () => void }) { return <div className="record-page"><PageTitle eyebrow="Account" title="Profile and settings" copy="Your private MIS App access." /><section className="profile-card"><span className="profile-avatar">{name.split(' ').map((part) => part[0]).slice(0, 2).join('')}</span><h2>{name}</h2><p>Parent · {childrenCount} linked child{childrenCount === 1 ? '' : 'ren'}</p></section><section className="settings-list"><div><Phone /><span><small>Phone</small><strong>{phone ?? 'Not provided'}</strong></span></div><div><Mail /><span><small>Email</small><strong>{email ?? 'Not provided'}</strong></span></div><CommunitySafetyLinks /><div><ChevronRight/><span><small>Notifications</small><strong>Open the bell in the header</strong></span></div><div><ChevronRight/><span><small>Privacy</small><strong>Only reviewed child links and authorized audiences are shown</strong></span></div></section><button type="button" className="logout-action" aria-label="Sign out" onClick={onLogout}><LogOut /><span><strong>Sign out</strong><small>End this session on this device</small></span></button></div> }
 function money(value: number) { return new Intl.NumberFormat('en-MY', { style: 'currency', currency: 'MYR' }).format(value) }
 function countAttendance(records: AttendanceRecord[]) { return { present: records.filter((item) => item.status === 'present').length, late: records.filter((item) => item.status === 'late').length, absent: records.filter((item) => item.status === 'absent').length } }
 function percent(value: number, total: number) { return total === 0 ? 0 : (value / total) * 100 }

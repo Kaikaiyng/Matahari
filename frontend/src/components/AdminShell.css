@@ -424,6 +424,13 @@
   margin-left: auto;
 }
 
+.header-notification-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .header-notification-button {
   position: relative;
   width: 36px;
@@ -440,7 +447,8 @@
   transition: background-color 150ms ease, color 150ms ease;
 }
 
-.header-notification-button:hover {
+.header-notification-button:hover,
+.header-notification-button.active {
   background: #f1f5f9;
   color: #1e293b;
 }
@@ -454,6 +462,292 @@
   border-radius: 50%;
   background: var(--brand-primary);
   border: 2px solid #ffffff;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Admin Notification Popover
+   ═══════════════════════════════════════════════════════════ */
+.admin-notification-popover {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: -10px;
+  width: 380px;
+  max-width: calc(100vw - 32px);
+  max-height: 520px;
+  background: #ffffff;
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 16px;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.12), 0 2px 8px rgba(15, 23, 42, 0.04);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: notifSlideDown 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes notifSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.admin-notif-header {
+  padding: 16px;
+  background: #ffffff;
+  border-bottom: 1px solid var(--border, #f1f5f9);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-notif-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.admin-notif-title-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-notif-title-icon {
+  color: var(--brand-primary);
+}
+
+.admin-notif-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text, #0f172a);
+}
+
+.admin-notif-badge {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--brand-primary);
+  background: var(--brand-primary-soft);
+  padding: 2px 7px;
+  border-radius: 6px;
+}
+
+.admin-notif-close-btn {
+  background: none;
+  border: none;
+  padding: 4px;
+  border-radius: 6px;
+  color: #94a3b8;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.admin-notif-close-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.admin-notif-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.admin-notif-filters {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.admin-notif-filters::-webkit-scrollbar {
+  display: none;
+}
+
+.admin-notif-filter-pill {
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  background: #f1f5f9;
+  color: #64748b;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.admin-notif-filter-pill:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.admin-notif-filter-pill.active {
+  background: var(--brand-primary-soft);
+  color: var(--brand-primary);
+  border-color: var(--brand-primary-soft);
+}
+
+.admin-notif-mark-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  padding: 3px 6px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.admin-notif-mark-all:hover {
+  color: var(--brand-primary);
+  background: var(--brand-primary-soft);
+}
+
+.admin-notif-body {
+  padding: 8px;
+  max-height: 380px;
+  overflow-y: auto;
+  background: #f8fafc;
+}
+
+.admin-notif-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.admin-notif-card {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  text-align: left;
+}
+
+.admin-notif-card:hover {
+  transform: translateY(-1px);
+  border-color: var(--border-strong, #cbd5e1);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+}
+
+.admin-notif-card.is-unread {
+  background: #ffffff;
+  border-left: 3px solid var(--brand-primary);
+}
+
+.admin-notif-icon-box {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--brand-primary-soft);
+  color: var(--brand-primary);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.admin-notif-content {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-notif-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.admin-notif-card-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text, #0f172a);
+}
+
+.admin-notif-time {
+  font-size: 10px;
+  font-weight: 600;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+.admin-notif-card-body {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted, #64748b);
+  line-height: 1.4;
+}
+
+.admin-notif-unread-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--brand-primary);
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.admin-notif-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 36px 16px;
+  text-align: center;
+  color: #64748b;
+  gap: 6px;
+}
+
+.admin-notif-empty-icon {
+  color: #94a3b8;
+  margin-bottom: 4px;
+}
+
+.admin-notif-empty-icon.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.admin-notif-empty h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.admin-notif-empty p {
+  margin: 0;
+  font-size: 12px;
 }
 
 .user-profile {

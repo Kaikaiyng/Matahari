@@ -58,6 +58,8 @@ Implemented Community App/self-service rules:
 - Parent Finance is read-only and exposes no payment interface.
 - Teacher daily Attendance is limited to a current same-school teaching assignment and enrolled roster. Parent reads require the reviewed academic capability; Student reads resolve only the linked self record.
 - Attendance values are `present`, `late`, `absent`, and `excused`. Corrections require a reason, preserve original marker metadata, and write their audit event in the same transaction.
+- `unmarked` is a client/read-model state for a current enrolment without an attendance record. It is never persisted and cannot erase an existing record.
+- Gate entry creates or reuses an `in_progress` daily session. The first attendance decision for a student/session wins; later duplicate scans are idempotent and do not become silent corrections. Gate exit processing is not implemented.
 
 Approved future rules:
 
@@ -71,6 +73,7 @@ Community, Assessment, and Quiz persistence preserves the approved school scope,
 - Current Terms and Community Standards must be accepted before contribution. Reporting and blocking remain available without contribution acceptance.
 - Student freeform interaction also requires active reviewed adult authorization; Students cannot self-authorize.
 - Non-moderator posts/comments are private `pending_review` submissions. Approval publishes/releases them; rejection preserves author, audit and appeal history. Public feeds exclude pending/rejected content.
+- A non-moderator edit of published content returns the post to `pending_review` and refreshes or creates its submission case. Author/moderator deletion is logical: content, private media references, reports and audit history remain preserved while feeds and media access exclude the deleted post.
 - Content reports, user reports and blocks are distinct. Blocks affect only mutual Community content/reactions, not official records or school communications.
 - Report lifecycle is `submitted` → `reviewing` → `resolved`. Severe cases target 4 hours and normal cases 24 hours; these are operational targets, not automated legal deadlines.
 - Decisions require a reason category and written reason. Material report/content/restriction/appeal changes and audit records share a transaction.
@@ -236,3 +239,15 @@ Known limitations:
 - Production MariaDB runtime grants, backups, binary logging, and restore reconciliation are **Not verified**.
 
 These limitations must be resolved and tested before describing the finance workflow as production-ready.
+
+## UGC, Child Protection & Account Deletion Rules
+
+- **Pre-Filtering & Normalization**: All user-submitted text undergoes server-side normalization (Unicode FORM_KC, zero-width character stripping) and regex pattern matching against prohibited categories (violence, hate, profanity, grooming, sexual content).
+- **Contact Leakage Prevention**: Text containing phone numbers, email addresses, external URLs, or messaging handles (WhatsApp, Telegram, WeChat, IG, TikTok, LINE) is flagged as privacy exposure and blocked from immediate public display.
+- **Pre-Social Safety Warnings**: Student users must see an in-app safety reminder banner/modal before composing posts or comments.
+- **Parental Social Control**: Parent/Guardian accounts retain granular permissions (`can_post_community`, `can_upload_media`) to control or restrict their child's freeform social interactions.
+- **No 1-on-1 Private Messaging**: All Community interaction is school/class-scoped and visible to authorized staff. Unmonitored direct messaging or random user discovery is strictly prohibited.
+- **Account Provisioning & Deletion Policy**:
+  - RYLAY uses institution-provisioned accounts managed by school administrators. Self-registration is disabled.
+  - To comply with App Store and Google Play requirements, users/guardians may request account deletion via the in-app Profile settings or the public HTTPS page `https://rylay.my/account-deletion`.
+  - Upon processing an approved deletion request, personal identity info (PII), credentials, and non-essential social content are purged/anonymized. Academic and financial history (fee agreements, payment receipts) are legally preserved in anonymized form for compliance and audit requirements.

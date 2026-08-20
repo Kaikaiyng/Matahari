@@ -616,7 +616,6 @@ describe('demo shell', () => {
     expect(screen.queryByText('View Fee Record')).not.toBeInTheDocument()
 
     await user.click(within(metrics).getByRole('button', { name: 'Open Fee Record' }))
-
     expect(await screen.findByRole('heading', { name: 'Admin Fee Record' })).toBeInTheDocument()
   })
 
@@ -1042,6 +1041,9 @@ describe('demo shell', () => {
 
     await openSelectedStudentPayments(user)
     await user.click(screen.getByRole('button', { name: 'Send payment reminder' }))
+
+    expect(screen.getByRole('heading', { name: 'Send Payment Reminder' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Confirm & Send' }))
 
     expect(await screen.findByText('Payment reminder sent to 1 parent account.')).toBeInTheDocument()
     expect(fetchMock).toHaveBeenCalledWith(

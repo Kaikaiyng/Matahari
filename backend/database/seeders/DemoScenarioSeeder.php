@@ -229,28 +229,95 @@ class DemoScenarioSeeder extends Seeder
     {
         $parent = User::query()->where('school_id', $school->id)->where('username', 'rachel.wong')->first();
         $student = User::query()->where('school_id', $school->id)->where('username', 'alyssa.tan')->first();
-        if (! $parent || ! $student) {
+        $teacher = User::query()->where('school_id', $school->id)->where('username', 'teacher.lim')->first();
+        if (! $parent && ! $student && ! $teacher) {
             return;
         }
 
-        PortalNotification::query()->updateOrCreate(
-            ['school_id' => $school->id, 'title' => 'Term 3 Fee Invoice Issued'],
-            [
-                'recipient_user_id' => $parent->id,
-                'type' => 'finance',
-                'body' => 'Fee invoice for Term 3 (2026) has been generated. Please view outstanding balance and payment history in Finance tab.',
-                'created_at' => now()->subHours(2),
-            ],
-        );
+        if ($parent) {
+            PortalNotification::query()->updateOrCreate(
+                ['school_id' => $school->id, 'recipient_user_id' => $parent->id, 'title' => 'Term 3 Fee Invoice Issued'],
+                [
+                    'type' => 'finance',
+                    'body' => 'Fee invoice for Term 3 (2026) has been generated. Please view outstanding balance and payment history in Finance tab.',
+                    'read_at' => null,
+                    'created_at' => now()->subHours(2),
+                ],
+            );
 
-        PortalNotification::query()->updateOrCreate(
-            ['school_id' => $school->id, 'title' => 'Parent-Teacher Conference Scheduled'],
-            [
-                'recipient_user_id' => $student->id,
-                'type' => 'general',
-                'body' => 'Mid-term Parent-Teacher Conference will be held on Friday, August 28th. Please confirm attendance with your class teacher.',
-                'created_at' => now()->subDays(1),
-            ],
-        );
+            PortalNotification::query()->updateOrCreate(
+                ['school_id' => $school->id, 'recipient_user_id' => $parent->id, 'title' => 'Attendance Update: Grade MB1'],
+                [
+                    'type' => 'attendance',
+                    'body' => 'Alyssa Tan was marked Present for Morning Roll Call today.',
+                    'read_at' => now()->subHours(5),
+                    'created_at' => now()->subHours(6),
+                ],
+            );
+
+            PortalNotification::query()->updateOrCreate(
+                ['school_id' => $school->id, 'recipient_user_id' => $parent->id, 'title' => 'New Assessment Result Published'],
+                [
+                    'type' => 'academic',
+                    'body' => 'Mathematics Quiz 1 results for Alyssa Tan have been published. Tap to review scores and teacher comments.',
+                    'read_at' => null,
+                    'created_at' => now()->subDays(1),
+                ],
+            );
+        }
+
+        if ($student) {
+            PortalNotification::query()->updateOrCreate(
+                ['school_id' => $school->id, 'recipient_user_id' => $student->id, 'title' => 'Parent-Teacher Conference Scheduled'],
+                [
+                    'type' => 'general',
+                    'body' => 'Mid-term Parent-Teacher Conference will be held on Friday, August 28th. Please confirm attendance with your class teacher.',
+                    'read_at' => null,
+                    'created_at' => now()->subDays(1),
+                ],
+            );
+
+            PortalNotification::query()->updateOrCreate(
+                ['school_id' => $school->id, 'recipient_user_id' => $student->id, 'title' => 'New Science Quiz Available'],
+                [
+                    'type' => 'academic',
+                    'body' => 'Unit 2: Ecosystems & Plants formal quiz is now open for submission in the Quiz tab.',
+                    'read_at' => null,
+                    'created_at' => now()->subHours(4),
+                ],
+            );
+
+            PortalNotification::query()->updateOrCreate(
+                ['school_id' => $school->id, 'recipient_user_id' => $student->id, 'title' => 'School Timetable Updated'],
+                [
+                    'type' => 'general',
+                    'body' => 'Thursday physical education session moved to Sports Hall A starting this week.',
+                    'read_at' => now()->subDays(2),
+                    'created_at' => now()->subDays(2),
+                ],
+            );
+        }
+
+        if ($teacher) {
+            PortalNotification::query()->updateOrCreate(
+                ['school_id' => $school->id, 'recipient_user_id' => $teacher->id, 'title' => 'Morning Attendance Roll Submitted'],
+                [
+                    'type' => 'attendance',
+                    'body' => 'Attendance for Grade MB1 has been recorded successfully for today.',
+                    'read_at' => null,
+                    'created_at' => now()->subHours(3),
+                ],
+            );
+
+            PortalNotification::query()->updateOrCreate(
+                ['school_id' => $school->id, 'recipient_user_id' => $teacher->id, 'title' => 'Community Standards Update'],
+                [
+                    'type' => 'community_moderation',
+                    'body' => 'New community media posting guidelines are now in effect for all academic staff.',
+                    'read_at' => null,
+                    'created_at' => now()->subDays(1),
+                ],
+            );
+        }
     }
 }

@@ -37,6 +37,7 @@ import { StaffPage } from './components/StaffPage'
 import { ParentsPage } from './components/ParentsPage'
 import { LoginPage } from './components/LoginPage'
 import {
+  CustomSelect,
   DataPanel,
   FieldError,
   FilterToolbar,
@@ -90,6 +91,7 @@ type PageKey =
   | 'students'
   | 'classes'
   | 'schedule'
+  | 'attendance'
   | 'parents'
   | 'employees'
   | 'fees'
@@ -782,6 +784,8 @@ function StudentsPage({
   const [payments, setPayments] = useState<StudentPayment[]>([])
   const [isLoadingPayments, setIsLoadingPayments] = useState(false)
   const [isSendingPaymentReminder, setIsSendingPaymentReminder] = useState(false)
+  const [showPaymentReminderConfirm, setShowPaymentReminderConfirm] = useState(false)
+  const paymentReminderCancelRef = useRef<HTMLButtonElement>(null)
   const [showPaymentForm, setShowPaymentForm] = useState(false)
   const paymentAmountRef = useRef<HTMLInputElement>(null)
   const [paymentDetailsOpen, setPaymentDetailsOpen] = useState(false)
@@ -2414,38 +2418,31 @@ function StudentsPage({
                 onChange={(event) => setStudentSearch(event.target.value)}
               />
             </div>
-            <select
-              aria-label="Student status"
+            <CustomSelect
+              ariaLabel="Student status"
               value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value as StudentFilter)}
-            >
-              {statusOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            <select
+              onChange={(value) => setStatusFilter(value as StudentFilter)}
+              options={statusOptions}
+            />
+            <CustomSelect
               className="fee-period-select"
-              aria-label="Fee Period"
+              ariaLabel="Fee Period"
               value={studentFeePeriod}
-              onChange={(event) => {
-                const nextPeriod = event.target.value
-                setStudentFeePeriod(nextPeriod)
-                void loadStudentListFeeRecordSummary(feeRecordAcademicYear, nextPeriod)
+              onChange={(nextPeriod) => {
+                setStudentFeePeriod(String(nextPeriod))
+                void loadStudentListFeeRecordSummary(feeRecordAcademicYear, String(nextPeriod))
               }}
-            >
-              <option value="">All Year ({feeRecordAcademicYear})</option>
-              {monthLongLabels.map((month, index) => {
-                const monthNumber = String(index + 1).padStart(2, '0')
-
-                return (
-                  <option key={month} value={`${feeRecordAcademicYear}-${monthNumber}`}>
-                    {month} {feeRecordAcademicYear}
-                  </option>
-                )
-              })}
-            </select>
+              options={[
+                { value: '', label: `All Year (${feeRecordAcademicYear})` },
+                ...monthLongLabels.map((month, index) => {
+                  const monthNumber = String(index + 1).padStart(2, '0')
+                  return {
+                    value: `${feeRecordAcademicYear}-${monthNumber}`,
+                    label: `${month} ${feeRecordAcademicYear}`,
+                  }
+                }),
+              ]}
+            />
             <button className="secondary-action" onClick={() => void loadStudents()}>
               <RefreshCw size={16} />
               Refresh
@@ -3151,7 +3148,7 @@ function StudentsPage({
               </div>
               <div className="payment-header-actions">
                 {canSendPaymentReminders && (
-                  <button type="button" className="secondary-action" onClick={sendPaymentReminder} disabled={isSendingPaymentReminder}>
+                  <button type="button" className="secondary-action" onClick={() => setShowPaymentReminderConfirm(true)} disabled={isSendingPaymentReminder}>
                     {isSendingPaymentReminder ? 'Sending...' : 'Send payment reminder'}
                   </button>
                 )}
@@ -3166,6 +3163,57 @@ function StudentsPage({
             </div>
 
             {!canViewPayments && <Message tone="info">You do not have permission to view payments.</Message>}
+
+            {showPaymentReminderConfirm && selectedStudent && (
+              <ModalFrame
+                title="Send Payment Reminder"
+                description={`Send an in-app payment reminder to linked parent accounts for ${selectedStudent.full_name}.`}
+                size="compact"
+                tone="default"
+                initialFocusRef={paymentReminderCancelRef}
+                onClose={() => setShowPaymentReminderConfirm(false)}
+                footer={
+                  <>
+                    <button
+                      ref={paymentReminderCancelRef}
+                      type="button"
+                      className="secondary-action"
+                      onClick={() => setShowPaymentReminderConfirm(false)}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      className="primary-action compact"
+                      type="button"
+                      disabled={isSendingPaymentReminder}
+                      onClick={async () => {
+                        setShowPaymentReminderConfirm(false)
+                        await sendPaymentReminder()
+                      }}
+                    >
+                      {isSendingPaymentReminder ? 'Sending...' : 'Confirm & Send'}
+                    </button>
+                  </>
+                }
+              >
+                <ModalContextSummary
+                  ariaLabel="Payment reminder recipient details"
+                  items={[
+                    { label: 'Student', value: `${selectedStudent.full_name} (${selectedStudent.student_no})` },
+                    { label: 'Class', value: selectedStudent.class?.name ?? 'Unassigned' },
+                    {
+                      label: 'Outstanding Charges',
+                      value: `${outstandingCharges.length} charge${outstandingCharges.length === 1 ? '' : 's'} (${formatCurrency(
+                        outstandingCharges.reduce((sum, c) => sum + Number(c.outstanding_amount || 0), 0)
+                      )})`,
+                    },
+                  ]}
+                />
+                <p className="field-help" style={{ marginTop: '12px' }}>
+                  This will send an in-app notification to all verified parents and guardians linked to this student.
+                </p>
+              </ModalFrame>
+            )}
 
             {showPaymentForm && canCreatePayments && (
               <ModalFrame
@@ -4245,37 +4293,34 @@ function FeeRecordSummaryPage({
             {activeView === 'category-monthly' && (
               <label className="form-field">
                 Category
-                <select value={category} onChange={(event) => setCategory(event.target.value as FeeRecordCategory)}>
-                  {feeRecordCategoryOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+                <CustomSelect
+                  ariaLabel="Category"
+                  value={category}
+                  onChange={(val) => setCategory(val as FeeRecordCategory)}
+                  options={feeRecordCategoryOptions}
+                />
               </label>
             )}
             <label className="form-field">
               Level Group
-              <select value={levelGroup} onChange={(event) => setLevelGroup(event.target.value)}>
-                <option value="">All level groups</option>
-                {levelGroupOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+              <CustomSelect
+                ariaLabel="Level Group"
+                value={levelGroup}
+                onChange={(val) => setLevelGroup(String(val))}
+                options={[
+                  { value: '', label: 'All level groups' },
+                  ...levelGroupOptions,
+                ]}
+              />
             </label>
             <label className="form-field">
               Student Status
-              <select value={studentStatus} onChange={(event) => setStudentStatus(event.target.value as StudentStatus)}>
-                {statusOptions
-                  .filter((option) => option.value !== 'all')
-                  .map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-              </select>
+              <CustomSelect
+                ariaLabel="Student Status"
+                value={studentStatus}
+                onChange={(val) => setStudentStatus(val as StudentStatus)}
+                options={statusOptions.filter((option) => option.value !== 'all')}
+              />
             </label>
             <label className="form-field wide">
               Search

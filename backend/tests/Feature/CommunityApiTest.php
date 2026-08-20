@@ -9,6 +9,8 @@ use App\Contracts\AuditLoggerContract;
 use App\Models\AuditLog;
 use App\Models\CommunityPolicyAcceptance;
 use App\Models\CommunityPolicyVersion;
+use App\Models\CommunityPost;
+use App\Models\CommunityReport;
 use App\Models\SchoolClass;
 use App\Models\StudentCommunityAuthorization;
 use App\Models\User;
@@ -156,5 +158,104 @@ class CommunityApiTest extends TestCase
 
         $this->assertDatabaseCount('community_posts', 0);
         $this->assertDatabaseCount('community_post_audiences', 0);
+    }
+
+    public function test_author_can_update_own_post_and_non_author_is_forbidden(): void
+    {
+        $teacher = User::query()->where('username', 'teacher.lim')->firstOrFail();
+        $otherUser = User::query()->where('username', 'rachel.wong')->firstOrFail();
+        $class = SchoolClass::query()->where('name', 'MB1')->firstOrFail();
+
+        $created = $this->actingAs($teacher)->postJson('http://127.0.0.1/api/v1/community/posts', [
+            'body' => 'Original text',
+            'audiences' => [['type' => 'class', 'class_id' => $class->id]],
+        ])->assertCreated();
+
+        $postId = $created->json('data.id');
+
+        $this->actingAs($otherUser)->putJson("http://127.0.0.1/api/v1/community/posts/{$postId}", [
+            'body' => 'Hacked text',
+        ])->assertForbidden();
+
+        $this->actingAs($teacher)->putJson("http://127.0.0.1/api/v1/community/posts/{$postId}", [
+            'body' => 'Updated teacher post text',
+            'comments_enabled' => false,
+        ])->assertOk()
+            ->assertJsonPath('data.body', 'Updated teacher post text')
+            ->assertJsonPath('data.comments_enabled', false);
+
+        $this->assertDatabaseHas('community_posts', [
+            'id' => $postId,
+            'body' => 'Updated teacher post text',
+            'comments_enabled' => false,
+        ]);
+    }
+
+    public function test_non_moderator_edit_of_published_post_returns_to_review(): void
+    {
+        $teacher = User::query()->where('username', 'teacher.lim')->firstOrFail();
+        $class = SchoolClass::query()->where('name', 'MB1')->firstOrFail();
+        $postId = $this->actingAs($teacher)->postJson('http://127.0.0.1/api/v1/community/posts', [
+            'body' => 'Approved original',
+            'audiences' => [['type' => 'class', 'class_id' => $class->id]],
+        ])->assertCreated()->json('data.id');
+
+        CommunityPost::query()->whereKey($postId)->update(['status' => CommunityPost::STATUS_PUBLISHED, 'published_at' => now()]);
+        CommunityReport::query()->where('community_post_id', $postId)->update(['status' => CommunityReport::STATUS_RESOLVED, 'resolved_at' => now(), 'resolution_code' => 'approved']);
+
+        $this->actingAs($teacher)->putJson("http://127.0.0.1/api/v1/community/posts/{$postId}", [
+            'body' => 'Materially changed text',
+        ])->assertOk()->assertJsonPath('data.status', CommunityPost::STATUS_PENDING_REVIEW);
+
+        $this->assertDatabaseHas('community_posts', ['id' => $postId, 'status' => CommunityPost::STATUS_PENDING_REVIEW]);
+        $this->assertDatabaseHas('community_reports', ['community_post_id' => $postId, 'source' => 'submission', 'status' => CommunityReport::STATUS_SUBMITTED]);
+        $this->assertDatabaseHas('audit_logs', ['entity_id' => $postId, 'action' => 'community.post_updated']);
+    }
+
+    public function test_author_delete_is_logical_and_preserves_moderation_history(): void
+    {
+        $teacher = User::query()->where('username', 'teacher.lim')->firstOrFail();
+        $class = SchoolClass::query()->where('name', 'MB1')->firstOrFail();
+        $postId = $this->actingAs($teacher)->postJson('http://127.0.0.1/api/v1/community/posts', [
+            'body' => 'Withdraw this submission',
+            'audiences' => [['type' => 'class', 'class_id' => $class->id]],
+        ])->assertCreated()->json('data.id');
+        $reportId = CommunityReport::query()->where('community_post_id', $postId)->value('id');
+
+        $this->actingAs($teacher)->deleteJson("http://127.0.0.1/api/v1/community/posts/{$postId}")->assertOk();
+
+        $this->assertDatabaseHas('community_posts', ['id' => $postId, 'status' => CommunityPost::STATUS_DELETED]);
+        $this->assertDatabaseHas('community_reports', ['id' => $reportId, 'community_post_id' => $postId]);
+        $this->assertDatabaseHas('audit_logs', ['entity_id' => $postId, 'action' => 'community.post_deleted']);
+        $this->actingAs($teacher)->getJson('http://127.0.0.1/api/v1/community/posts')->assertJsonMissing(['id' => $postId]);
+        $this->actingAs($teacher)->putJson("http://127.0.0.1/api/v1/community/posts/{$postId}", ['body' => 'Restore it'])->assertConflict();
+    }
+
+    public function test_post_update_rolls_back_when_audit_fails(): void
+    {
+        $teacher = User::query()->where('username', 'teacher.lim')->firstOrFail();
+        $class = SchoolClass::query()->where('name', 'MB1')->firstOrFail();
+        $postId = $this->actingAs($teacher)->postJson('http://127.0.0.1/api/v1/community/posts', [
+            'body' => 'Keep this original',
+            'audiences' => [['type' => 'class', 'class_id' => $class->id]],
+        ])->assertCreated()->json('data.id');
+        $post = CommunityPost::query()->findOrFail($postId);
+
+        $this->app->bind(AuditLoggerContract::class, fn () => new class implements AuditLoggerContract
+        {
+            public function record(AuditEvent $event, AuditContext $context): AuditLog
+            {
+                throw new RuntimeException('Forced update audit failure.');
+            }
+        });
+
+        try {
+            app(CommunityService::class)->updatePost($teacher->school_id, $post, ['body' => 'Must roll back'], $teacher, app(AuditContextFactory::class)->system());
+            $this->fail('Audit failure should escape the update transaction.');
+        } catch (RuntimeException $exception) {
+            $this->assertSame('Forced update audit failure.', $exception->getMessage());
+        }
+
+        $this->assertDatabaseHas('community_posts', ['id' => $postId, 'body' => 'Keep this original']);
     }
 }

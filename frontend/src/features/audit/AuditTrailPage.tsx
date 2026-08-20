@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Eye, History, X } from 'lucide-react'
 import { ApiError, apiRequest } from '../../api'
-import { DataPanel, FilterToolbar, PageHeader } from '../../components/AdminUi'
+import { CustomSelect, DataPanel, FilterToolbar, PageHeader } from '../../components/AdminUi'
 import type { AuditLog, AuditLogDetailResponse, AuditLogListResponse } from './auditTypes'
 
 const auditModules = [
@@ -133,12 +133,18 @@ export function AuditTrailPage({ onUnauthorized }: AuditTrailPageProps) {
 
       <form onSubmit={applyFilters}>
         <FilterToolbar ariaLabel="Audit log filters">
-          <label>
-            Module
-            <select value={module} onChange={(event) => setModule(event.target.value)}>
-              <option value="">All modules</option>
-              {auditModules.map((value) => <option key={value} value={value}>{formatLabel(value)}</option>)}
-            </select>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <span>Module</span>
+            <CustomSelect
+              ariaLabel="Module"
+              value={module}
+              onChange={(val) => setModule(String(val))}
+              options={[
+                { value: '', label: 'All modules' },
+                ...auditModules.map((value) => ({ value, label: formatLabel(value) })),
+              ]}
+              size="compact"
+            />
           </label>
           <label>
             Actor username

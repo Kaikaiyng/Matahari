@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\StudentStatusController;
 use App\Http\Controllers\Api\TenantContextController;
 use App\Http\Controllers\Api\V1\AcademicTermController;
 use App\Http\Controllers\Api\V1\AcademicYearController;
+use App\Http\Controllers\Api\V1\AdminAttendanceController;
 use App\Http\Controllers\Api\V1\AssessmentController;
 use App\Http\Controllers\Api\V1\ClassEnrolmentController;
 use App\Http\Controllers\Api\V1\ClassScheduleController;
@@ -112,6 +113,7 @@ Route::middleware([...$sessionMiddleware, 'auth', 'active', 'tenant.member', 'te
 
     Route::get('/classes', [SchoolClassController::class, 'index'])
         ->middleware('permission:students.view');
+
     Route::get('/students', [StudentController::class, 'index'])
         ->middleware('permission:students.view');
     Route::post('/students', [StudentController::class, 'store'])
@@ -188,6 +190,8 @@ Route::prefix('v1')->middleware([...$sessionMiddleware, 'auth', 'active', 'tenan
         Route::post('/students/{student}/authorization', [CommunitySafetyController::class, 'authorizeStudent']);
         Route::delete('/students/{student}/authorization', [CommunitySafetyController::class, 'revokeStudentAuthorization']);
         Route::post('/posts', [CommunityController::class, 'store'])->middleware('permission:community.publish');
+        Route::put('/posts/{communityPost}', [CommunityController::class, 'update'])->middleware('permission:community.publish');
+        Route::delete('/posts/{communityPost}', [CommunityController::class, 'destroy'])->middleware('permission:community.publish');
         Route::post('/posts/{communityPost}/reaction', [CommunityController::class, 'reaction'])->middleware('permission:community.interact');
         Route::post('/posts/{communityPost}/comments', [CommunityController::class, 'comment'])->middleware('permission:community.interact');
         Route::get('/media/{communityPostMedia}', [CommunityController::class, 'media']);
@@ -227,6 +231,12 @@ Route::prefix('v1')->middleware([...$sessionMiddleware, 'auth', 'active', 'tenan
         Route::get('/class-schedules', [ClassScheduleController::class, 'index'])->middleware(['tenant.feature:schedule', 'permission:schedule.manage']);
         Route::post('/class-schedules', [ClassScheduleController::class, 'store'])->middleware(['tenant.feature:schedule', 'permission:schedule.manage']);
         Route::patch('/class-schedules/{classScheduleEntry}', [ClassScheduleController::class, 'update'])->middleware(['tenant.feature:schedule', 'permission:schedule.manage']);
+
+        Route::get('/attendance/overview', [AdminAttendanceController::class, 'showOverview'])->middleware(['tenant.feature:attendance', 'permission:students.view']);
+        Route::get('/attendance/daily', [AdminAttendanceController::class, 'showDaily'])->middleware(['tenant.feature:attendance', 'permission:students.view']);
+        Route::post('/attendance/daily', [AdminAttendanceController::class, 'storeDaily'])->middleware(['tenant.feature:attendance', 'permission:students.create']);
+        Route::post('/attendance/gate-event', [AdminAttendanceController::class, 'recordGateEvent'])->middleware(['tenant.feature:attendance', 'permission:students.create']);
+        Route::post('/attendance/gate-events/batch', [AdminAttendanceController::class, 'recordBatchGateEvents'])->middleware(['tenant.feature:attendance', 'permission:students.create']);
 
         Route::patch('/parents/{guardian}/portal-user', [PortalLinkController::class, 'guardianUser'])->middleware('permission:portal_links.manage');
         Route::patch('/students/{student}/portal-user', [PortalLinkController::class, 'studentUser'])->middleware('permission:portal_links.manage');

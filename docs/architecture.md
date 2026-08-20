@@ -124,7 +124,9 @@ New Phase A modules use a consistent chain under `/api/v1`: authenticated active
 
 Teacher roster access requires an active/current teaching assignment matching the authenticated teacher, school, academic year, class, and subject. Portal identity linking requires exact same-school users with the required role; it never uses guessed personal-data matching.
 
-Daily attendance reuses that teaching scope. A Teacher can create or update one `daily` session for an assigned class/date. Submitted changes require a correction reason. Parent reads require an active guardian-child link with `can_view_academics = true`; Student reads resolve only the authenticated user's same-school student link. React role visibility is not the authorization boundary.
+Daily attendance reuses that teaching scope. A Teacher can create or update one `daily` session for an assigned class/date. Admin attendance is exposed only under `/api/v1/admin/attendance/*`, behind the Admin surface, resolved school context, tenant feature, and permission middleware. Roster membership comes only from the current `class_enrolments` row; `students.class_id` is not an attendance fallback. Submitted changes require a correction reason. Parent reads require an active guardian-child link with `can_view_academics = true`; Student reads resolve only the authenticated user's same-school student link. React role visibility is not the authorization boundary.
+
+Gate entry is currently an authenticated Admin API integration, not a public hardware endpoint. It serializes daily-session creation by class, leaves the session `in_progress`, and treats repeated student/session scans as idempotent. Device-signature authentication, replay protection, and exit-event processing are **Planned, not implemented**.
 
 ## Request and Validation Flow
 

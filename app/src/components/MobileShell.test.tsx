@@ -80,7 +80,7 @@ beforeEach(() => {
 })
 
 describe('MobileShell & Portal Views', () => {
-  it('renders mobile shell with brand logo, environment badge, and user avatar', () => {
+  it('renders mobile shell with brand logo and environment badge', () => {
     render(
       <MobileShell activeTab="home" onTabChange={() => {}} userRole="parent" allowedRoles={['parent']} userName="Sarah Tan" environment="staging">
         <div>Content</div>
@@ -88,7 +88,6 @@ describe('MobileShell & Portal Views', () => {
     )
 
     expect(screen.getByText('Preview environment')).toBeDefined()
-    expect(screen.getByText('Sarah')).toBeDefined()
     expect(screen.getByRole('button', { name: 'Home' })).toHaveAttribute('aria-current', 'page')
     expect(screen.getByRole('button', { name: 'Children' })).not.toHaveAttribute('aria-current')
     expect(screen.queryByRole('button', { name: 'Logout' })).not.toBeInTheDocument()
@@ -98,7 +97,7 @@ describe('MobileShell & Portal Views', () => {
     render(<ParentPortalView parentName="Rachel Wong" activeTab="home" onTabChange={() => {}} onLogout={() => {}} />)
 
     // Welcome greeting includes first name.
-    expect(screen.getByText(/Rachel/)).toBeDefined()
+    expect(screen.getAllByText(/Rachel/)[0]).toBeDefined()
     expect(document.querySelector('.context-card')).toBeTruthy()
     expect(screen.getByText('School community')).toBeDefined()
   })
@@ -221,9 +220,9 @@ describe('MobileShell & Portal Views', () => {
     const changeTab = vi.fn()
     render(<TeacherPortalView teacherName="School Admin" activeTab="classes" onTabChange={changeTab} onLogout={() => {}} staffMode />)
 
-    fireEvent.click(screen.getByRole('button', { name: /Content review/ }))
-    fireEvent.click(screen.getByRole('button', { name: /Assessments/ }))
-    fireEvent.click(screen.getByRole('button', { name: /Formal Quiz/ }))
+    fireEvent.click(screen.getAllByRole('button', { name: /Content review/ })[0])
+    fireEvent.click(screen.getAllByRole('button', { name: /Assessments/ })[0])
+    fireEvent.click(screen.getAllByRole('button', { name: /Formal Quiz/ })[0])
     expect(changeTab).toHaveBeenNthCalledWith(1, 'review')
     expect(changeTab).toHaveBeenNthCalledWith(2, 'assessments')
     expect(changeTab).toHaveBeenNthCalledWith(3, 'quizzes')

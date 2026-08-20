@@ -19,6 +19,8 @@ describe('Community safety', () => {
     render(<CommunityPolicyGate role="student" onReadyChange={ready} />)
     expect(await screen.findByRole('heading', { name: 'Before you contribute' })).toBeInTheDocument()
     expect(screen.getByText(/adult authorization/i)).toBeInTheDocument()
+    const checkboxes = screen.getAllByRole('checkbox')
+    checkboxes.forEach((cb) => fireEvent.click(cb))
     fireEvent.click(screen.getByRole('button', { name: 'Accept and continue' }))
 
     await waitFor(() => expect(accept).toHaveBeenCalledTimes(2))
