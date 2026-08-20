@@ -66,8 +66,10 @@ describe('separate MIS portal app', () => {
     render(<App />)
 
     expect(await screen.findByRole('heading', { name: 'Before you continue' })).toBeInTheDocument()
-    expect(screen.queryByRole('navigation', { name: 'Mobile Navigation' })).not.toBeInTheDocument()
-    expect(screen.queryByText('Share a school moment')).not.toBeInTheDocument()
+    expect(screen.getByRole('navigation', { name: 'Mobile Navigation', hidden: true })).toBeInTheDocument()
+    expect(screen.getAllByText('Share a school moment').length).toBeGreaterThan(0)
+    expect(screen.getByTestId('authenticated-app-shell')).toHaveAttribute('inert')
+    expect(screen.getByTestId('authenticated-app-shell')).toHaveAttribute('aria-hidden', 'true')
   })
 
   it('renders the staff publishing shell for a school administrator', async () => {

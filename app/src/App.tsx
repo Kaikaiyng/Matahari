@@ -80,31 +80,29 @@ function App() {
 
   const environment = import.meta.env.VITE_APP_ENVIRONMENT === 'production' ? 'production' : 'staging'
 
-  if (!policiesAccepted) {
-    return (
-      <main className="portal-state-screen">
-        <img src={tenant.branding.logo_url ?? '/logo.jpeg'} alt="" />
-        <h1>Checking required policies</h1>
-        <p>You must accept the current Terms and Community Standards before using the App.</p>
-        <CommunityPolicyGate role={activeRole} onReadyChange={setPoliciesAccepted} />
-      </main>
-    )
-  }
-
   return (
-    <MobileShell
-      activeTab={activeTab}
-      onTabChange={setActiveTab}
-      userRole={activeRole}
-      allowedRoles={allowedRoles}
-      onRoleChange={(role) => { setSelectedRole(role); setActiveTab('home') }}
-      userName={user.name}
-      environment={environment}
-    >
-      {activeRole === 'student' && <StudentPortalView studentName={user.name} activeTab={activeTab} onTabChange={setActiveTab} onLogout={() => void logout()} />}
-      {activeRole === 'parent' && <ParentPortalView parentName={user.name} activeTab={activeTab} onTabChange={setActiveTab} onLogout={() => void logout()} />}
-      {(activeRole === 'teacher' || activeRole === 'staff') && <TeacherPortalView teacherName={user.name} activeTab={activeTab} onTabChange={setActiveTab} onLogout={() => void logout()} staffMode={activeRole === 'staff'} />}
-    </MobileShell>
+    <>
+      <div
+        data-testid="authenticated-app-shell"
+        inert={policiesAccepted ? undefined : true}
+        aria-hidden={policiesAccepted ? undefined : true}
+      >
+        <MobileShell
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          userRole={activeRole}
+          allowedRoles={allowedRoles}
+          onRoleChange={(role) => { setSelectedRole(role); setActiveTab('home') }}
+          userName={user.name}
+          environment={environment}
+        >
+          {activeRole === 'student' && <StudentPortalView studentName={user.name} activeTab={activeTab} onTabChange={setActiveTab} onLogout={() => void logout()} />}
+          {activeRole === 'parent' && <ParentPortalView parentName={user.name} activeTab={activeTab} onTabChange={setActiveTab} onLogout={() => void logout()} />}
+          {(activeRole === 'teacher' || activeRole === 'staff') && <TeacherPortalView teacherName={user.name} activeTab={activeTab} onTabChange={setActiveTab} onLogout={() => void logout()} staffMode={activeRole === 'staff'} />}
+        </MobileShell>
+      </div>
+      {!policiesAccepted && <CommunityPolicyGate role={activeRole} onReadyChange={setPoliciesAccepted} />}
+    </>
   )
 }
 
