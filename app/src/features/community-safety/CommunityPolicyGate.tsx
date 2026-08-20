@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { apiRequest } from '../../api'
 import { portalApi, type CommunityPolicy } from '../../api/portalApi'
 import './CommunitySafety.css'
@@ -39,9 +39,12 @@ export function CommunityPolicyGate({ role, onReadyChange }: { role?: 'parent' |
   const [loadingDetailId, setLoadingDetailId] = useState<number | null>(null)
   const [detailError, setDetailError] = useState('')
 
-  useEffect(() => {
+  const loadPolicies = useCallback(() => {
+    setLoading(true)
+    setError('')
     portalApi.getCurrentCommunityPolicies().then(({ data }) => {
       const required = ['terms', 'community_standards'].map((key) => data[key]).filter(Boolean)
+      if (required.length !== 2) throw new Error('Required policies are unavailable')
       setPolicies(required)
       const initialChecked: Record<number, boolean> = {}
       required.forEach((p) => { if (p.accepted) initialChecked[p.id] = true })
@@ -52,6 +55,8 @@ export function CommunityPolicyGate({ role, onReadyChange }: { role?: 'parent' |
       onReadyChange(false)
     }).finally(() => setLoading(false))
   }, [onReadyChange])
+
+  useEffect(() => { loadPolicies() }, [loadPolicies])
 
   const toggleCheck = (id: number) => {
     setCheckedIds((prev) => ({ ...prev, [id]: !prev[id] }))
@@ -90,7 +95,6 @@ export function CommunityPolicyGate({ role, onReadyChange }: { role?: 'parent' |
   }
 
   if (loading || (policies.length === 2 && policies.every((policy) => policy.accepted))) return null
-  if (policies.length === 0 && error) return null
 
   const allChecked = policies.length === 2 && policies.every((p) => p.accepted || checkedIds[p.id])
   const canSubmit = allChecked && !saving
@@ -142,9 +146,9 @@ export function CommunityPolicyGate({ role, onReadyChange }: { role?: 'parent' |
       ) : (
         <section className="community-policy-gate-modal">
           <div className="policy-gate-badge">Safety & Compliance</div>
-          <h2 id="policy-gate-title">Before you contribute</h2>
+          <h2 id="policy-gate-title">Before you continue</h2>
           <p className="policy-gate-desc">
-            Please click on each policy to review its details in-app, then check the checkbox before accepting.
+            Please review and accept the required policies before using the App.
           </p>
           {role === 'student' && (
             <p className="policy-gate-notice">
@@ -183,14 +187,18 @@ export function CommunityPolicyGate({ role, onReadyChange }: { role?: 'parent' |
           </ul>
           {detailError && <p className="form-error">{detailError}</p>}
           {error && <p className="form-error">{error}</p>}
-          <button
-            type="button"
-            className="primary-action policy-gate-submit"
-            disabled={!canSubmit}
-            onClick={() => void accept()}
-          >
-            {saving ? 'Saving…' : 'Accept and continue'}
-          </button>
+          {policies.length === 0 && error ? (
+            <button type="button" className="primary-action policy-gate-submit" onClick={loadPolicies}>Retry</button>
+          ) : (
+            <button
+              type="button"
+              className="primary-action policy-gate-submit"
+              disabled={!canSubmit}
+              onClick={() => void accept()}
+            >
+              {saving ? 'Saving…' : 'Accept and continue'}
+            </button>
+          )}
         </section>
       )}
     </div>

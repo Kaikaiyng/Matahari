@@ -70,7 +70,7 @@ Community, Assessment, and Quiz persistence preserves the approved school scope,
 
 ## Community UGC Safety
 
-- Current Terms and Community Standards must be accepted before contribution. Reporting and blocking remain available without contribution acceptance.
+- Current Terms and Community Standards must be accepted before the authenticated Community App shell is available. If policy status cannot be verified, the App remains blocked and offers retry. Reporting and blocking remain available after App access is established.
 - Student freeform interaction also requires active reviewed adult authorization; Students cannot self-authorize.
 - Non-moderator posts/comments are private `pending_review` submissions. Approval publishes/releases them; rejection preserves author, audit and appeal history. Public feeds exclude pending/rejected content.
 - A non-moderator edit of published content returns the post to `pending_review` and refreshes or creates its submission case. Author/moderator deletion is logical: content, private media references, reports and audit history remain preserved while feeds and media access exclude the deleted post.

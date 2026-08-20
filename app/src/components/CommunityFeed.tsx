@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { ChevronLeft, Heart, MessageCircle, MoreVertical, Pencil, Trash2, EyeOff } from 'lucide-react'
 import { portalApi, type CommunityPost } from '../api/portalApi'
-import { CommunityPolicyGate } from '../features/community-safety/CommunityPolicyGate'
 import { CommunitySafetyMenu } from '../features/community-safety/CommunitySafetyMenu'
 
 type FeedRole = 'parent' | 'student' | 'teacher' | 'staff'
@@ -80,7 +79,6 @@ export function CommunityFeed({ role, userName, onOpenFinance, onCreatePost, mod
   const [error, setError] = useState('')
   const [commenting, setCommenting] = useState<number | null>(null)
   const [comment, setComment] = useState('')
-  const [canContribute, setCanContribute] = useState(false)
   const [editingPost, setEditingPost] = useState<CommunityPost | null>(null)
   const [deleteConfirmPostId, setDeleteConfirmPostId] = useState<number | null>(null)
   const [hidePromptPostId, setHidePromptPostId] = useState<number | null>(null)
@@ -150,12 +148,10 @@ export function CommunityFeed({ role, userName, onOpenFinance, onCreatePost, mod
         </button>
       )}
 
-      <CommunityPolicyGate role={role} onReadyChange={setCanContribute} />
-
       {(role === 'teacher' || role === 'staff') && (
-        <button type="button" className="create-strip context-card" disabled={!canContribute} onClick={onCreatePost}>
+        <button type="button" className="create-strip context-card" onClick={onCreatePost}>
           <span>Share a school moment</span>
-          <b>{canContribute ? 'Create post' : 'Accept policies first'}</b>
+          <b>Create post</b>
         </button>
       )}
 
@@ -188,10 +184,10 @@ export function CommunityFeed({ role, userName, onOpenFinance, onCreatePost, mod
               {post.media.map((media) => media.type === 'image' ? <img className="feed-uploaded-image" key={media.id} src={media.url} alt={media.name ?? 'Community photo'} /> : media.type === 'video' ? <video className="feed-uploaded-video" key={media.id} src={media.url} controls /> : <a key={media.id} href={media.url}>{media.name ?? 'Download attachment'}</a>)}
               <div className="feed-counts">{post.reaction_count} appreciations · {post.comments_enabled ? `${post.comments.length} comments` : 'Comments closed'}</div>
               <footer className="feed-actions">
-                <button type="button" disabled={!canContribute} className={post.reacted_by_me ? 'liked' : ''} onClick={() => void toggleLike(post.id)}>
+                <button type="button" className={post.reacted_by_me ? 'liked' : ''} onClick={() => void toggleLike(post.id)}>
                   <Heart size={19} fill={post.reacted_by_me ? 'currentColor' : 'none'} />{post.reacted_by_me ? 'Appreciated' : 'Appreciate'}
                 </button>
-                <button type="button" disabled={!post.comments_enabled || !canContribute} onClick={() => setCommenting(commenting === post.id ? null : post.id)}>
+                <button type="button" disabled={!post.comments_enabled} onClick={() => setCommenting(commenting === post.id ? null : post.id)}>
                   <MessageCircle size={19} />{post.comments_enabled ? 'Comment' : 'Comments off'}
                 </button>
               </footer>

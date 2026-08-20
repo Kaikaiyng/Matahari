@@ -8,6 +8,7 @@ import type { AppRole } from './components/MobileShell'
 import { PortalLogin } from './PortalLogin'
 import { useTenantConfiguration } from './tenant'
 import { PublicPolicyPage } from './features/community-safety/PublicPolicyPage'
+import { CommunityPolicyGate } from './features/community-safety/CommunityPolicyGate'
 
 export type CurrentUser = {
   id: number
@@ -25,6 +26,7 @@ function App() {
   const [user, setUser] = useState<CurrentUser | null>(null)
   const [activeTab, setActiveTab] = useState('home')
   const [selectedRole, setSelectedRole] = useState<AppRole | null>(null)
+  const [policiesAccepted, setPoliciesAccepted] = useState(false)
 
   useEffect(() => {
     if (publicPolicySlug) return
@@ -58,6 +60,7 @@ function App() {
     } finally {
       setUser(null)
       setSelectedRole(null)
+      setPoliciesAccepted(false)
       setActiveTab('home')
       setAuthState('guest')
     }
@@ -76,6 +79,17 @@ function App() {
   }
 
   const environment = import.meta.env.VITE_APP_ENVIRONMENT === 'production' ? 'production' : 'staging'
+
+  if (!policiesAccepted) {
+    return (
+      <main className="portal-state-screen">
+        <img src={tenant.branding.logo_url ?? '/logo.jpeg'} alt="" />
+        <h1>Checking required policies</h1>
+        <p>You must accept the current Terms and Community Standards before using the App.</p>
+        <CommunityPolicyGate role={activeRole} onReadyChange={setPoliciesAccepted} />
+      </main>
+    )
+  }
 
   return (
     <MobileShell
