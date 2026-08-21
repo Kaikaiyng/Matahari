@@ -41,7 +41,7 @@ const superAdminUser = {
   ...currentUser,
   school_id: null,
   roles: ['super-admin'],
-  permissions: [...currentUser.permissions, 'audit.view'],
+  permissions: [...currentUser.permissions, 'audit.view', 'logs.view'],
 }
 
 const schoolAdminDialogUser = {
@@ -300,6 +300,12 @@ function installApiMock() {
     if (url.pathname.endsWith('/calendar-events')) return json({ data: [] })
     if (url.pathname.endsWith('/audit-logs')) {
       return json({ data: [], meta: { per_page: 50, next_cursor: null, previous_cursor: null } })
+    }
+    if (url.pathname.endsWith('/application-logs')) {
+      return json({
+        data: [],
+        meta: { page: 1, per_page: 50, total: 0, total_pages: 1, level_counts: { FATAL: 0, ERROR: 0, WARN: 0, INFO: 0 }, truncated: false },
+      })
     }
     if (
       url.pathname.endsWith('/students/1/fee-agreements') &&
@@ -623,7 +629,7 @@ describe('demo shell', () => {
     await renderAuthenticatedApp()
 
     const navigation = screen.getByRole('navigation', { name: 'Main navigation' })
-    expect(within(navigation).getAllByRole('button').map((button) => button.textContent)).toEqual([
+    expect(Array.from(navigation.querySelectorAll('.nav-item')).map((button) => button.textContent)).toEqual([
       'Dashboard',
       'Calendar',
       'Students',
@@ -708,6 +714,10 @@ describe('demo shell', () => {
 
     expect(await screen.findByRole('heading', { name: 'Audit Trail', level: 2 })).toBeInTheDocument()
     expect(screen.getByText('No audit events found')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Application Logs' }))
+    expect(await screen.findByRole('heading', { name: 'Application Logs', level: 2 })).toBeInTheDocument()
+    expect(screen.getByText('No log entries found')).toBeInTheDocument()
   })
 
   it('uses a dedicated filter toolbar and data panel on Students', async () => {

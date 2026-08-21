@@ -64,6 +64,7 @@ The App exposes public `/legal/*` routes backed by a no-session public API. Resp
 - `app/Services/FeeAgreements/`: agreement creation and superseding transactions.
 - `app/Services/Billing/`: Fee Record generation/summary, payment, receipt, numbering, manual in-app payment reminders, and legacy invoice services.
 - `app/Services/Audit/` and `app/Audit/`: audit events, trusted context, sanitization, and persistence.
+- `app/Services/Operations/ApplicationLogReader.php`: bounded read-only parsing, filtering, normalization, pagination, and sanitization for Laravel application logs.
 - `app/Models/`: Eloquent entities and relationships.
 - `database/migrations/`: schema history and corrective migrations.
 - `database/seeders/`: demo school, users, roles, permissions, fees, and scenarios.
@@ -80,8 +81,11 @@ Legacy authorization remains primarily route middleware plus distributed scope c
 - `src/features/fee-agreements/`: Fee Agreement editor and form model.
 - `src/features/payments/`: payment allocation editor and allocation model.
 - `src/features/audit/`: read-only Audit Trail list, filters, cursor pagination, and detail view.
+- `src/features/logs/`: Super Admin-only sanitized Application Logs summary, filters, pagination, and expandable context.
 
 The application does not use React Router, Redux, React Query, or another global data layer. Page selection is component state, so there are no deep links or browser-history routes. Data fetching uses local state/effects and the shared API wrapper.
+
+The Admin Sidebar keeps permission-filtered page items inside collapsible module groups. Group and desktop-collapse preferences are local presentation state only; they never replace backend authorization.
 
 `frontend/` and `app/` are independent React workspaces. Admin and the Community App are built and deployed separately on different domains, while each domain reverse-proxies its own `/api` path to the same Laravel backend. This same-origin browser topology preserves the existing session-cookie and CSRF model. A native workspace and store packaging do not exist yet.
 
@@ -186,6 +190,12 @@ Planned, not implemented:
 - Verified production runtime database grants and restored-backup reconciliation.
 
 Model guards do not prevent query-builder/raw SQL/DBA mutation. Production least-privilege requirements are in [Audit Log Operations](AUDIT_LOG_OPERATIONS.md).
+
+## Application Log Viewer
+
+`GET /api/application-logs` is a read-only Admin-surface endpoint protected by `logs.view`, which is assigned only to Super Admin by the migration and demo seeder. `ApplicationLogReader` reads only `laravel*.log` files from the configured log directory, parses single-line Laravel events, normalizes levels to `INFO`, `WARN`, `ERROR`, or `FATAL`, caps the in-memory result set, and applies validated filters and pagination.
+
+The response runs structured context through the existing audit payload sanitizer and redacts credential-like assignments from message text. Multiline stack-trace continuation lines, security-channel files, raw request bodies, headers, cookies, credentials, and tokens are not returned. The viewer is operational diagnostics; business actor/change history remains authoritative only in Audit Trail.
 
 ## External Services
 

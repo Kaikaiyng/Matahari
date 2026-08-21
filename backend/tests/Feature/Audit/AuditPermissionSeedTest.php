@@ -25,9 +25,11 @@ class AuditPermissionSeedTest extends TestCase
             if ($roleSlug === 'super-admin') {
                 $this->assertContains('audit.view', $permissions);
                 $this->assertContains('audit.correct_generic', $permissions);
+                $this->assertContains('logs.view', $permissions);
             } else {
                 $this->assertNotContains('audit.view', $permissions);
                 $this->assertNotContains('audit.correct_generic', $permissions);
+                $this->assertNotContains('logs.view', $permissions);
             }
         }
     }

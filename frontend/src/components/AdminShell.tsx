@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { LucideIcon } from 'lucide-react'
-import { ChevronLeft, Info, Menu, X } from 'lucide-react'
+import { ChevronDown, ChevronLeft, Info, Menu, X } from 'lucide-react'
 import { IconlyBell, IconlyLogout } from './icons/IconlyIcons'
 import { BrandMark } from './BrandMark'
 import { AdminNotificationPopover } from './AdminNotificationPopover'
 import './AdminShell.css'
 
 const SIDEBAR_COLLAPSED_KEY = 'admin-sidebar-collapsed'
+const SIDEBAR_GROUPS_KEY = 'admin-sidebar-groups'
 const TABLET_NAV_QUERY = '(max-width: 1180px)'
 
 export type NavigationItem<PageKey extends string> = {
@@ -57,6 +58,13 @@ export function AdminShell<PageKey extends string>({
       return false
     }
   })
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() => {
+    try {
+      return JSON.parse(window.localStorage.getItem(SIDEBAR_GROUPS_KEY) ?? '{}') as Record<string, boolean>
+    } catch {
+      return {}
+    }
+  })
   const [isNarrowViewport, setIsNarrowViewport] = useState(() =>
     window.matchMedia(TABLET_NAV_QUERY).matches,
   )
@@ -81,6 +89,18 @@ export function AdminShell<PageKey extends string>({
         // The visual state can still change when storage is unavailable.
       }
 
+      return next
+    })
+  }
+
+  const toggleGroup = (label: string) => {
+    setExpandedGroups((current) => {
+      const next = { ...current, [label]: current[label] === false }
+      try {
+        window.localStorage.setItem(SIDEBAR_GROUPS_KEY, JSON.stringify(next))
+      } catch {
+        // Navigation remains usable when storage is unavailable.
+      }
       return next
     })
   }
@@ -183,26 +203,35 @@ export function AdminShell<PageKey extends string>({
         </button>
 
         <nav aria-label="Main navigation">
-          {navGroups.map((group) => (
-            <section className="nav-group" aria-label={group.label} key={group.label}>
-              <h2 className="nav-group-title">{group.label}</h2>
-              {group.items.map(({ key, label, icon: Icon }) => (
-                <button
-                  key={key}
-                  aria-current={key === activePage ? 'page' : undefined}
-                  aria-label={label}
-                  title={isCollapsed ? label : undefined}
-                  className={key === activePage ? 'nav-item active' : 'nav-item'}
-                  onClick={() => selectPage(key)}
-                >
-                  <span className="nav-item-icon-box">
-                    <Icon size={18} />
-                  </span>
-                  <span className="sidebar-label">{label}</span>
+          {navGroups.map((group) => {
+            const compactSidebar = isCollapsed && !isNarrowViewport
+            const hasActiveItem = group.items.some((item) => item.key === activePage)
+            const isExpanded = compactSidebar || hasActiveItem || expandedGroups[group.label] !== false
+            return (
+              <section className={`nav-group${hasActiveItem ? ' active' : ''}`} aria-label={group.label} key={group.label}>
+                <button type="button" className="nav-group-toggle" aria-label={`${group.label} navigation group`} aria-expanded={isExpanded} onClick={() => toggleGroup(group.label)}>
+                  <span>{group.label}</span><ChevronDown size={14} />
                 </button>
-              ))}
-            </section>
-          ))}
+                <div className="nav-group-items">
+                  {isExpanded && group.items.map(({ key, label, icon: Icon }) => (
+                    <button
+                      key={key}
+                      aria-current={key === activePage ? 'page' : undefined}
+                      aria-label={label}
+                      title={isCollapsed ? label : undefined}
+                      className={key === activePage ? 'nav-item active' : 'nav-item'}
+                      onClick={() => selectPage(key)}
+                    >
+                      <span className="nav-item-icon-box">
+                        <Icon size={18} />
+                      </span>
+                      <span className="sidebar-label">{label}</span>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            )
+          })}
         </nav>
 
         <footer className="sidebar-footer">

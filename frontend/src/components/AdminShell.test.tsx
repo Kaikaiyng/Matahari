@@ -62,6 +62,21 @@ describe('AdminShell', () => {
     expect(onLogout).toHaveBeenCalledOnce()
   })
 
+  it('collapses navigation groups and remembers the preference', async () => {
+    const user = userEvent.setup()
+    renderShell()
+
+    const peopleGroup = screen.getByRole('button', { name: 'People navigation group' })
+    expect(peopleGroup).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('button', { name: 'Students' })).toBeInTheDocument()
+
+    await user.click(peopleGroup)
+
+    expect(peopleGroup).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByRole('button', { name: 'Students' })).not.toBeInTheDocument()
+    expect(window.localStorage.getItem('admin-sidebar-groups')).toContain('"People":false')
+  })
+
   it('collapses the desktop layout while preserving the sidebar icons', async () => {
     const user = userEvent.setup()
     renderShell()

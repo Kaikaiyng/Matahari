@@ -7,6 +7,7 @@ import {
   ClipboardList,
   CreditCard,
   Eye,
+  FileText,
   GraduationCap,
   RefreshCw,
   Search,
@@ -61,6 +62,7 @@ import {
 } from './features/fee-agreements/feeAgreementEditorModel'
 import { FeeAgreementEditor } from './features/fee-agreements/FeeAgreementEditor'
 import { AuditTrailPage } from './features/audit/AuditTrailPage'
+import { ApplicationLogsPage } from './features/logs/ApplicationLogsPage'
 import { UgcModerationPage } from './features/moderation/UgcModerationPage'
 import { PaymentAllocationEditor } from './features/payments/PaymentAllocationEditor'
 import type {
@@ -97,6 +99,7 @@ type PageKey =
   | 'fees'
   | 'fee-record'
   | 'audit'
+  | 'application-logs'
   | 'moderation'
   | 'settings'
 
@@ -400,8 +403,14 @@ const navGroups: NavigationGroup<PageKey>[] = [
   {
     label: 'Administration',
     items: [
-      { key: 'audit', label: 'Audit Trail', icon: IconlyAudit as any, requiredPermission: 'audit.view' },
       { key: 'moderation', label: 'Community Safety', icon: ShieldCheck as any, requiredAnyPermissions: ['community.moderate', 'community.moderate_platform'] },
+    ],
+  },
+  {
+    label: 'System',
+    items: [
+      { key: 'audit', label: 'Audit Trail', icon: IconlyAudit as any, requiredPermission: 'audit.view' },
+      { key: 'application-logs', label: 'Application Logs', icon: FileText, requiredPermission: 'logs.view' },
       { key: 'settings', label: 'Settings', icon: IconlySettings as any, requiredPermission: 'foundation_accounts.manage' },
     ],
   },
@@ -4998,6 +5007,10 @@ function App() {
 
     if (activePage === 'audit') {
       return <AuditTrailPage onUnauthorized={handleUnauthorized} />
+    }
+
+    if (activePage === 'application-logs') {
+      return <ApplicationLogsPage onUnauthorized={handleUnauthorized} />
     }
 
     if (activePage === 'moderation') {

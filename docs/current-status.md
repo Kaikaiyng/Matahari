@@ -204,6 +204,7 @@ The confirmed earlier technology direction named Laravel 10, but this repository
 - Settings page for the current single-school context and signed-in account access summary.
 - Backend permission and school-scope enforcement for the dashboard and legacy monthly invoice generation.
 - Secure audit schema/logger/sanitizer/request IDs/model immutability, best-effort authentication audit, read-only Super Admin API, and Audit Trail frontend.
+- Super Admin-only sanitized Application Logs API/UI with level/search/date filters, summary counts, page pagination, bounded Laravel log parsing, and expandable safe context. Application Logs remain separate from immutable business Audit Trail records.
 - Responsive admin UI and temporary local/public demo tooling.
 
 ## Partially Implemented
@@ -362,6 +363,13 @@ Sidebar reference refresh on 2026-08-07:
 - A follow-up contrast fix narrowed sidebar brand-copy selectors so the shared white school mark is no longer overridden by muted text color.
 - `npm.cmd test -- --run`: 15 files and 160 tests passed; `npm.cmd run lint` and `npm.cmd run build` exited 0, with 77 production modules transformed.
 - In-app browser checks covered expanded desktop, collapsed desktop, collapse persistence after reload, and the mobile drawer. Backend and database suites were not rerun because this change is limited to the frontend shell and presentation token.
+
+Admin operations reference refresh on 2026-08-21:
+
+- Sidebar module headings are visible and independently collapsible, persist locally, and retain the existing desktop compact rail and mobile drawer behavior.
+- A new System group contains permission-filtered Audit Trail, Application Logs, and Settings entries.
+- `GET /api/application-logs` is read-only, requires the new Super Admin-only `logs.view` permission, and returns only bounded, parsed, sanitized Laravel log summaries. Raw files, multiline stack traces, security logs, and secret-bearing context are not exposed.
+- Focused evidence: 3 backend tests with 38 assertions and 62 Admin frontend integration/component tests passed. Frontend lint completed with 9 pre-existing Fast Refresh warnings, and the production build passed. MariaDB behavior is **Not verified** for this change.
 
 ## Deployment Status
 

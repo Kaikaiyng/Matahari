@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\ApplicationLogController;
 use App\Http\Controllers\Api\AuditLogController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CalendarEventController;
@@ -101,6 +102,8 @@ Route::middleware([...$sessionMiddleware, 'auth', 'active', 'tenant.member', 'te
         ->middleware('permission:audit.view');
     Route::get('/audit-logs/{auditLog}', [AuditLogController::class, 'show'])
         ->middleware('permission:audit.view');
+    Route::get('/application-logs', [ApplicationLogController::class, 'index'])
+        ->middleware('permission:logs.view');
 
     Route::get('/calendar-events', [CalendarEventController::class, 'index'])
         ->middleware('permission:calendar.view');

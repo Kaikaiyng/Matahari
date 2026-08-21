@@ -53,6 +53,7 @@ Tenant requests use roles from the active `tenant_user_memberships` record, not 
 | Manage users/roles | Not implemented | Not implemented | Not implemented | Not implemented | No user-management route/service/UI |
 | Reset passwords | Not implemented | Not implemented | Not implemented | Not implemented | No password-reset route; reset storage was removed |
 | View audit records | Allowed | Denied | Denied | Denied | `audit.view` on read-only list/detail routes; permission-filtered Audit Trail UI |
+| View sanitized application logs | Allowed | Denied | Denied | Denied | `logs.view` on the read-only Application Logs route and UI; raw files and sensitive context are never returned |
 | Perform generic audit correction | Not implemented | Not implemented | Not implemented | Not implemented | Super Admin has `audit.correct_generic`, but no correction workflow exists |
 | Change system settings | Not implemented | Not implemented | Not implemented | Not implemented | Settings page is a placeholder |
 

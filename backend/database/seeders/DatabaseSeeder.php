@@ -176,6 +176,7 @@ class DatabaseSeeder extends Seeder
             'calendar.delete' => 'Delete calendar events',
             'audit.view' => 'View global audit logs',
             'audit.correct_generic' => 'Correct approved low-risk fields from audit history',
+            'logs.view' => 'View sanitized application logs',
             'academic_years.view' => 'View academic years',
             'academic_years.manage' => 'Manage academic years',
             'class_enrolments.view' => 'View class enrolments',
@@ -208,7 +209,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $roles['super-admin']->permissions()->sync($permissions->pluck('id')->all());
-        $roles['tenant-owner']->permissions()->sync($permissions->except(['audit.view', 'audit.correct_generic', 'community.moderate_platform'])->pluck('id')->all());
+        $roles['tenant-owner']->permissions()->sync($permissions->except(['audit.view', 'audit.correct_generic', 'logs.view', 'community.moderate_platform'])->pluck('id')->all());
         $roles['ceo']->permissions()->sync($permissions->only([
             'fee_record.view',
             'calendar.view',

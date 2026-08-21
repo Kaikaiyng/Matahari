@@ -23,7 +23,7 @@ Implemented workflows include:
 - Scoped Community publishing and feeds with private authorized media, appreciations, controlled comments, moderation history, and transactional audit logging.
 - Strict in-app UGC safety controls: policy acceptance, pending review, separate content/user reports, Community-only blocking, private case status, appeals, school moderation, severe platform escalation, and public legal/safety pages.
 - Teaching Assignment-scoped Assessments with draft result entry, explicit complete-roster publication, and authorized Parent/Student published-result views.
-- Permission-filtered navigation and a Super Admin-only, read-only Audit Trail with filters and event detail.
+- Permission-filtered, grouped/collapsible navigation plus Super Admin-only Audit Trail and sanitized Application Logs views.
 - Responsive desktop, tablet, and mobile administration UI.
 - CSRF-protected session mutations, login throttling, active-session rechecks, request IDs, and transactional audit events for implemented critical workflows.
 
