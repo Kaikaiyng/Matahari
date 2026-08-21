@@ -20,20 +20,19 @@ export function TeacherPortalView({ teacherName, activeTab, onTabChange, onLogou
     }
   }, [activeTab])
 
-  if (activeTab === 'safety') return <CommunitySafetyCentre onBack={() => onTabChange(previousTab)} />
-  if (activeTab === 'assessments') return <AssessmentPage staffMode={staffMode} onBack={() => onTabChange(previousTab)} />
-  if (activeTab === 'quizzes') return <QuizAuthoringPage staffMode={staffMode} onBack={() => onTabChange(previousTab)} />
-
   const primaryTabs = staffMode
     ? ['home', 'classes', 'create', 'review', 'more']
     : ['home', 'classes', 'create', 'attendance', 'more']
-  const activeIndex = primaryTabs.indexOf(activeTab)
+  const isSecondaryPage = ['safety', 'assessments', 'quizzes'].includes(activeTab)
+  const visibleTab = isSecondaryPage ? previousTab : activeTab
+  const activeIndex = primaryTabs.indexOf(visibleTab)
 
   const trackTransform = activeIndex !== -1
     ? `calc(-${activeIndex * 100}% + ${dragOffset}px)`
     : '0px'
 
   return (
+    <>
     <div className="portal-viewpager-container">
       <div
         className="portal-viewpager-track"
@@ -43,27 +42,31 @@ export function TeacherPortalView({ teacherName, activeTab, onTabChange, onLogou
           willChange: 'transform',
         }}
       >
-        <div className={`portal-tab-slide ${activeTab === 'home' ? 'active' : ''} ${isDragging ? 'swiping' : ''}`}>
-          <CommunityFeed role={staffMode ? 'staff' : 'teacher'} userName={teacherName} onCreatePost={() => onTabChange('create')} activeTab={activeTab} />
+        <div className={`portal-tab-slide ${visibleTab === 'home' ? 'active' : ''} ${isDragging ? 'swiping' : ''}`}>
+          <CommunityFeed role={staffMode ? 'staff' : 'teacher'} userName={teacherName} onCreatePost={() => onTabChange('create')} activeTab={visibleTab} />
         </div>
-        <div className={`portal-tab-slide ${activeTab === 'classes' ? 'active' : ''} ${isDragging ? 'swiping' : ''}`}>
+        <div className={`portal-tab-slide ${visibleTab === 'classes' ? 'active' : ''} ${isDragging ? 'swiping' : ''}`}>
           <ClassesPage staffMode={staffMode} onAssessments={() => onTabChange('assessments')} onQuizzes={() => onTabChange('quizzes')} onReview={() => onTabChange('review')} onAttendance={() => onTabChange('attendance')} onCreatePost={() => onTabChange('create')} />
         </div>
-        <div className={`portal-tab-slide ${activeTab === 'create' ? 'active' : ''} ${isDragging ? 'swiping' : ''}`}>
+        <div className={`portal-tab-slide ${visibleTab === 'create' ? 'active' : ''} ${isDragging ? 'swiping' : ''}`}>
           <CreatePost staffMode={staffMode} onPublished={() => onTabChange('home')} />
         </div>
-        <div className={`portal-tab-slide ${(staffMode ? activeTab === 'review' : activeTab === 'attendance') ? 'active' : ''} ${isDragging ? 'swiping' : ''}`}>
+        <div className={`portal-tab-slide ${(staffMode ? visibleTab === 'review' : visibleTab === 'attendance') ? 'active' : ''} ${isDragging ? 'swiping' : ''}`}>
           {staffMode ? (
             <CommunityFeed role="staff" userName={teacherName} moderation />
           ) : (
             <AttendancePage />
           )}
         </div>
-        <div className={`portal-tab-slide ${activeTab === 'more' ? 'active' : ''} ${isDragging ? 'swiping' : ''}`}>
+        <div className={`portal-tab-slide ${visibleTab === 'more' ? 'active' : ''} ${isDragging ? 'swiping' : ''}`}>
           <TeacherMore teacherName={teacherName} staffMode={staffMode} onAssessments={() => onTabChange('assessments')} onQuizzes={() => onTabChange('quizzes')} onSafety={() => onTabChange('safety')} onLogout={onLogout} />
         </div>
       </div>
     </div>
+    {activeTab === 'safety' && <CommunitySafetyCentre onBack={() => onTabChange(previousTab)} />}
+    {activeTab === 'assessments' && <AssessmentPage staffMode={staffMode} onBack={() => onTabChange(previousTab)} />}
+    {activeTab === 'quizzes' && <QuizAuthoringPage staffMode={staffMode} onBack={() => onTabChange(previousTab)} />}
+    </>
   )
 }
 

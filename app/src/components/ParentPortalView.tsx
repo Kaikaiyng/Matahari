@@ -25,11 +25,10 @@ export function ParentPortalView({ parentName, activeTab, onTabChange, onLogout 
     }
   }, [activeTab])
 
-  if (activeTab === 'safety') return <CommunitySafetyCentre onBack={() => onTabChange(previousTab)} />
-
   const children = guardian?.children ?? []
   const primaryTabs = ['home', 'children', 'academics', 'finance', 'more']
-  const activeIndex = primaryTabs.indexOf(activeTab)
+  const visibleTab = activeTab === 'safety' ? previousTab : activeTab
+  const activeIndex = primaryTabs.indexOf(visibleTab)
 
   const trackTransform = activeIndex !== -1
     ? `calc(-${activeIndex * 100}% + ${dragOffset}px)`
@@ -54,6 +53,7 @@ export function ParentPortalView({ parentName, activeTab, onTabChange, onLogout 
   }
 
   return (
+    <>
     <div className="portal-viewpager-container">
       <div
         className="portal-viewpager-track"
@@ -63,23 +63,25 @@ export function ParentPortalView({ parentName, activeTab, onTabChange, onLogout 
           willChange: 'transform',
         }}
       >
-        <div className={`portal-tab-slide ${activeTab === 'home' ? 'active' : ''} ${isDragging ? 'swiping' : ''}`}>
-          <CommunityFeed role="parent" userName={parentName} onOpenFinance={() => onTabChange('finance')} activeTab={activeTab} />
+        <div className={`portal-tab-slide ${visibleTab === 'home' ? 'active' : ''} ${isDragging ? 'swiping' : ''}`}>
+          <CommunityFeed role="parent" userName={parentName} onOpenFinance={() => onTabChange('finance')} activeTab={visibleTab} />
         </div>
-        <div className={`portal-tab-slide ${activeTab === 'children' ? 'active' : ''} ${isDragging ? 'swiping' : ''}`}>
+        <div className={`portal-tab-slide ${visibleTab === 'children' ? 'active' : ''} ${isDragging ? 'swiping' : ''}`}>
           {renderChildrenTab()}
         </div>
-        <div className={`portal-tab-slide ${activeTab === 'academics' ? 'active' : ''} ${isDragging ? 'swiping' : ''}`}>
+        <div className={`portal-tab-slide ${visibleTab === 'academics' ? 'active' : ''} ${isDragging ? 'swiping' : ''}`}>
           {renderAcademicsTab()}
         </div>
-        <div className={`portal-tab-slide ${activeTab === 'finance' ? 'active' : ''} ${isDragging ? 'swiping' : ''}`}>
+        <div className={`portal-tab-slide ${visibleTab === 'finance' ? 'active' : ''} ${isDragging ? 'swiping' : ''}`}>
           {renderFinanceTab()}
         </div>
-        <div className={`portal-tab-slide ${activeTab === 'more' ? 'active' : ''} ${isDragging ? 'swiping' : ''}`}>
+        <div className={`portal-tab-slide ${visibleTab === 'more' ? 'active' : ''} ${isDragging ? 'swiping' : ''}`}>
           <ParentMore name={guardian?.data?.full_name ?? parentName} phone={guardian?.data?.phone} email={guardian?.data?.email} childrenCount={children.length} onSafety={() => onTabChange('safety')} onLogout={onLogout} />
         </div>
       </div>
     </div>
+    {activeTab === 'safety' && <CommunitySafetyCentre onBack={() => onTabChange(previousTab)} />}
+    </>
   )
 }
 

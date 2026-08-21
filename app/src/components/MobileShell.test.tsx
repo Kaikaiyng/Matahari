@@ -127,6 +127,25 @@ describe('MobileShell & Portal Views', () => {
     expect(handleTabChange).toHaveBeenCalledWith('finance')
   })
 
+  it('keeps the previous capsule destination selected beneath a secondary page', () => {
+    const shellProps = {
+      onTabChange: () => {},
+      userRole: 'parent' as const,
+      allowedRoles: ['parent' as const],
+      userName: 'Sarah Tan',
+    }
+    const { rerender } = render(
+      <MobileShell {...shellProps} activeTab="more"><div>Account page</div></MobileShell>,
+    )
+
+    expect(screen.getByRole('button', { name: 'More' })).toHaveAttribute('aria-current', 'page')
+
+    rerender(<MobileShell {...shellProps} activeTab="safety"><div>Secondary page</div></MobileShell>)
+
+    expect(screen.getByRole('button', { name: 'More' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByText('Secondary page')).toBeInTheDocument()
+  })
+
   it('offers only roles held by a multi-role portal user', () => {
     const changeRole = vi.fn()
     render(

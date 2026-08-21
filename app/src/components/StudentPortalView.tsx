@@ -26,16 +26,16 @@ export function StudentPortalView({ studentName, activeTab, onTabChange = () => 
     }
   }, [activeTab])
 
-  if (activeTab === 'safety') return <CommunitySafetyCentre onBack={() => onTabChange(previousTab)} />
-
   const primaryTabs = ['home', 'learn', 'quiz', 'schedule', 'more']
-  const activeIndex = primaryTabs.indexOf(activeTab)
+  const visibleTab = activeTab === 'safety' ? previousTab : activeTab
+  const activeIndex = primaryTabs.indexOf(visibleTab)
 
   const trackTransform = activeIndex !== -1
     ? `calc(-${activeIndex * 100}% + ${dragOffset}px)`
     : '0px'
 
   return (
+    <>
     <div className="portal-viewpager-container">
       <div
         className="portal-viewpager-track"
@@ -45,31 +45,33 @@ export function StudentPortalView({ studentName, activeTab, onTabChange = () => 
           willChange: 'transform',
         }}
       >
-        <div className={`portal-tab-slide ${activeTab === 'home' ? 'active' : ''} ${isDragging ? 'swiping' : ''}`}>
-          <CommunityFeed role="student" userName={student?.full_name ?? studentName} activeTab={activeTab} />
+        <div className={`portal-tab-slide ${visibleTab === 'home' ? 'active' : ''} ${isDragging ? 'swiping' : ''}`}>
+          <CommunityFeed role="student" userName={student?.full_name ?? studentName} activeTab={visibleTab} />
         </div>
-        <div className={`portal-tab-slide ${activeTab === 'learn' ? 'active' : ''} ${isDragging ? 'swiping' : ''}`}>
+        <div className={`portal-tab-slide ${visibleTab === 'learn' ? 'active' : ''} ${isDragging ? 'swiping' : ''}`}>
           {loading ? (
             <div className="record-page"><div className="app-skeleton large" /><div className="app-skeleton" /><div className="app-skeleton" /></div>
           ) : (
             <StudentLearn student={student} enrolments={enrolments} attendance={attendance} results={results} />
           )}
         </div>
-        <div className={`portal-tab-slide ${activeTab === 'quiz' ? 'active' : ''} ${isDragging ? 'swiping' : ''}`}>
+        <div className={`portal-tab-slide ${visibleTab === 'quiz' ? 'active' : ''} ${isDragging ? 'swiping' : ''}`}>
           <StudentQuiz />
         </div>
-        <div className={`portal-tab-slide ${activeTab === 'schedule' ? 'active' : ''} ${isDragging ? 'swiping' : ''}`}>
+        <div className={`portal-tab-slide ${visibleTab === 'schedule' ? 'active' : ''} ${isDragging ? 'swiping' : ''}`}>
           {loading ? (
             <div className="record-page"><div className="app-skeleton large" /><div className="app-skeleton" /><div className="app-skeleton" /></div>
           ) : (
             <StudentSchedule schedule={schedule} />
           )}
         </div>
-        <div className={`portal-tab-slide ${activeTab === 'more' ? 'active' : ''} ${isDragging ? 'swiping' : ''}`}>
+        <div className={`portal-tab-slide ${visibleTab === 'more' ? 'active' : ''} ${isDragging ? 'swiping' : ''}`}>
           <StudentMore student={student} fallbackName={studentName} onSafety={() => onTabChange('safety')} onLogout={onLogout} />
         </div>
       </div>
     </div>
+    {activeTab === 'safety' && <CommunitySafetyCentre onBack={() => onTabChange(previousTab)} />}
+    </>
   )
 }
 

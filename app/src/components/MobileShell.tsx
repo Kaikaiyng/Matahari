@@ -60,6 +60,11 @@ export function MobileShell({ activeTab, onTabChange, userRole, allowedRoles, on
   }, [])
   const featureByTab: Record<string, string> = { home: 'community', create: 'community', review: 'community', attendance: 'attendance', finance: 'parent_finance', academics: 'assessments', quiz: 'formal_quiz', schedule: 'schedule' }
   const navigation = navByRole[userRole].filter((item) => !featureByTab[item.id] || tenant.features[featureByTab[item.id]] !== false)
+  const lastPrimaryTabRef = useRef(navigation[0]?.id ?? 'home')
+  const isPrimaryTab = navigation.some((item) => item.id === activeTab)
+  if (isPrimaryTab) lastPrimaryTabRef.current = activeTab
+  if (!navigation.some((item) => item.id === lastPrimaryTabRef.current)) lastPrimaryTabRef.current = navigation[0]?.id ?? 'home'
+  const visualActiveTab = isPrimaryTab ? activeTab : lastPrimaryTabRef.current
   const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null)
   const [dragOffset, setDragOffset] = useState<number>(0)
   const [isDragging, setIsDragging] = useState<boolean>(false)
@@ -99,7 +104,7 @@ export function MobileShell({ activeTab, onTabChange, userRole, allowedRoles, on
         setPullStatus('pull')
       }
     } else if (Math.abs(deltaX) > Math.abs(deltaY) * 1.1 && pullDistance === 0) {
-      const currentIndex = navigation.findIndex((item) => item.id === activeTab)
+      const currentIndex = navigation.findIndex((item) => item.id === visualActiveTab)
       if ((currentIndex === 0 && deltaX > 0) || (currentIndex === navigation.length - 1 && deltaX < 0)) {
         setDragOffset(deltaX * 0.25)
       } else {
@@ -131,7 +136,7 @@ export function MobileShell({ activeTab, onTabChange, userRole, allowedRoles, on
       setPullStatus('pull')
     }
 
-    const currentIndex = navigation.findIndex((item) => item.id === activeTab)
+    const currentIndex = navigation.findIndex((item) => item.id === visualActiveTab)
 
     if (currentIndex !== -1 && pullDistance === 0) {
       if (dragOffset < -70 && currentIndex < navigation.length - 1) {
@@ -213,7 +218,7 @@ export function MobileShell({ activeTab, onTabChange, userRole, allowedRoles, on
           </main>
         </div>
         <nav className="mis-bottom-nav" aria-label="Mobile Navigation">{navigation.map((item) => {
-          const active = activeTab === item.id
+          const active = visualActiveTab === item.id
           return <button key={item.id} type="button" className={`glass-nav-item ${active ? 'active' : ''}`} aria-label={item.label} aria-current={active ? 'page' : undefined} onClick={() => handleTabChange(item.id)}><span className="glass-nav-icon">{item.icon}</span><span className={active ? 'glass-nav-label' : 'sr-only'}>{item.label}</span></button>
         })}</nav>
         {showNotifications && (
