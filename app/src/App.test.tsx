@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 
@@ -70,6 +70,28 @@ describe('separate MIS portal app', () => {
     expect(screen.getAllByText('Share a school moment').length).toBeGreaterThan(0)
     expect(screen.getByTestId('authenticated-app-shell')).toHaveAttribute('inert')
     expect(screen.getByTestId('authenticated-app-shell')).toHaveAttribute('aria-hidden', 'true')
+  })
+
+  it('returns to login when policy acceptance finds an expired session', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
+      const path = new URL(String(input), window.location.origin).pathname
+      if (path.endsWith('/me')) return json({ user: { id: 4, name: 'Ms Lim', username: 'teacher.lim', school_id: 1, roles: ['teacher'], permissions: ['teaching_scope.view'] } })
+      if (path.endsWith('/community/policies/current')) return json({ data: {
+        terms: { id: 11, title: 'Terms of Use', accepted: false },
+        community_standards: { id: 12, title: 'Community Standards', accepted: false },
+      } })
+      if (path.endsWith('/csrf-cookie')) return Promise.resolve(new Response(null, { status: 204 }))
+      if (path.includes('/community/policies/') && init?.method === 'POST') return json({ message: 'Unauthenticated.' }, 401)
+      return json({ data: [] })
+    })
+
+    render(<App />)
+
+    expect(await screen.findByRole('heading', { name: 'Before you continue' })).toBeInTheDocument()
+    screen.getAllByRole('checkbox').forEach((checkbox) => fireEvent.click(checkbox))
+    fireEvent.click(screen.getByRole('button', { name: 'Accept and continue' }))
+
+    expect(await screen.findByRole('heading', { name: 'Welcome to MIS' })).toBeInTheDocument()
   })
 
   it('renders the staff publishing shell for a school administrator', async () => {

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ApiError, apiRequest } from './api'
+import { ApiError, apiRequest, AUTH_EXPIRED_EVENT } from './api'
 import { MobileShell } from './components/MobileShell'
 import { ParentPortalView } from './components/ParentPortalView'
 import { StudentPortalView } from './components/StudentPortalView'
@@ -42,6 +42,18 @@ function App() {
         setAuthState('guest')
       })
   }, [publicPolicySlug])
+
+  useEffect(() => {
+    const handleExpiredSession = () => {
+      setUser(null)
+      setSelectedRole(null)
+      setActiveTab('home')
+      setPoliciesAccepted(false)
+      setAuthState('guest')
+    }
+    window.addEventListener(AUTH_EXPIRED_EVENT, handleExpiredSession)
+    return () => window.removeEventListener(AUTH_EXPIRED_EVENT, handleExpiredSession)
+  }, [])
 
   const allowedRoles = useMemo<AppRole[]>(() => {
     if (!user) return []

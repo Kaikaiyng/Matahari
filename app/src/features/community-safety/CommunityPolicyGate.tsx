@@ -51,6 +51,8 @@ export function CommunityPolicyGate({ role, onReadyChange }: { role?: 'parent' |
       setCheckedIds(initialChecked)
       onReadyChange(required.length === 2 && required.every((policy) => policy.accepted))
     }).catch(() => {
+      setPolicies([])
+      setCheckedIds({})
       setError('Unable to verify the current Community policies.')
       onReadyChange(false)
     }).finally(() => setLoading(false))
