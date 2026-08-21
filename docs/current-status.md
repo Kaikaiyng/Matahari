@@ -371,6 +371,12 @@ Admin operations reference refresh on 2026-08-21:
 - `GET /api/application-logs` is read-only, requires the new Super Admin-only `logs.view` permission, and returns only bounded, parsed, sanitized Laravel log summaries. Raw files, multiline stack traces, security logs, and secret-bearing context are not exposed.
 - Focused evidence: 3 backend tests with 38 assertions and 62 Admin frontend integration/component tests passed. Frontend lint completed with 9 pre-existing Fast Refresh warnings, and the production build passed. MariaDB behavior is **Not verified** for this change.
 
+Community App gesture refinement on 2026-08-21:
+
+- Notifications now use a reusable MAW-style right-swipe return gesture with direction locking, fast-flick and proportional thresholds, follow-finger movement, rebound, and duplicate-return protection.
+- The horizontally scrollable Notification category pills are excluded from page-return recognition, so scrolling them in either direction cannot close Notifications. Leftward gestures never trigger back.
+- The existing RYLAY liquid-glass bottom navigation capsule and its animation are unchanged. Focused gesture tests, App lint, and the App production build passed.
+
 ## Deployment Status
 
 - No production environment or production database is evidenced in the repository.

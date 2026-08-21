@@ -53,6 +53,8 @@
   overflow-x: auto;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior-inline: contain;
+  touch-action: pan-x;
 }
 
 .nc-filter-bar::-webkit-scrollbar {

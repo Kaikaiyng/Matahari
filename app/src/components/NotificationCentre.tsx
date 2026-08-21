@@ -14,6 +14,7 @@ import {
 import { portalApi, type PortalNotification } from '../api/portalApi'
 import '../features/community-safety/CommunitySafety.css'
 import './NotificationCentre.css'
+import { useSwipeBack } from './useSwipeBack'
 
 export interface NotificationCentreProps {
   onClose: () => void
@@ -28,57 +29,13 @@ export const NotificationCentre: React.FC<NotificationCentreProps> = ({
   onUnreadCountChange,
   onNavigate,
 }) => {
-  const [isExiting, setIsExiting] = useState(false)
   const [notifications, setNotifications] = useState<PortalNotification[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [markingAll, setMarkingAll] = useState(false)
   const [activeFilter, setActiveFilter] = useState<NotificationCategory>('all')
 
-  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null)
-  const [dragOffset, setDragOffset] = useState<number>(0)
-  const [isDragging, setIsDragging] = useState<boolean>(false)
-
-  const handleBack = () => {
-    if (isExiting) return
-    setIsExiting(true)
-    setTimeout(() => {
-      onClose()
-      setIsExiting(false)
-    }, 200)
-  }
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    e.stopPropagation()
-    const touch = e.touches[0]
-    setTouchStart({ x: touch.clientX, y: touch.clientY })
-    setIsDragging(true)
-  }
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    e.stopPropagation()
-    if (!touchStart) return
-    const touch = e.touches[0]
-    const deltaX = touch.clientX - touchStart.x
-    const deltaY = touch.clientY - touchStart.y
-
-    if (deltaX > 0 && Math.abs(deltaX) > Math.abs(deltaY) * 1.1) {
-      setDragOffset(deltaX)
-    }
-  }
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    e.stopPropagation()
-    if (!touchStart) return
-    setIsDragging(false)
-
-    if (dragOffset > 80) {
-      handleBack()
-    }
-
-    setDragOffset(0)
-    setTouchStart(null)
-  }
+  const { isExiting, requestBack: handleBack, surfaceStyle, gestureHandlers } = useSwipeBack(onClose)
 
   const load = useCallback(async () => {
     try {
@@ -211,19 +168,14 @@ export const NotificationCentre: React.FC<NotificationCentreProps> = ({
       className={`subpage-slide-overlay ${isExiting ? 'subpage-slide-out' : ''}`}
       role="region"
       aria-label="Notification Centre Subpage"
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
+      {...gestureHandlers}
       style={{
         position: 'fixed',
         inset: 0,
         zIndex: 99990,
         background: '#f6f3ee',
         overflowY: 'auto',
-        transform: dragOffset > 0 ? `translateX(${dragOffset}px)` : undefined,
-        opacity: dragOffset > 0 ? Math.max(0.2, 1 - dragOffset / 400) : undefined,
-        transition: isDragging ? 'none' : 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.22s ease',
-        willChange: 'transform, opacity',
+        ...surfaceStyle,
       }}
     >
       <div className="subpage-container">
@@ -258,7 +210,7 @@ export const NotificationCentre: React.FC<NotificationCentreProps> = ({
         </header>
 
         {/* Filter Pills */}
-        <div className="nc-filter-bar">
+        <div className="nc-filter-bar" data-horizontal-scroll="true">
           <button
             type="button"
             className={`nc-filter-chip ${activeFilter === 'all' ? 'active' : ''}`}
