@@ -85,7 +85,7 @@ Legacy authorization remains primarily route middleware plus distributed scope c
 
 The application does not use React Router, Redux, React Query, or another global data layer. Page selection is component state, so there are no deep links or browser-history routes. Data fetching uses local state/effects and the shared API wrapper.
 
-The Admin Sidebar keeps permission-filtered page items inside collapsible module groups. Group and desktop-collapse preferences are local presentation state only; they never replace backend authorization.
+The Admin Sidebar uses MAW-style navigation behavior with MIS branding: standalone primary destinations, icon-led accordion module groups, indented text subitems, a full desktop slide-away control, and the existing mobile drawer. Group and desktop-collapse preferences are local presentation state only; they never replace backend authorization.
 
 `frontend/` and `app/` are independent React workspaces. Admin and the Community App are built and deployed separately on different domains, while each domain reverse-proxies its own `/api` path to the same Laravel backend. This same-origin browser topology preserves the existing session-cookie and CSRF model. A native workspace and store packaging do not exist yet.
 

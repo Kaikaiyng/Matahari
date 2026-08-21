@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { LucideIcon } from 'lucide-react'
-import { ChevronDown, ChevronLeft, Info, Menu, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Info, Menu, X } from 'lucide-react'
 import { IconlyBell, IconlyLogout } from './icons/IconlyIcons'
 import { BrandMark } from './BrandMark'
 import { AdminNotificationPopover } from './AdminNotificationPopover'
@@ -21,6 +21,8 @@ export type NavigationItem<PageKey extends string> = {
 
 export type NavigationGroup<PageKey extends string> = {
   label: string
+  icon: LucideIcon
+  standalone?: boolean
   items: NavigationItem<PageKey>[]
 }
 
@@ -95,7 +97,7 @@ export function AdminShell<PageKey extends string>({
 
   const toggleGroup = (label: string) => {
     setExpandedGroups((current) => {
-      const next = { ...current, [label]: current[label] === false }
+      const next = { ...current, [label]: !current[label] }
       try {
         window.localStorage.setItem(SIDEBAR_GROUPS_KEY, JSON.stringify(next))
       } catch {
@@ -196,36 +198,55 @@ export function AdminShell<PageKey extends string>({
           aria-expanded={!isCollapsed}
           onClick={toggleCollapsed}
         >
-          <ChevronLeft
-            className={`sidebar-collapse-icon${isCollapsed ? ' reversed' : ''}`}
-            size={16}
-          />
+          {isCollapsed
+            ? <ChevronRight className="sidebar-collapse-icon" size={16} />
+            : <ChevronLeft className="sidebar-collapse-icon" size={16} />}
         </button>
 
         <nav aria-label="Main navigation">
           {navGroups.map((group) => {
-            const compactSidebar = isCollapsed && !isNarrowViewport
             const hasActiveItem = group.items.some((item) => item.key === activePage)
-            const isExpanded = compactSidebar || hasActiveItem || expandedGroups[group.label] !== false
+            const isExpanded = hasActiveItem || expandedGroups[group.label] === true
+
+            if (group.standalone) {
+              const item = group.items[0]
+              if (!item) return null
+              const Icon = group.icon
+
+              return (
+                <button
+                  key={group.label}
+                  aria-current={item.key === activePage ? 'page' : undefined}
+                  aria-label={item.label}
+                  className={item.key === activePage ? 'nav-item nav-single active' : 'nav-item nav-single'}
+                  onClick={() => selectPage(item.key)}
+                >
+                  <span className="nav-item-icon-box"><Icon size={18} /></span>
+                  <span className="sidebar-label">{item.label}</span>
+                </button>
+              )
+            }
+
+            const GroupIcon = group.icon
             return (
               <section className={`nav-group${hasActiveItem ? ' active' : ''}`} aria-label={group.label} key={group.label}>
                 <button type="button" className="nav-group-toggle" aria-label={`${group.label} navigation group`} aria-expanded={isExpanded} onClick={() => toggleGroup(group.label)}>
-                  <span>{group.label}</span><ChevronDown size={14} />
+                  <span className="nav-group-title">
+                    <span className="nav-group-icon"><GroupIcon size={18} /></span>
+                    <span>{group.label}</span>
+                  </span>
+                  <ChevronRight className="nav-group-chevron" size={15} />
                 </button>
-                <div className="nav-group-items">
-                  {isExpanded && group.items.map(({ key, label, icon: Icon }) => (
+                <div className={`nav-group-items${isExpanded ? ' expanded' : ''}`}>
+                  {isExpanded && group.items.map(({ key, label }) => (
                     <button
                       key={key}
                       aria-current={key === activePage ? 'page' : undefined}
                       aria-label={label}
-                      title={isCollapsed ? label : undefined}
-                      className={key === activePage ? 'nav-item active' : 'nav-item'}
+                      className={key === activePage ? 'nav-subitem active' : 'nav-subitem'}
                       onClick={() => selectPage(key)}
                     >
-                      <span className="nav-item-icon-box">
-                        <Icon size={18} />
-                      </span>
-                      <span className="sidebar-label">{label}</span>
+                      <span>{label}</span>
                     </button>
                   ))}
                 </div>

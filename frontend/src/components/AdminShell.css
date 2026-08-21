@@ -1,24 +1,17 @@
 .admin-shell {
   min-height: 100dvh;
-  display: grid;
-  grid-template-columns: 216px minmax(0, 1fr);
   background: var(--canvas, #f4f7fb);
   color: var(--text, #25272d);
   overflow-x: clip;
-  transition: grid-template-columns 160ms ease;
-}
-
-.admin-shell.sidebar-collapsed {
-  grid-template-columns: 80px minmax(0, 1fr);
 }
 
 .admin-sidebar {
   --sidebar-item-height: 42px;
   --sidebar-item-gap: 4px;
-  position: sticky;
-  top: 0;
+  position: fixed;
+  inset: 0 auto 0 0;
   z-index: 40;
-  min-width: 0;
+  width: 256px;
   height: 100dvh;
   display: flex;
   flex-direction: column;
@@ -27,6 +20,13 @@
   background: var(--sidebar, #ffffff);
   color: var(--text, #25272d);
   box-shadow: 5px 0 24px rgb(15 23 42 / 4%);
+  transform: translateX(0);
+  transition: transform 180ms ease;
+  will-change: transform;
+}
+
+.admin-shell.sidebar-collapsed .admin-sidebar {
+  transform: translateX(-100%);
 }
 
 .admin-brand {
@@ -78,16 +78,17 @@
 .sidebar-collapse {
   position: absolute;
   top: 50%;
-  right: -14px;
-  transform: translateY(-50%);
+  right: 0;
+  transform: translate(100%, -50%);
   z-index: 2;
-  width: 28px;
-  height: 28px;
+  width: 25px;
+  height: 44px;
   display: grid;
   place-items: center;
   padding: 0;
   border: 1px solid #dbe2ea;
-  border-radius: 50%;
+  border-left: 0;
+  border-radius: 0 10px 10px 0;
   background: #ffffff;
   color: #64748b;
   box-shadow: 0 3px 10px rgb(15 23 42 / 10%);
@@ -99,15 +100,7 @@
   color: #1e3a8a;
 }
 
-.sidebar-collapse-icon {
-  transform: rotate(0deg);
-  transform-origin: center;
-  transition: transform 160ms ease;
-}
-
-.sidebar-collapse-icon.reversed {
-  transform: rotate(180deg);
-}
+.sidebar-collapse-icon { flex: 0 0 auto; }
 
 .admin-sidebar nav {
   min-height: 0;
@@ -130,35 +123,68 @@
 }
 
 .nav-group + .nav-group {
-  padding-top: 7px;
-  border-top: 1px solid #f1f5f9;
+  padding-top: 2px;
 }
 
 .nav-group-toggle {
   width: 100%;
-  min-height: 28px;
+  min-height: var(--sidebar-item-height);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 2px 10px;
-  border: 0;
+  gap: 8px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 12px;
   background: transparent;
-  color: #94a3b8;
+  color: #334155;
   font: inherit;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: .08em;
-  text-transform: uppercase;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: left;
   cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
 }
 
-.nav-group-toggle:hover,
-.nav-group.active .nav-group-toggle { color: #64748b; }
-.nav-group-toggle svg { transition: transform 160ms ease; }
-.nav-group-toggle[aria-expanded='false'] svg { transform: rotate(-90deg); }
-.nav-group-items { display: grid; gap: var(--sidebar-item-gap); }
-.admin-sidebar.collapsed .nav-group-toggle { display: none; }
-.admin-sidebar.collapsed .nav-group + .nav-group { padding-top: 5px; }
+.nav-group-toggle:hover { background: #f8fafc; color: #1e293b; }
+.nav-group.active .nav-group-toggle,
+.nav-group-toggle[aria-expanded='true'] {
+  border-color: #ffe4e6;
+  background: var(--brand-primary-soft, #fff1f2);
+  color: var(--brand-primary-dark);
+}
+
+.nav-group-title { min-width: 0; display: flex; align-items: center; gap: 12px; }
+.nav-group-icon { width: 28px; height: 28px; flex: 0 0 28px; display: grid; place-items: center; border-radius: 8px; }
+.nav-group-chevron { flex: 0 0 auto; transition: transform 160ms ease; }
+.nav-group-toggle[aria-expanded='true'] .nav-group-chevron { transform: rotate(90deg); }
+
+.nav-group-items {
+  display: grid;
+  gap: 2px;
+  margin: 1px 0 3px 25px;
+  padding-left: 14px;
+  border-left: 2px solid #f3c7cf;
+}
+
+.nav-subitem {
+  width: 100%;
+  min-height: 34px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #64748b;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.nav-subitem:hover { background: #f8fafc; color: #1e293b; }
+.nav-subitem.active { background: #fff7f8; color: var(--brand-primary-dark); font-weight: 800; }
 
 .nav-item {
   width: 100%;
@@ -307,47 +333,20 @@
   background: var(--brand-primary-soft, #fff1f2);
 }
 
-.admin-sidebar.collapsed .admin-brand-copy,
-.admin-sidebar.collapsed .sidebar-label {
-  max-width: 0;
-  opacity: 0;
-  transform: translateX(-6px);
-  pointer-events: none;
-}
-
-.admin-sidebar.collapsed .admin-brand-mark {
-  max-width: 52px;
-  height: 52px;
-}
-
-.admin-sidebar.collapsed .admin-brand {
-  justify-content: center;
-  padding-inline: 0;
-}
-
-.admin-sidebar.collapsed .nav-item {
-  justify-content: flex-start;
-  padding: 0 16px;
-  gap: 12px;
-}
-
-.admin-sidebar.collapsed .sidebar-portal,
-.admin-sidebar.collapsed .sidebar-logout {
-  justify-content: flex-start;
-  padding: 0 16px;
-  gap: 12px;
-}
-
-@media (max-width: 1180px) {
-  .admin-sidebar.collapsed .nav-group-toggle { display: flex; }
-}
+.nav-single { flex: 0 0 auto; }
 
 .admin-workspace {
   min-width: 0;
   min-height: 100dvh;
+  margin-left: 256px;
   overflow-x: clip;
   display: grid;
   grid-template-rows: 48px minmax(0, 1fr);
+  transition: margin-left 180ms ease;
+}
+
+.admin-shell.sidebar-collapsed .admin-workspace {
+  margin-left: 0;
 }
 
 .utility-header {
@@ -841,7 +840,9 @@ body.nav-open {
   outline-offset: 2px;
 }
 
-.nav-item:focus-visible {
+.nav-item:focus-visible,
+.nav-group-toggle:focus-visible,
+.nav-subitem:focus-visible {
   outline: 0;
   box-shadow: 0 0 0 3px var(--border-strong);
 }
@@ -868,7 +869,8 @@ body.nav-open {
     will-change: transform;
   }
 
-  .admin-sidebar.open {
+  .admin-sidebar.open,
+  .admin-shell.sidebar-collapsed .admin-sidebar.open {
     transform: translateX(0);
   }
 
@@ -934,6 +936,7 @@ body.nav-open {
   }
 
   .admin-workspace {
+    margin-left: 0;
     grid-template-rows: 48px minmax(0, 1fr);
   }
 
@@ -973,8 +976,12 @@ body.nav-open {
 @media (prefers-reduced-motion: reduce) {
   .admin-shell,
   .admin-sidebar,
+  .admin-workspace,
   .sidebar-backdrop,
   .nav-item,
+  .nav-group-toggle,
+  .nav-group-chevron,
+  .nav-subitem,
   .sidebar-label,
   .admin-brand-copy,
   .sidebar-collapse-icon {

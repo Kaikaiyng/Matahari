@@ -6,11 +6,14 @@ import { AdminShell } from './AdminShell'
 
 const groups = [
   {
-    label: 'Overview',
+    label: 'Dashboard',
+    icon: LayoutDashboard,
+    standalone: true,
     items: [{ key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard }],
   },
   {
     label: 'People',
+    icon: Users,
     items: [{ key: 'students', label: 'Students', icon: Users }],
   },
 ]
@@ -50,11 +53,12 @@ describe('AdminShell', () => {
     const { onSelectPage, onLogout } = renderShell()
 
     const navigation = screen.getByRole('navigation', { name: 'Main navigation' })
-    expect(within(navigation).getByText('Overview')).toBeInTheDocument()
+    expect(within(navigation).getByText('Dashboard')).toBeInTheDocument()
     expect(within(navigation).getByText('People')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Dashboard' })).toHaveAttribute('aria-current', 'page')
     expect(screen.getByRole('img', { name: 'Matahari International School logo' })).toBeInTheDocument()
 
+    await user.click(screen.getByRole('button', { name: 'People navigation group' }))
     await user.click(screen.getByRole('button', { name: 'Students' }))
     await user.click(screen.getByRole('button', { name: 'Logout' }))
 
@@ -67,17 +71,17 @@ describe('AdminShell', () => {
     renderShell()
 
     const peopleGroup = screen.getByRole('button', { name: 'People navigation group' })
-    expect(peopleGroup).toHaveAttribute('aria-expanded', 'true')
-    expect(screen.getByRole('button', { name: 'Students' })).toBeInTheDocument()
+    expect(peopleGroup).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByRole('button', { name: 'Students' })).not.toBeInTheDocument()
 
     await user.click(peopleGroup)
 
-    expect(peopleGroup).toHaveAttribute('aria-expanded', 'false')
-    expect(screen.queryByRole('button', { name: 'Students' })).not.toBeInTheDocument()
-    expect(window.localStorage.getItem('admin-sidebar-groups')).toContain('"People":false')
+    expect(peopleGroup).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('button', { name: 'Students' })).toBeInTheDocument()
+    expect(window.localStorage.getItem('admin-sidebar-groups')).toContain('"People":true')
   })
 
-  it('collapses the desktop layout while preserving the sidebar icons', async () => {
+  it('slides the whole desktop sidebar away and keeps the edge toggle available', async () => {
     const user = userEvent.setup()
     renderShell()
 
@@ -104,8 +108,9 @@ describe('AdminShell', () => {
     expect(screen.getByRole('button', { name: 'Dashboard' }).querySelector('svg')).toBe(dashboardIcon)
     const expandButton = screen.getByRole('button', { name: 'Expand sidebar' })
     expect(expandButton).toHaveAttribute('aria-expanded', 'false')
-    expect(expandButton.querySelector('svg')).toBe(directionIcon)
-    expect(directionIcon).toHaveClass('sidebar-collapse-icon', 'reversed')
+    const expandIcon = expandButton.querySelector('svg')
+    expect(expandIcon).toHaveClass('sidebar-collapse-icon', 'lucide-chevron-right')
+    expect(expandIcon).not.toBe(directionIcon)
     expect(window.localStorage.getItem('admin-sidebar-collapsed')).toBe('true')
   })
 

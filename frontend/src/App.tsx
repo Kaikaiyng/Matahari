@@ -377,14 +377,20 @@ type VerifyPaymentForm = {
 
 const navGroups: NavigationGroup<PageKey>[] = [
   {
-    label: 'Overview',
-    items: [
-      { key: 'dashboard', label: 'Dashboard', icon: IconlyDashboard as any, requiredPermission: 'fee_record.view' },
-      { key: 'calendar', label: 'Calendar', icon: IconlyCalendar as any, requiredPermission: 'calendar.view' },
-    ],
+    label: 'Dashboard',
+    icon: IconlyDashboard as any,
+    standalone: true,
+    items: [{ key: 'dashboard', label: 'Dashboard', icon: IconlyDashboard as any, requiredPermission: 'fee_record.view' }],
+  },
+  {
+    label: 'Calendar',
+    icon: IconlyCalendar as any,
+    standalone: true,
+    items: [{ key: 'calendar', label: 'Calendar', icon: IconlyCalendar as any, requiredPermission: 'calendar.view' }],
   },
   {
     label: 'People',
+    icon: IconlyGraduationCap as any,
     items: [
       { key: 'students', label: 'Students', icon: IconlyGraduationCap as any, requiredPermission: 'students.view' },
       { key: 'classes', label: 'Classes', icon: IconlyClasses as any, requiredPermission: 'students.view' },
@@ -395,6 +401,7 @@ const navGroups: NavigationGroup<PageKey>[] = [
   },
   {
     label: 'Finance',
+    icon: IconlyFees as any,
     items: [
       { key: 'fees', label: 'Fees', icon: IconlyFees as any, requiredPermission: 'fee_items.view' },
       { key: 'fee-record', label: 'Fee Record', icon: IconlyFeeRecord as any, requiredPermission: 'fee_record.view' },
@@ -402,12 +409,14 @@ const navGroups: NavigationGroup<PageKey>[] = [
   },
   {
     label: 'Administration',
+    icon: ShieldCheck as any,
     items: [
       { key: 'moderation', label: 'Community Safety', icon: ShieldCheck as any, requiredAnyPermissions: ['community.moderate', 'community.moderate_platform'] },
     ],
   },
   {
     label: 'System',
+    icon: IconlySettings as any,
     items: [
       { key: 'audit', label: 'Audit Trail', icon: IconlyAudit as any, requiredPermission: 'audit.view' },
       { key: 'application-logs', label: 'Application Logs', icon: FileText, requiredPermission: 'logs.view' },

@@ -357,7 +357,7 @@ Dependency security refresh on 2026-08-07:
 
 Sidebar reference refresh on 2026-08-07:
 
-- The authenticated desktop shell now uses a white reference-style sidebar with a 256-pixel expanded state, an 80-pixel collapsed state, a light-blue active item, and a compact footer. The collapse preference is stored locally under the brand-neutral `admin-sidebar-collapsed` key.
+- The authenticated desktop shell uses a white 256-pixel MIS-branded sidebar. The earlier 80-pixel compact rail was superseded on 2026-08-21 by MAW-style full slide-away behavior with a persistent edge toggle. The collapse preference remains stored locally under the brand-neutral `admin-sidebar-collapsed` key.
 - Existing page keys, navigation items, permission filtering, page-selection callbacks, and logout behavior remain unchanged. Logout moved from the utility header to the sidebar footer so there is one clear control.
 - Mobile retains the existing drawer, backdrop, focus, Escape, scroll-lock, and close-on-navigation behavior. A 390-by-844 browser check confirmed that labels remain visible in the drawer even when the desktop preference is collapsed.
 - A follow-up contrast fix narrowed sidebar brand-copy selectors so the shared white school mark is no longer overridden by muted text color.
@@ -366,7 +366,7 @@ Sidebar reference refresh on 2026-08-07:
 
 Admin operations reference refresh on 2026-08-21:
 
-- Sidebar module headings are visible and independently collapsible, persist locally, and retain the existing desktop compact rail and mobile drawer behavior.
+- Sidebar navigation now follows the MAW structure with standalone Dashboard/Calendar entries, icon-led accordion module headings, indented text-only subitems, persisted expansion state, full desktop slide-away behavior, and the existing accessible mobile drawer. MIS logo, red brand styling, menu permissions, and page destinations remain authoritative for this product.
 - A new System group contains permission-filtered Audit Trail, Application Logs, and Settings entries.
 - `GET /api/application-logs` is read-only, requires the new Super Admin-only `logs.view` permission, and returns only bounded, parsed, sanitized Laravel log summaries. Raw files, multiline stack traces, security logs, and secret-bearing context are not exposed.
 - Focused evidence: 3 backend tests with 38 assertions and 62 Admin frontend integration/component tests passed. Frontend lint completed with 9 pre-existing Fast Refresh warnings, and the production build passed. MariaDB behavior is **Not verified** for this change.
