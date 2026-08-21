@@ -174,9 +174,11 @@ export function CommunityPolicyGate({ role, onReadyChange }: { role?: 'parent' |
                       <button
                         type="button"
                         className="policy-inline-link"
+                        disabled={isLoadingThis}
+                        aria-busy={isLoadingThis}
                         onClick={(e) => void openPolicyDetail(policy, e)}
                       >
-                        {isLoadingThis ? `Loading ${policy.title}…` : policy.title}
+                        {policy.title}
                       </button>
                       {policy.accepted ? <small> · accepted</small> : <small className="read-hint"> (Click to read details)</small>}
                     </span>
