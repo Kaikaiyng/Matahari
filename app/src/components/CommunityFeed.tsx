@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { ChevronLeft, Heart, MessageCircle, MoreVertical, Pencil, Trash2, EyeOff } from 'lucide-react'
 import { portalApi, type CommunityPost } from '../api/portalApi'
 import { CommunitySafetyMenu } from '../features/community-safety/CommunitySafetyMenu'
+import { useSwipeBack } from './useSwipeBack'
 
 type FeedRole = 'parent' | 'student' | 'teacher' | 'staff'
 
@@ -313,46 +314,7 @@ function EditPostSubpage({ post, onSaved, onClose }: { post: CommunityPost; onSa
   const [commentsEnabled, setCommentsEnabled] = useState(post.comments_enabled)
   const [saving, setSaving] = useState(false)
   const [notice, setNotice] = useState('')
-  const [isExiting, setIsExiting] = useState(false)
-  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null)
-  const [dragOffset, setDragOffset] = useState<number>(0)
-  const [isDragging, setIsDragging] = useState<boolean>(false)
-
-  const handleClose = () => {
-    if (isExiting) return
-    setIsExiting(true)
-    setTimeout(() => onClose(), 220)
-  }
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (e.touches.length === 1) {
-      setTouchStart({ x: e.touches[0].clientX, y: e.touches[0].clientY })
-    }
-  }
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!touchStart) return
-    const currentX = e.touches[0].clientX
-    const currentY = e.touches[0].clientY
-    const deltaX = currentX - touchStart.x
-    const deltaY = currentY - touchStart.y
-
-    if (deltaX > 15 && Math.abs(deltaX) > Math.abs(deltaY) * 1.2) {
-      setIsDragging(true)
-      setDragOffset(Math.max(0, deltaX))
-      e.stopPropagation()
-    }
-  }
-
-  const handleTouchEnd = () => {
-    if (dragOffset > 100) {
-      handleClose()
-    } else {
-      setDragOffset(0)
-    }
-    setIsDragging(false)
-    setTouchStart(null)
-  }
+  const { isExiting, requestBack: handleClose, surfaceStyle, gestureHandlers } = useSwipeBack(onClose)
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -375,19 +337,14 @@ function EditPostSubpage({ post, onSaved, onClose }: { post: CommunityPost; onSa
       className={`subpage-slide-overlay ${isExiting ? 'subpage-slide-out' : ''}`}
       role="dialog"
       aria-label={`Edit post ${post.id}`}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
+      {...gestureHandlers}
       style={{
         position: 'fixed',
         inset: 0,
         zIndex: 99990,
         background: '#f6f3ee',
         overflowY: 'auto',
-        transform: dragOffset > 0 ? `translateX(${dragOffset}px)` : undefined,
-        opacity: dragOffset > 0 ? Math.max(0.2, 1 - dragOffset / 400) : undefined,
-        transition: isDragging ? 'none' : 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.22s ease',
-        willChange: 'transform, opacity',
+        ...surfaceStyle,
       }}
     >
       <form className="subpage-container" onSubmit={handleSave}>

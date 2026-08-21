@@ -13,7 +13,7 @@ const SWIPE_IGNORED_TARGETS = [
 
 type GestureLock = 'horizontal' | 'vertical' | 'locked' | null
 
-export function useSwipeBack(onBack: () => void) {
+export function useSwipeBack(onBack: () => void, active = true) {
   const [dragOffset, setDragOffset] = useState(0)
   const [isDragging, setIsDragging] = useState(false)
   const [isExiting, setIsExiting] = useState(false)
@@ -30,6 +30,20 @@ export function useSwipeBack(onBack: () => void) {
     onBackRef.current = onBack
   }, [onBack])
 
+  useEffect(() => {
+    if (active) {
+      exitingRef.current = false
+      setIsExiting(false)
+      setDragOffset(0)
+      return
+    }
+
+    resetGesture()
+    exitingRef.current = false
+    setIsExiting(false)
+    setDragOffset(0)
+  }, [active])
+
   useEffect(() => () => {
     if (exitTimerRef.current !== null) window.clearTimeout(exitTimerRef.current)
   }, [])
@@ -42,7 +56,7 @@ export function useSwipeBack(onBack: () => void) {
   }
 
   const completeBack = useCallback(() => {
-    if (exitingRef.current) return
+    if (!active || exitingRef.current) return
 
     exitingRef.current = true
     setIsExiting(true)
@@ -54,17 +68,18 @@ export function useSwipeBack(onBack: () => void) {
 
     setDragOffset(surfaceWidthRef.current)
     exitTimerRef.current = window.setTimeout(() => onBackRef.current(), 220)
-  }, [])
+  }, [active])
 
   const onTouchStart = (event: TouchEvent<HTMLElement>) => {
     event.stopPropagation()
-    if (isExiting) return
+    if (!active || isExiting) return
 
     const touch = event.touches[0]
     if (!touch) return
 
     const target = event.target as HTMLElement | null
-    if (target?.closest(SWIPE_IGNORED_TARGETS)) {
+    const ignoredTarget = target?.closest(SWIPE_IGNORED_TARGETS)
+    if (ignoredTarget && ignoredTarget !== event.currentTarget) {
       lockRef.current = 'locked'
       return
     }

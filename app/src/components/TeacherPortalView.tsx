@@ -8,6 +8,7 @@ import { CommunitySafetyLinks } from '../features/community-safety/CommunitySafe
 import { CustomSelect } from './CustomSelect'
 
 import { useSwipe } from './MobileShell'
+import { useSwipeBack } from './useSwipeBack'
 
 export function TeacherPortalView({ teacherName, activeTab, onTabChange, onLogout, staffMode = false }: { teacherName: string; activeTab: string; onTabChange: (tab: string) => void; onLogout: () => void; staffMode?: boolean }) {
   const { dragOffset, isDragging } = useSwipe()
@@ -194,55 +195,11 @@ function ClassDetailSubpage({
   onAssessments: () => void
   onCreatePost: () => void
 }) {
-  const [isExiting, setIsExiting] = useState(false)
   const [students, setStudents] = useState<TeacherStudent[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null)
-  const [dragOffset, setDragOffset] = useState<number>(0)
-  const [isDragging, setIsDragging] = useState<boolean>(false)
-
-  const handleBack = () => {
-    if (isExiting) return
-    setIsExiting(true)
-    setTimeout(() => {
-      onClose()
-      setIsExiting(false)
-    }, 200)
-  }
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    e.stopPropagation()
-    const touch = e.touches[0]
-    setTouchStart({ x: touch.clientX, y: touch.clientY })
-    setIsDragging(true)
-  }
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    e.stopPropagation()
-    if (!touchStart) return
-    const touch = e.touches[0]
-    const deltaX = touch.clientX - touchStart.x
-    const deltaY = touch.clientY - touchStart.y
-
-    if (deltaX > 0 && Math.abs(deltaX) > Math.abs(deltaY) * 1.1) {
-      setDragOffset(deltaX)
-    }
-  }
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    e.stopPropagation()
-    if (!touchStart) return
-    setIsDragging(false)
-
-    if (dragOffset > 80) {
-      handleBack()
-    }
-
-    setDragOffset(0)
-    setTouchStart(null)
-  }
+  const { isExiting, requestBack: handleBack, surfaceStyle, gestureHandlers } = useSwipeBack(onClose)
 
   useEffect(() => {
     portalApi.getTeacherStudents(assignment)
@@ -256,19 +213,14 @@ function ClassDetailSubpage({
       className={`subpage-slide-overlay ${isExiting ? 'subpage-slide-out' : ''}`}
       role="region"
       aria-label={`Class details for ${assignment.class.name}`}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
+      {...gestureHandlers}
       style={{
         position: 'fixed',
         inset: 0,
         zIndex: 99990,
         background: '#f6f3ee',
         overflowY: 'auto',
-        transform: dragOffset > 0 ? `translateX(${dragOffset}px)` : undefined,
-        opacity: dragOffset > 0 ? Math.max(0.2, 1 - dragOffset / 400) : undefined,
-        transition: isDragging ? 'none' : 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.22s ease',
-        willChange: 'transform, opacity',
+        ...surfaceStyle,
       }}
     >
       <div className="subpage-container">
@@ -568,7 +520,6 @@ function CreatePost({ staffMode, onPublished }: { staffMode: boolean; onPublishe
 }
 
 function AssessmentPage({ staffMode = false, onBack }: { staffMode?: boolean; onBack?: () => void }) {
-  const [isExiting, setIsExiting] = useState(false)
   const [assignments, setAssignments] = useState<TeacherAssignment[]>([])
   const [assessments, setAssessments] = useState<AssessmentItem[]>([])
   const [selectedAssignmentId, setSelectedAssignmentId] = useState(0)
@@ -581,50 +532,8 @@ function AssessmentPage({ staffMode = false, onBack }: { staffMode?: boolean; on
   const [notice, setNotice] = useState('')
   const [saving, setSaving] = useState(false)
 
-  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null)
-  const [dragOffset, setDragOffset] = useState<number>(0)
-  const [isDragging, setIsDragging] = useState<boolean>(false)
-
-  const handleClose = () => {
-    if (isExiting) return
-    setIsExiting(true)
-    setTimeout(() => {
-      onBack?.()
-      setIsExiting(false)
-    }, 200)
-  }
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    e.stopPropagation()
-    const touch = e.touches[0]
-    setTouchStart({ x: touch.clientX, y: touch.clientY })
-    setIsDragging(true)
-  }
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    e.stopPropagation()
-    if (!touchStart) return
-    const touch = e.touches[0]
-    const deltaX = touch.clientX - touchStart.x
-    const deltaY = touch.clientY - touchStart.y
-
-    if (deltaX > 0 && Math.abs(deltaX) > Math.abs(deltaY) * 1.1) {
-      setDragOffset(deltaX)
-    }
-  }
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    e.stopPropagation()
-    if (!touchStart) return
-    setIsDragging(false)
-
-    if (dragOffset > 80) {
-      handleClose()
-    }
-
-    setDragOffset(0)
-    setTouchStart(null)
-  }
+  const closeAssessment = () => onBack?.()
+  const { isExiting, requestBack: handleClose, surfaceStyle, gestureHandlers } = useSwipeBack(closeAssessment)
 
   const selectedAssignment = assignments.find((item) => item.id === selectedAssignmentId)
   const selectedAssessment = assessments.find((item) => item.id === selectedAssessmentId)
@@ -664,19 +573,14 @@ function AssessmentPage({ staffMode = false, onBack }: { staffMode?: boolean; on
       className={`subpage-slide-overlay ${isExiting ? 'subpage-slide-out' : ''}`}
       role="region"
       aria-label="Assessments Subpage"
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
+      {...gestureHandlers}
       style={{
         position: 'fixed',
         inset: 0,
         zIndex: 99990,
         background: '#f6f3ee',
         overflowY: 'auto',
-        transform: dragOffset > 0 ? `translateX(${dragOffset}px)` : undefined,
-        opacity: dragOffset > 0 ? Math.max(0.2, 1 - dragOffset / 400) : undefined,
-        transition: isDragging ? 'none' : 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.22s ease',
-        willChange: 'transform, opacity',
+        ...surfaceStyle,
       }}
     >
       <div className="subpage-container">
@@ -750,54 +654,11 @@ function AssessmentPage({ staffMode = false, onBack }: { staffMode?: boolean; on
 }
 
 function QuizAuthoringPage({ staffMode, onBack }: { staffMode: boolean; onBack?: () => void }) {
-  const [isExiting, setIsExiting] = useState(false)
   const [title, setTitle] = useState('')
   const [notice, setNotice] = useState('')
 
-  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null)
-  const [dragOffset, setDragOffset] = useState<number>(0)
-  const [isDragging, setIsDragging] = useState<boolean>(false)
-
-  const handleClose = () => {
-    if (isExiting) return
-    setIsExiting(true)
-    setTimeout(() => {
-      onBack?.()
-      setIsExiting(false)
-    }, 200)
-  }
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    e.stopPropagation()
-    const touch = e.touches[0]
-    setTouchStart({ x: touch.clientX, y: touch.clientY })
-    setIsDragging(true)
-  }
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    e.stopPropagation()
-    if (!touchStart) return
-    const touch = e.touches[0]
-    const deltaX = touch.clientX - touchStart.x
-    const deltaY = touch.clientY - touchStart.y
-
-    if (deltaX > 0 && Math.abs(deltaX) > Math.abs(deltaY) * 1.1) {
-      setDragOffset(deltaX)
-    }
-  }
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    e.stopPropagation()
-    if (!touchStart) return
-    setIsDragging(false)
-
-    if (dragOffset > 80) {
-      handleClose()
-    }
-
-    setDragOffset(0)
-    setTouchStart(null)
-  }
+  const closeQuizAuthoring = () => onBack?.()
+  const { isExiting, requestBack: handleClose, surfaceStyle, gestureHandlers } = useSwipeBack(closeQuizAuthoring)
 
   const create = (event: React.FormEvent) => { event.preventDefault(); setNotice(`Formal Quiz "${title}" authoring draft created.`) }
 
@@ -806,19 +667,14 @@ function QuizAuthoringPage({ staffMode, onBack }: { staffMode: boolean; onBack?:
       className={`subpage-slide-overlay ${isExiting ? 'subpage-slide-out' : ''}`}
       role="region"
       aria-label="Formal Quiz Subpage"
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
+      {...gestureHandlers}
       style={{
         position: 'fixed',
         inset: 0,
         zIndex: 99990,
         background: '#f6f3ee',
         overflowY: 'auto',
-        transform: dragOffset > 0 ? `translateX(${dragOffset}px)` : undefined,
-        opacity: dragOffset > 0 ? Math.max(0.2, 1 - dragOffset / 400) : undefined,
-        transition: isDragging ? 'none' : 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.22s ease',
-        willChange: 'transform, opacity',
+        ...surfaceStyle,
       }}
     >
       <div className="subpage-container">

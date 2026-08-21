@@ -6,6 +6,7 @@ import { CommunityFeed } from './CommunityFeed'
 import { CommunitySafetyCentre } from '../features/community-safety/CommunitySafetyCentre'
 import { CommunitySafetyLinks } from '../features/community-safety/CommunitySafetyLinks'
 import { CustomSelect } from './CustomSelect'
+import { useSwipeBack } from './useSwipeBack'
 
 import { useSwipe } from './MobileShell'
 
@@ -192,70 +193,21 @@ function ParentFinance({ children }: { children: GuardianMe['children'] }) {
 }
 
 function ReceiptDialog({ receipt, onClose }: { receipt: PortalReceipt; onClose: () => void }) {
-  const [isExiting, setIsExiting] = useState(false)
-  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null)
-  const [dragOffset, setDragOffset] = useState<number>(0)
-  const [isDragging, setIsDragging] = useState<boolean>(false)
-
-  const handleClose = () => {
-    if (isExiting) return
-    setIsExiting(true)
-    setTimeout(() => {
-      onClose()
-      setIsExiting(false)
-    }, 200)
-  }
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    e.stopPropagation()
-    const touch = e.touches[0]
-    setTouchStart({ x: touch.clientX, y: touch.clientY })
-    setIsDragging(true)
-  }
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    e.stopPropagation()
-    if (!touchStart) return
-    const touch = e.touches[0]
-    const deltaX = touch.clientX - touchStart.x
-    const deltaY = touch.clientY - touchStart.y
-
-    if (deltaX > 0 && Math.abs(deltaX) > Math.abs(deltaY) * 1.1) {
-      setDragOffset(deltaX)
-    }
-  }
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    e.stopPropagation()
-    if (!touchStart) return
-    setIsDragging(false)
-
-    if (dragOffset > 80) {
-      handleClose()
-    }
-
-    setDragOffset(0)
-    setTouchStart(null)
-  }
+  const { isExiting, requestBack: handleClose, surfaceStyle, gestureHandlers } = useSwipeBack(onClose)
 
   return createPortal(
     <div
       className={`subpage-slide-overlay ${isExiting ? 'subpage-slide-out' : ''}`}
       role="dialog"
       aria-label={`Receipt ${receipt.receipt_no}`}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
+      {...gestureHandlers}
       style={{
         position: 'fixed',
         inset: 0,
         zIndex: 99990,
         background: '#f6f3ee',
         overflowY: 'auto',
-        transform: dragOffset > 0 ? `translateX(${dragOffset}px)` : undefined,
-        opacity: dragOffset > 0 ? Math.max(0.2, 1 - dragOffset / 400) : undefined,
-        transition: isDragging ? 'none' : 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.22s ease',
-        willChange: 'transform, opacity',
+        ...surfaceStyle,
       }}
     >
       <div className="subpage-container">

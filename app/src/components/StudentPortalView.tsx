@@ -6,6 +6,7 @@ import { CommunityFeed } from './CommunityFeed'
 import { CommunitySafetyCentre } from '../features/community-safety/CommunitySafetyCentre'
 import { CommunitySafetyLinks } from '../features/community-safety/CommunitySafetyLinks'
 import { useSwipe } from './MobileShell'
+import { useSwipeBack } from './useSwipeBack'
 
 export function StudentPortalView({ studentName, activeTab, onTabChange = () => undefined, onLogout }: { studentName: string; activeTab: string; onTabChange?: (tab: string) => void; onLogout: () => void }) {
   const { dragOffset, isDragging } = useSwipe()
@@ -87,11 +88,8 @@ function StudentQuiz() {
   const [answers, setAnswers] = useState<Record<number, number>>({})
   const [result, setResult] = useState<{ score: number; max_score: number } | null>(null)
   const [notice, setNotice] = useState('')
-  const [isExiting, setIsExiting] = useState(false)
-
-  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null)
-  const [dragOffset, setDragOffset] = useState<number>(0)
-  const [isDragging, setIsDragging] = useState<boolean>(false)
+  const closeAttempt = () => setAttempt(null)
+  const { isExiting, requestBack: handleCloseAttempt, surfaceStyle, gestureHandlers } = useSwipeBack(closeAttempt, Boolean(attempt))
 
   useEffect(() => {
     portalApi.getStudentQuizzes().then(({ data }) => setItems(data)).catch(() => setNotice('Unable to load assigned quizzes.'))
@@ -119,47 +117,6 @@ function StudentQuiz() {
     } catch (error) {
       setNotice(error instanceof Error ? error.message : 'Unable to submit quiz.')
     }
-  }
-
-  const handleCloseAttempt = () => {
-    if (isExiting) return
-    setIsExiting(true)
-    setTimeout(() => {
-      setAttempt(null)
-      setIsExiting(false)
-    }, 200)
-  }
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    e.stopPropagation()
-    const touch = e.touches[0]
-    setTouchStart({ x: touch.clientX, y: touch.clientY })
-    setIsDragging(true)
-  }
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    e.stopPropagation()
-    if (!touchStart) return
-    const touch = e.touches[0]
-    const deltaX = touch.clientX - touchStart.x
-    const deltaY = touch.clientY - touchStart.y
-
-    if (deltaX > 0 && Math.abs(deltaX) > Math.abs(deltaY) * 1.1) {
-      setDragOffset(deltaX)
-    }
-  }
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    e.stopPropagation()
-    if (!touchStart) return
-    setIsDragging(false)
-
-    if (dragOffset > 80) {
-      handleCloseAttempt()
-    }
-
-    setDragOffset(0)
-    setTouchStart(null)
   }
 
   return (
@@ -215,19 +172,14 @@ function StudentQuiz() {
           className={`subpage-slide-overlay ${isExiting ? 'subpage-slide-out' : ''}`}
           role="region"
           aria-label={`Taking ${attempt.title}`}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
+          {...gestureHandlers}
           style={{
             position: 'fixed',
             inset: 0,
             zIndex: 99990,
             background: '#f6f3ee',
             overflowY: 'auto',
-            transform: dragOffset > 0 ? `translateX(${dragOffset}px)` : undefined,
-            opacity: dragOffset > 0 ? Math.max(0.2, 1 - dragOffset / 400) : undefined,
-            transition: isDragging ? 'none' : 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.22s ease',
-            willChange: 'transform, opacity',
+            ...surfaceStyle,
           }}
         >
           <div className="subpage-container">

@@ -2,29 +2,20 @@ import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { ChevronLeft, ChevronRight, ShieldCheck } from 'lucide-react'
 import { portalApi, type CommunityAppeal, type CommunityBlockedUser, type CommunityOwnContent, type CommunityReportSummary } from '../../api/portalApi'
+import { useSwipeBack } from '../../components/useSwipeBack'
 import './CommunitySafety.css'
 
 const label = (value: string) => { const words = value.replaceAll('_', ' '); return words.charAt(0).toUpperCase() + words.slice(1) }
 
 export function CommunitySafetyCentreTrigger() {
   const [open, setOpen] = useState(false)
-  const [isExiting, setIsExiting] = useState(false)
-
-  const handleBack = () => {
-    if (isExiting) return
-    setIsExiting(true)
-    setTimeout(() => {
-      setOpen(false)
-      setIsExiting(false)
-    }, 200)
-  }
 
   return (
     <>
       <button
         type="button"
         className="settings-about-trigger"
-        onClick={() => { setIsExiting(false); setOpen(true) }}
+        onClick={() => setOpen(true)}
         aria-label="Open Community Safety centre, reports and blocked users"
       >
         <ShieldCheck />
@@ -35,59 +26,22 @@ export function CommunitySafetyCentreTrigger() {
         <ChevronRight />
       </button>
 
-      {(open || isExiting) && (
-        <CommunitySafetyCentre onBack={handleBack} isExiting={isExiting} />
+      {open && (
+        <CommunitySafetyCentre onBack={() => setOpen(false)} />
       )}
     </>
   )
 }
 
-export function CommunitySafetyCentre({ onBack, isExiting = false }: { onBack?: () => void; isExiting?: boolean }) {
+export function CommunitySafetyCentre({ onBack }: { onBack?: () => void }) {
   const [reports, setReports] = useState<CommunityReportSummary[]>([])
   const [blocked, setBlocked] = useState<CommunityBlockedUser[]>([])
   const [content, setContent] = useState<CommunityOwnContent[]>([])
   const [appeals, setAppeals] = useState<CommunityAppeal[]>([])
   const [error, setError] = useState('')
 
-  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null)
-  const [dragOffset, setDragOffset] = useState<number>(0)
-  const [isDragging, setIsDragging] = useState<boolean>(false)
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    e.stopPropagation()
-    const touch = e.touches[0]
-    setTouchStart({ x: touch.clientX, y: touch.clientY })
-    setIsDragging(true)
-  }
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    e.stopPropagation()
-    if (!touchStart) return
-    const touch = e.touches[0]
-    const deltaX = touch.clientX - touchStart.x
-    const deltaY = touch.clientY - touchStart.y
-
-    if (deltaX > 0 && Math.abs(deltaX) > Math.abs(deltaY) * 1.1) {
-      setDragOffset(deltaX)
-    }
-  }
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    e.stopPropagation()
-    if (!touchStart) return
-    setIsDragging(false)
-
-    if (dragOffset > 80) {
-      if (onBack) {
-        onBack()
-      } else {
-        window.history.back()
-      }
-    }
-
-    setDragOffset(0)
-    setTouchStart(null)
-  }
+  const returnToPrevious = () => onBack ? onBack() : window.history.back()
+  const { isExiting, requestBack: handleBack, surfaceStyle, gestureHandlers } = useSwipeBack(returnToPrevious)
 
   useEffect(() => {
     Promise.all([portalApi.getCommunityReports(), portalApi.getBlockedCommunityUsers(), portalApi.getMyCommunityContent(), portalApi.getCommunityAppeals()])
@@ -110,19 +64,14 @@ export function CommunitySafetyCentre({ onBack, isExiting = false }: { onBack?: 
       className={`subpage-slide-overlay ${isExiting ? 'subpage-slide-out' : ''}`}
       role="region"
       aria-label="Community Safety Centre Subpage"
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
+      {...gestureHandlers}
       style={{
         position: 'fixed',
         inset: 0,
         zIndex: 99990,
         background: '#f6f3ee',
         overflowY: 'auto',
-        transform: dragOffset > 0 ? `translateX(${dragOffset}px)` : undefined,
-        opacity: dragOffset > 0 ? Math.max(0.2, 1 - dragOffset / 400) : undefined,
-        transition: isDragging ? 'none' : 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.22s ease',
-        willChange: 'transform, opacity',
+        ...surfaceStyle,
       }}
     >
       <div className="subpage-container">
@@ -130,13 +79,7 @@ export function CommunitySafetyCentre({ onBack, isExiting = false }: { onBack?: 
           <button
             type="button"
             className="subpage-back-btn"
-            onClick={() => {
-              if (onBack) {
-                onBack()
-              } else {
-                window.history.back()
-              }
-            }}
+            onClick={handleBack}
             aria-label="Back to previous page"
           >
             <ChevronLeft size={20} />

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { Info, ShieldCheck, ChevronRight, ChevronLeft } from 'lucide-react'
 import { apiRequest } from '../../api'
 import { portalApi, type CommunityAppeal, type CommunityBlockedUser, type CommunityOwnContent, type CommunityReportSummary } from '../../api/portalApi'
+import { useSwipeBack } from '../../components/useSwipeBack'
 import './CommunitySafety.css'
 
 type PublicPolicyDetail = {
@@ -21,8 +22,6 @@ const label = (value: string) => { const words = value.replaceAll('_', ' '); ret
 
 export function CommunitySafetyLinks() {
   const [navState, setNavState] = useState<'none' | 'about' | 'safety' | 'detail'>('none')
-  const [isExiting, setIsExiting] = useState(false)
-  const [isDetailExiting, setIsDetailExiting] = useState(false)
 
   // Policy Detail State
   const [activePolicy, setActivePolicy] = useState<PublicPolicyDetail | null>(null)
@@ -63,97 +62,12 @@ export function CommunitySafetyLinks() {
     { slug: 'account-deletion', title: 'Request Account Deletion', category: 'Account & Data Erasure' },
   ]
 
-  const [touchStartL1, setTouchStartL1] = useState<{ x: number; y: number } | null>(null)
-  const [touchStartL2, setTouchStartL2] = useState<{ x: number; y: number } | null>(null)
-  const [dragOffsetL1, setDragOffsetL1] = useState<number>(0)
-  const [dragOffsetL2, setDragOffsetL2] = useState<number>(0)
-  const [isDraggingL1, setIsDraggingL1] = useState<boolean>(false)
-  const [isDraggingL2, setIsDraggingL2] = useState<boolean>(false)
-
-  const handleBackToNone = () => {
-    if (isExiting) return
-    setIsExiting(true)
-    setTimeout(() => {
-      setNavState('none')
-      setIsExiting(false)
-    }, 200)
-  }
-
-  const handleBackToAbout = () => {
-    if (isDetailExiting) return
-    setIsDetailExiting(true)
-    setTimeout(() => {
-      setNavState('about')
-      setIsDetailExiting(false)
-    }, 200)
-  }
-
-  const handleTouchStartL1 = (e: React.TouchEvent) => {
-    e.stopPropagation()
-    const touch = e.touches[0]
-    setTouchStartL1({ x: touch.clientX, y: touch.clientY })
-    setIsDraggingL1(true)
-  }
-
-  const handleTouchMoveL1 = (e: React.TouchEvent) => {
-    e.stopPropagation()
-    if (!touchStartL1) return
-    const touch = e.touches[0]
-    const deltaX = touch.clientX - touchStartL1.x
-    const deltaY = touch.clientY - touchStartL1.y
-
-    if (deltaX > 0 && Math.abs(deltaX) > Math.abs(deltaY) * 1.1) {
-      setDragOffsetL1(deltaX)
-    }
-  }
-
-  const handleTouchEndL1 = (e: React.TouchEvent) => {
-    e.stopPropagation()
-    if (!touchStartL1) return
-    setIsDraggingL1(false)
-
-    if (dragOffsetL1 > 80) {
-      handleBackToNone()
-    }
-
-    setDragOffsetL1(0)
-    setTouchStartL1(null)
-  }
-
-  const handleTouchStartL2 = (e: React.TouchEvent) => {
-    e.stopPropagation()
-    const touch = e.touches[0]
-    setTouchStartL2({ x: touch.clientX, y: touch.clientY })
-    setIsDraggingL2(true)
-  }
-
-  const handleTouchMoveL2 = (e: React.TouchEvent) => {
-    e.stopPropagation()
-    if (!touchStartL2) return
-    const touch = e.touches[0]
-    const deltaX = touch.clientX - touchStartL2.x
-    const deltaY = touch.clientY - touchStartL2.y
-
-    if (deltaX > 0 && Math.abs(deltaX) > Math.abs(deltaY) * 1.1) {
-      setDragOffsetL2(deltaX)
-    }
-  }
-
-  const handleTouchEndL2 = (e: React.TouchEvent) => {
-    e.stopPropagation()
-    if (!touchStartL2) return
-    setIsDraggingL2(false)
-
-    if (dragOffsetL2 > 80) {
-      handleBackToAbout()
-    }
-
-    setDragOffsetL2(0)
-    setTouchStartL2(null)
-  }
+  const closeLevelOne = () => setNavState('none')
+  const closePolicyDetail = () => setNavState('about')
+  const levelOneSwipe = useSwipeBack(closeLevelOne, navState !== 'none')
+  const detailSwipe = useSwipeBack(closePolicyDetail, navState === 'detail')
 
   const openDetail = async (slug: string) => {
-    setIsDetailExiting(false)
     setLoadingDetail(true)
     setDetailError('')
     setNavState('detail')
@@ -172,7 +86,7 @@ export function CommunitySafetyLinks() {
       <button
         type="button"
         className="settings-about-trigger"
-        onClick={() => { setIsExiting(false); setIsDetailExiting(false); setNavState('safety') }}
+        onClick={() => setNavState('safety')}
         aria-label="Open Community Safety centre, reports and blocked users"
       >
         <ShieldCheck />
@@ -186,7 +100,7 @@ export function CommunitySafetyLinks() {
       <button
         type="button"
         className="settings-about-trigger"
-        onClick={() => { setIsExiting(false); setIsDetailExiting(false); setNavState('about') }}
+        onClick={() => setNavState('about')}
         aria-label="Open About RYLAY and Legal Policies"
       >
         <Info />
@@ -200,22 +114,17 @@ export function CommunitySafetyLinks() {
       {/* Level 1: Slide-In Overlay (Shared for About RYLAY and Safety Centre) */}
       {(navState === 'about' || navState === 'safety' || navState === 'detail') && createPortal(
         <div
-          className={`subpage-slide-overlay ${isExiting ? 'subpage-slide-out' : ''}`}
+          className={`subpage-slide-overlay ${levelOneSwipe.isExiting ? 'subpage-slide-out' : ''}`}
           role="region"
           aria-label={navState === 'safety' ? 'Community Safety Centre Subpage' : 'About RYLAY Subpage'}
-          onTouchStart={handleTouchStartL1}
-          onTouchMove={handleTouchMoveL1}
-          onTouchEnd={handleTouchEndL1}
+          {...levelOneSwipe.gestureHandlers}
           style={{
             position: 'fixed',
             inset: 0,
             zIndex: 99990,
             background: '#f6f3ee',
             overflowY: 'auto',
-            transform: dragOffsetL1 > 0 ? `translateX(${dragOffsetL1}px)` : undefined,
-            opacity: dragOffsetL1 > 0 ? Math.max(0.2, 1 - dragOffsetL1 / 400) : undefined,
-            transition: isDraggingL1 ? 'none' : 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.22s ease',
-            willChange: 'transform, opacity',
+            ...levelOneSwipe.surfaceStyle,
           }}
         >
           <div className="subpage-container">
@@ -223,7 +132,7 @@ export function CommunitySafetyLinks() {
               <button
                 type="button"
                 className="subpage-back-btn"
-                onClick={handleBackToNone}
+                onClick={levelOneSwipe.requestBack}
                 aria-label="Back to Account settings"
               >
                 <ChevronLeft size={20} />
@@ -426,24 +335,19 @@ export function CommunitySafetyLinks() {
       )}
 
       {/* Level 2: Policy Term Detail Sub-Page (Renders on top at zIndex 99999) */}
-      {(navState === 'detail' || isDetailExiting) && createPortal(
+      {navState === 'detail' && createPortal(
         <div
-          className={`subpage-slide-overlay ${isDetailExiting ? 'subpage-slide-out' : ''}`}
+          className={`subpage-slide-overlay ${detailSwipe.isExiting ? 'subpage-slide-out' : ''}`}
           role="region"
           aria-label="Policy Detail Subpage"
-          onTouchStart={handleTouchStartL2}
-          onTouchMove={handleTouchMoveL2}
-          onTouchEnd={handleTouchEndL2}
+          {...detailSwipe.gestureHandlers}
           style={{
             position: 'fixed',
             inset: 0,
             zIndex: 99999,
             background: '#f6f3ee',
             overflowY: 'auto',
-            transform: dragOffsetL2 > 0 ? `translateX(${dragOffsetL2}px)` : undefined,
-            opacity: dragOffsetL2 > 0 ? Math.max(0.2, 1 - dragOffsetL2 / 400) : undefined,
-            transition: isDraggingL2 ? 'none' : 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.22s ease',
-            willChange: 'transform, opacity',
+            ...detailSwipe.surfaceStyle,
           }}
         >
           <div className="subpage-container">
@@ -451,7 +355,7 @@ export function CommunitySafetyLinks() {
               <button
                 type="button"
                 className="subpage-back-btn"
-                onClick={handleBackToAbout}
+                onClick={detailSwipe.requestBack}
                 aria-label="Back to About page"
               >
                 <ChevronLeft size={20} />
