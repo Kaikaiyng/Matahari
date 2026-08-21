@@ -64,6 +64,7 @@ describe('useSwipeBack', () => {
     act(() => vi.advanceTimersByTime(300))
     fireEvent.touchMove(content, { touches: [{ clientX: 70, clientY: 20 }] })
     expect(surface).toHaveStyle({ transform: 'translate3d(30px, 0, 0)' })
+    expect(surface).toHaveStyle({ animation: 'none' })
     fireEvent.touchEnd(content, { changedTouches: [{ clientX: 70, clientY: 20 }] })
 
     expect(surface.style.transform).toBe('')

@@ -145,6 +145,7 @@ export function useSwipeBack(onBack: () => void, active = true) {
   const surfaceStyle: CSSProperties = {
     transform: dragOffset > 0 ? `translate3d(${dragOffset}px, 0, 0)` : undefined,
     transition: isDragging ? 'none' : 'transform 0.22s cubic-bezier(0.25, 1, 0.5, 1)',
+    animation: isDragging || dragOffset > 0 || isExiting ? 'none' : undefined,
     willChange: isDragging || isExiting ? 'transform' : 'auto',
   }
 
