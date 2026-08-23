@@ -1,6 +1,6 @@
 # RYLAY — Multi-Tenant School Administration Platform
 
-This repository is the RYLAY configurable school-administration SaaS under incremental development. Matahari International School (MIS) is the first tenant and demo configuration. The product contains an Admin/Finance browser surface and an independent mobile-first Community App for Parent, Student, Teacher, and authorized Staff roles. Both clients use the same Laravel API and authoritative database, resolve a tenant from their subdomain, and remain separate builds/deployments. It is not yet production-ready or a native store release.
+This repository is the RYLAY configurable school-administration SaaS under incremental development. Matahari International School (MIS) is the first tenant and demo configuration. The product contains an Admin/Finance browser surface and an independent mobile-first Community App with Teacher, Parent, and Student personas. Both clients use the same Laravel API and authoritative database, resolve a tenant from their subdomain, and remain separate builds/deployments. It is not yet production-ready or a native store release.
 
 All tenants run the same Admin/App code and shared backend. Tenant-specific presentation and availability may differ only through host-resolved `branding` and `features`; tenant-specific frontend copies or code branches are not part of the architecture.
 
@@ -12,14 +12,15 @@ Implemented workflows include:
 
 - Username/password login with Laravel session cookies and seeded role permissions.
 - Host-authoritative tenant resolution, tenant-specific memberships/roles/school scopes, configurable branding/domains/features, and audited platform/tenant management APIs.
+- Protected global Super Admin ownership; School Admin, Finance, and Teacher employee positions; school-scoped per-user grants/denials; and transactionally audited access changes.
 - Student search, creation, detail, status changes, and read-only class rosters.
 - Versioned Fee Agreements and billing configuration.
 - Fee Record preview, activation, manual charges, outstanding balances, summary, and category/month views.
 - Payment allocation, verification, void safeguards, receipt generation, browser printing, and receipt void/regeneration.
 - Shared school calendar CRUD.
 - Phase A academic foundation APIs for academic years, class enrolments, subjects, teaching assignments, and reviewed portal identity links.
-- Independent `app/` Community App views for Parent, Student, Teacher, and authorized Staff roles, with role-aware liquid-glass navigation, self-service identity endpoints, personal in-app notifications, read-only parent finance, and MIS demo personas.
-- Daily class Attendance: assignment-scoped Teacher roster marking, Parent/Student history reads, correction reasons, and transactional audit logging.
+- Independent `app/` Community App views for Teacher, Parent, and Student, with first-use choice for multi-persona users, role-aware liquid-glass navigation, self-service identity endpoints, personal notifications, and read-only parent finance.
+- Daily class Attendance: assignment-scoped Teacher roster marking, linked-child Parent history reads, Student exclusion, correction reasons, and transactional audit logging.
 - Scoped Community publishing and feeds with private authorized media, appreciations, controlled comments, moderation history, and transactional audit logging.
 - Strict in-app UGC safety controls: policy acceptance, pending review, separate content/user reports, Community-only blocking, private case status, appeals, school moderation, severe platform escalation, and public legal/safety pages.
 - Teaching Assignment-scoped Assessments with draft result entry, explicit complete-roster publication, and authorized Parent/Student published-result views.

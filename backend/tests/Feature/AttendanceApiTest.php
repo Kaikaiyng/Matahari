@@ -55,8 +55,7 @@ class AttendanceApiTest extends TestCase
         $studentUser = User::query()->where('username', 'alyssa.tan')->firstOrFail();
         $this->actingAs($studentUser)
             ->getJson('http://127.0.0.1/api/v1/portal/student/attendance')
-            ->assertOk()
-            ->assertJsonPath('data.0.status', 'present');
+            ->assertNotFound();
     }
 
     public function test_teacher_cannot_record_attendance_for_an_unrelated_class(): void

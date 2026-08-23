@@ -3,6 +3,28 @@ import userEvent from '@testing-library/user-event'
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { CalendarPage } from './CalendarPage'
 
+type TestUser = ReturnType<typeof userEvent.setup>
+
+async function chooseDate(user: TestUser, label: string, accessibleDate: string) {
+  await user.click(screen.getByLabelText(label))
+  const dialog = document.querySelector<HTMLElement>('.system-date-popover')
+  if (!dialog) throw new Error('Date picker did not open')
+  for (let monthOffset = 0; monthOffset < 14; monthOffset += 1) {
+    const date = within(dialog).queryByRole('button', { name: accessibleDate })
+    if (date) {
+      await user.click(date)
+      return
+    }
+    await user.click(within(dialog).getByRole('button', { name: 'Next month' }))
+  }
+  throw new Error(`Date not available in picker: ${accessibleDate}`)
+}
+
+async function chooseTime(user: TestUser, label: string, time: string) {
+  await user.click(screen.getByLabelText(label))
+  await user.click(within(screen.getByRole('listbox')).getByRole('option', { name: time }))
+}
+
 const originalHostTimeZone = vi.hoisted(() => {
   const nodeProcess = (
     globalThis as unknown as { process: { env: Record<string, string | undefined> } }
@@ -248,10 +270,8 @@ describe('CalendarPage', () => {
     renderCalendar()
     await user.click(screen.getByRole('button', { name: 'Add event' }))
     await user.type(screen.getByLabelText('Title'), 'Morning Briefing')
-    await user.clear(screen.getByLabelText('Start date'))
-    await user.type(screen.getByLabelText('Start date'), '2026-07-26')
-    await user.clear(screen.getByLabelText('Start time'))
-    await user.type(screen.getByLabelText('Start time'), '09:15')
+    await chooseDate(user, 'Start date', '26 July 2026')
+    await chooseTime(user, 'Start time', '9:15 am')
     await user.click(screen.getByRole('button', { name: 'Create event' }))
 
     await waitFor(() =>
@@ -259,16 +279,16 @@ describe('CalendarPage', () => {
     )
   })
 
-  it('submits the date and time values currently shown by native controls', async () => {
+  it('submits the date and time values selected in the system pickers', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     renderCalendar()
     await user.click(screen.getByRole('button', { name: 'Add event' }))
     await user.type(screen.getByLabelText('Title'), 'Browser-filled training')
 
-    ;(screen.getByLabelText('Start date') as HTMLInputElement).value = '2026-07-22'
-    ;(screen.getByLabelText('Start time') as HTMLInputElement).value = '10:00'
-    ;(screen.getByLabelText('End date') as HTMLInputElement).value = '2026-07-22'
-    ;(screen.getByLabelText('End time') as HTMLInputElement).value = '11:30'
+    await chooseDate(user, 'Start date', '22 July 2026')
+    await chooseTime(user, 'Start time', '10:00 am')
+    await chooseDate(user, 'End date', '22 July 2026')
+    await chooseTime(user, 'End time', '11:30 am')
 
     await user.click(screen.getByRole('button', { name: 'Create event' }))
 
@@ -278,7 +298,7 @@ describe('CalendarPage', () => {
         ends_at: '2026-07-22T03:30:00.000Z',
       }),
     )
-  })
+  }, 10_000)
 
   it('uses the start time when an end date is entered without an end time', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
@@ -286,9 +306,9 @@ describe('CalendarPage', () => {
     await user.click(screen.getByRole('button', { name: 'Add event' }))
     await user.type(screen.getByLabelText('Title'), 'Monday to Friday event')
 
-    ;(screen.getByLabelText('Start date') as HTMLInputElement).value = '2026-07-20'
-    ;(screen.getByLabelText('Start time') as HTMLInputElement).value = '09:00'
-    ;(screen.getByLabelText('End date') as HTMLInputElement).value = '2026-07-24'
+    await chooseDate(user, 'Start date', '20 July 2026')
+    await chooseTime(user, 'Start time', '9:00 am')
+    await chooseDate(user, 'End date', '24 July 2026')
 
     await user.click(screen.getByRole('button', { name: 'Create event' }))
 
@@ -391,8 +411,7 @@ describe('CalendarPage', () => {
     await user.selectOptions(screen.getByLabelText('Event type'), 'training')
     await user.click(screen.getByLabelText('All-day event'))
     expect(screen.queryByLabelText('Start time')).not.toBeInTheDocument()
-    await user.clear(screen.getByLabelText('Start date'))
-    await user.type(screen.getByLabelText('Start date'), '2026-07-26')
+    await chooseDate(user, 'Start date', '26 July 2026')
     await user.click(screen.getByRole('button', { name: 'Create event' }))
 
     await waitFor(() =>
@@ -619,8 +638,7 @@ describe('CalendarPage', () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     renderCalendar()
     await user.click(await screen.findByRole('button', { name: /Parent Appointment/ }))
-    await user.clear(screen.getByLabelText('Start date'))
-    await user.type(screen.getByLabelText('Start date'), '2026-09-30')
+    await chooseDate(user, 'Start date', '30 September 2026')
 
     await user.click(screen.getByRole('button', { name: 'Save changes' }))
 
@@ -872,36 +890,28 @@ describe('CalendarPage', () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     renderCalendar()
     await user.click(await screen.findByRole('button', { name: /Parent Appointment/ }))
-    const startDate = screen.getByLabelText('Start date')
-    const startTime = screen.getByLabelText('Start time')
-    const endDate = screen.getByLabelText('End date')
-    const endTime = screen.getByLabelText('End time')
     const submit = screen.getByRole('button', { name: 'Save changes' })
 
     await user.click(submit)
     expect(await screen.findByText('The start is invalid.')).toBeInTheDocument()
     expect(screen.getByText('The end is invalid.')).toBeInTheDocument()
 
-    await user.clear(startDate)
-    await user.type(startDate, '2026-07-21')
+    await chooseDate(user, 'Start date', '21 July 2026')
     expect(screen.queryByText('The start is invalid.')).not.toBeInTheDocument()
     await user.click(submit)
     expect(await screen.findByText('The start is invalid.')).toBeInTheDocument()
 
-    await user.clear(startTime)
-    await user.type(startTime, '10:00')
+    await chooseTime(user, 'Start time', '10:00 am')
     expect(screen.queryByText('The start is invalid.')).not.toBeInTheDocument()
     await user.click(submit)
     expect(await screen.findByText('The end is invalid.')).toBeInTheDocument()
 
-    await user.clear(endDate)
-    await user.type(endDate, '2026-07-21')
+    await chooseDate(user, 'End date', '21 July 2026')
     expect(screen.queryByText('The end is invalid.')).not.toBeInTheDocument()
     await user.click(submit)
     expect(await screen.findByText('The end is invalid.')).toBeInTheDocument()
 
-    await user.clear(endTime)
-    await user.type(endTime, '11:00')
+    await chooseTime(user, 'End time', '11:00 am')
     expect(screen.queryByText('The end is invalid.')).not.toBeInTheDocument()
   })
 

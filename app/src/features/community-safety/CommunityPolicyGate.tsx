@@ -28,7 +28,7 @@ function getSlugForPolicy(policy: CommunityPolicy): string {
   return 'terms'
 }
 
-export function CommunityPolicyGate({ role, onReadyChange }: { role?: 'parent' | 'student' | 'teacher' | 'staff'; onReadyChange: (ready: boolean) => void }) {
+export function CommunityPolicyGate({ role, onReadyChange }: { role?: 'parent' | 'student' | 'teacher'; onReadyChange: (ready: boolean) => void }) {
   const [policies, setPolicies] = useState<CommunityPolicy[]>([])
   const [checkedIds, setCheckedIds] = useState<Record<number, boolean>>({})
   const [loading, setLoading] = useState(true)

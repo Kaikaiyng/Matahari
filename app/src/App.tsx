@@ -15,6 +15,7 @@ export type CurrentUser = {
   name: string
   username: string
   school_id: number | null
+  tenant_id?: number | null
   roles: string[]
   permissions: string[]
 }
@@ -60,11 +61,23 @@ function App() {
     return [
       ...(user.roles.includes('parent') ? ['parent' as const] : []),
       ...(user.roles.includes('student') ? ['student' as const] : []),
-      ...(user.roles.includes('teacher') ? ['teacher' as const] : []),
-      ...(user.roles.some((role) => ['super-admin', 'tenant-owner', 'school-admin'].includes(role)) ? ['staff' as const] : []),
+      ...(user.roles.includes('teacher') || user.permissions.includes('app.teacher_access') ? ['teacher' as const] : []),
     ]
   }, [user])
-  const activeRole = selectedRole && allowedRoles.includes(selectedRole) ? selectedRole : allowedRoles[0]
+  const personaStorageKey = user ? `rylay.app.persona.${user.tenant_id ?? 'tenant'}.${user.id}` : null
+  useEffect(() => {
+    if (!personaStorageKey || allowedRoles.length === 0) return
+    if (allowedRoles.length === 1) { setSelectedRole(allowedRoles[0]); return }
+    const stored = window.localStorage.getItem(personaStorageKey) as AppRole | null
+    setSelectedRole(stored && allowedRoles.includes(stored) ? stored : null)
+  }, [personaStorageKey, allowedRoles])
+  const activeRole = selectedRole && allowedRoles.includes(selectedRole) ? selectedRole : allowedRoles.length === 1 ? allowedRoles[0] : null
+  const elevatedTeacher = Boolean(user && (user.permissions.includes('attendance.view_school') || user.permissions.includes('assessments.manage_school') || user.permissions.includes('community.moderate')))
+  const chooseRole = (role: AppRole) => {
+    setSelectedRole(role)
+    if (personaStorageKey) window.localStorage.setItem(personaStorageKey, role)
+    setActiveTab('home')
+  }
 
   const logout = async () => {
     try {
@@ -86,8 +99,12 @@ function App() {
 
   if (!user) return <PortalLogin onLogin={(loggedInUser) => { setUser(loggedInUser); setAuthState('authenticated') }} />
 
+  if (!activeRole && allowedRoles.length > 1) {
+    return <main className="portal-state-screen persona-picker"><img src={tenant.branding.logo_url ?? '/logo.jpeg'} alt="" /><span className="persona-eyebrow">Choose how to continue</span><h1>Select your App view</h1><p>This account has more than one approved persona. Your choice will be remembered on this device.</p><div className="persona-options">{allowedRoles.map((role) => <button type="button" key={role} onClick={() => chooseRole(role)}><strong>{role[0].toUpperCase() + role.slice(1)}</strong><small>{role === 'teacher' ? 'Classes, attendance and teaching tools' : role === 'parent' ? 'Children, finance and school updates' : 'Timetable, learning and school updates'}</small></button>)}</div><button className="persona-signout" type="button" onClick={() => void logout()}>Sign out</button></main>
+  }
+
   if (!activeRole) {
-    return <main className="portal-state-screen"><img src="/logo.jpeg" alt="" /><h1>App access unavailable</h1><p>This account does not have an approved Parent, Student, Teacher, or Staff App role.</p><button type="button" onClick={() => void logout()}>Sign out</button></main>
+    return <main className="portal-state-screen"><img src="/logo.jpeg" alt="" /><h1>App access unavailable</h1><p>This account does not have an approved Parent, Student, or Teacher App persona.</p><button type="button" onClick={() => void logout()}>Sign out</button></main>
   }
 
   const environment = import.meta.env.VITE_APP_ENVIRONMENT === 'production' ? 'production' : 'staging'
@@ -104,13 +121,13 @@ function App() {
           onTabChange={setActiveTab}
           userRole={activeRole}
           allowedRoles={allowedRoles}
-          onRoleChange={(role) => { setSelectedRole(role); setActiveTab('home') }}
+          onRoleChange={chooseRole}
           userName={user.name}
           environment={environment}
         >
           {activeRole === 'student' && <StudentPortalView studentName={user.name} activeTab={activeTab} onTabChange={setActiveTab} onLogout={() => void logout()} />}
           {activeRole === 'parent' && <ParentPortalView parentName={user.name} activeTab={activeTab} onTabChange={setActiveTab} onLogout={() => void logout()} />}
-          {(activeRole === 'teacher' || activeRole === 'staff') && <TeacherPortalView teacherName={user.name} activeTab={activeTab} onTabChange={setActiveTab} onLogout={() => void logout()} staffMode={activeRole === 'staff'} />}
+          {activeRole === 'teacher' && <TeacherPortalView teacherName={user.name} activeTab={activeTab} onTabChange={setActiveTab} onLogout={() => void logout()} staffMode={elevatedTeacher} />}
         </MobileShell>
       </div>
       {!policiesAccepted && <CommunityPolicyGate role={activeRole} onReadyChange={setPoliciesAccepted} />}

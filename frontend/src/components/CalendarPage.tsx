@@ -5,10 +5,13 @@ import { ApiError, apiRequest } from '../api'
 import type { ApiValidationErrors } from '../api'
 import {
   FieldError,
+  DatePicker,
+  CustomSelect,
   InlineMessage,
   ModalContextSummary,
   ModalFrame,
   PageHeader,
+  TimePicker,
   fieldErrorProps,
   focusFirstDialogError,
 } from './AdminUi'
@@ -869,12 +872,10 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
                 <div className="calendar-date-time-grid">
                   <label className="calendar-form-field">
                     <span>From</span>
-                    <input
-                      aria-label="Start date"
-                      type="date"
-                      name="start_date"
+                    <DatePicker
+                      ariaLabel="Start date"
                       value={form.start_date}
-                      onChange={(event) => updateForm('start_date', event.target.value)}
+                      onChange={(value) => updateForm('start_date', value)}
                       {...fieldErrorProps(
                         'calendar-start-date-error',
                         validationMessage(fieldErrors, 'start_date', 'starts_at'),
@@ -889,12 +890,10 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
                   {!form.is_all_day && (
                     <label className="calendar-form-field calendar-time-field">
                       <span>Time</span>
-                      <input
-                        aria-label="Start time"
-                        type="time"
-                        name="start_time"
+                      <TimePicker
+                        ariaLabel="Start time"
                         value={form.start_time}
-                        onChange={(event) => updateForm('start_time', event.target.value)}
+                        onChange={(value) => updateForm('start_time', value)}
                         {...fieldErrorProps(
                           'calendar-start-time-error',
                           validationMessage(fieldErrors, 'start_time'),
@@ -909,12 +908,10 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
 
                   <label className="calendar-form-field">
                     <span>To</span>
-                    <input
-                      aria-label="End date"
-                      type="date"
-                      name="end_date"
+                    <DatePicker
+                      ariaLabel="End date"
                       value={form.end_date}
-                      onChange={(event) => updateForm('end_date', event.target.value)}
+                      onChange={(value) => updateForm('end_date', value)}
                       {...fieldErrorProps(
                         'calendar-end-date-error',
                         validationMessage(fieldErrors, 'end_date', 'ends_at'),
@@ -929,12 +926,10 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
                   {!form.is_all_day && (
                     <label className="calendar-form-field calendar-time-field">
                       <span>Time</span>
-                      <input
-                        aria-label="End time"
-                        type="time"
-                        name="end_time"
+                      <TimePicker
+                        ariaLabel="End time"
                         value={form.end_time}
-                        onChange={(event) => updateForm('end_time', event.target.value)}
+                        onChange={(value) => updateForm('end_time', value)}
                         {...fieldErrorProps(
                           'calendar-end-time-error',
                           validationMessage(fieldErrors, 'end_time'),
@@ -954,25 +949,26 @@ export function CalendarPage({ schoolId, permissions, onUnauthorized }: Calendar
                 <Tag size={19} aria-hidden="true" />
                 <div className="calendar-form-field">
                   <label htmlFor="calendar-event-type">Event type</label>
-                  <select
+                  <CustomSelect
                     id="calendar-event-type"
-                    aria-label="Event type"
+                    ariaLabel="Event type"
                     value={form.event_type}
-                    onChange={(event) =>
-                      updateForm('event_type', event.target.value as CalendarEvent['event_type'])
+                    onChange={(value) =>
+                      updateForm('event_type', value as CalendarEvent['event_type'])
                     }
+                    options={[
+                      { value: 'appointment', label: 'Appointment' },
+                      { value: 'training', label: 'Training' },
+                      { value: 'meeting', label: 'Meeting' },
+                      { value: 'school_event', label: 'School event' },
+                      { value: 'other', label: 'Other' },
+                    ]}
                     {...fieldErrorProps(
                       EVENT_TYPE_ERROR_ID,
                       validationMessage(fieldErrors, 'event_type'),
                     )}
                     aria-invalid={Boolean(fieldErrors.event_type?.length)}
-                  >
-                    <option value="appointment">Appointment</option>
-                    <option value="training">Training</option>
-                    <option value="meeting">Meeting</option>
-                    <option value="school_event">School event</option>
-                    <option value="other">Other</option>
-                  </select>
+                  />
                   <FieldError
                     id={EVENT_TYPE_ERROR_ID}
                     message={validationMessage(fieldErrors, 'event_type')}

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { BookOpen, CalendarDays, ChevronLeft, ChevronRight, GraduationCap, Lightbulb, LockKeyhole, LogOut, PlayCircle, Sparkles, UserRound } from 'lucide-react'
-import { portalApi, type AttendanceRecord, type FormalQuizAssignment, type FormalQuizAttempt, type PublishedAssessmentResult, type StudentEnrolment, type StudentMe, type StudentSchedule as StudentScheduleData } from '../api/portalApi'
+import { portalApi, type FormalQuizAssignment, type FormalQuizAttempt, type PublishedAssessmentResult, type StudentEnrolment, type StudentMe, type StudentSchedule as StudentScheduleData } from '../api/portalApi'
 import { CommunityFeed } from './CommunityFeed'
 import { CommunitySafetyCentre } from '../features/community-safety/CommunitySafetyCentre'
 import { CommunitySafetyLinks } from '../features/community-safety/CommunitySafetyLinks'
@@ -12,11 +12,10 @@ export function StudentPortalView({ studentName, activeTab, onTabChange = () => 
   const { dragOffset, isDragging } = useSwipe()
   const [student, setStudent] = useState<StudentMe['data']>(null)
   const [enrolments, setEnrolments] = useState<StudentEnrolment[]>([])
-  const [attendance, setAttendance] = useState<AttendanceRecord[]>([])
   const [results, setResults] = useState<PublishedAssessmentResult[]>([])
   const [schedule, setSchedule] = useState<StudentScheduleData>({ entries: [], due_dates: [] })
   const [loading, setLoading] = useState(true)
-  useEffect(() => { Promise.all([portalApi.getStudentMe(), portalApi.getStudentEnrolments(), portalApi.getStudentAttendance(), portalApi.getStudentAssessmentResults(), portalApi.getStudentSchedule()]).then(([self, history, attendanceResponse, resultResponse, scheduleResponse]) => { setStudent(self.data); setEnrolments(history.data); setAttendance(attendanceResponse.data); setResults(resultResponse.data); setSchedule(scheduleResponse.data) }).finally(() => setLoading(false)) }, [])
+  useEffect(() => { Promise.all([portalApi.getStudentMe(), portalApi.getStudentEnrolments(), portalApi.getStudentAssessmentResults(), portalApi.getStudentSchedule()]).then(([self, history, resultResponse, scheduleResponse]) => { setStudent(self.data); setEnrolments(history.data); setResults(resultResponse.data); setSchedule(scheduleResponse.data) }).finally(() => setLoading(false)) }, [])
 
   const [previousTab, setPreviousTab] = useState<string>('home')
 
@@ -52,7 +51,7 @@ export function StudentPortalView({ studentName, activeTab, onTabChange = () => 
           {loading ? (
             <div className="record-page"><div className="app-skeleton large" /><div className="app-skeleton" /><div className="app-skeleton" /></div>
           ) : (
-            <StudentLearn student={student} enrolments={enrolments} attendance={attendance} results={results} />
+            <StudentLearn student={student} enrolments={enrolments} results={results} />
           )}
         </div>
         <div className={`portal-tab-slide ${visibleTab === 'quiz' ? 'active' : ''} ${isDragging ? 'swiping' : ''}`}>
@@ -77,11 +76,10 @@ export function StudentPortalView({ studentName, activeTab, onTabChange = () => 
 
 function Title({ eyebrow, title, copy }: { eyebrow: string; title: string; copy: string }) { return <header className="record-page-title"><p>{eyebrow}</p><h1>{title}</h1><span>{copy}</span></header> }
 
-function StudentLearn({ student, enrolments, attendance, results }: { student: StudentMe['data']; enrolments: StudentEnrolment[]; attendance: AttendanceRecord[]; results: PublishedAssessmentResult[] }) {
+function StudentLearn({ student, enrolments, results }: { student: StudentMe['data']; enrolments: StudentEnrolment[]; results: PublishedAssessmentResult[] }) {
   const current = enrolments.find((item) => item.status === 'active') ?? enrolments[0]
   const subjects = current?.subjects ?? []
-  const counts = { present: attendance.filter((item) => item.status === 'present').length, late: attendance.filter((item) => item.status === 'late').length, absent: attendance.filter((item) => item.status === 'absent').length }
-  return <div className="record-page"><Title eyebrow="My learning" title="Progress at a glance" copy={`${student?.class?.name ?? current?.class?.name ?? 'Current class'} · live enrolment, attendance, and published results`} /><section className="student-progress-banner"><span><small>Recorded attendance</small><strong>{attendance.length}</strong><em>{counts.present} present · {counts.late} late · {counts.absent} absent</em></span><CalendarDays /></section><div className="section-heading"><span><b>My subjects</b><small>{subjects.length} current subject{subjects.length === 1 ? '' : 's'}</small></span></div><div className="subject-list">{subjects.map((subject, index) => <button type="button" disabled key={`${subject.subject_id ?? index}-${subject.subject_name}`}><span className={`subject-mark mark-${index % 4}`}><BookOpen /></span><span><strong>{subject.subject_name}</strong><small>{subject.teacher_name ?? 'Teacher to be confirmed'}</small></span><span className="subject-score">Current<small>Enrolment</small></span><ChevronRight /></button>)}</div><div className="section-heading"><span><b>Published results</b><small>{results.length} result{results.length === 1 ? '' : 's'}</small></span></div>{results.map((result) => <article className="feedback-card" key={result.id}><Lightbulb /><div><strong>{result.subject} · {result.title}</strong><p>{result.score} / {result.max_score}{result.grade_label ? ` · ${result.grade_label}` : ''}</p>{result.teacher_comment && <small>{result.teacher_comment}</small>}</div></article>)}{results.length === 0 && <p className="quiet-empty">No assessment results have been published.</p>}</div>
+  return <div className="record-page"><Title eyebrow="My learning" title="Progress at a glance" copy={`${student?.class?.name ?? current?.class?.name ?? 'Current class'} · subjects and published results`} /><div className="section-heading"><span><b>My subjects</b><small>{subjects.length} current subject{subjects.length === 1 ? '' : 's'}</small></span></div><div className="subject-list">{subjects.map((subject, index) => <button type="button" disabled key={`${subject.subject_id ?? index}-${subject.subject_name}`}><span className={`subject-mark mark-${index % 4}`}><BookOpen /></span><span><strong>{subject.subject_name}</strong><small>{subject.teacher_name ?? 'Teacher to be confirmed'}</small></span><span className="subject-score">Current<small>Enrolment</small></span><ChevronRight /></button>)}</div><div className="section-heading"><span><b>Published results</b><small>{results.length} result{results.length === 1 ? '' : 's'}</small></span></div>{results.map((result) => <article className="feedback-card" key={result.id}><Lightbulb /><div><strong>{result.subject} · {result.title}</strong><p>{result.score} / {result.max_score}{result.grade_label ? ` · ${result.grade_label}` : ''}</p>{result.teacher_comment && <small>{result.teacher_comment}</small>}</div></article>)}{results.length === 0 && <p className="quiet-empty">No assessment results have been published.</p>}</div>
 }
 
 function StudentQuiz() {

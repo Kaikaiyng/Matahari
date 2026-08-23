@@ -62,9 +62,12 @@ export function AdminShell<PageKey extends string>({
   })
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() => {
     try {
-      return JSON.parse(window.localStorage.getItem(SIDEBAR_GROUPS_KEY) ?? '{}') as Record<string, boolean>
+      const stored = JSON.parse(window.localStorage.getItem(SIDEBAR_GROUPS_KEY) ?? '{}') as Record<string, boolean>
+      return Object.keys(stored).length > 0
+        ? stored
+        : Object.fromEntries(navGroups.filter((group) => group.items.length > 1).map((group) => [group.label, true]))
     } catch {
-      return {}
+      return Object.fromEntries(navGroups.filter((group) => group.items.length > 1).map((group) => [group.label, true]))
     }
   })
   const [isNarrowViewport, setIsNarrowViewport] = useState(() =>

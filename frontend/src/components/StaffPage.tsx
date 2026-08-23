@@ -1,289 +1,121 @@
-import React, { useEffect, useState, useCallback } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
+import { Edit3, ShieldCheck } from 'lucide-react'
 import { IconlyUserPlus } from './icons/IconlyIcons'
 import { apiRequest } from '../api'
-import {
-  CustomSelect,
-  DataPanel,
-  FilterToolbar,
-  ModalFrame,
-  PageHeader,
-  StatCard,
-  StatusBadge,
-} from './AdminUi'
+import { CustomSelect, DataPanel, FilterToolbar, ModalFrame, PageHeader, StatCard, StatusBadge } from './AdminUi'
 
-export interface StaffMember {
-  id: number
-  staff_no: string
-  name: string
-  username: string
-  role: string
-  roles: string[]
-  status: string
-  assigned_classes: string[]
-  created_at?: string
+export interface StaffMember { id: number; staff_no: string; name: string; username: string; role: string; roles: string[]; status: string; assigned_classes: string[] }
+interface AbilityItem { slug: string; label: string }
+interface EmployeeAccess {
+  position: 'school-admin' | 'finance' | 'teacher'
+  positions: Array<{ value: string; label: string }>
+  groups: Record<string, AbilityItem[]>
+  dependencies: Record<string, string>
+  position_defaults: Record<EmployeeAccess['position'], string[]>
+  default_permissions: string[]
+  permissions: string[]
+  teacher_app_access: boolean
 }
 
-export const StaffPage: React.FC = () => {
+export const StaffPage: React.FC<{ permissions: string[]; currentUserId: number }> = ({ permissions, currentUserId }) => {
   const [staffList, setStaffList] = useState<StaffMember[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [roleFilter, setRoleFilter] = useState('all')
-
-  // Modal state
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [formName, setFormName] = useState('')
   const [formUsername, setFormUsername] = useState('')
   const [formPassword, setFormPassword] = useState('')
+  const [formPosition, setFormPosition] = useState<EmployeeAccess['position']>('teacher')
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
+  const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null)
+  const [access, setAccess] = useState<EmployeeAccess | null>(null)
+  const [positionDraft, setPositionDraft] = useState<EmployeeAccess['position']>('teacher')
+  const [permissionDraft, setPermissionDraft] = useState<string[]>([])
+  const [teacherAppAccess, setTeacherAppAccess] = useState(false)
+  const [changeReason, setChangeReason] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [accessLoading, setAccessLoading] = useState(false)
+  const [accessError, setAccessError] = useState<string | null>(null)
+  const canManageAbilities = permissions.includes('employees.abilities.manage')
 
   const loadStaff = useCallback(async () => {
     try {
-      setLoading(true)
-      setError(null)
-      const resp = await apiRequest<{ data: StaffMember[] }>('/v1/admin/staff')
-      setStaffList(resp.data ?? [])
-    } catch {
-      setStaffList([])
-      setError('Unable to load staff records.')
-    } finally {
-      setLoading(false)
-    }
+      setLoading(true); setError(null)
+      const response = await apiRequest<{ data: StaffMember[] }>('/v1/admin/staff')
+      setStaffList(response.data ?? [])
+    } catch { setStaffList([]); setError('Unable to load employee records.') }
+    finally { setLoading(false) }
   }, [])
+  useEffect(() => { void loadStaff() }, [loadStaff])
 
-  useEffect(() => {
-    void loadStaff()
-  }, [loadStaff])
-
-  const handleAddEmployee = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!formName.trim() || !formUsername.trim() || formPassword.length < 12) {
-      setFormError('Enter a name, username, and temporary password of at least 12 characters.')
-      return
-    }
-
+  const addEmployee = async (event: React.FormEvent) => {
+    event.preventDefault()
+    if (!formName.trim() || !formUsername.trim() || formPassword.length < 12) { setFormError('Enter a name, username, and temporary password of at least 12 characters.'); return }
     try {
-      setSubmitting(true)
-      setFormError(null)
-      await apiRequest('/v1/admin/staff', {
-        method: 'POST',
-        body: {
-          name: formName.trim(),
-          username: formUsername.trim().toLowerCase(),
-          password: formPassword,
-        },
-      })
-      setIsAddModalOpen(false)
-      setFormName('')
-      setFormUsername('')
-      setFormPassword('')
+      setSubmitting(true); setFormError(null)
+      await apiRequest('/v1/admin/staff', { method: 'POST', body: { name: formName.trim(), username: formUsername.trim().toLowerCase(), password: formPassword, position: formPosition } })
+      setIsAddModalOpen(false); setFormName(''); setFormUsername(''); setFormPassword(''); setFormPosition('teacher')
       await loadStaff()
-    } catch {
-      setFormError('Teacher account creation failed. No local placeholder was created.')
-    } finally {
-      setSubmitting(false)
-    }
+    } catch { setFormError('Employee account creation failed. No local placeholder was created.') }
+    finally { setSubmitting(false) }
   }
 
+  const openEdit = async (staff: StaffMember) => {
+    setEditingStaff(staff); setAccess(null); setChangeReason(''); setAccessError(null)
+    if (!canManageAbilities || staff.id === currentUserId) return
+    try {
+      setAccessLoading(true)
+      const response = await apiRequest<{ data: EmployeeAccess }>(`/v1/admin/staff/${staff.id}/access`)
+      setAccess(response.data); setPositionDraft(response.data.position); setPermissionDraft(response.data.permissions); setTeacherAppAccess(response.data.teacher_app_access)
+    } catch { setAccessError('Unable to load this employee’s access settings.') }
+    finally { setAccessLoading(false) }
+  }
+
+  const togglePermission = (slug: string, checked: boolean) => {
+    if (!access) return
+    setPermissionDraft((current) => {
+      const next = new Set(current)
+      if (checked) { next.add(slug); if (access.dependencies[slug]) next.add(access.dependencies[slug]) }
+      else { next.delete(slug); Object.entries(access.dependencies).forEach(([manage, view]) => { if (view === slug) next.delete(manage) }) }
+      return [...next]
+    })
+  }
+
+  const saveAccess = async () => {
+    if (!editingStaff || !access || !canManageAbilities) return
+    if (!changeReason.trim()) { setAccessError('Enter a reason for this change. It will be recorded in Audit Trail.'); return }
+    try {
+      setSaving(true); setAccessError(null)
+      await apiRequest(`/v1/admin/staff/${editingStaff.id}/access`, { method: 'PUT', body: { position: positionDraft, permissions: permissionDraft, teacher_app_access: teacherAppAccess, reason: changeReason.trim() } })
+      setEditingStaff(null); await loadStaff()
+    } catch { setAccessError('User access could not be updated. Please try again.') }
+    finally { setSaving(false) }
+  }
+
+  useEffect(() => {
+    if (!access || positionDraft === access.position) return
+    setPermissionDraft(access.position_defaults[positionDraft] ?? [])
+    setTeacherAppAccess(positionDraft === 'teacher')
+  }, [access, positionDraft])
+
   const filteredStaff = staffList.filter((item) => {
-    const matchesSearch =
-      item.name.toLowerCase().includes(search.toLowerCase()) ||
-      item.username.toLowerCase().includes(search.toLowerCase()) ||
-      item.staff_no.toLowerCase().includes(search.toLowerCase())
-    const matchesRole = roleFilter === 'all' || item.role.toLowerCase().includes(roleFilter.toLowerCase())
-    return matchesSearch && matchesRole
+    const needle = search.toLowerCase()
+    return (item.name.toLowerCase().includes(needle) || item.username.toLowerCase().includes(needle) || item.staff_no.toLowerCase().includes(needle)) && (roleFilter === 'all' || item.roles.includes(roleFilter))
   })
+  const teachersCount = staffList.filter((item) => item.roles.includes('teacher')).length
 
-  const totalStaff = staffList.length
-  const teachersCount = staffList.filter((s) => s.role.toLowerCase().includes('teacher')).length
-  const adminCount = totalStaff - teachersCount
-
-  return (
-    <section className="page-stack staff-page">
-      <PageHeader
-        eyebrow="School Human Resources"
-        title="Staff & Employees"
-        description="Manage school teachers, administrators, finance officers, and staff records."
-        action={
-          <button
-            type="button"
-            className="primary-button"
-            onClick={() => setIsAddModalOpen(true)}
-          >
-            <IconlyUserPlus size={16} />
-            <span>Add Teacher</span>
-          </button>
-        }
-      />
-
-      <div className="stat-cards-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
-        <StatCard label="Total Staff" value={totalStaff.toString()} meta="Active employee records" />
-        <StatCard label="Teaching Staff" value={teachersCount.toString()} meta="Teachers & Instructors" />
-        <StatCard label="Admin & Support" value={adminCount.toString()} meta="Management & Finance" />
-      </div>
-
-      <DataPanel
-        title="Employee Directory"
-      >
-        <FilterToolbar ariaLabel="Staff Filter Toolbar">
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', width: '100%' }}>
-            <input
-              type="text"
-              placeholder="Search staff by name, ID or username..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="search-input"
-              style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', flex: 1, minWidth: '200px' }}
-            />
-            <CustomSelect
-              ariaLabel="Filter by role"
-              value={roleFilter}
-              onChange={(val) => setRoleFilter(String(val))}
-              options={[
-                { value: 'all', label: 'All Roles' },
-                { value: 'teacher', label: 'Teacher' },
-                { value: 'admin', label: 'School Admin' },
-                { value: 'finance', label: 'Finance' },
-              ]}
-            />
-          </div>
-        </FilterToolbar>
-
-        {loading && <p style={{ padding: '24px', textAlign: 'center', color: '#64748b' }}>Loading employees...</p>}
-        {error && <p style={{ padding: '24px', textAlign: 'center', color: '#ef4444' }}>{error}</p>}
-
-        {!loading && !error && (
-          <div className="table-responsive" style={{ overflowX: 'auto' }}>
-            <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-              <thead>
-                <tr style={{ borderBottom: '2px solid #e2e8f0', textAlign: 'left', color: '#475569' }}>
-                  <th style={{ padding: '12px' }}>Staff ID</th>
-                  <th style={{ padding: '12px' }}>Full Name</th>
-                  <th style={{ padding: '12px' }}>Username</th>
-                  <th style={{ padding: '12px' }}>Role / Designation</th>
-                  <th style={{ padding: '12px' }}>Assigned Classes</th>
-                  <th style={{ padding: '12px' }}>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredStaff.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} style={{ padding: '24px', textAlign: 'center', color: '#94a3b8' }}>
-                      No staff members match the selected criteria.
-                    </td>
-                  </tr>
-                ) : (
-                  filteredStaff.map((staff) => (
-                    <tr key={staff.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                      <td style={{ padding: '12px', fontWeight: 700, color: '#334155' }}>{staff.staff_no}</td>
-                      <td style={{ padding: '12px', fontWeight: 700, color: '#0f172a' }}>{staff.name}</td>
-                      <td style={{ padding: '12px', color: '#64748b' }}>@{staff.username}</td>
-                      <td style={{ padding: '12px' }}>
-                        <span style={{
-                          background: staff.role.toLowerCase().includes('admin') ? '#f3e8ff' : staff.role.toLowerCase().includes('finance') ? '#e0f2fe' : '#f1f5f9',
-                          color: staff.role.toLowerCase().includes('admin') ? '#6b21a8' : staff.role.toLowerCase().includes('finance') ? '#0369a1' : '#334155',
-                          padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700
-                        }}>
-                          {staff.role}
-                        </span>
-                      </td>
-                      <td style={{ padding: '12px', color: '#475569' }}>
-                        {staff.assigned_classes.length > 0 ? staff.assigned_classes.join(', ') : '—'}
-                      </td>
-                      <td style={{ padding: '12px' }}>
-                        <StatusBadge tone={staff.status === 'active' ? 'positive' : 'neutral'}>
-                          {staff.status.toUpperCase()}
-                        </StatusBadge>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </DataPanel>
-
-      {/* Add Employee Modal */}
-      {isAddModalOpen && (
-        <ModalFrame
-          title="Add Teacher Account"
-          onClose={() => setIsAddModalOpen(false)}
-          footer={
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-              <button
-                type="button"
-                className="secondary-button"
-                onClick={() => setIsAddModalOpen(false)}
-                disabled={submitting}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                form="add-employee-form"
-                className="primary-button"
-                disabled={submitting}
-              >
-                {submitting ? 'Creating...' : 'Create Teacher'}
-              </button>
-            </div>
-          }
-        >
-          <form id="add-employee-form" onSubmit={handleAddEmployee} style={{ display: 'grid', gap: '14px', padding: '16px' }}>
-            {formError && (
-              <div style={{ background: '#fef2f2', color: '#b91c1c', padding: '10px 14px', borderRadius: '8px', fontSize: '12px' }}>
-                {formError}
-              </div>
-            )}
-            <div>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '4px', color: '#334155' }}>
-                Full Name *
-              </label>
-              <input
-                type="text"
-                required
-                placeholder="e.g. Mrs. Sarah Jenkins"
-                value={formName}
-                onChange={(e) => setFormName(e.target.value)}
-                style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
-              />
-            </div>
-
-            <div>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '4px', color: '#334155' }}>
-                Username *
-              </label>
-              <input
-                type="text"
-                required
-                placeholder="e.g. sjenkins"
-                value={formUsername}
-                onChange={(e) => setFormUsername(e.target.value)}
-                style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="teacher-password" style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '4px', color: '#334155' }}>
-                Temporary Password *
-              </label>
-              <input
-                id="teacher-password"
-                type="password"
-                required
-                minLength={12}
-                autoComplete="new-password"
-                value={formPassword}
-                onChange={(e) => setFormPassword(e.target.value)}
-                style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
-              />
-              <small style={{ color: '#64748b' }}>Teacher role only. Administrative and Finance role assignment remains outside this workflow.</small>
-            </div>
-          </form>
-        </ModalFrame>
-      )}
-    </section>
-  )
+  return <section className="page-stack staff-page">
+    <PageHeader eyebrow="School Human Resources" title="Employees" description="Manage the school’s Teachers, School Admins, and Finance employees." action={<button type="button" className="primary-button" onClick={() => setIsAddModalOpen(true)}><IconlyUserPlus size={16} /><span>Add Employee</span></button>} />
+    <div className="stat-cards-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}><StatCard label="Total Employees" value={String(staffList.length)} meta="Active employee records" /><StatCard label="Teachers" value={String(teachersCount)} meta="Teaching position" /><StatCard label="Admin & Finance" value={String(staffList.length - teachersCount)} meta="School operations" /></div>
+    <DataPanel title="Employee Directory">
+      <FilterToolbar ariaLabel="Employee filter toolbar"><div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', width: '100%' }}><input type="text" placeholder="Search by name, ID or username..." value={search} onChange={(event) => setSearch(event.target.value)} className="search-input" style={{ flex: 1, minWidth: '200px' }} /><CustomSelect ariaLabel="Filter by position" value={roleFilter} onChange={(value) => setRoleFilter(String(value))} options={[{ value: 'all', label: 'All Positions' }, { value: 'teacher', label: 'Teacher' }, { value: 'school-admin', label: 'School Admin' }, { value: 'finance', label: 'Finance' }]} /></div></FilterToolbar>
+      {loading && <p className="table-message">Loading employees...</p>}{error && <p className="table-message error-text">{error}</p>}
+      {!loading && !error && <div className="table-responsive"><table className="data-table"><thead><tr><th>Staff ID</th><th>Full Name</th><th>Username</th><th>Position</th><th>Assigned Classes</th><th>Status</th><th>Action</th></tr></thead><tbody>{filteredStaff.length === 0 ? <tr><td colSpan={7} className="table-message">No employees match the selected criteria.</td></tr> : filteredStaff.map((staff) => <tr key={staff.id}><td><strong>{staff.staff_no}</strong></td><td><strong>{staff.name}</strong></td><td>@{staff.username}</td><td>{staff.role}</td><td>{staff.assigned_classes.join(', ') || '—'}</td><td><StatusBadge tone={staff.status === 'active' ? 'positive' : 'neutral'}>{staff.status.toUpperCase()}</StatusBadge></td><td><button type="button" className="table-action" onClick={() => void openEdit(staff)}><Edit3 size={15} /> Edit</button></td></tr>)}</tbody></table></div>}
+    </DataPanel>
+    {editingStaff && <ModalFrame title={`Edit ${editingStaff.name}`} description={`${editingStaff.staff_no} · @${editingStaff.username}`} onClose={() => setEditingStaff(null)} footer={<button type="button" className="primary-button" disabled={saving || accessLoading || editingStaff.id === currentUserId} onClick={() => void saveAccess()}>{saving ? 'Saving…' : 'Save access'}</button>}><section className="employee-access-editor"><header className="employee-access-heading"><span className="employee-access-icon"><ShieldCheck size={21} /></span><span><strong>Position & User Abilities</strong><small>Effective access for this employee. Every saved change is audited.</small></span></header>{accessError && <p className="attendance-error" role="alert">{accessError}</p>}{editingStaff.id === currentUserId ? <p className="attendance-error">For safety, you cannot change your own position or abilities.</p> : !canManageAbilities ? <p>You do not have permission to manage User Abilities.</p> : accessLoading ? <div className="app-skeleton" aria-label="Loading user abilities" /> : access && <><label className="employee-access-field"><span>Employee position</span><CustomSelect ariaLabel="Employee position" value={positionDraft} onChange={(value) => setPositionDraft(value as EmployeeAccess['position'])} options={access.positions} /></label>{Object.entries(access.groups).map(([group, items]) => <section className="ability-group" key={group}><h4>{group}</h4><div className="ability-grid">{items.map((item) => { const checked = permissionDraft.includes(item.slug); return <label className={`system-check-card${checked ? ' is-checked' : ''}`} key={item.slug}><input className="system-checkbox" type="checkbox" checked={checked} onChange={(event) => togglePermission(item.slug, event.target.checked)} /><span><strong>{item.label}</strong>{access.default_permissions.includes(item.slug) && <small>Position default</small>}</span></label> })}</div></section>)}<section className="ability-group"><h4>App</h4><label className={`system-check-card${teacherAppAccess ? ' is-checked' : ''}`}><input className="system-checkbox" type="checkbox" checked={teacherAppAccess} onChange={(event) => setTeacherAppAccess(event.target.checked)} /><span><strong>Teacher App Access</strong><small>Use the App with the Teacher persona; available tools still follow User Abilities.</small></span></label></section><label className="employee-access-field"><span>Reason for change *</span><textarea rows={3} value={changeReason} onChange={(event) => setChangeReason(event.target.value)} placeholder="Example: Assigned as acting principal for Term 2." /></label></>}</section></ModalFrame>}
+    {isAddModalOpen && <ModalFrame title="Add Employee Account" onClose={() => setIsAddModalOpen(false)} footer={<div className="modal-actions"><button type="button" className="secondary-button" onClick={() => setIsAddModalOpen(false)} disabled={submitting}>Cancel</button><button type="submit" form="add-employee-form" className="primary-button" disabled={submitting}>{submitting ? 'Creating...' : 'Create Employee'}</button></div>}><form id="add-employee-form" onSubmit={addEmployee} className="employee-create-form">{formError && <div className="attendance-error">{formError}</div>}<label>Full Name *<input type="text" required value={formName} onChange={(event) => setFormName(event.target.value)} /></label><label>Username *<input type="text" required value={formUsername} onChange={(event) => setFormUsername(event.target.value)} /></label><label>Position *<CustomSelect ariaLabel="New employee position" value={formPosition} onChange={(value) => setFormPosition(value as EmployeeAccess['position'])} options={[{ value: 'teacher', label: 'Teacher' }, { value: 'school-admin', label: 'School Admin' }, { value: 'finance', label: 'Finance' }]} /></label><label>Temporary Password *<input type="password" required minLength={12} autoComplete="new-password" value={formPassword} onChange={(event) => setFormPassword(event.target.value)} /><small>The position supplies defaults; User Abilities can be adjusted after creation.</small></label></form></ModalFrame>}
+  </section>
 }

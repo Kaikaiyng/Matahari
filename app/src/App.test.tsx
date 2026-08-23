@@ -94,10 +94,10 @@ describe('separate MIS portal app', () => {
     expect(await screen.findByRole('heading', { name: 'Welcome to MIS' })).toBeInTheDocument()
   })
 
-  it('renders the staff publishing shell for a school administrator', async () => {
+  it('renders the elevated Teacher shell when a school administrator has Teacher App Access', async () => {
     vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
       const path = new URL(String(input), window.location.origin).pathname
-      if (path.endsWith('/me')) return json({ user: { id: 1, name: 'Admin', username: 'admin', school_id: 1, roles: ['school-admin'], permissions: [] } })
+      if (path.endsWith('/me')) return json({ user: { id: 1, name: 'Admin', username: 'admin', school_id: 1, roles: ['school-admin'], permissions: ['app.teacher_access', 'community.moderate'] } })
       if (path.endsWith('/community/policies/current')) return json({ data: { terms: { id: 1, title: 'Terms of Use', accepted: true }, community_standards: { id: 2, title: 'Community Standards', accepted: true } } })
       return json({ data: [] })
     })

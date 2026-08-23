@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Activity, AlertCircle, AlertTriangle, ChevronDown, ChevronLeft, ChevronRight, RefreshCw, ServerCrash } from 'lucide-react'
 import { ApiError, apiRequest } from '../../api'
-import { DataPanel, FilterToolbar, PageHeader, StatCard } from '../../components/AdminUi'
+import { CustomSelect, DataPanel, DatePicker, FilterToolbar, PageHeader, StatCard } from '../../components/AdminUi'
 import './ApplicationLogsPage.css'
 
 type LogLevel = 'FATAL' | 'ERROR' | 'WARN' | 'INFO'
@@ -137,21 +137,20 @@ export function ApplicationLogsPage({ onUnauthorized }: { onUnauthorized: () => 
           </label>
           <label>
             Level
-            <select value={level} onChange={(event) => setLevel(event.target.value)}>
-              <option value="">All levels</option>
-              <option value="FATAL">Fatal</option>
-              <option value="ERROR">Error</option>
-              <option value="WARN">Warning</option>
-              <option value="INFO">Info</option>
-            </select>
+            <CustomSelect
+              ariaLabel="Log level"
+              value={level}
+              onChange={setLevel}
+              options={[{ value: '', label: 'All levels' }, { value: 'FATAL', label: 'Fatal' }, { value: 'ERROR', label: 'Error' }, { value: 'WARN', label: 'Warning' }, { value: 'INFO', label: 'Info' }]}
+            />
           </label>
           <label>
             From
-            <input type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} />
+            <DatePicker value={dateFrom} onChange={setDateFrom} placeholder="Start date" ariaLabel="From date" />
           </label>
           <label>
             To
-            <input type="date" min={dateFrom || undefined} value={dateTo} onChange={(event) => setDateTo(event.target.value)} />
+            <DatePicker min={dateFrom || undefined} value={dateTo} onChange={setDateTo} placeholder="End date" ariaLabel="To date" />
           </label>
           <div className="toolbar-actions application-log-filter-actions">
             <button className="primary-action compact" type="submit">Apply filters</button>
@@ -200,7 +199,7 @@ function LogRows({ log, expanded, onToggle }: { log: ApplicationLog; expanded: b
     <>
       <tr className={`application-log-row level-${log.level.toLowerCase()}`}>
         <td className="application-log-time">{formatTimestamp(log.timestamp)}</td>
-        <td><span className={`application-log-level level-${log.level.toLowerCase()}`}>{log.level}</span></td>
+        <td><span className={`application-log-level level-${log.level.toLowerCase()} ${log.level.toLowerCase() === 'fatal' ? 'critical' : ''}`.trim()}>{log.level}</span></td>
         <td className="application-log-message">{log.message}</td>
         <td><code>{log.environment}</code></td>
         <td><strong>{log.actor ?? 'System'}</strong>{log.ip_address && <small>{log.ip_address}</small>}</td>

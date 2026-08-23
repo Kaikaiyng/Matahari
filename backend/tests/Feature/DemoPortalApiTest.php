@@ -127,7 +127,7 @@ class DemoPortalApiTest extends TestCase
         $this->assertNull($other->fresh()->read_at);
     }
 
-    public function test_staff_api_uses_foundation_permission_and_creates_teacher_only(): void
+    public function test_employee_api_creates_an_explicit_position(): void
     {
         $admin = User::query()->where('username', 'admin')->firstOrFail();
 
@@ -141,6 +141,7 @@ class DemoPortalApiTest extends TestCase
                 'name' => 'Demo Teacher',
                 'username' => 'demo.teacher',
                 'password' => 'demo-password-2026',
+                'position' => 'teacher',
             ])
             ->assertCreated()
             ->assertJsonPath('data.roles.0', 'teacher');

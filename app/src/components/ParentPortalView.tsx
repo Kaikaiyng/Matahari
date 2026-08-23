@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { AlertCircle, BookOpenCheck, CalendarCheck2, ChevronLeft, ChevronRight, LogOut, Mail, Phone, Printer, ReceiptText, UserRound } from 'lucide-react'
-import { portalApi, type AttendanceRecord, type GuardianMe, type OutstandingCharge, type PortalPayment, type PortalReceipt, type PublishedAssessmentResult } from '../api/portalApi'
+import { portalApi, type AttendanceRecord, type CampusAttendance, type GuardianMe, type OutstandingCharge, type PortalPayment, type PortalReceipt, type PublishedAssessmentResult } from '../api/portalApi'
 import { CommunityFeed } from './CommunityFeed'
 import { CommunitySafetyCentre } from '../features/community-safety/CommunitySafetyCentre'
 import { CommunitySafetyLinks } from '../features/community-safety/CommunitySafetyLinks'
@@ -100,6 +100,7 @@ function ParentAcademics({ children }: { children: GuardianMe['children'] }) {
   const academicChildren = useMemo(() => children.filter((child) => child.can_view_academics), [children])
   const [selectedId, setSelectedId] = useState(academicChildren[0]?.id ?? 0)
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([])
+  const [campus, setCampus] = useState<CampusAttendance | null>(null)
   const [results, setResults] = useState<PublishedAssessmentResult[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -108,10 +109,15 @@ function ParentAcademics({ children }: { children: GuardianMe['children'] }) {
     if (!selectedId) return
     setLoading(true)
     setError('')
-    Promise.all([portalApi.getChildAttendance(selectedId), portalApi.getChildAssessmentResults(selectedId)]).then(([attendanceResponse, resultResponse]) => { setAttendance(attendanceResponse.data); setResults(resultResponse.data) }).catch(() => setError('Unable to load academic records.')).finally(() => setLoading(false))
+    Promise.all([portalApi.getChildCampusAttendance(selectedId), portalApi.getChildAttendance(selectedId), portalApi.getChildAssessmentResults(selectedId)]).then(([campusResponse, attendanceResponse, resultResponse]) => { setCampus(campusResponse.data); setAttendance(attendanceResponse.data); setResults(resultResponse.data) }).catch(() => setError('Unable to load academic records.')).finally(() => setLoading(false))
   }, [selectedId])
   const counts = countAttendance(attendance)
-  return <div className="record-page"><PageTitle eyebrow="Academics" title="Learning progress" copy="Live attendance and teacher-published assessment results." /><ChildSelector children={academicChildren} selectedId={selectedId} onChange={setSelectedId} />{child ? <>{loading ? <div className="app-skeleton" /> : <section className="attendance-hero"><div><small>Recorded sessions</small><strong>{attendance.length}</strong><span>Attendance</span></div><div className="attendance-bars" aria-label={`${counts.present} present, ${counts.late} late, ${counts.absent} absent`}><i className="present" style={{ width: `${percent(counts.present, attendance.length)}%` }} /><i className="late" style={{ width: `${percent(counts.late, attendance.length)}%` }} /><i className="absent" style={{ width: `${percent(counts.absent, attendance.length)}%` }} /></div><p><span>{counts.present} Present</span><span>{counts.late} Late</span><span>{counts.absent} Absent</span></p>{error && <small className="form-error">{error}</small>}</section>}<div className="section-heading"><span><b>Published results</b><small>{results.length} result{results.length === 1 ? '' : 's'}</small></span></div>{results.map((result) => <ResultRow key={result.id} subject={result.subject} assessment={result.title} score={`${result.score} / ${result.max_score}`} grade={result.grade_label ?? '—'} comment={result.teacher_comment} />)}{results.length === 0 && !loading && <p className="quiet-empty">No assessment results have been published.</p>}</> : <div className="app-empty"><BookOpenCheck /><h2>No academic access</h2><p>No linked child with reviewed academic access is available.</p></div>}</div>
+  return <div className="record-page"><PageTitle eyebrow="Academics" title="Learning progress" copy="Campus status, class attendance and teacher-published results." /><ChildSelector children={academicChildren} selectedId={selectedId} onChange={setSelectedId} />{child ? <>{campus && <CampusStatusCard campus={campus} />}{loading ? <div className="app-skeleton" /> : <section className="attendance-hero"><div><small>Recorded sessions</small><strong>{attendance.length}</strong><span>Class attendance</span></div><div className="attendance-bars" aria-label={`${counts.present} present, ${counts.late} late, ${counts.absent} absent`}><i className="present" style={{ width: `${percent(counts.present, attendance.length)}%` }} /><i className="late" style={{ width: `${percent(counts.late, attendance.length)}%` }} /><i className="absent" style={{ width: `${percent(counts.absent, attendance.length)}%` }} /></div><p><span>{counts.present} Present</span><span>{counts.late} Late</span><span>{counts.absent} Absent</span></p>{error && <small className="form-error">{error}</small>}</section>}<div className="section-heading"><span><b>Published results</b><small>{results.length} result{results.length === 1 ? '' : 's'}</small></span></div>{results.map((result) => <ResultRow key={result.id} subject={result.subject} assessment={result.title} score={`${result.score} / ${result.max_score}`} grade={result.grade_label ?? '—'} comment={result.teacher_comment} />)}{results.length === 0 && !loading && <p className="quiet-empty">No assessment results have been published.</p>}</> : <div className="app-empty"><BookOpenCheck /><h2>No academic access</h2><p>No linked child with reviewed academic access is available.</p></div>}</div>
+}
+
+function CampusStatusCard({ campus }: { campus: CampusAttendance }) {
+  const movementTime = (value: string | null) => value ? new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'
+  return <section className={`campus-status-card ${campus.current_status}`}><header><span><small>Today on campus</small><strong>{campus.current_status === 'on_campus' ? 'At school' : campus.current_status === 'off_campus' ? 'Left school' : 'No record yet'}</strong></span><i>{campus.current_status === 'on_campus' ? 'IN' : campus.current_status === 'off_campus' ? 'OUT' : '—'}</i></header><div><span><small>First entry</small><strong>{movementTime(campus.first_entry)}</strong></span><span><small>Last exit</small><strong>{movementTime(campus.last_exit)}</strong></span><span><small>Movements</small><strong>{campus.events.length}</strong></span></div></section>
 }
 
 

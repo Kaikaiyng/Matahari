@@ -3,7 +3,6 @@ import {
   ArrowLeft,
   Calendar,
   Check,
-  CheckCircle2,
   ChevronRight,
   Clock,
   Edit3,
@@ -15,6 +14,7 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ApiError, apiRequest } from '../api'
 import {
+  DatePicker,
   DataPanel,
   ModalFrame,
   PageHeader,
@@ -89,9 +89,11 @@ export interface AttendanceOverviewData {
 }
 
 type ClassesPageProps = {
+  mode?: 'classes' | 'attendance'
   permissions: string[]
   initialClassId?: number | null
   onOpenStudent: (studentId: number, schoolClass: SchoolClassOption) => void
+  onOpenAttendance?: (classId: number) => void
   onUnauthorized: () => void
 }
 
@@ -118,19 +120,21 @@ const getAttendanceLevelGroup = (levelGroup?: string, className?: string): Level
 const todayString = () => new Date().toISOString().split('T')[0]
 
 export function ClassesPage({
+  mode = 'classes',
   permissions,
   initialClassId = null,
   onOpenStudent,
+  onOpenAttendance,
   onUnauthorized,
 }: ClassesPageProps) {
-  const canView = permissions.includes('students.view')
-  const canEdit = permissions.includes('students.create') || permissions.includes('students.update')
+  const canView = mode === 'attendance' ? permissions.includes('attendance.view_school') : permissions.includes('students.view')
+  const canEdit = mode === 'attendance' ? permissions.includes('attendance.manage_school') : permissions.includes('students.create') || permissions.includes('students.update')
 
   const [classes, setClasses] = useState<SchoolClassOption[]>([])
   const [students, setStudents] = useState<ClassStudent[]>([])
   const [selectedClassId, setSelectedClassId] = useState<number | null>(initialClassId)
   const [selectedDate, setSelectedDate] = useState<string>(todayString())
-  const [activeTab, setActiveTab] = useState<'roster' | 'attendance'>('roster')
+  const activeTab: 'roster' | 'attendance' = mode === 'attendance' ? 'attendance' : 'roster'
 
   const [overview, setOverview] = useState<AttendanceOverviewData | null>(null)
   const [classStudents, setClassStudents] = useState<AttendanceStudentRow[]>([])
@@ -281,6 +285,11 @@ export function ClassesPage({
     return { ...counts, markedTotal, rate }
   }, [classStudents])
 
+  const pendingClassCount = useMemo(
+    () => overview?.classes?.filter((schoolClass) => !schoolClass.is_submitted).length ?? 0,
+    [overview],
+  )
+
   const handleStatusChange = (studentId: number, newStatus: AttendanceStatus) => {
     setClassStudents((prev) =>
       prev.map((s) => (s.student_id === studentId ? { ...s, status: newStatus } : s)),
@@ -388,9 +397,13 @@ export function ClassesPage({
   return (
     <section className="page-stack classes-page">
       <PageHeader
-        eyebrow="People"
-        title="Classes"
-        description="Browse class directory, manage active student rosters, and record daily attendance."
+        eyebrow={mode === 'attendance' ? 'School operations' : 'People'}
+        title={mode === 'attendance' ? 'Attendance' : 'Classes'}
+        description={
+          mode === 'attendance'
+            ? 'Monitor daily attendance across the school and open a class to record or correct its register.'
+            : 'Browse class directory, manage active student rosters, and record daily attendance.'
+        }
       />
 
       {error && (
@@ -426,82 +439,71 @@ export function ClassesPage({
         </div>
       )}
 
+      {mode === 'attendance' && !selectedClass && overview && (
+        <section className="attendance-overview-grid" aria-label="Attendance overview">
+          <article className="attendance-overview-card rate">
+            <span>Attendance rate</span>
+            <strong>{overview.totals.attendance_rate}%</strong>
+            <small>{overview.totals.recorded_count} of {overview.totals.total_enrolled} students recorded</small>
+          </article>
+          <article className="attendance-overview-card present">
+            <span>Present</span>
+            <strong>{overview.totals.present}</strong>
+          </article>
+          <article className="attendance-overview-card late">
+            <span>Late</span>
+            <strong>{overview.totals.late}</strong>
+          </article>
+          <article className="attendance-overview-card absent danger">
+            <span>Absent</span>
+            <strong>{overview.totals.absent}</strong>
+          </article>
+          <article className="attendance-overview-card excused">
+            <span>Excused</span>
+            <strong>{overview.totals.excused}</strong>
+          </article>
+          <article className="attendance-overview-card pending danger">
+            <span>Submission status</span>
+            <strong>{pendingClassCount}</strong>
+            <small>
+              {pendingClassCount} {pendingClassCount === 1 ? 'class' : 'classes'} pending
+            </small>
+          </article>
+        </section>
+      )}
+
       {/* Selected Class Detail View */}
       {selectedClass ? (
         <DataPanel
           eyebrow={selectedLevelGroup}
           title={selectedClass.name}
           action={
-            <button
-              className="secondary-action compact"
-              onClick={() => {
-                setSelectedClassId(null)
-                setSearch('')
-                setError('')
-                setSuccessMessage('')
-              }}
-            >
-              <ArrowLeft size={16} />
-              Back to Classes
-            </button>
+            <div className="class-detail-actions">
+              <button
+                className="secondary-action compact"
+                onClick={() => {
+                  setSelectedClassId(null)
+                  setSearch('')
+                  setError('')
+                  setSuccessMessage('')
+                }}
+              >
+                <ArrowLeft size={16} />
+                Back to {mode === 'attendance' ? 'Attendance' : 'Classes'}
+              </button>
+              {mode === 'classes' && onOpenAttendance && (
+                <button
+                  type="button"
+                  className="primary-button compact"
+                  onClick={() => onOpenAttendance(selectedClass.id)}
+                >
+                  <Calendar size={16} />
+                  Open Class Register
+                </button>
+              )}
+            </div>
           }
         >
-          {/* Tab Navigation */}
-          <div
-            style={{
-              display: 'flex',
-              gap: '8px',
-              borderBottom: '1px solid #e2e8f0',
-              marginBottom: '16px',
-              paddingBottom: '8px',
-            }}
-          >
-            <button
-              type="button"
-              className={`class-tab-btn ${activeTab === 'attendance' ? 'active' : ''}`}
-              onClick={() => setActiveTab('attendance')}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '8px 16px',
-                borderRadius: '8px',
-                border: '1px solid transparent',
-                background:
-                  activeTab === 'attendance' ? 'var(--brand-primary-soft, #fdf2f4)' : 'transparent',
-                color: activeTab === 'attendance' ? 'var(--brand-primary, #c9254a)' : '#64748b',
-                fontWeight: 600,
-                fontSize: '13px',
-                cursor: 'pointer',
-              }}
-            >
-              <CheckCircle2 size={15} />
-              <span>Daily Attendance</span>
-            </button>
-            <button
-              type="button"
-              className={`class-tab-btn ${activeTab === 'roster' ? 'active' : ''}`}
-              onClick={() => setActiveTab('roster')}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '8px 16px',
-                borderRadius: '8px',
-                border: '1px solid transparent',
-                background:
-                  activeTab === 'roster' ? 'var(--brand-primary-soft, #fdf2f4)' : 'transparent',
-                color: activeTab === 'roster' ? 'var(--brand-primary, #c9254a)' : '#64748b',
-                fontWeight: 600,
-                fontSize: '13px',
-                cursor: 'pointer',
-              }}
-            >
-              <Users size={15} />
-              <span>Student Roster ({roster.length})</span>
-            </button>
-          </div>
-
           {/* TAB 1: Daily Attendance */}
           {activeTab === 'attendance' && (
             <div className="tab-attendance-content" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -522,21 +524,16 @@ export function ClassesPage({
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <Calendar size={15} style={{ color: '#64748b' }} />
-                    <input
-                      type="date"
+                    <DatePicker
                       value={selectedDate}
-                      onChange={(e) => {
-                        if (e.target.value) {
-                          setSelectedDate(e.target.value)
+                      onChange={(value) => {
+                        if (value) {
+                          setSelectedDate(value)
                         }
                       }}
-                      style={{
-                        padding: '6px 10px',
-                        borderRadius: '6px',
-                        border: '1px solid #cbd5e1',
-                        fontSize: '13px',
-                        background: '#ffffff',
-                      }}
+                      allowClear={false}
+                      ariaLabel="Attendance date"
+                      className="compact-date-picker"
                     />
                   </div>
 
@@ -786,7 +783,7 @@ export function ClassesPage({
           )}
 
           {/* TAB 2: Student Roster */}
-          {activeTab === 'roster' && (
+          {mode === 'classes' && activeTab === 'roster' && (
             <div className="tab-roster-content">
               <div className="table-wrap">
                 <table className="student-list-table class-roster-table">
@@ -834,27 +831,22 @@ export function ClassesPage({
       ) : (
         /* Class Directory Overview View */
         <DataPanel
-          eyebrow="Directory"
-          title="Class Directory"
+          eyebrow={mode === 'attendance' ? 'Daily register' : 'Directory'}
+          title={mode === 'attendance' ? 'Attendance by class' : 'Class Directory'}
           action={
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <Calendar size={14} style={{ color: '#64748b' }} />
-                <input
-                  type="date"
+                <DatePicker
                   value={selectedDate}
-                  onChange={(e) => {
-                    if (e.target.value) {
-                      setSelectedDate(e.target.value)
+                  onChange={(value) => {
+                    if (value) {
+                      setSelectedDate(value)
                     }
                   }}
-                  style={{
-                    padding: '4px 8px',
-                    borderRadius: '6px',
-                    border: '1px solid #cbd5e1',
-                    fontSize: '12px',
-                    background: '#ffffff',
-                  }}
+                  allowClear={false}
+                  ariaLabel="Attendance date"
+                  className="compact-date-picker"
                 />
               </div>
               <button

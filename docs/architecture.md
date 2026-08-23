@@ -2,7 +2,7 @@
 
 **Status:** Current implementation reference
 
-**Repository baseline:** SaaS feature branch based on `master` at `0ad0558` (2026-08-14)
+**Repository baseline:** Role and User Abilities delivery (2026-08-23)
 
 ## Tenant Boundary
 
@@ -13,6 +13,10 @@ Admin (`frontend/`) and App (`app/`) are separate builds on separate tenant doma
 Every tenant runs the same Admin and App source builds and the same Laravel backend. Tenant variation is limited to host-resolved `branding` and `features`; tenant-specific frontend copies, tenant branches, and tenant-specific authorization behavior are outside the architecture.
 
 Laravel's `tenant.surface` middleware is the authoritative browser-surface boundary. Admin/platform/tenant-management and legacy finance APIs require `admin`; Community, Teacher, Assessment, Quiz and Portal APIs require `app`; tenant context and session bootstrap/authentication remain shared. A surface mismatch returns 404 and does not replace membership, permission, feature, school or resource authorization.
+
+`UserPermissionResolver` is authoritative for middleware and `/api/me`. It combines active tenant-membership position defaults with same-school explicit grants/denials in `user_permission_overrides`; platform owners bypass school permission lookup. `EmployeeAccessService` locks the target, synchronizes legacy and membership position roles, materializes overrides, and writes required audit records in one transaction.
+
+The App has three personas only: Teacher, Parent, and Student. `app.teacher_access` admits an elevated employee as Teacher, while school-wide tools retain their own permission gates and App-surface endpoints. Multi-persona users make an explicit first-use choice that is remembered on the device.
 
 ## High-Level Architecture
 
@@ -60,7 +64,7 @@ The App exposes public `/legal/*` routes backed by a no-session public API. Resp
 - `app/Support/SchoolContext.php` and `ResolveSchoolContext`: consistent school resolution for new Phase A `/api/v1` modules.
 - `app/Policies/`: Phase A academic and portal-link resource authorization.
 - `app/Services/Foundation/`: academic foundation, teacher scope, portal-link, and minimum foundation-account transactions.
-- `app/Services/Attendance/`: teaching-assignment-scoped daily attendance and transactional correction audit.
+- `app/Services/Attendance/`: teaching-assignment-scoped class Attendance, append-only campus movements, guardian notifications, time-bound abilities, and transactional audit.
 - `app/Services/FeeAgreements/`: agreement creation and superseding transactions.
 - `app/Services/Billing/`: Fee Record generation/summary, payment, receipt, numbering, manual in-app payment reminders, and legacy invoice services.
 - `app/Services/Audit/` and `app/Audit/`: audit events, trusted context, sanitization, and persistence.
@@ -128,7 +132,7 @@ New Phase A modules use a consistent chain under `/api/v1`: authenticated active
 
 Teacher roster access requires an active/current teaching assignment matching the authenticated teacher, school, academic year, class, and subject. Portal identity linking requires exact same-school users with the required role; it never uses guessed personal-data matching.
 
-Daily attendance reuses that teaching scope. A Teacher can create or update one `daily` session for an assigned class/date. Admin attendance is exposed only under `/api/v1/admin/attendance/*`, behind the Admin surface, resolved school context, tenant feature, and permission middleware. Roster membership comes only from the current `class_enrolments` row; `students.class_id` is not an attendance fallback. Submitted changes require a correction reason. Parent reads require an active guardian-child link with `can_view_academics = true`; Student reads resolve only the authenticated user's same-school student link. React role visibility is not the authorization boundary.
+Class Attendance uses current teaching scope. A Teacher can create or update one `daily` session for an assigned class/date; time-bound abilities can separately broaden school visibility or management. Campus Attendance is an independent append-only entry/exit stream and does not silently create lesson/class decisions. Admin endpoints remain behind the Admin surface, resolved school context, tenant feature, and dedicated permission middleware. Parent campus/class reads require an active guardian-child link with `can_view_academics = true`; Student Attendance is not exposed. React role visibility is not the authorization boundary.
 
 Gate entry is currently an authenticated Admin API integration, not a public hardware endpoint. It serializes daily-session creation by class, leaves the session `in_progress`, and treats repeated student/session scans as idempotent. Device-signature authentication, replay protection, and exit-event processing are **Planned, not implemented**.
 

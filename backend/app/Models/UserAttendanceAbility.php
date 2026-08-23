@@ -1,0 +1,50 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class UserAttendanceAbility extends Model
+{
+    protected $fillable = [
+        'school_id',
+        'user_id',
+        'permission_id',
+        'effective_from',
+        'expires_at',
+        'granted_by',
+        'revoked_by',
+        'revoked_at',
+        'reason',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'effective_from' => 'datetime',
+            'expires_at' => 'datetime',
+            'revoked_at' => 'datetime',
+        ];
+    }
+
+    public function school(): BelongsTo
+    {
+        return $this->belongsTo(School::class);
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function permission(): BelongsTo
+    {
+        return $this->belongsTo(Permission::class);
+    }
+
+    public function granter(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'granted_by');
+    }
+}

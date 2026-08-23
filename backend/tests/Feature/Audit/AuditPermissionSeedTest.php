@@ -14,7 +14,7 @@ class AuditPermissionSeedTest extends TestCase
     {
         $this->seed();
 
-        foreach (['super-admin', 'ceo', 'school-admin', 'finance'] as $roleSlug) {
+        foreach (['super-admin', 'school-admin', 'finance'] as $roleSlug) {
             $permissions = Role::query()
                 ->where('slug', $roleSlug)
                 ->firstOrFail()

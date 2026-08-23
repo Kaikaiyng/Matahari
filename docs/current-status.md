@@ -1,6 +1,6 @@
 # Current Status
 
-**Snapshot date:** 2026-08-20
+**Snapshot date:** 2026-08-23
 
 **Inspected Phase A implementation commit:** `ecaa0a1f177292ae99c9338e255a1f93312971f5`
 
@@ -10,11 +10,28 @@
 
 **Overall status:** SaaS multi-tenant foundation in final validation, with MIS as the first tenant; separate Admin and multi-role App clients, live Community, daily Attendance, Assessment publication, Parent Finance reads/receipt access/manual in-app reminders, class Schedule, and formal Quiz V1 remain shared tenant-aware modules. Practice/AI Quiz, native/store delivery, automated DNS/TLS and production operations remain incomplete.
 
+## 2026-08-23 Role and User Abilities Consolidation
+
+- Super Admin is the protected platform-owner identity. Active employee positions are exactly School Admin, Finance, and Teacher; Finance inherits every School Admin default plus supported finance-only mutations. CEO and Tenant Owner are no longer seeded or assignable.
+- Employees now has one Position & User Abilities editor with grouped system-styled checkboxes. Explicit school grants/denials are backend-authoritative, and Manage/View dependencies update immediately without a request per checkbox.
+- School Admin and Finance may edit another same-school employee but not themselves, a platform owner, or a cross-school user. Every position, ability, and Teacher App Access change requires a reason and same-transaction Audit Trail records.
+- The App exposes only Teacher, Parent, and Student. `app.teacher_access` admits an elevated employee as Teacher; effective permissions control school-wide tools. Multi-persona users choose on first entry and the last local choice is remembered.
+- Final local qualification for the combined 2026-08-23 delivery passed: backend PHPUnit discovered 376 tests (364 passed, 12 MariaDB-gated skips) with 2,089 assertions; Pint passed and 162 API routes loaded. A disposable SQLite database passed fresh migration, rollback of the three 2026-08-23 migrations, and re-migration. Admin passed 184/184 tests, lint (with 9 existing Fast Refresh warnings), TypeScript, and production build. App passed 36/36 tests with clean lint, TypeScript, and production build. MariaDB remains **Not verified** in this local pass.
+
+## 2026-08-23 Admin Attendance Workspace
+
+- Admin date, time, and select fields now use shared MIS-styled controls instead of visible browser-native popups, covering student/payment forms, Attendance, Calendar, Schedule, audit/log filters, Classes, fee agreements, and moderation workflows.
+- Calendar participant selection is school-scoped and limited to active employee roles (Super Admin, School Admin, Finance, and Teacher); Parent and Student accounts are excluded.
+- Admin Attendance is a dedicated Hub with Overview, Class Register, Devices, and Settings. Overview combines campus statistics with the complete campus-record table and per-student timeline, avoiding a duplicate Campus Records section. Classes remains roster-first and deep-links into the selected class register. User Abilities is managed contextually from each employee's Edit dialog in Employees.
+- Campus Attendance now preserves immutable entry/exit timelines, supports face/card/manual methods, idempotent external event IDs, Hikvision-ready device mapping, school arrival/dismissal defaults, and default guardian entry/exit notifications. Hardware protocol/authentication remains **Not verified** without an actual Hikvision model and integration environment.
+- Dedicated assigned/school view/manage permissions and audited time-bound user abilities replace reuse of Student permissions. Parents see linked-child campus status and class Attendance; Students no longer receive Attendance data.
+- The final combined verification evidence is recorded in the Role and User Abilities section above. MariaDB compatibility and real Hikvision hardware ingestion are **Not verified** in this local pass.
+
 ## 2026-08-20 Returned Workspace Integration
 
 - Reviewed and selectively integrated the returned Admin/App UI, attendance/gate, Community safety, notification, and store-readiness work. Runtime dependencies, `.env` files, databases, logs, tunnel state, uploaded Community media, generated releases, and duplicate changelogs were excluded.
 - Admin attendance now uses only `/api/v1/admin/attendance/*` with resolved school context. Current `class_enrolments` is authoritative, `unmarked` is display-only, and an absent row is no longer inferred merely because a session exists.
-- Gate entry leaves the class session `in_progress` and cannot overwrite a prior attendance decision. External device signature/replay authentication and exit processing remain **Planned, not implemented**.
+- Campus gate movements no longer create class decisions. Entry and exit are preserved independently; registered device setup and external event replay protection by source/event ID are implemented. Vendor webhook signature authentication remains **Planned, not implemented** pending confirmed Hikvision hardware/protocol details.
 - Non-moderator post edits return to pending review. Post edits/deletes and audit entries are transactional, and deletion is logical so moderation evidence and private media references remain preserved.
 - Local qualification passed: backend 362 discovered (350 passed, 12 existing MariaDB-gated skips), 2,028 assertions, Pint and 147 API routes; Admin 178/178 with build and the 9 existing Calendar Fast Refresh warnings; App 29/29 with clean lint/build; deployment contracts 19/19. MariaDB-specific row-lock/concurrency behavior remains **Not verified** because no disposable MariaDB run was performed.
 
@@ -102,7 +119,7 @@ The reset command never runs automatically and must not be adapted to a database
 
 The App is approved as a private school-community product: a relationship-scoped Feed with Teacher/Staff publishing, reactions and controlled comments; daily Attendance on a general session schema; published Assessment results; formal Teacher-assigned Quiz plus separate Student Practice Quiz; and read-only Parent Finance without a payment interface.
 
-Merged delivery `816ea1d` redesigns the Admin staff login and all App role surfaces. Daily Attendance is connected end to end: assigned Teachers load current rosters, submit `present`, `late`, `absent`, or `excused`, and must provide a reason for corrections; authorized Parents and the linked Student can read the resulting record. Attendance writes and their audit events share one transaction. Community persistence/media, Assessment results, formal Quiz, Practice Quiz generation, and Schedule remain clearly labelled UI previews rather than implemented backend modules. See [MIS App Product Specification](mobile-app-product-spec.md) and the root [Design System](../DESIGN.md).
+Merged delivery `816ea1d` redesigned the Admin staff login and App role surfaces. Daily class Attendance remains connected end to end: assigned Teachers load current rosters, submit `present`, `late`, `absent`, or `excused`, and must provide a reason for corrections; authorized Parents can read the result while Student self-service intentionally omits Attendance. Attendance writes and their audit events share one transaction. See [MIS App Product Specification](mobile-app-product-spec.md) and the root [Design System](../DESIGN.md).
 
 ## 2026-08-13 Community App Data Foundation
 
@@ -150,8 +167,8 @@ Merged delivery `816ea1d` redesigns the Admin staff login and all App role surfa
 
 ## 2026-08-13 Role and Client Boundary Checkpoint
 
-- Admin Panel access is limited to Super Admin, School Admin, Finance, and CEO. Teacher-only, Parent-only, and Student-only accounts are rejected by the Admin client; backend route permissions remain authoritative.
-- The Community App admits Parent, Student, Teacher, and derived Staff personas. Finance-only and CEO-only accounts do not receive App personas. Multi-role App users may switch only among personas derived from their stored roles.
+- This checkpoint's earlier CEO and Staff-persona model was superseded by the 2026-08-23 consolidation. Current Admin employee positions are School Admin, Finance, and Teacher under protected Super Admin ownership; the App exposes only Teacher, Parent, and Student.
+- School Admin or Finance enters the App as Teacher only with effective `app.teacher_access`. Multi-persona users choose from valid stored identities on first entry and retain the last local choice.
 - Teacher Classes loads current teaching assignments and each assignment's scoped roster count from the same protected APIs used by Attendance. It does not expose unrelated classes or students.
 - Parent Finance no longer embeds a demo balance or hard-codes `2026`. The parent summary includes the child's explicitly stored current enrolment academic year, and finance queries stop when no current year exists.
 - Formal Quiz, Schedule, Assessment results, Community moderation, and notifications use live scoped APIs. Practice/AI Quiz and native/store features remain explicitly unavailable. Parent receipt rows open authoritative snapshots and support browser printing/save-as-PDF.
@@ -404,7 +421,6 @@ The repository must not be described as production-ready.
 ## Needs Confirmation
 
 - Approved maximum operating scale and performance targets.
-- CEO/management print/report permissions.
 - Student status transition approvals/reasons.
 - Discount formulas, stacking, eligibility, proration, and reassessment.
 - Approved treatment of charge history when an agreement must change mid-year.

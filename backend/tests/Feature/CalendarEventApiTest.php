@@ -130,16 +130,27 @@ class CalendarEventApiTest extends TestCase
             'name' => 'Active Staff',
             'status' => 'active',
         ]);
-        User::factory()->create([
+        $teacherRole = Role::query()->firstOrCreate(['slug' => 'teacher'], ['name' => 'Teacher']);
+        $parentRole = Role::query()->firstOrCreate(['slug' => 'parent'], ['name' => 'Parent']);
+        $activeStaff->roles()->attach($teacherRole);
+        $activeParent = User::factory()->create([
+            'school_id' => $school->id,
+            'name' => 'Active Parent',
+            'status' => 'active',
+        ]);
+        $activeParent->roles()->attach($parentRole);
+        $inactiveStaff = User::factory()->create([
             'school_id' => $school->id,
             'name' => 'Inactive Staff',
             'status' => 'inactive',
         ]);
-        User::factory()->create([
+        $inactiveStaff->roles()->attach($teacherRole);
+        $otherSchoolStaff = User::factory()->create([
             'school_id' => $otherSchool->id,
             'name' => 'Other School Staff',
             'status' => 'active',
         ]);
+        $otherSchoolStaff->roles()->attach($teacherRole);
 
         $this->actingAs($user)
             ->getJson('/api/calendar-events?start=2026-07-01&end=2026-07-31')
@@ -149,6 +160,7 @@ class CalendarEventApiTest extends TestCase
                 'name' => 'Active Staff',
                 'username' => $activeStaff->username,
             ])
+            ->assertJsonMissing(['name' => 'Active Parent'])
             ->assertJsonMissing(['name' => 'Inactive Staff'])
             ->assertJsonMissing(['name' => 'Other School Staff']);
     }
@@ -225,7 +237,6 @@ class CalendarEventApiTest extends TestCase
 
         $expected = [
             'super-admin' => ['calendar.view', 'calendar.create', 'calendar.update', 'calendar.delete'],
-            'ceo' => ['calendar.view'],
             'school-admin' => ['calendar.view', 'calendar.create', 'calendar.update', 'calendar.delete'],
             'finance' => ['calendar.view', 'calendar.create', 'calendar.update', 'calendar.delete'],
         ];

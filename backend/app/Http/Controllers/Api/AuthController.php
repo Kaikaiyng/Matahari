@@ -12,6 +12,7 @@ use App\Contracts\AuditLoggerContract;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\LoginRequest;
 use App\Models\User;
+use App\Services\Authorization\UserPermissionResolver;
 use App\Support\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -227,12 +228,7 @@ class AuthController extends Controller
             'status' => $user->status,
             'last_login_at' => $user->last_login_at?->toISOString(),
             'roles' => $roles->pluck('slug')->values()->all(),
-            'permissions' => $roles
-                ->flatMap(fn ($role) => $role->permissions->pluck('slug'))
-                ->unique()
-                ->sort()
-                ->values()
-                ->all(),
+            'permissions' => app(UserPermissionResolver::class)->effectiveSlugs($user),
         ];
     }
 }

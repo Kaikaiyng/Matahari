@@ -39,6 +39,7 @@ import { ParentsPage } from './components/ParentsPage'
 import { LoginPage } from './components/LoginPage'
 import {
   CustomSelect,
+  DatePicker,
   DataPanel,
   FieldError,
   FilterToolbar,
@@ -63,6 +64,7 @@ import {
 import { FeeAgreementEditor } from './features/fee-agreements/FeeAgreementEditor'
 import { AuditTrailPage } from './features/audit/AuditTrailPage'
 import { ApplicationLogsPage } from './features/logs/ApplicationLogsPage'
+import { AttendanceHubPage } from './features/attendance/AttendanceHubPage'
 import { UgcModerationPage } from './features/moderation/UgcModerationPage'
 import { PaymentAllocationEditor } from './features/payments/PaymentAllocationEditor'
 import type {
@@ -387,6 +389,12 @@ const navGroups: NavigationGroup<PageKey>[] = [
     icon: IconlyCalendar as any,
     standalone: true,
     items: [{ key: 'calendar', label: 'Calendar', icon: IconlyCalendar as any, requiredPermission: 'calendar.view' }],
+  },
+  {
+    label: 'Attendance',
+    icon: ClipboardList,
+    standalone: true,
+    items: [{ key: 'attendance', label: 'Attendance', icon: ClipboardList, requiredPermission: 'attendance.view_school' }],
   },
   {
     label: 'People',
@@ -791,7 +799,7 @@ function StudentsPage({
   const [feeAgreements, setFeeAgreements] = useState<FeeAgreement[]>([])
   const [feeAgreementMode, setFeeAgreementMode] = useState<'create' | 'supersede'>('create')
   const [showFeeAgreementForm, setShowFeeAgreementForm] = useState(false)
-  const feeAgreementPaymentPlanRef = useRef<HTMLSelectElement>(null)
+  const feeAgreementPaymentPlanRef = useRef<HTMLButtonElement>(null)
   const [feeAgreementForm, setFeeAgreementForm] = useState<FeeAgreementForm>(defaultAgreementForm([]))
   const [initialFeeAgreementForm, setInitialFeeAgreementForm] = useState<FeeAgreementForm>(
     defaultAgreementForm([]),
@@ -841,7 +849,7 @@ function StudentsPage({
   const [manualChargeErrors, setManualChargeErrors] = useState<ValidationErrors>()
   const [isSavingManualCharge, setIsSavingManualCharge] = useState(false)
   const [verifyingPaymentId, setVerifyingPaymentId] = useState<number | null>(null)
-  const verifyReceivedDateRef = useRef<HTMLInputElement>(null)
+  const verifyReceivedDateRef = useRef<HTMLButtonElement>(null)
   const [verifyForm, setVerifyForm] = useState<VerifyPaymentForm>(defaultVerifyForm())
   const [verifyErrors, setVerifyErrors] = useState<ValidationErrors>()
   const [isVerifyingPayment, setIsVerifyingPayment] = useState(false)
@@ -2133,10 +2141,10 @@ function StudentsPage({
           {paymentForm.payment_method !== 'cash' && (
             <label className="form-field">
               Received Date
-              <input
-                type="date"
+              <DatePicker
                 value={paymentForm.received_date}
-                onChange={(event) => updatePaymentForm('received_date', event.target.value)}
+                onChange={(value) => updatePaymentForm('received_date', value)}
+                ariaLabel="Received Date"
                 {...fieldErrorProps(
                   'record-payment-received-date-error',
                   formatValidationError(paymentErrors, 'received_date'),
@@ -2335,21 +2343,16 @@ function StudentsPage({
 
             <label className="form-field">
               Level Group
-              <select
-                aria-label="Level Group"
+              <CustomSelect
+                ariaLabel="Level Group"
                 value={form.level_group}
-                onChange={(event) => updateStudentLevelGroup(event.target.value as LevelGroup)}
+                onChange={(value) => updateStudentLevelGroup(value as LevelGroup)}
+                options={levelGroupOptions}
                 {...fieldErrorProps(
                   'create-student-level-group-error',
                   formatValidationError(formErrors, 'level_group'),
                 )}
-              >
-                {levelGroupOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+              />
               <FieldError
                 id="create-student-level-group-error"
                 message={formatValidationError(formErrors, 'level_group')}
@@ -2358,25 +2361,21 @@ function StudentsPage({
 
             <label className="form-field">
               Class
-              <select
-                aria-label="Class"
+              <CustomSelect
+                ariaLabel="Class"
                 value={form.class_id}
-                onChange={(event) => updateForm('class_id', event.target.value)}
-                required
+                onChange={(value) => updateForm('class_id', value)}
+                options={[
+                  { value: '', label: 'Select class' },
+                  ...schoolClasses
+                    .filter((schoolClass) => schoolClass.level_group === form.level_group)
+                    .map((schoolClass) => ({ value: String(schoolClass.id), label: schoolClass.name })),
+                ]}
                 {...fieldErrorProps(
                   'create-student-class-id-error',
                   formatValidationError(formErrors, 'class_id'),
                 )}
-              >
-                <option value="">Select class</option>
-                {schoolClasses
-                  .filter((schoolClass) => schoolClass.level_group === form.level_group)
-                  .map((schoolClass) => (
-                    <option key={schoolClass.id} value={schoolClass.id}>
-                      {schoolClass.name}
-                    </option>
-                  ))}
-              </select>
+              />
               <FieldError
                 id="create-student-class-id-error"
                 message={formatValidationError(formErrors, 'class_id')}
@@ -2385,37 +2384,22 @@ function StudentsPage({
 
             <label className="form-field">
               Initial Status
-              <select value={form.status} onChange={(event) => updateForm('status', event.target.value)}>
-                {statusOptions
-                  .filter((option) => option.value !== 'all')
-                  .map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-              </select>
+              <CustomSelect ariaLabel="Initial Status" value={form.status} onChange={(value) => updateForm('status', value)} options={statusOptions.filter((option) => option.value !== 'all')} />
             </label>
 
             <label className="form-field">
               Gender
-              <select value={form.gender} onChange={(event) => updateForm('gender', event.target.value)}>
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-              </select>
+              <CustomSelect ariaLabel="Gender" value={form.gender} onChange={(value) => updateForm('gender', value)} options={[{ value: 'male', label: 'Male' }, { value: 'female', label: 'Female' }]} />
             </label>
 
             <label className="form-field">
               Date of Birth
-              <input type="date" value={form.dob} onChange={(event) => updateForm('dob', event.target.value)} />
+              <DatePicker value={form.dob} onChange={(value) => updateForm('dob', value)} placeholder="Select date of birth" ariaLabel="Date of Birth" />
             </label>
 
             <label className="form-field">
               Registration Date
-              <input
-                type="date"
-                value={form.registration_date}
-                onChange={(event) => updateForm('registration_date', event.target.value)}
-              />
+              <DatePicker value={form.registration_date} onChange={(value) => updateForm('registration_date', value)} placeholder="Select registration date" ariaLabel="Registration Date" />
             </label>
 
             <label className="form-field wide">
@@ -2637,15 +2621,7 @@ function StudentsPage({
               <h3>Status Action</h3>
               {canUpdateStatus ? (
                 <div className="status-editor">
-                  <select value={statusDraft} onChange={(event) => setStatusDraft(event.target.value as StudentStatus)}>
-                    {statusOptions
-                      .filter((option) => option.value !== 'all')
-                      .map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                  </select>
+                  <CustomSelect ariaLabel="Student status" value={statusDraft} onChange={(value) => setStatusDraft(value as StudentStatus)} options={statusOptions.filter((option) => option.value !== 'all')} />
                   <button className="secondary-action" onClick={() => void updateStudentStatus()}>
                     Update Status
                   </button>
@@ -2974,21 +2950,16 @@ function StudentsPage({
 
                       <label className="form-field">
                         Category
-                        <select
-                          aria-label="Category"
+                        <CustomSelect
+                          ariaLabel="Category"
                           value={manualChargeForm.fee_record_category}
-                          onChange={(event) => updateManualChargeForm('fee_record_category', event.target.value as FeeRecordCategory)}
+                          onChange={(value) => updateManualChargeForm('fee_record_category', value as FeeRecordCategory)}
+                          options={feeRecordCategoryOptions}
                           {...fieldErrorProps(
                             'one-time-charge-fee-record-category-error',
                             formatValidationError(manualChargeErrors, 'fee_record_category'),
                           )}
-                        >
-                          {feeRecordCategoryOptions.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
+                        />
                         <FieldError
                           id="one-time-charge-fee-record-category-error"
                           message={formatValidationError(manualChargeErrors, 'fee_record_category')}
@@ -3286,16 +3257,12 @@ function StudentsPage({
                     </label>
                     <label className="form-field">
                       Payment Method
-                      <select
+                      <CustomSelect
+                        ariaLabel="Payment Method"
                         value={paymentForm.payment_method}
-                        onChange={(event) => updatePaymentForm('payment_method', event.target.value)}
-                      >
-                        {paymentMethodOptions.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
+                        onChange={(value) => updatePaymentForm('payment_method', value)}
+                        options={paymentMethodOptions}
+                      />
                     </label>
                     <label className="form-field">
                       Amount
@@ -3319,11 +3286,10 @@ function StudentsPage({
                     </label>
                     <label className="form-field">
                       Payment Date
-                      <input
-                        aria-label="Payment Date"
-                        type="date"
+                      <DatePicker
+                        ariaLabel="Payment Date"
                         value={paymentForm.payment_date}
-                        onChange={(event) => updatePaymentForm('payment_date', event.target.value)}
+                        onChange={(value) => updatePaymentForm('payment_date', value)}
                         {...fieldErrorProps(
                           'record-payment-payment-date-error',
                           formatValidationError(paymentErrors, 'payment_date'),
@@ -3337,11 +3303,10 @@ function StudentsPage({
                     {paymentForm.payment_method === 'cash' && (
                       <label className="form-field">
                         Received Date
-                        <input
-                          aria-label="Received Date"
-                          type="date"
+                        <DatePicker
+                          ariaLabel="Received Date"
                           value={paymentForm.received_date}
-                          onChange={(event) => updatePaymentForm('received_date', event.target.value)}
+                          onChange={(value) => updatePaymentForm('received_date', value)}
                           {...fieldErrorProps(
                             'record-payment-received-date-error',
                             formatValidationError(paymentErrors, 'received_date'),
@@ -3586,12 +3551,11 @@ function StudentsPage({
                 >
                   <label className="form-field">
                     Received Date
-                    <input
-                      ref={verifyReceivedDateRef}
-                      aria-label="Received Date"
-                      type="date"
+                    <DatePicker
+                      buttonRef={verifyReceivedDateRef}
+                      ariaLabel="Received Date"
                       value={verifyForm.received_date}
-                      onChange={(event) => setVerifyForm((current) => ({ ...current, received_date: event.target.value }))}
+                      onChange={(value) => setVerifyForm((current) => ({ ...current, received_date: value }))}
                       {...fieldErrorProps(
                         'verify-payment-received-date-error',
                         formatValidationError(verifyErrors, 'received_date'),
@@ -4812,6 +4776,7 @@ function App() {
   const [activePage, setActivePage] = useState<PageKey>('dashboard')
   const [focusedStudentId, setFocusedStudentId] = useState<number | null>(null)
   const [classReturnContext, setClassReturnContext] = useState<SchoolClassOption | null>(null)
+  const [attendanceClassId, setAttendanceClassId] = useState<number | null>(null)
 
   const loadDashboard = async (sessionUser: CurrentUser) => {
     setDashboard(null)
@@ -4875,6 +4840,7 @@ function App() {
       setActivePage('dashboard')
       setFocusedStudentId(null)
       setClassReturnContext(null)
+      setAttendanceClassId(null)
     }
   }
 
@@ -4884,6 +4850,7 @@ function App() {
     setActivePage('dashboard')
     setFocusedStudentId(null)
     setClassReturnContext(null)
+    setAttendanceClassId(null)
   }
 
   const openStudentDetail = (studentId: number) => {
@@ -4903,21 +4870,29 @@ function App() {
     setActivePage('classes')
   }
 
+  const openClassAttendance = (classId: number) => {
+    setClassReturnContext(null)
+    setFocusedStudentId(null)
+    setAttendanceClassId(classId)
+    setActivePage('attendance')
+  }
+
   const handleSelectPage = (page: PageKey) => {
-    const featureKey = page === 'schedule' ? 'schedule' : null
+    const featureKey = page === 'schedule' ? 'schedule' : page === 'attendance' ? 'attendance' : null
     if (!user || (featureKey && tenant.features[featureKey] === false) || !navItems.some((item) => item.key === page && (!item.requiredPermission || hasPermission(user, item.requiredPermission)) && (!item.requiredAnyPermissions || item.requiredAnyPermissions.some((permission) => hasPermission(user, permission))))) {
       return
     }
 
     setClassReturnContext(null)
     setFocusedStudentId(null)
+    setAttendanceClassId(null)
     setActivePage(page)
   }
 
   const availableNavGroups = navGroups
     .map((group) => ({
       ...group,
-      items: group.items.filter((item) => (item.key !== 'schedule' || tenant.features.schedule !== false) && (!item.requiredPermission || (user && hasPermission(user, item.requiredPermission))) && (!item.requiredAnyPermissions || (user && item.requiredAnyPermissions.some((permission) => hasPermission(user, permission))))),
+      items: group.items.filter((item) => (item.key !== 'schedule' || tenant.features.schedule !== false) && (item.key !== 'attendance' || tenant.features.attendance !== false) && (!item.requiredPermission || (user && hasPermission(user, item.requiredPermission))) && (!item.requiredAnyPermissions || (user && item.requiredAnyPermissions.some((permission) => hasPermission(user, permission))))),
     }))
     .filter((group) => group.items.length > 0)
   const availableNavItems = availableNavGroups.flatMap((group) => group.items)
@@ -4936,8 +4911,9 @@ function App() {
     )
   }
 
-  const adminRoles = ['super-admin', 'tenant-owner', 'school-admin', 'finance', 'ceo']
-  if (!user.roles.some((role) => adminRoles.includes(role))) {
+  const adminRoles = ['super-admin', 'school-admin', 'finance']
+  const elevatedTeacherAccess = user.permissions.some((permission) => ['employees.view', 'attendance.view_school', 'assessments.manage_school', 'teaching_assignments.view'].includes(permission))
+  if (!user.roles.some((role) => adminRoles.includes(role)) && !elevatedTeacherAccess) {
     return (
       <main className="admin-access-unavailable">
         <h1>Admin access unavailable</h1>
@@ -4989,6 +4965,7 @@ function App() {
           permissions={user.permissions}
           initialClassId={classReturnContext?.id}
           onOpenStudent={openClassStudentDetail}
+          onOpenAttendance={openClassAttendance}
           onUnauthorized={handleUnauthorized}
         />
       )
@@ -5003,7 +4980,7 @@ function App() {
     }
 
     if (activePage === 'employees') {
-      return <StaffPage />
+      return <StaffPage permissions={user.permissions} currentUserId={user.id} />
     }
 
     if (activePage === 'fees') {
@@ -5016,6 +4993,17 @@ function App() {
 
     if (activePage === 'audit') {
       return <AuditTrailPage onUnauthorized={handleUnauthorized} />
+    }
+
+    if (activePage === 'attendance') {
+      return (
+        <AttendanceHubPage
+          permissions={user.permissions}
+          initialClassId={attendanceClassId}
+          onOpenStudent={openClassStudentDetail}
+          onUnauthorized={handleUnauthorized}
+        />
+      )
     }
 
     if (activePage === 'application-logs') {

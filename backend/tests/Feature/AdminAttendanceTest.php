@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\AcademicYear;
-use App\Models\AttendanceSession;
+use App\Models\CampusAttendanceEvent;
 use App\Models\ClassEnrolment;
 use App\Models\SchoolClass;
 use App\Models\Student;
@@ -134,13 +134,13 @@ class AdminAttendanceTest extends TestCase
         ]);
     }
 
-    public function test_gate_check_in_event_records_attendance_automatically(): void
+    public function test_gate_events_preserve_the_full_campus_movement_timeline(): void
     {
         $admin = User::query()->where('username', 'admin')->firstOrFail();
         $student = Student::query()->where('student_no', 'MIS-2026-001')->firstOrFail();
 
         // 1. On-time gate check-in (07:45 <= 08:00 cutoff)
-        $response = $this->actingAs($admin)
+        $this->actingAs($admin)
             ->postJson('http://localhost/api/v1/admin/attendance/gate-event', [
                 'student_no' => $student->student_no,
                 'scanned_at' => '2026-08-12T07:45:00+08:00',
@@ -149,18 +149,15 @@ class AdminAttendanceTest extends TestCase
             ])
             ->assertOk()
             ->assertJsonPath('data.success', true)
-            ->assertJsonPath('data.status', 'present')
             ->assertJsonPath('data.is_late', false)
             ->assertJsonPath('data.student.student_no', $student->student_no);
 
-        $this->assertDatabaseHas('attendance_records', [
+        $this->assertDatabaseHas('campus_attendance_events', [
             'student_id' => $student->id,
-            'status' => 'present',
+            'direction' => 'entry',
         ]);
 
-        $this->assertSame('in_progress', AttendanceSession::query()->sole()->status);
-
-        // A later duplicate scan is idempotent and cannot rewrite the first decision.
+        // A later scan remains a separate immutable movement when no source event ID is supplied.
         $this->actingAs($admin)
             ->postJson('http://localhost/api/v1/admin/attendance/gate-event', [
                 'student_no' => $student->student_no,
@@ -169,22 +166,18 @@ class AdminAttendanceTest extends TestCase
                 'direction' => 'entry',
             ])
             ->assertOk()
-            ->assertJsonPath('data.status', 'present')
-            ->assertJsonPath('data.is_late', false)
-            ->assertJsonPath('data.duplicate', true);
-
-        $this->assertDatabaseHas('attendance_records', [
-            'student_id' => $student->id,
-            'status' => 'present',
-        ]);
+            ->assertJsonPath('data.is_late', true)
+            ->assertJsonPath('data.duplicate', false);
 
         $this->actingAs($admin)
             ->postJson('http://localhost/api/v1/admin/attendance/gate-event', [
                 'student_no' => $student->student_no,
                 'direction' => 'exit',
             ])
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors('direction');
+            ->assertOk()
+            ->assertJsonPath('data.direction', 'exit');
+
+        $this->assertSame(3, CampusAttendanceEvent::query()->where('student_id', $student->id)->count());
     }
 
     public function test_batch_gate_check_in_events(): void
@@ -222,16 +215,16 @@ class AdminAttendanceTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.total_processed', 2)
             ->assertJsonPath('data.total_failed', 0)
-            ->assertJsonPath('data.results.0.status', 'present')
-            ->assertJsonPath('data.results.1.status', 'late');
+            ->assertJsonPath('data.results.0.is_late', false)
+            ->assertJsonPath('data.results.1.is_late', true);
 
-        $this->assertDatabaseHas('attendance_records', [
+        $this->assertDatabaseHas('campus_attendance_events', [
             'student_id' => $student1->id,
-            'status' => 'present',
+            'direction' => 'entry',
         ]);
-        $this->assertDatabaseHas('attendance_records', [
+        $this->assertDatabaseHas('campus_attendance_events', [
             'student_id' => $student2->id,
-            'status' => 'late',
+            'direction' => 'entry',
         ]);
     }
 

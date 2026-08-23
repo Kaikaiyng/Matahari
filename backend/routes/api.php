@@ -21,11 +21,14 @@ use App\Http\Controllers\Api\V1\AcademicTermController;
 use App\Http\Controllers\Api\V1\AcademicYearController;
 use App\Http\Controllers\Api\V1\AdminAttendanceController;
 use App\Http\Controllers\Api\V1\AssessmentController;
+use App\Http\Controllers\Api\V1\AttendanceAbilityController;
+use App\Http\Controllers\Api\V1\CampusAttendanceController;
 use App\Http\Controllers\Api\V1\ClassEnrolmentController;
 use App\Http\Controllers\Api\V1\ClassScheduleController;
 use App\Http\Controllers\Api\V1\CommunityController;
 use App\Http\Controllers\Api\V1\CommunityModerationController;
 use App\Http\Controllers\Api\V1\CommunitySafetyController;
+use App\Http\Controllers\Api\V1\EmployeeAccessController;
 use App\Http\Controllers\Api\V1\FoundationAccountController;
 use App\Http\Controllers\Api\V1\ParentPortalController;
 use App\Http\Controllers\Api\V1\PlatformCommunityModerationController;
@@ -86,7 +89,7 @@ Route::middleware([...$sessionMiddleware, 'auth', 'active', 'tenant.member', 'te
             Route::post('/reports/{communityReport}/decision', [PlatformCommunityModerationController::class, 'intervene']);
         });
     });
-    Route::prefix('v1/tenant')->middleware('permission:tenant.settings.manage')->group(function (): void {
+    Route::prefix('v1/tenant')->middleware(['platform.owner', 'permission:tenant.settings.manage'])->group(function (): void {
         Route::patch('/branding', [TenantSettingsController::class, 'updateBranding']);
         Route::post('/domains', [TenantSettingsController::class, 'storeDomain']);
         Route::put('/features/{featureKey}', [TenantSettingsController::class, 'updateFeature']);
@@ -235,26 +238,40 @@ Route::prefix('v1')->middleware([...$sessionMiddleware, 'auth', 'active', 'tenan
         Route::post('/class-schedules', [ClassScheduleController::class, 'store'])->middleware(['tenant.feature:schedule', 'permission:schedule.manage']);
         Route::patch('/class-schedules/{classScheduleEntry}', [ClassScheduleController::class, 'update'])->middleware(['tenant.feature:schedule', 'permission:schedule.manage']);
 
-        Route::get('/attendance/overview', [AdminAttendanceController::class, 'showOverview'])->middleware(['tenant.feature:attendance', 'permission:students.view']);
-        Route::get('/attendance/daily', [AdminAttendanceController::class, 'showDaily'])->middleware(['tenant.feature:attendance', 'permission:students.view']);
-        Route::post('/attendance/daily', [AdminAttendanceController::class, 'storeDaily'])->middleware(['tenant.feature:attendance', 'permission:students.create']);
-        Route::post('/attendance/gate-event', [AdminAttendanceController::class, 'recordGateEvent'])->middleware(['tenant.feature:attendance', 'permission:students.create']);
-        Route::post('/attendance/gate-events/batch', [AdminAttendanceController::class, 'recordBatchGateEvents'])->middleware(['tenant.feature:attendance', 'permission:students.create']);
+        Route::get('/attendance/overview', [AdminAttendanceController::class, 'showOverview'])->middleware(['tenant.feature:attendance', 'permission:attendance.view_school']);
+        Route::get('/attendance/daily', [AdminAttendanceController::class, 'showDaily'])->middleware(['tenant.feature:attendance', 'permission:attendance.view_school']);
+        Route::post('/attendance/daily', [AdminAttendanceController::class, 'storeDaily'])->middleware(['tenant.feature:attendance', 'permission:attendance.manage_school']);
+        Route::get('/attendance/campus-records', [CampusAttendanceController::class, 'index'])->middleware(['tenant.feature:attendance', 'permission:attendance.view_school']);
+        Route::post('/attendance/gate-event', [CampusAttendanceController::class, 'store'])->middleware(['tenant.feature:attendance', 'permission:attendance.manage_school']);
+        Route::post('/attendance/gate-events/batch', [CampusAttendanceController::class, 'storeBatch'])->middleware(['tenant.feature:attendance', 'permission:attendance.manage_school']);
+        Route::get('/attendance/devices', [CampusAttendanceController::class, 'devices'])->middleware(['tenant.feature:attendance', 'permission:attendance.devices.manage']);
+        Route::post('/attendance/devices', [CampusAttendanceController::class, 'storeDevice'])->middleware(['tenant.feature:attendance', 'permission:attendance.devices.manage']);
+        Route::patch('/attendance/devices/{attendanceDevice}', [CampusAttendanceController::class, 'updateDevice'])->middleware(['tenant.feature:attendance', 'permission:attendance.devices.manage']);
+        Route::get('/attendance/settings', [CampusAttendanceController::class, 'settings'])->middleware(['tenant.feature:attendance', 'permission:attendance.devices.manage']);
+        Route::put('/attendance/settings', [CampusAttendanceController::class, 'updateSettings'])->middleware(['tenant.feature:attendance', 'permission:attendance.devices.manage']);
+        Route::get('/attendance/abilities', [AttendanceAbilityController::class, 'index'])->middleware(['tenant.feature:attendance', 'permission:attendance.abilities.manage']);
+        Route::post('/attendance/abilities', [AttendanceAbilityController::class, 'store'])->middleware(['tenant.feature:attendance', 'permission:attendance.abilities.manage']);
+        Route::delete('/attendance/abilities/{userAttendanceAbility}', [AttendanceAbilityController::class, 'destroy'])->middleware(['tenant.feature:attendance', 'permission:attendance.abilities.manage']);
 
         Route::patch('/parents/{guardian}/portal-user', [PortalLinkController::class, 'guardianUser'])->middleware('permission:portal_links.manage');
         Route::patch('/students/{student}/portal-user', [PortalLinkController::class, 'studentUser'])->middleware('permission:portal_links.manage');
         Route::patch('/student-parent-links/{studentParentLink}/portal-access', [PortalLinkController::class, 'guardianAccess'])->middleware('permission:portal_links.manage');
         Route::patch('/users/{user}/foundation-roles', [FoundationAccountController::class, 'roles'])->middleware('permission:foundation_accounts.manage');
         Route::post('/users', [FoundationAccountController::class, 'store'])->middleware('permission:foundation_accounts.manage');
-        Route::get('/staff', [StaffController::class, 'index'])->middleware('permission:foundation_accounts.manage');
-        Route::post('/staff', [StaffController::class, 'store'])->middleware('permission:foundation_accounts.manage');
+        Route::get('/staff', [StaffController::class, 'index'])->middleware('permission:employees.view');
+        Route::post('/staff', [StaffController::class, 'store'])->middleware('permission:employees.manage');
+        Route::get('/staff/{user}/access', [EmployeeAccessController::class, 'show'])->middleware('permission:employees.abilities.manage');
+        Route::put('/staff/{user}/access', [EmployeeAccessController::class, 'update'])->middleware('permission:employees.abilities.manage');
     });
 
-    Route::prefix('teacher')->middleware(['tenant.surface:app', 'permission:teaching_scope.view'])->group(function (): void {
-        Route::get('/teaching-assignments', [TeacherScopeController::class, 'assignments']);
-        Route::get('/classes/{schoolClass}/students', [TeacherScopeController::class, 'students']);
-        Route::get('/attendance/daily', [TeacherAttendanceController::class, 'showDaily'])->middleware('tenant.feature:attendance');
-        Route::post('/attendance/daily', [TeacherAttendanceController::class, 'storeDaily'])->middleware('tenant.feature:attendance');
+    Route::prefix('teacher')->middleware(['tenant.surface:app', 'permission:app.teacher_access'])->group(function (): void {
+        Route::get('/teaching-assignments', [TeacherScopeController::class, 'assignments'])->middleware('permission:teaching_scope.view');
+        Route::get('/classes/{schoolClass}/students', [TeacherScopeController::class, 'students'])->middleware('permission:teaching_scope.view');
+        Route::get('/school/teaching-assignments', [TeacherScopeController::class, 'schoolAssignments'])->middleware('permission:teaching_assignments.view');
+        Route::get('/school/teaching-assignments/{teachingAssignment}/students', [TeacherScopeController::class, 'schoolStudents'])->middleware('permission:class_enrolments.view');
+        Route::get('/attendance/daily', [TeacherAttendanceController::class, 'showDaily'])->middleware(['tenant.feature:attendance', 'permission:attendance.view_assigned']);
+        Route::post('/attendance/daily', [TeacherAttendanceController::class, 'storeDaily'])->middleware(['tenant.feature:attendance', 'permission:attendance.manage_assigned']);
+        Route::get('/attendance/campus-records', [CampusAttendanceController::class, 'teacherIndex'])->middleware(['tenant.feature:attendance', 'permission:attendance.view_assigned']);
     });
 
     Route::prefix('assessments')->middleware(['tenant.surface:app', 'tenant.feature:assessments', 'permission:assessments.manage'])->group(function (): void {
@@ -279,6 +296,7 @@ Route::prefix('v1')->middleware([...$sessionMiddleware, 'auth', 'active', 'tenan
             Route::get('/children/{student}/receipts', [ParentPortalController::class, 'childReceipts'])->middleware('tenant.feature:parent_finance');
             Route::get('/children/{student}/receipts/{receipt}', [ParentPortalController::class, 'childReceipt'])->middleware('tenant.feature:parent_finance');
             Route::get('/children/{student}/attendance', [ParentPortalController::class, 'childAttendance'])->middleware('tenant.feature:attendance');
+            Route::get('/children/{student}/campus-attendance', [ParentPortalController::class, 'childCampusAttendance'])->middleware('tenant.feature:attendance');
             Route::get('/children/{student}/assessment-results', [ParentPortalController::class, 'childAssessmentResults'])->middleware(['tenant.feature:assessments', 'permission:assessments.view_published']);
             Route::get('/children/{student}/schedule', [ParentPortalController::class, 'childSchedule'])->middleware(['tenant.feature:schedule', 'permission:schedule.view']);
         });
@@ -287,7 +305,6 @@ Route::prefix('v1')->middleware([...$sessionMiddleware, 'auth', 'active', 'tenan
         Route::prefix('student')->middleware('permission:student.self_service')->group(function (): void {
             Route::get('/me', [StudentPortalController::class, 'me']);
             Route::get('/enrolments', [StudentPortalController::class, 'enrolments']);
-            Route::get('/attendance', [StudentPortalController::class, 'attendance'])->middleware('tenant.feature:attendance');
             Route::get('/assessment-results', [StudentPortalController::class, 'assessmentResults'])->middleware(['tenant.feature:assessments', 'permission:assessments.view_published']);
             Route::get('/schedule', [StudentPortalController::class, 'schedule'])->middleware(['tenant.feature:schedule', 'permission:schedule.view']);
             Route::prefix('quizzes')->middleware(['tenant.feature:formal_quiz', 'permission:quizzes.attempt'])->group(function (): void {

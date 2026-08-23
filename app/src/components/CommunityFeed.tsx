@@ -5,7 +5,7 @@ import { portalApi, type CommunityPost } from '../api/portalApi'
 import { CommunitySafetyMenu } from '../features/community-safety/CommunitySafetyMenu'
 import { useSwipeBack } from './useSwipeBack'
 
-type FeedRole = 'parent' | 'student' | 'teacher' | 'staff'
+type FeedRole = 'parent' | 'student' | 'teacher'
 
 type CommunityFeedProps = {
   role: FeedRole
@@ -138,7 +138,7 @@ export function CommunityFeed({ role, userName, onOpenFinance, onCreatePost, mod
     <div className="community-page">
       <section className="community-welcome">
         <div><p>School community</p><h1>{role === 'student' ? `Hello, ${firstName}` : `Welcome, ${firstName}`}</h1></div>
-        <span className="role-chip">{role === 'staff' ? 'Staff' : role[0].toUpperCase() + role.slice(1)}</span>
+        <span className="role-chip">{role[0].toUpperCase() + role.slice(1)}</span>
       </section>
 
       {role === 'parent' && (
@@ -149,7 +149,7 @@ export function CommunityFeed({ role, userName, onOpenFinance, onCreatePost, mod
         </button>
       )}
 
-      {(role === 'teacher' || role === 'staff') && (
+      {role === 'teacher' && (
         <button type="button" className="create-strip context-card" onClick={onCreatePost}>
           <span>Share a school moment</span>
           <b>Create post</b>

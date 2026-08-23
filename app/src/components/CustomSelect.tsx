@@ -63,8 +63,7 @@ export function CustomSelect<T extends string | number = string>({
       className={`custom-select-container ${size} ${disabled ? 'disabled' : ''} ${className}`}
     >
       <select
-        id={id}
-        aria-label={ariaLabel}
+        aria-hidden="true"
         className="custom-select-native-peer"
         value={value}
         disabled={disabled}
@@ -90,6 +89,8 @@ export function CustomSelect<T extends string | number = string>({
       </select>
 
       <button
+        id={id}
+        aria-label={ariaLabel}
         type="button"
         aria-haspopup="listbox"
         aria-expanded={isOpen}

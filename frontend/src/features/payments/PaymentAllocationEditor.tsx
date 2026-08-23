@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import type { ReactNode } from 'react'
-import { FieldError, fieldErrorProps } from '../../components/AdminUi'
+import { CustomSelect, FieldError, fieldErrorProps } from '../../components/AdminUi'
 import type { ValidationErrors } from '../fee-agreements/types'
 import {
   feeRecordCategoryOptions,
@@ -188,21 +188,16 @@ export function PaymentAllocationEditor({
 
               <label className="form-field">
                 Category
-                <select
-                  aria-label="One-time charge category"
+                <CustomSelect
+                  ariaLabel="One-time charge category"
                   value={oneTimeCharge.fee_record_category}
-                  onChange={(event) => onUpdateOneTimeCharge('fee_record_category', event.target.value)}
+                  onChange={(value) => onUpdateOneTimeCharge('fee_record_category', value)}
+                  options={feeRecordCategoryOptions}
                   {...fieldErrorProps(
                     'payment-one-time-fee-record-category-error',
                     validationMessage(oneTimeChargeErrors, 'fee_record_category'),
                   )}
-                >
-                  {feeRecordCategoryOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+                />
                 <FieldError
                   id="payment-one-time-fee-record-category-error"
                   message={validationMessage(oneTimeChargeErrors, 'fee_record_category')}

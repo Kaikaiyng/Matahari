@@ -30,6 +30,9 @@ enum AuditAction: string
     case UserDeactivated = 'user.deactivated';
     case UserRoleChanged = 'user.role_changed';
     case UserPasswordReset = 'user.password_reset';
+    case EmployeePositionChanged = 'employee.position_changed';
+    case EmployeeAbilitiesUpdated = 'employee.abilities_updated';
+    case EmployeeAppAccessChanged = 'employee.app_access_changed';
     case ReportExported = 'report.exported';
     case ReportPrinted = 'report.printed';
     case BatchChanged = 'batch.changed';
@@ -47,6 +50,11 @@ enum AuditAction: string
     case GuardianAccessUpdated = 'guardian.access_updated';
     case AttendanceRecorded = 'attendance.recorded';
     case AttendanceCorrected = 'attendance.corrected';
+    case AttendanceAbilityGranted = 'attendance.ability_granted';
+    case AttendanceAbilityRevoked = 'attendance.ability_revoked';
+    case CampusAttendanceRecorded = 'attendance.campus_recorded';
+    case AttendanceDeviceConfigured = 'attendance.device_configured';
+    case AttendanceSettingsUpdated = 'attendance.settings_updated';
     case CommunityPostPublished = 'community.post_published';
     case CommunityPostSubmitted = 'community.post_submitted';
     case CommunityPostUpdated = 'community.post_updated';

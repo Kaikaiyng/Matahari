@@ -4,7 +4,7 @@
 
 **Repository baseline:** SaaS feature branch based on merged `master` at `0ad0558`
 
-**Reviewed:** 2026-08-14
+**Reviewed:** 2026-08-23
 
 ## Business Purpose
 
@@ -14,20 +14,9 @@ All tenants share the same Admin/App code and backend release. Tenant variation 
 
 ## Intended Users
 
-The seeded implementation contains these stored role slugs:
+Platform administration uses the protected `users.is_platform_owner` Super Admin identity. School employees have exactly one position: `school-admin`, `finance`, or `teacher`. Finance inherits all School Admin defaults plus supported finance mutations. Teacher starts with assigned scope and may receive explicit same-school User Ability grants or denials. Parent and Student remain relationship/App identities; an employee may additionally be Parent.
 
-- `tenant-owner` — manages configuration and memberships for the active tenant only.
-
-- `super-admin` — Super Admin.
-- `school-admin` — School Admin.
-- `finance` — Finance.
-- `ceo` — CEO.
-
-The intended CEO concept has been described as management or print-only access, but the current seed grants only Fee Record view and Calendar view permissions. It does not grant receipt printing. See [Permissions](permissions.md).
-
-Phase A also adds the `teacher`, `parent`, and `student` role slugs without replacing existing assignments. A user may hold multiple roles. The independent `app/` web workspace presents Parent, Student, Teacher, and authorized Staff experiences, but this does not make preview modules or a native application complete.
-
-Platform administration is not a tenant role. It uses the explicit `users.is_platform_owner` flag. Users are global identities, while tenant membership roles and permitted schools are resolved for the request hostname. See [SaaS Multi-Tenancy](saas-multitenancy.md).
+The independent `app/` workspace exposes exactly Teacher, Parent, and Student personas. School Admin or Finance may use Teacher only when granted `app.teacher_access`; elevated tools remain controlled by effective backend permissions. Multi-persona users choose on first entry and the last local choice is remembered. Historical `ceo` and `tenant-owner` rows may remain after upgrade, but are no longer seeded or assignable. See [Permissions](permissions.md).
 
 ## Intended Scale
 
@@ -57,7 +46,7 @@ Do not describe the system as unlimited or use the historical cost estimate as p
 - Database guards for one current Fee Agreement per school/student/year and one scheduled charge per agreement item/month.
 - Phase A teacher/parent/student roles, reviewed nullable portal links, academic years, enrolment history, subjects, teaching assignments, scoped `/api/v1` management/teacher APIs, policies/access services, and transactional foundation audit events.
 - MIS-branded demo identities for Admin, Teacher, Parent, and Student; an independent role-filtered `app/` web shell; self-profile/enrolment endpoints; and user-scoped in-app notification storage.
-- Assignment-scoped daily Attendance sessions/records, Teacher roster marking, correction reasons and audit, and scoped Parent/Student history reads.
+- Assignment-scoped daily Attendance sessions/records, Teacher roster marking, correction reasons and audit, linked-child Parent history reads, and explicit Student exclusion.
 - Phone-first Community App presentation with a compact header, role-specific liquid-glass bottom navigation, and profile-based sign out.
 
 ### Partially Implemented

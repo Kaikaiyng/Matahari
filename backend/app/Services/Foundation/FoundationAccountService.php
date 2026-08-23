@@ -19,7 +19,7 @@ use Illuminate\Validation\ValidationException;
 
 class FoundationAccountService
 {
-    private const FOUNDATION_ROLES = ['teacher', 'parent', 'student'];
+    private const FOUNDATION_ROLES = ['school-admin', 'finance', 'teacher', 'parent', 'student'];
 
     public function __construct(private readonly AuditLoggerContract $auditLogger) {}
 
@@ -72,7 +72,7 @@ class FoundationAccountService
             $before = $locked->roles()->pluck('slug')->sort()->values()->all();
             $roles = $this->foundationRoles($roleSlugs);
 
-            $existingFoundationIds = Role::query()->whereIn('slug', self::FOUNDATION_ROLES)->pluck('id');
+            $existingFoundationIds = Role::query()->whereIn('slug', ['teacher', 'parent', 'student'])->pluck('id');
             $locked->roles()->detach($existingFoundationIds);
             $locked->roles()->attach($roles->pluck('id'));
             $membership = $locked->school?->tenant_id

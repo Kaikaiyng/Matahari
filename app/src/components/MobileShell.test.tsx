@@ -38,6 +38,7 @@ vi.mock('../api/portalApi', () => ({
     getChildPayments: vi.fn().mockResolvedValue({ data: [] }),
     getChildReceipts: vi.fn().mockResolvedValue({ data: [] }),
     getChildAttendance: vi.fn().mockResolvedValue({ data: [] }),
+    getChildCampusAttendance: vi.fn().mockResolvedValue({ data: { date: '2026-08-23', current_status: 'no_record', first_entry: null, last_exit: null, events: [] } }),
     getChildAssessmentResults: vi.fn().mockResolvedValue({ data: [] }),
     getStudentMe: vi.fn().mockResolvedValue({
       data: {
@@ -51,7 +52,6 @@ vi.mock('../api/portalApi', () => ({
       },
     }),
     getStudentEnrolments: vi.fn().mockResolvedValue({ data: [] }),
-    getStudentAttendance: vi.fn().mockResolvedValue({ data: [] }),
     getStudentAssessmentResults: vi.fn().mockResolvedValue({ data: [] }),
     getStudentSchedule: vi.fn().mockResolvedValue({ data: { entries: [], due_dates: [] } }),
     getChildSchedule: vi.fn().mockResolvedValue({ data: { entries: [], due_dates: [] } }),
@@ -65,6 +65,7 @@ vi.mock('../api/portalApi', () => ({
     markNotificationRead: vi.fn(),
     markAllNotificationsRead: vi.fn(),
     getTeacherAssignments: vi.fn().mockResolvedValue({ data: [] }),
+    getTeacherCampusAttendance: vi.fn().mockResolvedValue({ data: { date: '2026-08-23', summary: { recorded_students: 0, on_campus: 0, off_campus: 0, late: 0, early_leave: 0 }, students: [] } }),
     getStaffAssignments: vi.fn().mockResolvedValue({ data: [] }),
     getStaffStudents: vi.fn().mockResolvedValue({ data: [] }),
     getTeacherStudents: vi.fn().mockResolvedValue({ data: [] }),
@@ -127,6 +128,13 @@ describe('MobileShell & Portal Views', () => {
     expect(handleTabChange).toHaveBeenCalledWith('finance')
   })
 
+  it('does not load or display Attendance in the Student learning experience', async () => {
+    render(<StudentPortalView studentName="Alyssa Tan" activeTab="learn" onLogout={() => {}} />)
+
+    expect(await screen.findByText('My subjects')).toBeInTheDocument()
+    expect(screen.queryByText('Recorded attendance')).not.toBeInTheDocument()
+  })
+
   it('keeps the previous capsule destination selected beneath a secondary page', () => {
     const shellProps = {
       onTabChange: () => {},
@@ -161,7 +169,8 @@ describe('MobileShell & Portal Views', () => {
       </MobileShell>,
     )
 
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'student' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Active role' }))
+    fireEvent.click(screen.getByRole('option', { name: 'Student' }))
     expect(changeRole).toHaveBeenCalledWith('student')
   })
 
@@ -169,7 +178,6 @@ describe('MobileShell & Portal Views', () => {
     ['parent', 'Finance', 'Quiz'],
     ['student', 'Quiz', 'Finance'],
     ['teacher', 'Attendance', 'Finance'],
-    ['staff', 'Review', 'Attendance'],
   ] as const)('renders %s destinations without leaking another role navigation', (role, visible, hidden) => {
     render(
       <MobileShell activeTab="home" onTabChange={() => {}} userRole={role} allowedRoles={[role]} userName="MIS User">
@@ -235,7 +243,7 @@ describe('MobileShell & Portal Views', () => {
     expect(screen.getByText('2026')).toBeInTheDocument()
   })
 
-  it('connects Staff school tools to moderation, assessment, and Quiz workspaces', () => {
+  it('connects an elevated Teacher to school moderation, assessment, and Quiz workspaces', () => {
     const changeTab = vi.fn()
     render(<TeacherPortalView teacherName="School Admin" activeTab="classes" onTabChange={changeTab} onLogout={() => {}} staffMode />)
 

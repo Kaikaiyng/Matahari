@@ -20,7 +20,6 @@ class StaffController extends Controller
         $staffUsers = User::query()
             ->where('school_id', $schoolId)
             ->whereHas('roles', fn ($query) => $query->whereIn('slug', [
-                'super-admin',
                 'school-admin',
                 'finance',
                 'teacher',
@@ -55,12 +54,12 @@ class StaffController extends Controller
                 Rule::unique('users', 'username'),
             ],
             'password' => ['required', 'string', 'min:12', 'max:255'],
-            'role_slug' => ['prohibited'],
+            'position' => ['required', Rule::in(['school-admin', 'finance', 'teacher'])],
         ]);
 
         $user = $service->create($schoolId, [
             ...$data,
-            'roles' => ['teacher'],
+            'roles' => [$data['position']],
         ], $contexts->fromRequest($request));
 
         return response()->json(['data' => $this->response($user)], 201);
@@ -72,6 +71,7 @@ class StaffController extends Controller
     private function response(User $user): array
     {
         $roles = $user->roles->sortBy('name')->values();
+        $position = $roles->first(fn ($role) => in_array($role->slug, ['school-admin', 'finance', 'teacher'], true));
         $assignedClasses = $user->teachingAssignments
             ->map(fn ($assignment): string => trim(
                 ($assignment->schoolClass?->name ?? '').
@@ -85,7 +85,7 @@ class StaffController extends Controller
             'staff_no' => 'EMP-'.str_pad((string) $user->id, 4, '0', STR_PAD_LEFT),
             'name' => $user->name,
             'username' => $user->username,
-            'role' => $roles->first()?->name ?? 'Staff',
+            'role' => $position?->name ?? 'Employee',
             'roles' => $roles->pluck('slug'),
             'status' => $user->status,
             'assigned_classes' => $assignedClasses,

@@ -45,6 +45,12 @@ class CalendarEventController extends Controller
         $staff = User::query()
             ->where('school_id', $schoolId)
             ->where('status', 'active')
+            ->whereHas('roles', fn (Builder $query) => $query->whereIn('slug', [
+                'super-admin',
+                'school-admin',
+                'finance',
+                'teacher',
+            ]))
             ->orderBy('name')
             ->get(['id', 'name', 'username']);
 

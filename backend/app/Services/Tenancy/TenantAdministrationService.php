@@ -44,14 +44,14 @@ class TenantAdministrationService
                 'school_id' => $school->id, 'name' => $data['owner']['name'], 'username' => $data['owner']['username'],
                 'password' => Hash::make($data['owner']['password']), 'status' => 'active',
             ]);
-            $tenantOwnerRole = Role::query()->where('slug', 'tenant-owner')->firstOrFail();
-            $owner->roles()->attach($tenantOwnerRole);
+            $schoolAdminRole = Role::query()->firstOrCreate(['slug' => 'school-admin'], ['name' => 'School Admin']);
+            $owner->roles()->attach($schoolAdminRole);
             $membership = TenantUserMembership::query()->create([
                 'tenant_id' => $tenant->id, 'user_id' => $owner->id, 'default_school_id' => $school->id,
-                'access_all_schools' => true, 'status' => 'active',
+                'access_all_schools' => false, 'status' => 'active',
             ]);
             $membership->schools()->attach($school->id, ['tenant_id' => $tenant->id]);
-            $membership->roles()->attach($tenantOwnerRole);
+            $membership->roles()->attach($schoolAdminRole);
             foreach ($data['domains'] ?? [] as $domain) {
                 $tenant->domains()->create([...$domain, 'hostname' => strtolower($domain['hostname']), 'status' => 'pending']);
             }
@@ -176,7 +176,9 @@ class TenantAdministrationService
             $foundSchoolIds = School::query()->where('tenant_id', $tenant->id)->whereIn('id', $schoolIds)->pluck('id')->map(fn ($id) => (int) $id)->all();
             abort_unless(count($foundSchoolIds) === count(array_unique($schoolIds)), 403, 'One or more schools belong to another tenant.');
             abort_unless(in_array((int) $data['default_school_id'], $foundSchoolIds, true), 422, 'Default school must be included in the membership schools.');
-            $roles = Role::query()->whereIn('slug', $data['roles'])->where('slug', '!=', 'super-admin')->get();
+            $allowedRoles = ['school-admin', 'finance', 'teacher', 'parent', 'student'];
+            abort_unless(collect($data['roles'])->every(fn (string $role): bool => in_array($role, $allowedRoles, true)), 422, 'One or more tenant roles are invalid.');
+            $roles = Role::query()->whereIn('slug', $data['roles'])->get();
             abort_unless($roles->count() === count(array_unique($data['roles'])), 422, 'One or more tenant roles are invalid.');
 
             $membership = TenantUserMembership::query()->where('tenant_id', $tenant->id)->where('user_id', $user->id)->lockForUpdate()->first();

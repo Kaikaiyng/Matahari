@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { CalendarDays, Clock, MapPin, Plus, CheckCircle2, AlertCircle } from 'lucide-react'
 import { apiRequest } from '../api'
-import { CustomSelect, DataPanel, FilterToolbar, PageHeader, StatCard, StatusBadge } from './AdminUi'
+import { CustomSelect, DataPanel, FilterToolbar, PageHeader, StatCard, StatusBadge, TimePicker } from './AdminUi'
 
 type Year = { id: number; code: string; name: string; is_current: boolean }
 type SchoolClass = { id: number; name: string }
@@ -247,30 +247,12 @@ export function SchedulePage() {
           <div className="schedule-form-grid timing-row">
             <label className="schedule-form-field">
               <span className="schedule-field-label">Start Time</span>
-              <div className="schedule-time-wrap">
-                <Clock size={15} className="schedule-time-icon" />
-                <input
-                  type="time"
-                  className="schedule-form-input with-icon"
-                  value={startsAt}
-                  onChange={(event) => setStartsAt(event.target.value)}
-                  required
-                />
-              </div>
+              <TimePicker value={startsAt} onChange={setStartsAt} ariaLabel="Start time" className="schedule-form-input" />
             </label>
 
             <label className="schedule-form-field">
               <span className="schedule-field-label">End Time</span>
-              <div className="schedule-time-wrap">
-                <Clock size={15} className="schedule-time-icon" />
-                <input
-                  type="time"
-                  className="schedule-form-input with-icon"
-                  value={endsAt}
-                  onChange={(event) => setEndsAt(event.target.value)}
-                  required
-                />
-              </div>
+              <TimePicker value={endsAt} onChange={setEndsAt} ariaLabel="End time" className="schedule-form-input" />
             </label>
 
             <div className="schedule-form-btn-wrap">

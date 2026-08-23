@@ -2,7 +2,7 @@
 
 **Status:** Verified current behavior plus confirmed intended policy
 
-**Repository baseline:** SaaS feature branch based on `master` at `0ad0558` (2026-08-14)
+**Repository baseline:** Role and User Abilities delivery (2026-08-23)
 
 This document separates policy from implementation. A confirmed intended rule is not described as enforced unless the backend or schema proves it.
 
@@ -12,9 +12,18 @@ This document separates policy from implementation. A confirmed intended rule is
 - Only active tenants and active, explicitly verified domains resolve in production.
 - Each school/campus belongs to exactly one tenant; business records remain school-scoped.
 - A global user identity needs an active tenant membership. Roles and permitted schools are evaluated from that membership.
-- `tenant-owner` cannot administer another tenant. Platform ownership is explicit and is never inferred from ordinary roles or identity fields.
+- Tenant/platform configuration belongs to the explicit Super Admin platform owner and is never inferred from an ordinary role.
 - Tenant status, domain activation, branding, features, schools and memberships are audited transactionally.
 - Migration never guesses customer campus grouping, production domains, guardian/student identities, portal activation or academic dates.
+
+## Employee Access Rules
+
+- Employee positions are exactly School Admin, Finance, and Teacher; one employee holds one position at a time.
+- Finance includes every School Admin default plus supported finance-only mutations.
+- Authorized same-school Admins may grant or deny another employee's grantable User Abilities, but cannot edit themselves, platform owners, cross-school users, or platform-only abilities.
+- Manage implies View. Removing View removes dependent Manage selections.
+- Every position, User Ability, or Teacher App Access update requires a reason and its Audit Trail record in the same transaction.
+- App personas are exactly Teacher, Parent, and Student. Elevated employees remain Teacher in the App; there is no Staff persona.
 
 ## Student Lifecycle
 
@@ -56,10 +65,11 @@ Implemented Community App/self-service rules:
 - Parent Finance selects the child's explicitly stored current enrolment academic-year code. It must not guess or hard-code a production academic year; a child without a confirmed current enrolment receives no year-specific balance query.
 - Parent receipt access reuses the existing immutable receipt snapshot. The App may view it and invoke browser printing/save-as-PDF, but does not create a second receipt definition or server-generated PDF.
 - Parent Finance is read-only and exposes no payment interface.
-- Teacher daily Attendance is limited to a current same-school teaching assignment and enrolled roster. Parent reads require the reviewed academic capability; Student reads resolve only the linked self record.
+- Teacher class Attendance is limited to a current same-school teaching assignment and enrolled roster unless a school-scoped, time-bound Attendance ability explicitly grants broader access. Parent reads require the reviewed academic capability. Student self-service does not expose Attendance.
 - Attendance values are `present`, `late`, `absent`, and `excused`. Corrections require a reason, preserve original marker metadata, and write their audit event in the same transaction.
 - `unmarked` is a client/read-model state for a current enrolment without an attendance record. It is never persisted and cannot erase an existing record.
-- Gate entry creates or reuses an `in_progress` daily session. The first attendance decision for a student/session wins; later duplicate scans are idempotent and do not become silent corrections. Gate exit processing is not implemented.
+- Campus Attendance and class Attendance are separate records. Campus events are immutable `entry` or `exit` movements; multiple movements per day are preserved. A vendor/source external event ID is idempotent, while distinct events remain a full timeline. School-wide arrival/dismissal times determine Late and Early Leave display flags.
+- Active guardians receive in-app entry and exit notifications by default. Admin may change those two school-wide notification defaults. Card/device credentials are encrypted and face templates are not stored by RYLAY.
 
 Approved future rules:
 

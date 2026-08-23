@@ -1,11 +1,12 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
-import type { ReactNode, RefObject } from 'react'
+import type { AriaAttributes, ReactNode, RefObject } from 'react'
 import { createPortal } from 'react-dom'
 import { AlertTriangle, Check, CheckCircle2, ChevronDown, Info, X } from 'lucide-react'
 import { productBrand } from '../branding'
 import { useTenantConfiguration } from '../tenant'
 import { BrandMark } from './BrandMark'
 import './AdminUi.css'
+export { DatePicker, TimePicker } from './SystemDateTimePicker'
 
 export type UiTone = 'neutral' | 'positive' | 'warning' | 'danger' | 'info'
 
@@ -417,6 +418,9 @@ export type CustomSelectProps<T extends string | number = string> = {
   className?: string
   disabled?: boolean
   size?: 'compact' | 'standard'
+  triggerRef?: RefObject<HTMLButtonElement | null>
+  'aria-invalid'?: AriaAttributes['aria-invalid']
+  'aria-describedby'?: string
 }
 
 export function CustomSelect<T extends string | number = string>({
@@ -429,6 +433,9 @@ export function CustomSelect<T extends string | number = string>({
   className = '',
   disabled = false,
   size = 'standard',
+  triggerRef,
+  'aria-invalid': ariaInvalid,
+  'aria-describedby': ariaDescribedBy,
 }: CustomSelectProps<T>) {
   const [isOpen, setIsOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -463,6 +470,8 @@ export function CustomSelect<T extends string | number = string>({
       <select
         id={id}
         aria-label={ariaLabel}
+        aria-invalid={ariaInvalid}
+        aria-describedby={ariaDescribedBy}
         className="custom-select-native-peer"
         value={value}
         disabled={disabled}
@@ -477,7 +486,10 @@ export function CustomSelect<T extends string | number = string>({
       </select>
 
       <button
+        ref={triggerRef}
         type="button"
+        aria-invalid={ariaInvalid}
+        aria-describedby={ariaDescribedBy}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         disabled={disabled}

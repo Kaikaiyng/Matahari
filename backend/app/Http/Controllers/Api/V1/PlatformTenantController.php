@@ -102,7 +102,7 @@ class PlatformTenantController extends Controller
         $data = $request->validate([
             'default_school_id' => ['required', 'integer'], 'school_ids' => ['required', 'array', 'min:1'], 'school_ids.*' => ['required', 'integer', 'distinct'],
             'access_all_schools' => ['sometimes', 'boolean'], 'status' => ['required', Rule::in(['active', 'suspended'])],
-            'roles' => ['required', 'array', 'min:1'], 'roles.*' => ['required', 'string', 'distinct', Rule::notIn(['super-admin'])],
+            'roles' => ['required', 'array', 'min:1'], 'roles.*' => ['required', 'string', 'distinct', Rule::in(['school-admin', 'finance', 'teacher', 'parent', 'student'])],
         ]);
 
         return response()->json(['data' => $service->updateMembership($tenant, $user, $data, $contexts->fromRequest($request))]);

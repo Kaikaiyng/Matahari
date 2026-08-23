@@ -117,7 +117,7 @@ class ApiWorkflowTest extends TestCase
         $this->assertSame($admin->id, Invoice::query()->firstOrFail()->created_by);
     }
 
-    public function test_finance_role_cannot_call_legacy_invoice_generation(): void
+    public function test_finance_role_can_call_legacy_invoice_generation_as_advanced_admin(): void
     {
         $this->seed();
 
@@ -129,7 +129,7 @@ class ApiWorkflowTest extends TestCase
             'invoice_month' => '2026-07',
             'issue_date' => '2026-07-01',
             'due_date' => '2026-07-10',
-        ])->assertForbidden();
+        ])->assertCreated();
     }
 
     public function test_seeded_super_admin_defaults_to_the_single_school_and_rejects_another_scope(): void

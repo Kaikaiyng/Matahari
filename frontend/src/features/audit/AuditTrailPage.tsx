@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Eye, History, X } from 'lucide-react'
 import { ApiError, apiRequest } from '../../api'
-import { CustomSelect, DataPanel, FilterToolbar, PageHeader } from '../../components/AdminUi'
+import { CustomSelect, DataPanel, DatePicker, FilterToolbar, PageHeader } from '../../components/AdminUi'
 import type { AuditLog, AuditLogDetailResponse, AuditLogListResponse } from './auditTypes'
 
 const auditModules = [
@@ -152,11 +152,11 @@ export function AuditTrailPage({ onUnauthorized }: AuditTrailPageProps) {
           </label>
           <label>
             From
-            <input type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} />
+            <DatePicker value={dateFrom} onChange={setDateFrom} placeholder="Start date" ariaLabel="From date" />
           </label>
           <label>
             To
-            <input type="date" min={dateFrom || undefined} value={dateTo} onChange={(event) => setDateTo(event.target.value)} />
+            <DatePicker min={dateFrom || undefined} value={dateTo} onChange={setDateTo} placeholder="End date" ariaLabel="To date" />
           </label>
           <div className="toolbar-actions audit-filter-actions">
             <button className="primary-action compact" type="submit">Apply filters</button>

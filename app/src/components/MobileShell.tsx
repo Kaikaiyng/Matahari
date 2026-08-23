@@ -6,7 +6,7 @@ import './MobileShell.css'
 import { useTenantConfiguration } from '../tenant'
 import { portalApi } from '../api/portalApi'
 
-export type AppRole = 'parent' | 'student' | 'teacher' | 'staff'
+export type AppRole = 'parent' | 'student' | 'teacher'
 
 export interface SwipeContextValue {
   dragOffset: number
@@ -34,10 +34,6 @@ const navByRole: Record<AppRole, NavItem[]> = {
   teacher: [
     { id: 'home', label: 'Home', icon: <Home /> }, { id: 'classes', label: 'Classes', icon: <School /> },
     { id: 'create', label: 'Create', icon: <PenSquare /> }, { id: 'attendance', label: 'Attendance', icon: <ClipboardCheck /> }, { id: 'more', label: 'More', icon: <Menu /> },
-  ],
-  staff: [
-    { id: 'home', label: 'Home', icon: <Home /> }, { id: 'classes', label: 'School', icon: <School /> },
-    { id: 'create', label: 'Create', icon: <PenSquare /> }, { id: 'review', label: 'Review', icon: <ClipboardCheck /> }, { id: 'more', label: 'More', icon: <Menu /> },
   ],
 }
 
@@ -164,7 +160,7 @@ export function MobileShell({ activeTab, onTabChange, userRole, allowedRoles, on
                   onChange={(val) => onRoleChange(val as AppRole)}
                   options={allowedRoles.map((role) => ({
                     value: role,
-                    label: role === 'staff' ? 'Staff' : role[0].toUpperCase() + role.slice(1),
+                    label: role[0].toUpperCase() + role.slice(1),
                   }))}
                   size="compact"
                 />

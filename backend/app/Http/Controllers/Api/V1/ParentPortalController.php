@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\AssessmentResult;
 use App\Models\AttendanceRecord;
+use App\Models\CampusAttendanceEvent;
 use App\Models\Guardian;
 use App\Models\Receipt;
 use App\Models\Student;
@@ -150,6 +151,25 @@ class ParentPortalController extends Controller
             ->get();
 
         return response()->json(['data' => $this->attendanceResponse($records)]);
+    }
+
+    public function childCampusAttendance(Request $request, Student $student): JsonResponse
+    {
+        $this->assertGuardianAccess($request, $student, 'can_view_academics');
+        $data = $request->validate(['date' => ['nullable', 'date_format:Y-m-d']]);
+        $date = $data['date'] ?? now()->toDateString();
+        $events = CampusAttendanceEvent::query()->with('device:id,name')
+            ->where('school_id', $student->school_id)->where('student_id', $student->id)
+            ->whereDate('event_date', $date)->orderBy('occurred_at')->get();
+        $latest = $events->last();
+
+        return response()->json(['data' => [
+            'date' => $date,
+            'current_status' => $latest ? ($latest->direction === 'entry' ? 'on_campus' : 'off_campus') : 'no_record',
+            'first_entry' => $events->firstWhere('direction', 'entry')?->occurred_at?->toIso8601String(),
+            'last_exit' => $events->where('direction', 'exit')->last()?->occurred_at?->toIso8601String(),
+            'events' => $events->map(fn ($event) => ['id' => $event->id, 'direction' => $event->direction, 'method' => $event->method, 'occurred_at' => $event->occurred_at->toIso8601String(), 'device_name' => $event->device?->name]),
+        ]]);
     }
 
     public function childAssessmentResults(Request $request, Student $student): JsonResponse

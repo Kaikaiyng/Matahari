@@ -17,6 +17,10 @@ const currentUser = {
     'calendar.delete',
     'students.view',
     'students.create',
+    'attendance.view_school',
+    'attendance.manage_school',
+    'attendance.devices.manage',
+    'attendance.abilities.manage',
     'parents.view',
     'fee_items.view',
     'fee_agreements.view',
@@ -629,16 +633,16 @@ describe('demo shell', () => {
     await renderAuthenticatedApp()
 
     const navigation = screen.getByRole('navigation', { name: 'Main navigation' })
-    expect(Array.from(navigation.querySelectorAll('.nav-item')).map((button) => button.textContent)).toEqual([
+    expect(Array.from(navigation.querySelectorAll('.nav-item, .nav-subitem')).map((button) => button.textContent)).toEqual([
       'Dashboard',
       'Calendar',
+      'Attendance',
       'Students',
       'Classes',
       'Parents',
       'Fees',
       'Fee Record',
     ])
-    expect(within(navigation).getByText('Overview')).toBeInTheDocument()
     expect(within(navigation).getByText('People')).toBeInTheDocument()
     expect(within(navigation).getByText('Finance')).toBeInTheDocument()
     expect(within(navigation).queryByText('Management')).not.toBeInTheDocument()
@@ -646,10 +650,13 @@ describe('demo shell', () => {
   })
 
   it('shows Community Safety only with a moderation permission', async () => {
+    const user = userEvent.setup()
     installApiUser({ ...currentUser, permissions: [...currentUser.permissions, 'community.moderate'] })
     await renderAuthenticatedApp()
 
-    expect(within(screen.getByRole('navigation', { name: 'Main navigation' })).getByRole('button', { name: 'Community Safety' })).toBeInTheDocument()
+    const navigation = screen.getByRole('navigation', { name: 'Main navigation' })
+    await user.click(within(navigation).getByRole('button', { name: 'Administration navigation group' }))
+    expect(within(navigation).getByRole('button', { name: 'Community Safety' })).toBeInTheDocument()
   })
 
   it('rejects a parent-only account from the Admin Panel', async () => {
@@ -718,6 +725,15 @@ describe('demo shell', () => {
     await user.click(screen.getByRole('button', { name: 'Application Logs' }))
     expect(await screen.findByRole('heading', { name: 'Application Logs', level: 2 })).toBeInTheDocument()
     expect(screen.getByText('No log entries found')).toBeInTheDocument()
+  })
+
+  it('opens Attendance as a dedicated Admin module', async () => {
+    const user = userEvent.setup()
+    await renderAuthenticatedApp()
+
+    await user.click(screen.getByRole('button', { name: 'Attendance' }))
+
+    expect(await screen.findByRole('heading', { name: 'Attendance', level: 2 })).toBeInTheDocument()
   })
 
   it('uses a dedicated filter toolbar and data panel on Students', async () => {
@@ -1203,9 +1219,9 @@ describe('demo shell', () => {
     await openSelectedStudentPayments(user)
     await user.click(await screen.findByRole('button', { name: 'Verify' }))
     const dialog = screen.getByRole('dialog', { name: 'Verify Payment' })
-    const receivedDate = within(dialog).getByLabelText('Received Date')
-    await user.clear(receivedDate)
-    await user.type(receivedDate, '2026-07-18')
+    await user.click(within(dialog).getByRole('button', { name: 'Received Date' }))
+    await user.click(screen.getByRole('button', { name: 'Previous month' }))
+    await user.click(screen.getByRole('button', { name: '18 July 2026' }))
     await user.type(within(dialog).getByLabelText('Bank Account'), 'Maybank')
     await user.click(within(dialog).getByRole('button', { name: 'Verify Payment' }))
 
@@ -1613,7 +1629,7 @@ describe('demo shell', () => {
     expect(
       within(dialog).getByRole('region', { name: 'Student context' }),
     ).toHaveTextContent('Alyssa Tan')
-    await waitFor(() => expect(within(dialog).getByLabelText('Payment Plan')).toHaveFocus())
+    await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Monthly' })).toHaveFocus())
   })
 
   it('asks before closing a dirty agreement but closes a clean agreement immediately', async () => {
@@ -1667,7 +1683,7 @@ describe('demo shell', () => {
     const dialog = screen.getByRole('dialog', { name: 'Supersede Fee Agreement' })
     expect(within(dialog).queryByLabelText('Academic Year')).not.toBeInTheDocument()
     expect(within(dialog).getByLabelText('Payment Plan')).toHaveValue('monthly')
-    expect(within(dialog).getByLabelText('Effective From')).toHaveValue('2026-01-02')
+    expect(within(dialog).getByRole('button', { name: 'Effective From' })).toHaveTextContent('02 Jan 2026')
     expect(within(dialog).getByText('Creating a new version from v1')).toBeInTheDocument()
     expect(within(dialog).getByRole('complementary', { name: 'Changes from v1' })).toBeInTheDocument()
     expect(within(dialog).getByRole('complementary', { name: 'Changes from v1' })).toHaveTextContent(
