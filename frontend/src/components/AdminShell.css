@@ -512,7 +512,7 @@
   position: absolute;
   top: calc(100% + 10px);
   right: -10px;
-  width: 380px;
+  width: 420px;
   max-width: calc(100vw - 32px);
   max-height: 520px;
   background: #ffffff;
@@ -603,6 +603,8 @@
 }
 
 .admin-notif-filters {
+  min-width: 0;
+  flex: 1 1 auto;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -639,6 +641,7 @@
 }
 
 .admin-notif-mark-all {
+  flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   gap: 4px;
