@@ -237,18 +237,23 @@ export function AdminShell<PageKey extends string>({
                   </span>
                   <ChevronRight className="nav-group-chevron" size={15} />
                 </button>
-                <div className={`nav-group-items${isExpanded ? ' expanded' : ''}`}>
-                  {isExpanded && group.items.map(({ key, label }) => (
-                    <button
-                      key={key}
-                      aria-current={key === activePage ? 'page' : undefined}
-                      aria-label={label}
-                      className={key === activePage ? 'nav-subitem active' : 'nav-subitem'}
-                      onClick={() => selectPage(key)}
-                    >
-                      <span>{label}</span>
-                    </button>
-                  ))}
+                <div className={`nav-group-items${isExpanded ? ' expanded' : ''}`} aria-hidden={!isExpanded}>
+                  <div className="nav-group-items-clip">
+                    <div className="nav-group-items-list">
+                      {group.items.map(({ key, label }) => (
+                        <button
+                          key={key}
+                          aria-current={key === activePage ? 'page' : undefined}
+                          aria-label={label}
+                          className={key === activePage ? 'nav-subitem active' : 'nav-subitem'}
+                          tabIndex={isExpanded ? 0 : -1}
+                          onClick={() => selectPage(key)}
+                        >
+                          <span>{label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </section>
             )

@@ -21,7 +21,7 @@
   color: var(--text, #25272d);
   box-shadow: 5px 0 24px rgb(15 23 42 / 4%);
   transform: translateX(0);
-  transition: transform 180ms ease;
+  transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
   will-change: transform;
 }
 
@@ -156,10 +156,29 @@
 
 .nav-group-title { min-width: 0; display: flex; align-items: center; gap: 12px; }
 .nav-group-icon { width: 28px; height: 28px; flex: 0 0 28px; display: grid; place-items: center; border-radius: 8px; }
-.nav-group-chevron { flex: 0 0 auto; transition: transform 160ms ease; }
+.nav-group-chevron { flex: 0 0 auto; transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1); }
 .nav-group-toggle[aria-expanded='true'] .nav-group-chevron { transform: rotate(90deg); }
 
 .nav-group-items {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows 280ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 180ms ease;
+}
+
+.nav-group-items.expanded {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.nav-group-items-clip {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.nav-group-items-list {
   display: grid;
   gap: 2px;
   margin: 1px 0 3px 25px;
@@ -192,7 +211,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 0 16px;
+  padding: 0 12px;
   overflow: hidden;
   border: 1px solid transparent;
   border-radius: 12px;
@@ -342,7 +361,7 @@
   overflow-x: clip;
   display: grid;
   grid-template-rows: 48px minmax(0, 1fr);
-  transition: margin-left 180ms ease;
+  transition: margin-left 300ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .admin-shell.sidebar-collapsed .admin-workspace {
@@ -980,6 +999,7 @@ body.nav-open {
   .sidebar-backdrop,
   .nav-item,
   .nav-group-toggle,
+  .nav-group-items,
   .nav-group-chevron,
   .nav-subitem,
   .sidebar-label,
