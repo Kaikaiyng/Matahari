@@ -33,4 +33,22 @@ class AuditPermissionSeedTest extends TestCase
             }
         }
     }
+
+    public function test_community_interact_compatibility_remains_seeded_until_routes_retire(): void
+    {
+        $this->seed();
+
+        $this->assertDatabaseHas('permissions', ['slug' => 'community.interact']);
+
+        foreach (['school-admin', 'finance', 'teacher', 'parent', 'student'] as $roleSlug) {
+            $permissions = Role::query()
+                ->where('slug', $roleSlug)
+                ->firstOrFail()
+                ->permissions()
+                ->pluck('slug');
+
+            $this->assertTrue($permissions->contains('community.view'));
+            $this->assertTrue($permissions->contains('community.interact'));
+        }
+    }
 }

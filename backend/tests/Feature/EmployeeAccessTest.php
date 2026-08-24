@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Role;
 use App\Models\User;
+use App\Services\Authorization\EmployeeAccessCatalog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -55,5 +56,18 @@ class EmployeeAccessTest extends TestCase
         $this->assertEmpty($admin->diff($finance));
         $this->assertTrue($finance->contains('payments.verify'));
         $this->assertTrue($finance->contains('receipts.void'));
+    }
+
+    public function test_community_catalog_exposes_only_active_school_update_abilities(): void
+    {
+        $catalog = app(EmployeeAccessCatalog::class);
+        $community = collect($catalog->groups()['Community'])->keyBy('slug');
+
+        $this->assertSame('View posts', $community['community.view']['label']);
+        $this->assertSame('Publish posts', $community['community.publish']['label']);
+        $this->assertSame('Manage posts', $community['community.moderate']['label']);
+        $this->assertArrayNotHasKey('community.interact', $community->all());
+        $this->assertSame('community.view', $catalog->dependencies()['community.publish']);
+        $this->assertSame('community.view', $catalog->dependencies()['community.moderate']);
     }
 }

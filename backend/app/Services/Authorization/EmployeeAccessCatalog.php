@@ -35,7 +35,7 @@ final class EmployeeAccessCatalog
                 'receipts.void' => 'Void receipts', 'receipts.print' => 'Print receipts',
             ]),
             'Community' => $this->items([
-                'community.view' => 'View Community', 'community.publish' => 'Publish posts', 'community.interact' => 'Interact with posts', 'community.moderate' => 'Moderate school Community',
+                'community.view' => 'View posts', 'community.publish' => 'Publish posts', 'community.moderate' => 'Manage posts',
             ]),
             'Academics' => $this->items([
                 'academic_years.view' => 'View academic years', 'academic_years.manage' => 'Manage academic years', 'subjects.view' => 'View subjects', 'subjects.manage' => 'Manage subjects',
@@ -66,7 +66,7 @@ final class EmployeeAccessCatalog
             'fee_items.manage' => 'fee_items.view', 'fee_agreements.create' => 'fee_agreements.view', 'fee_agreements.update' => 'fee_agreements.view',
             'fee_record.generate' => 'fee_record.view', 'fee_record.manage' => 'fee_record.view', 'payments.create' => 'payments.view',
             'payments.verify' => 'payments.view', 'payments.void' => 'payments.view', 'receipts.create' => 'receipts.view', 'receipts.void' => 'receipts.view', 'receipts.print' => 'receipts.view',
-            'community.publish' => 'community.view', 'community.interact' => 'community.view', 'community.moderate' => 'community.view',
+            'community.publish' => 'community.view', 'community.moderate' => 'community.view',
             'academic_years.manage' => 'academic_years.view', 'subjects.manage' => 'subjects.view', 'schedule.manage' => 'schedule.view',
             'employees.manage' => 'employees.view', 'employees.abilities.manage' => 'employees.view',
         ];

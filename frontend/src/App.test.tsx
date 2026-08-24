@@ -64,6 +64,30 @@ const schoolAdminDialogUser = {
   ],
 }
 
+const employeeAbilityAccess = {
+  position: 'teacher',
+  positions: [
+    { value: 'school-admin', label: 'School Admin' },
+    { value: 'finance', label: 'Finance' },
+    { value: 'teacher', label: 'Teacher' },
+  ],
+  groups: {
+    Community: [
+      { slug: 'community.view', label: 'View posts' },
+      { slug: 'community.publish', label: 'Publish posts' },
+      { slug: 'community.moderate', label: 'Manage posts' },
+    ],
+  },
+  dependencies: {
+    'community.publish': 'community.view',
+    'community.moderate': 'community.view',
+  },
+  position_defaults: { 'school-admin': [], finance: [], teacher: ['community.view'] },
+  default_permissions: ['community.view'],
+  permissions: ['community.view'],
+  teacher_app_access: true,
+}
+
 const financeDialogUser = {
   ...currentUser,
   roles: ['finance'],
@@ -657,6 +681,39 @@ describe('demo shell', () => {
     const navigation = screen.getByRole('navigation', { name: 'Main navigation' })
     await user.click(within(navigation).getByRole('button', { name: 'Administration navigation group' }))
     expect(within(navigation).getByRole('button', { name: 'Community Safety' })).toBeInTheDocument()
+  })
+
+  it('presents Community abilities as official School Updates', async () => {
+    const user = userEvent.setup()
+    installApiUser({
+      ...currentUser,
+      permissions: [...currentUser.permissions, 'foundation_accounts.manage', 'employees.abilities.manage'],
+    })
+    const fetchMock = vi.mocked(globalThis.fetch)
+    const installedImplementation = fetchMock.getMockImplementation()
+    if (!installedImplementation) throw new Error('API mock is not installed')
+
+    fetchMock.mockImplementation((input, init) => {
+      const url = new URL(String(input), window.location.origin)
+      if (url.pathname.endsWith('/staff')) {
+        return json({ data: [{ id: 2, staff_no: 'MIS-E002', name: 'Ava Tan', username: 'ava.tan', role: 'Teacher', roles: ['teacher'], status: 'active', assigned_classes: [] }] })
+      }
+      if (url.pathname.endsWith('/staff/2/access') && init?.method !== 'PUT') {
+        return json({ data: employeeAbilityAccess })
+      }
+      return installedImplementation(input, init)
+    })
+
+    await renderAuthenticatedApp()
+    const peopleNavigation = screen.getByRole('button', { name: 'People navigation group' })
+    if (peopleNavigation.getAttribute('aria-expanded') === 'false') await user.click(peopleNavigation)
+    await user.click(await screen.findByRole('button', { name: 'Employees' }))
+    await user.click(await screen.findByRole('button', { name: /Edit/ }))
+
+    expect(await screen.findByText('Official School Updates')).toBeInTheDocument()
+    expect(screen.getByText('Publish posts')).toBeInTheDocument()
+    expect(screen.getByText('Manage posts')).toBeInTheDocument()
+    expect(screen.queryByText('Interact with posts')).not.toBeInTheDocument()
   })
 
   it('rejects a parent-only account from the Admin Panel', async () => {
