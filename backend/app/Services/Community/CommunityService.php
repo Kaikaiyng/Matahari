@@ -12,9 +12,9 @@ use App\Models\CommunityComment;
 use App\Models\CommunityPost;
 use App\Models\CommunityPostReaction;
 use App\Models\CommunityReport;
+use App\Models\PortalNotification;
 use App\Models\School;
 use App\Models\SchoolClass;
-use App\Models\Student;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -26,6 +26,7 @@ class CommunityService
 {
     public function __construct(
         private readonly CommunityAccessService $access,
+        private readonly SchoolUpdateAudienceResolver $audiences,
         private readonly CommunityPolicyService $policy,
         private readonly CommunitySafetyFilter $safetyFilter,
         private readonly AuditLoggerContract $audit,
@@ -40,49 +41,64 @@ class CommunityService
         if (($data['media'] ?? []) !== []) {
             $this->policy->assertNotRestricted($actor, $tenantId, $schoolId, 'media');
         }
+        if (collect($data['audiences'])->contains(fn (array $audience): bool => ! in_array($audience['type'], ['school', 'class'], true))) {
+            throw ValidationException::withMessages(['audiences' => 'School updates may target only the whole school or active classes.']);
+        }
         $this->access->assertCanPublish($actor, $schoolId, $data['audiences']);
         $inspection = $this->safetyFilter->inspect($data['body']);
         if (! $inspection->allowed) {
             throw ValidationException::withMessages(['body' => 'This content is not allowed under the Community Standards.']);
         }
-        $isModerator = $actor->hasPermissionTo('community.moderate');
-        $status = $isModerator ? CommunityPost::STATUS_PUBLISHED : CommunityPost::STATUS_PENDING_REVIEW;
-
         $storedPaths = [];
         try {
-            return DB::transaction(function () use ($inspection, $status, $isModerator, $tenantId, $schoolId, $data, $actor, $context, &$storedPaths): CommunityPost {
+            return DB::transaction(function () use ($inspection, $tenantId, $schoolId, $data, $actor, $context, &$storedPaths): CommunityPost {
+                $now = now();
                 $post = CommunityPost::query()->create([
-                    'tenant_id' => $tenantId, 'school_id' => $schoolId, 'author_user_id' => $actor->id, 'post_type' => 'post',
-                    'body' => $inspection->normalized, 'comments_enabled' => $data['comments_enabled'] ?? true,
-                    'status' => $status, 'published_at' => $isModerator ? now() : null,
-                    'reviewed_at' => $isModerator ? now() : null, 'reviewed_by_user_id' => $isModerator ? $actor->id : null,
+                    'tenant_id' => $tenantId, 'school_id' => $schoolId, 'author_user_id' => $actor->id, 'post_type' => CommunityPost::POST_TYPE_UPDATE,
+                    'body' => $inspection->normalized, 'comments_enabled' => false,
+                    'status' => CommunityPost::STATUS_PUBLISHED, 'published_at' => $now,
+                    'reviewed_at' => $now, 'reviewed_by_user_id' => $actor->id,
                     'moderation_reason_code' => $inspection->reasonCode,
                 ]);
                 foreach ($data['audiences'] as $audience) {
                     if ($audience['type'] === 'class') {
                         $class = SchoolClass::query()->where('school_id', $schoolId)->findOrFail($audience['class_id']);
                         $key = "class:{$class->id}";
-                    } elseif ($audience['type'] === 'student') {
-                        $student = Student::query()->where('school_id', $schoolId)->findOrFail($audience['student_id']);
-                        $key = "student:{$student->id}";
                     } else {
                         $key = 'school';
                     }
                     $post->audiences()->create(['school_id' => $schoolId, 'audience_type' => $audience['type'], 'class_id' => $audience['class_id'] ?? null, 'student_id' => $audience['student_id'] ?? null, 'audience_key' => $key]);
                 }
                 foreach ($data['media'] ?? [] as $index => $file) {
+                    $mimeType = (string) $file->getMimeType();
+                    if (! in_array($mimeType, ['image/jpeg', 'image/png', 'image/webp'], true)) {
+                        throw ValidationException::withMessages(['media' => 'School update media must be a JPEG, PNG, or WebP image.']);
+                    }
                     $path = $file->storeAs("community/{$schoolId}/{$post->id}", Str::uuid().'.'.$file->extension(), 'local');
                     $storedPaths[] = $path;
                     $post->media()->create([
-                        'school_id' => $schoolId, 'media_type' => str_starts_with((string) $file->getMimeType(), 'image/') ? 'image' : (str_starts_with((string) $file->getMimeType(), 'video/') ? 'video' : 'file'),
+                        'school_id' => $schoolId, 'media_type' => 'image',
                         'storage_disk' => 'local', 'storage_path' => $path, 'original_name' => $file->getClientOriginalName(),
-                        'mime_type' => $file->getMimeType(), 'size_bytes' => $file->getSize(), 'sort_order' => $index, 'status' => $isModerator ? 'ready' : 'quarantined',
+                        'mime_type' => $mimeType, 'size_bytes' => $file->getSize(), 'sort_order' => $index, 'status' => 'ready',
                     ]);
                 }
-                if (! $isModerator) {
-                    $this->createSubmissionCase($post, null, $actor, $tenantId, $schoolId, $inspection->reasonCode);
+                $classIds = collect($data['audiences'])->where('type', 'class')->pluck('class_id')->map(fn ($id): int => (int) $id)->unique()->sort()->values()->all();
+                $audienceType = $classIds === [] ? 'school' : 'class';
+                $recipientIds = [];
+                if ($data['notify_audience'] ?? true) {
+                    $recipientIds = $this->audiences->recipientUserIds($schoolId, $data['audiences'], $actor->id);
+                    PortalNotification::query()->insert(collect($recipientIds)->map(fn (int $recipientId): array => [
+                        'school_id' => $schoolId,
+                        'recipient_user_id' => $recipientId,
+                        'type' => 'school_update',
+                        'title' => 'School update',
+                        'body' => $post->body,
+                        'context_json' => json_encode(['post_id' => $post->id, 'audience_type' => $audienceType, 'class_ids' => $classIds], JSON_THROW_ON_ERROR),
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ])->all());
                 }
-                $this->audit->record(new AuditEvent(action: $isModerator ? AuditAction::CommunityPostPublished : AuditAction::CommunityPostSubmitted, module: AuditModule::Community, schoolId: $schoolId, subjectType: AuditSubject::CommunityPost, subjectId: $post->id, newValues: ['audiences' => $post->audiences()->pluck('audience_key')->all(), 'comments_enabled' => $post->comments_enabled, 'status' => $post->status]), $context);
+                $this->audit->record(new AuditEvent(action: AuditAction::CommunityPostPublished, module: AuditModule::Community, schoolId: $schoolId, subjectType: AuditSubject::CommunityPost, subjectId: $post->id, newValues: ['audiences' => $post->audiences()->pluck('audience_key')->all(), 'audience_type' => $audienceType, 'class_ids' => $classIds, 'recipient_count' => count($recipientIds), 'comments_enabled' => $post->comments_enabled, 'status' => $post->status]), $context);
 
                 return $post;
             });
@@ -97,7 +113,8 @@ class CommunityService
         if ((int) $post->school_id !== $schoolId) {
             abort(403, 'Post is outside your school scope.');
         }
-        if ($post->author_user_id !== $actor->id && ! $actor->hasPermissionTo('community.moderate')) {
+        $isManager = $actor->hasPermissionTo('community.moderate');
+        if (($post->author_user_id !== $actor->id || ! $actor->hasPermissionTo('community.publish')) && ! $isManager) {
             abort(403, 'Only the author or an authorized moderator may edit this post.');
         }
         $inspection = $this->safetyFilter->inspect($data['body']);
@@ -105,10 +122,11 @@ class CommunityService
             throw ValidationException::withMessages(['body' => 'This content is not allowed under the Community Standards.']);
         }
 
-        return DB::transaction(function () use ($schoolId, $post, $data, $actor, $context, $inspection): CommunityPost {
+        return DB::transaction(function () use ($schoolId, $post, $actor, $context, $inspection): CommunityPost {
             $locked = CommunityPost::query()->whereKey($post->id)->lockForUpdate()->firstOrFail();
             abort_unless((int) $locked->school_id === $schoolId, 403, 'Post is outside your school scope.');
-            abort_unless($locked->author_user_id === $actor->id || $actor->hasPermissionTo('community.moderate'), 403, 'Only the author or an authorized moderator may edit this post.');
+            $isManager = $actor->hasPermissionTo('community.moderate');
+            abort_unless(($locked->author_user_id === $actor->id && $actor->hasPermissionTo('community.publish')) || $isManager, 403, 'Only the author or an authorized moderator may edit this post.');
             abort_if($locked->status === CommunityPost::STATUS_DELETED, 409, 'Deleted posts cannot be edited.');
             abort_if($locked->status === CommunityPost::STATUS_HIDDEN && ! $actor->hasPermissionTo('community.moderate'), 403, 'Hidden posts cannot be edited by their author.');
 
@@ -118,24 +136,13 @@ class CommunityService
                 'status' => $locked->status,
                 'published_at' => $locked->published_at?->toIso8601String(),
             ];
-            $isModerator = $actor->hasPermissionTo('community.moderate');
             $attributes = [
                 'body' => $inspection->normalized,
-                'comments_enabled' => $data['comments_enabled'] ?? $locked->comments_enabled,
+                'comments_enabled' => false,
+                'status' => CommunityPost::STATUS_PUBLISHED,
+                'published_at' => $locked->published_at ?? now(),
             ];
-            if (! $isModerator) {
-                $attributes = [...$attributes,
-                    'status' => CommunityPost::STATUS_PENDING_REVIEW,
-                    'published_at' => null,
-                    'reviewed_at' => null,
-                    'reviewed_by_user_id' => null,
-                    'moderation_reason_code' => $inspection->reasonCode,
-                ];
-            }
             $locked->update($attributes);
-            if (! $isModerator) {
-                $this->refreshSubmissionCase($locked, $actor, $inspection->reasonCode);
-            }
 
             $this->audit->record(new AuditEvent(
                 action: AuditAction::CommunityPostUpdated,
@@ -156,20 +163,25 @@ class CommunityService
         });
     }
 
-    public function deletePost(int $schoolId, CommunityPost $post, User $actor, AuditContext $context): void
+    public function withdrawPost(int $schoolId, CommunityPost $post, User $actor, AuditContext $context, ?string $reason = null): void
     {
         if ((int) $post->school_id !== $schoolId) {
             abort(403, 'Post is outside your school scope.');
         }
-        if ($post->author_user_id !== $actor->id && ! $actor->hasPermissionTo('community.moderate')) {
-            abort(403, 'Only the author or an authorized moderator may delete this post.');
+        $isManager = $actor->hasPermissionTo('community.moderate');
+        if ($post->author_user_id !== $actor->id && ! $isManager) {
+            abort(403, 'Only the author or an authorized manager may withdraw this post.');
+        }
+        if ($isManager && trim((string) $reason) === '') {
+            throw ValidationException::withMessages(['reason' => 'A withdrawal reason is required for managers.']);
         }
 
-        DB::transaction(function () use ($schoolId, $post, $actor, $context): void {
+        DB::transaction(function () use ($schoolId, $post, $actor, $context, $isManager, $reason): void {
             $locked = CommunityPost::query()->whereKey($post->id)->lockForUpdate()->firstOrFail();
             abort_unless((int) $locked->school_id === $schoolId, 403, 'Post is outside your school scope.');
-            abort_unless($locked->author_user_id === $actor->id || $actor->hasPermissionTo('community.moderate'), 403, 'Only the author or an authorized moderator may delete this post.');
+            abort_unless($locked->author_user_id === $actor->id || $isManager, 403, 'Only the author or an authorized manager may withdraw this post.');
             abort_if($locked->status === CommunityPost::STATUS_DELETED, 409, 'Post is already deleted.');
+            $withdrawalReason = $isManager ? trim((string) $reason) : CommunityPost::AUTHOR_WITHDRAWN_REASON;
             $oldValues = [
                 'status' => $locked->status,
                 'hidden_at' => $locked->hidden_at?->toIso8601String(),
@@ -180,7 +192,7 @@ class CommunityService
                 'status' => CommunityPost::STATUS_DELETED,
                 'hidden_at' => now(),
                 'hidden_by_user_id' => $actor->id,
-                'moderation_reason' => 'Deleted by an authorized user.',
+                'moderation_reason' => $withdrawalReason,
             ]);
 
             $locked->reports()
@@ -203,7 +215,7 @@ class CommunityService
                 });
 
             $this->audit->record(new AuditEvent(
-                action: AuditAction::CommunityPostDeleted,
+                action: AuditAction::CommunityPostWithdrawn,
                 module: AuditModule::Community,
                 schoolId: $schoolId,
                 subjectType: AuditSubject::CommunityPost,
@@ -215,6 +227,7 @@ class CommunityService
                     'hidden_by_user_id' => $locked->hidden_by_user_id,
                     'moderation_reason' => $locked->moderation_reason,
                 ],
+                reason: $withdrawalReason,
             ), $context);
         });
     }

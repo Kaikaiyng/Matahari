@@ -40,9 +40,10 @@ class CommunityController extends Controller
     public function store(Request $request, CommunityService $service, AuditContextFactory $contexts): JsonResponse
     {
         $data = $request->validate([
-            'body' => ['required', 'string', 'max:5000'], 'comments_enabled' => ['sometimes', 'boolean'],
+            'body' => ['required', 'string', 'max:5000'],
+            'notify_audience' => ['sometimes', 'boolean'],
             'media' => ['sometimes', 'array', 'max:6'],
-            'media.*' => ['file', 'max:51200', 'mimetypes:image/jpeg,image/png,image/webp,video/mp4,video/quicktime,application/pdf'],
+            'media.*' => ['file', 'max:10240', 'mimetypes:image/jpeg,image/png,image/webp'],
         ]);
         $schoolId = SchoolContext::fromRequest($request)->schoolId;
         $data['audiences'] = $this->validatedAudiences($request, $schoolId);
@@ -75,7 +76,6 @@ class CommunityController extends Controller
     {
         $data = $request->validate([
             'body' => ['required', 'string', 'max:5000'],
-            'comments_enabled' => ['sometimes', 'boolean'],
         ]);
         $post = $service->updatePost(SchoolContext::fromRequest($request)->schoolId, $communityPost, $data, $request->user(), $contexts->fromRequest($request));
         $post->load(['author:id,name', 'audiences', 'media', 'comments' => fn ($query) => $query->where('status', 'visible')->with('user:id,name')])
@@ -121,7 +121,8 @@ class CommunityController extends Controller
 
     public function destroy(Request $request, CommunityPost $communityPost, CommunityService $service, AuditContextFactory $contexts): JsonResponse
     {
-        $service->deletePost(SchoolContext::fromRequest($request)->schoolId, $communityPost, $request->user(), $contexts->fromRequest($request));
+        $data = $request->validate(['reason' => ['nullable', 'string', 'max:500']]);
+        $service->withdrawPost(SchoolContext::fromRequest($request)->schoolId, $communityPost, $request->user(), $contexts->fromRequest($request), $data['reason'] ?? null);
 
         return response()->json(['success' => true]);
     }
@@ -156,7 +157,7 @@ class CommunityController extends Controller
             'can_report_content' => $post->author_user_id !== $userId,
             'can_report_user' => $post->author_user_id !== $userId,
             'can_edit' => $post->author_user_id === $userId || $isModerator,
-            'can_delete' => $post->author_user_id === $userId || $isModerator,
+            'can_withdraw' => $post->author_user_id === $userId || $isModerator,
             'audiences' => $post->audiences->map(fn ($a) => ['type' => $a->audience_type, 'class_id' => $a->class_id, 'student_id' => $a->student_id]),
             'media' => $post->media->map(fn ($m) => ['id' => $m->id, 'type' => $m->media_type, 'name' => $m->original_name, 'url' => "/api/v1/community/media/{$m->id}"]),
             'reaction_count' => (int) ($post->reactions_count ?? 0), 'reacted_by_me' => (bool) ($post->reacted_by_me ?? false),

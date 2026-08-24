@@ -8,6 +8,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CommunityPost extends Model
 {
+    public const POST_TYPE_UPDATE = 'update';
+
+    public const AUTHOR_WITHDRAWN_REASON = 'Withdrawn by author.';
+
     public const STATUS_PENDING_REVIEW = 'pending_review';
 
     public const STATUS_PUBLISHED = 'published';
