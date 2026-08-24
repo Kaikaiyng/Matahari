@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\CommunityPost;
 use App\Models\CommunityPostAudience;
 use App\Models\CommunityReport;
+use App\Models\School;
 use App\Models\SchoolClass;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -85,6 +86,37 @@ class CommunityModerationQueueApiTest extends TestCase
         ])->assertOk()->assertJsonPath('data.resolution_code', 'no_action');
 
         $this->assertDatabaseHas('community_posts', ['id' => $post->id, 'status' => CommunityPost::STATUS_HIDDEN]);
+    }
+
+    public function test_post_report_detail_is_limited_to_school_moderators_and_same_school_reports(): void
+    {
+        $post = $this->publishedPost();
+        $report = CommunityReport::query()->create([
+            'tenant_id' => $post->tenant_id, 'school_id' => $post->school_id, 'reporter_user_id' => $this->user('rachel.wong')->id,
+            'source' => 'user_report', 'target_type' => 'post', 'community_post_id' => $post->id,
+            'reported_user_id' => $post->author_user_id, 'reason_code' => 'other', 'priority' => 'normal',
+            'status' => CommunityReport::STATUS_SUBMITTED, 'target_snapshot' => ['post' => ['id' => $post->id]], 'due_at' => now()->addDay(),
+        ]);
+        $report->actions()->create([
+            'tenant_id' => $post->tenant_id, 'school_id' => $post->school_id, 'actor_user_id' => $this->user('admin')->id,
+            'action' => 'submitted', 'reason_code' => 'other', 'reason' => 'Preserved for review.',
+        ]);
+        $otherSchool = School::query()->create([
+            'tenant_id' => $post->tenant_id, 'code' => 'OTHER', 'name' => 'Other School',
+            'receipt_prefix' => 'OTH', 'invoice_prefix' => 'OTH-INV', 'status' => 'active',
+        ]);
+        $otherReport = CommunityReport::query()->create([
+            'tenant_id' => $post->tenant_id, 'school_id' => $otherSchool->id, 'reporter_user_id' => $this->user('rachel.wong')->id,
+            'source' => 'user_report', 'target_type' => 'post', 'reported_user_id' => $post->author_user_id,
+            'reason_code' => 'other', 'priority' => 'normal', 'status' => CommunityReport::STATUS_SUBMITTED,
+            'target_snapshot' => ['post' => ['id' => 999]], 'due_at' => now()->addDay(),
+        ]);
+
+        $this->actingAs($this->user('admin'))->getJson("http://localhost/api/v1/admin/community-moderation/reports/{$report->id}")
+            ->assertOk()->assertJsonPath('data.actions.0.actor.name', $this->user('admin')->name)
+            ->assertJsonPath('data.actions.0.reason', 'Preserved for review.');
+        $this->actingAs($this->user('rachel.wong'))->getJson("http://localhost/api/v1/admin/community-moderation/reports/{$report->id}")->assertForbidden();
+        $this->actingAs($this->user('admin'))->getJson("http://localhost/api/v1/admin/community-moderation/reports/{$otherReport->id}")->assertNotFound();
     }
 
     private function publishedPost(bool $classAudience = false): CommunityPost

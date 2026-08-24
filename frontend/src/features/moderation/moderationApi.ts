@@ -30,7 +30,7 @@ export interface ModerationCase {
   target_snapshot: {
     target_type: 'post'
     reported_user_id: number
-    post: { id: number; body: string; status: string; author_user_id: number; media: ModerationMediaEvidence[] } | null
+    post: { id: number; body: string | null; status: string; author_user_id: number; media: ModerationMediaEvidence[] } | null
   }
   actions: Array<{ id: number; action: string; reason_code: string | null; reason: string | null; actor: Person | null; created_at: string | null }>
 }
