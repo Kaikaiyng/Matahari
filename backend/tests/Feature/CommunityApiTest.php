@@ -836,6 +836,21 @@ class CommunityApiTest extends TestCase
         $post = collect($this->actingAs($manager)->getJson('http://127.0.0.1/api/v1/community/posts')->assertOk()->json('data'))
             ->firstWhere('id', $postId);
         $this->assertFalse($post['can_report']);
+
+        $reportCount = CommunityReport::query()->count();
+        $actionCount = DB::table('community_report_actions')->count();
+        $auditCount = AuditLog::query()->where('action', 'community.report_submitted')->count();
+
+        $this->actingAs($manager)->postJson('http://127.0.0.1/api/v1/community/reports', [
+            'target_type' => 'post',
+            'target_id' => $postId,
+            'reason_code' => 'other',
+            'details' => 'A manager must not report content they already manage.',
+        ])->assertForbidden();
+
+        $this->assertSame($reportCount, CommunityReport::query()->count());
+        $this->assertSame($actionCount, DB::table('community_report_actions')->count());
+        $this->assertSame($auditCount, AuditLog::query()->where('action', 'community.report_submitted')->count());
     }
 
     public function test_authorized_notification_target_can_be_fetched_beyond_the_latest_fifty_posts(): void

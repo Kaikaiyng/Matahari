@@ -109,3 +109,17 @@ Re-review final validation:
 - Attendance device or other hardware behavior is **Not verified** and was outside this change.
 - No migration changed, so no migration/rollback claim is made for these fixes.
 - Production load/concurrency behavior remains **Not verified**. The added query-count regression proves bounded SQLite query count for the representative test population, not a production performance benchmark.
+
+## Final release-review correction
+
+The release review found that moderators were hidden from the App Report action but could still submit a report directly to the API. A backend service guard now rejects effective same-school `community.moderate` users before any report transaction begins. The regression verifies HTTP 403 and unchanged report, report-action, and `community.report_submitted` audit counts. Parent and Student reporting remains active.
+
+Teacher publishing copy now appears only when `community.publish` is effective and accurately states the approved whole-school or selected-class scope. The App and backend workspace READMEs now describe the live School Updates boundary and defer volatile route/test counts to generated or canonical evidence. The dated mobile product specification is explicitly labelled historical where its former Community workflow differs from School Updates.
+
+Fresh final validation on 2026-08-25:
+
+- Backend PHPUnit: 395 discovered; 383 passed; 12 MariaDB-gated skips; 2,145 assertions.
+- Backend Pint and API route loading: passed; 152 non-vendor API routes loaded.
+- App: 55/55 tests, lint, and production build passed.
+- Admin: 187/187 tests and production build passed; lint exited 0 with nine existing `CalendarViews.tsx` Fast Refresh warnings.
+- Focused RED/GREEN: moderator direct-report test failed with HTTP 201 before the guard and passed with HTTP 403 plus seven assertions afterward; Teacher publishing-copy test failed before the copy/visibility change and passed afterward.

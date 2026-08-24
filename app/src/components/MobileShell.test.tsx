@@ -173,6 +173,17 @@ describe('MobileShell & Portal Views', () => {
     expect(document.querySelector('input[type="file"]')).toHaveAttribute('accept', 'image/jpeg,image/png,image/webp')
   })
 
+  it('describes publishing scope only to Teachers with the publishing ability', () => {
+    const unauthorized = render(<TeacherPortalView teacherName="Teacher Lim" activeTab="more" onTabChange={() => {}} onLogout={() => {}} />)
+    expect(screen.queryByText('Publishing')).not.toBeInTheDocument()
+    expect(screen.queryByText(/Assigned classes only/)).not.toBeInTheDocument()
+    unauthorized.unmount()
+
+    render(<TeacherPortalView teacherName="Teacher Lim" activeTab="more" onTabChange={() => {}} onLogout={() => {}} canPublishUpdates />)
+    expect(screen.getByText('Publishing')).toBeInTheDocument()
+    expect(screen.getByText('Whole school or selected classes')).toBeInTheDocument()
+  })
+
   it('preserves a school update form after a publish error', async () => {
     vi.mocked(portalApi.createSchoolUpdate).mockRejectedValueOnce(new ApiError(422, 'Please check the form and try again.', { body: ['The update contains unsupported contact details.'] }))
     render(<TeacherPortalView teacherName="Teacher Lim" activeTab="create" onTabChange={() => {}} onLogout={() => {}} canPublishUpdates />)

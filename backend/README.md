@@ -1,6 +1,6 @@
 # RYLAY Backend
 
-The backend is the shared Laravel 13 JSON API for the MIS Admin Panel and Community App. It owns authentication, authorization, school scope, academic foundations, portal relationship scope, daily Attendance, audit integration, financial validation, Fee Record charges, payment allocation, and receipt integrity.
+The backend is the shared Laravel 13 JSON API for the RYLAY Admin Panel and School App. It owns authentication, authorization, school scope, academic foundations, portal relationship scope, School Updates, daily Attendance, audit integration, financial validation, Fee Record charges, payment allocation, and receipt integrity.
 
 ## Requirements
 
@@ -95,7 +95,7 @@ The default API base is `http://127.0.0.1:8000/api`.
 
 ## API Inventory
 
-The application currently exposes 74 non-vendor API routes. Generate the authoritative list with:
+Generate the authoritative non-vendor API route list from the current checkout with:
 
 ```powershell
 ..\tools\php\php-local.cmd artisan route:list --path=api --except-vendor
@@ -115,6 +115,7 @@ Main route groups:
 | Academic foundation | academic years, subjects, enrolments, teaching assignments, staff/foundation accounts, and portal links |
 | Portal self-service | Parent/Student identity, finance/attendance reads, and notifications |
 | Teacher scope | assigned classes/students and daily Attendance read/write |
+| School Updates | scoped feed and single-post reads, authorized publishing/audience preview, Likes, post reports, and manager report decisions |
 
 See [System Architecture](../docs/SYSTEM_ARCHITECTURE.md) for the complete endpoint table and finance data flow. See [Maintenance Guide](../docs/MAINTENANCE_GUIDE.md) for where route, validation, controller, service, model, and frontend request responsibilities belong.
 
@@ -159,7 +160,7 @@ Last verified on merged `master` on 2026-08-13:
 - Statements and reminders
 - General reports and exports
 - PDF generation
-- Community Feed persistence/media, Assessment publication, and Quiz APIs
+- Video attachments for School Updates and native push delivery
 - Production-ready Parent Finance and guardian activation workflow
 - Remaining production dashboard/invoice reporting beyond the implemented Fee Record outstanding total
 - Deployment and hosting automation

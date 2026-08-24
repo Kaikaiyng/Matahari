@@ -36,6 +36,8 @@ class CommunityModerationService
 
     public function submitReport(User $reporter, int $tenantId, int $schoolId, ReportTarget $target, string $reasonCode, ?string $details, AuditContext $context): CommunityReport
     {
+        abort_if($reporter->hasPermissionTo('community.moderate', $schoolId), 403, 'Post managers cannot submit reports.');
+
         if ($target->reportedUser->is($reporter)) {
             throw ValidationException::withMessages(['report' => 'You cannot report yourself.']);
         }
