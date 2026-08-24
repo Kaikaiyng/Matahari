@@ -198,8 +198,8 @@ Route::prefix('v1')->middleware([...$sessionMiddleware, 'auth', 'active', 'tenan
         Route::post('/students/{student}/authorization', [CommunitySafetyController::class, 'authorizeStudent']);
         Route::delete('/students/{student}/authorization', [CommunitySafetyController::class, 'revokeStudentAuthorization']);
         Route::post('/posts', [CommunityController::class, 'store'])->middleware('permission:community.publish');
-        Route::put('/posts/{communityPost}', [CommunityController::class, 'update'])->middleware('permission:community.publish');
-        Route::delete('/posts/{communityPost}', [CommunityController::class, 'destroy'])->middleware('permission:community.publish');
+        Route::put('/posts/{communityPost}', [CommunityController::class, 'update'])->middleware('permission:community.publish,community.moderate');
+        Route::delete('/posts/{communityPost}', [CommunityController::class, 'destroy'])->middleware('permission:community.publish,community.moderate');
         Route::post('/posts/{communityPost}/reaction', [CommunityController::class, 'reaction'])->middleware('permission:community.interact');
         Route::post('/posts/{communityPost}/comments', [CommunityController::class, 'comment'])->middleware('permission:community.interact');
         Route::get('/media/{communityPostMedia}', [CommunityController::class, 'media']);

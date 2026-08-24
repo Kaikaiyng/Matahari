@@ -14,6 +14,7 @@ use App\Models\CommunityPolicyVersion;
 use App\Models\CommunityPost;
 use App\Models\CommunityPostAudience;
 use App\Models\Guardian;
+use App\Models\Permission;
 use App\Models\PortalNotification;
 use App\Models\Role;
 use App\Models\School;
@@ -24,6 +25,7 @@ use App\Models\Subject;
 use App\Models\TeachingAssignment;
 use App\Models\TenantUserMembership;
 use App\Models\User;
+use App\Models\UserPermissionOverride;
 use App\Services\Community\CommunityService;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Events\Dispatcher;
@@ -137,6 +139,30 @@ class CommunityApiTest extends TestCase
         }
 
         $this->actingAs(User::query()->where('username', 'rachel.wong')->firstOrFail())->getJson('http://127.0.0.1/api/v1/community/posts')->assertJsonFragment(['body' => 'School notice from finance']);
+    }
+
+    public function test_school_admin_and_finance_publish_overrides_allow_school_updates_without_moderation(): void
+    {
+        $moderatePermission = Permission::query()->where('slug', 'community.moderate')->firstOrFail();
+
+        foreach (['admin', 'finance'] as $username) {
+            $publisher = User::query()->where('username', $username)->firstOrFail();
+            UserPermissionOverride::query()->create([
+                'school_id' => $publisher->school_id,
+                'user_id' => $publisher->id,
+                'permission_id' => $moderatePermission->id,
+                'allowed' => false,
+                'reason' => 'Publishing does not require moderation.',
+                'updated_by' => $publisher->id,
+            ]);
+
+            $this->assertTrue($publisher->hasPermissionTo('community.publish'));
+            $this->assertFalse($publisher->hasPermissionTo('community.moderate'));
+            $this->actingAs($publisher)->postJson('http://127.0.0.1/api/v1/community/posts', [
+                'body' => "Publish-only {$username} update",
+                'audiences' => [['type' => 'school']],
+            ])->assertCreated()->assertJsonPath('data.status', CommunityPost::STATUS_PUBLISHED);
+        }
     }
 
     public function test_historical_direct_student_posts_remain_visible_after_class_visibility_delegation(): void
@@ -519,6 +545,34 @@ class CommunityApiTest extends TestCase
             'status' => CommunityPost::STATUS_DELETED,
             'moderation_reason' => 'Superseded by corrected notice.',
         ]);
+    }
+
+    public function test_moderate_only_manager_can_edit_and_withdraw_another_authors_update(): void
+    {
+        $teacher = User::query()->where('username', 'teacher.lim')->firstOrFail();
+        $school = $teacher->school;
+        $class = SchoolClass::query()->where('name', 'MB1')->firstOrFail();
+        $postId = $this->actingAs($teacher)->postJson('http://127.0.0.1/api/v1/community/posts', [
+            'body' => 'Manager will correct this.',
+            'audiences' => [['type' => 'class', 'class_id' => $class->id]],
+        ])->assertCreated()->json('data.id');
+        $manager = $this->createAudienceMember($school, 'teacher', 'community.manager');
+        $permissions = Permission::query()->whereIn('slug', ['community.publish', 'community.moderate'])->pluck('id', 'slug');
+        UserPermissionOverride::query()->insert([
+            ['school_id' => $school->id, 'user_id' => $manager->id, 'permission_id' => $permissions['community.publish'], 'allowed' => false, 'reason' => 'Manager access only.', 'updated_by' => $teacher->id, 'created_at' => now(), 'updated_at' => now()],
+            ['school_id' => $school->id, 'user_id' => $manager->id, 'permission_id' => $permissions['community.moderate'], 'allowed' => true, 'reason' => 'Manager access only.', 'updated_by' => $teacher->id, 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        $this->assertFalse($manager->hasPermissionTo('community.publish'));
+        $this->assertTrue($manager->hasPermissionTo('community.moderate'));
+        $this->actingAs($manager)->putJson("http://127.0.0.1/api/v1/community/posts/{$postId}", [
+            'body' => 'Manager-corrected update.',
+        ])->assertOk()->assertJsonPath('data.can_withdraw', true);
+        $this->actingAs($manager)->deleteJson("http://127.0.0.1/api/v1/community/posts/{$postId}", [
+            'reason' => 'Withdrawn by manager after correction.',
+        ])->assertOk();
+
+        $this->assertDatabaseHas('community_posts', ['id' => $postId, 'status' => CommunityPost::STATUS_DELETED]);
     }
 
     public function test_post_update_rolls_back_when_audit_fails(): void

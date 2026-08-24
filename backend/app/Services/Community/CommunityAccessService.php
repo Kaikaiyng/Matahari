@@ -62,7 +62,11 @@ class CommunityAccessService
 
     public function assertCanPublish(User $user, int $schoolId, array $audiences): void
     {
-        $canPublishSchool = $user->hasPermissionTo('community.moderate');
+        abort_unless($user->hasPermissionTo('community.publish'), 403, 'This action is not permitted.');
+        $tenantId = (int) School::query()->whereKey($schoolId)->value('tenant_id');
+        $canPublishSchool = $user->is_platform_owner || $user->tenantMembership($tenantId)?->roles()
+            ->whereIn('slug', ['school-admin', 'finance'])
+            ->exists();
         $teacherClassIds = TeachingAssignment::query()
             ->where('school_id', $schoolId)->where('teacher_user_id', $user->id)
             ->where('status', 'active')->where('current_slot', 1)->pluck('class_id')->map(fn ($id) => (int) $id)->all();
@@ -73,9 +77,6 @@ class CommunityAccessService
             }
             if ($audience['type'] === 'class' && ! $canPublishSchool && ! in_array((int) $audience['class_id'], $teacherClassIds, true)) {
                 abort(403, 'This class is outside the teacher assignment scope.');
-            }
-            if ($audience['type'] === 'student' && ! $canPublishSchool) {
-                abort(403, 'Direct student posts require authorized school staff.');
             }
         }
     }

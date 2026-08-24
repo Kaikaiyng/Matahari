@@ -8,11 +8,11 @@ use Symfony\Component\HttpFoundation\Response;
 
 class EnsureUserHasPermission
 {
-    public function handle(Request $request, Closure $next, string $permission): Response
+    public function handle(Request $request, Closure $next, string ...$permissions): Response
     {
         $user = $request->user();
 
-        if (! $user || ! $user->hasPermissionTo($permission)) {
+        if (! $user || ! collect($permissions)->contains(fn (string $permission): bool => $user->hasPermissionTo($permission))) {
             abort(403, 'This action is not permitted.');
         }
 
