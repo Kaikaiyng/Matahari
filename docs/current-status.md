@@ -123,20 +123,20 @@ The reset command never runs automatically and must not be adapted to a database
 - Local HTTP checks passed for Admin `http://localhost:5173`, App `http://127.0.0.1:5174`, and both clients' proxied `/api/deployment-info` endpoint.
 - No migration or database schema changed in this split. MariaDB lifecycle was therefore not rerun; the earlier Phase A MariaDB evidence remains the applicable schema result.
 
-## 2026-08-12 Community App Direction
+## 2026-08-12 Community App Direction (historical social-workflow record; superseded by School Updates)
 
 The App is approved as a private school-community product: a relationship-scoped Feed with Teacher/Staff publishing, reactions and controlled comments; daily Attendance on a general session schema; published Assessment results; formal Teacher-assigned Quiz plus separate Student Practice Quiz; and read-only Parent Finance without a payment interface.
 
 Merged delivery `816ea1d` redesigned the Admin staff login and App role surfaces. Daily class Attendance remains connected end to end: assigned Teachers load current rosters, submit `present`, `late`, `absent`, or `excused`, and must provide a reason for corrections; authorized Parents can read the result while Student self-service intentionally omits Attendance. Attendance writes and their audit events share one transaction. See [MIS App Product Specification](mobile-app-product-spec.md) and the root [Design System](../DESIGN.md).
 
-## 2026-08-13 Community App Data Foundation
+## 2026-08-13 Community App Data Foundation (historical social-workflow record; superseded by School Updates)
 
 - The App/database comparison found that identity/RBAC, guardian/student links, enrolments, teaching assignments, notifications, read-only Parent Finance, Attendance, and Calendar already reuse the authoritative backend data.
 - Eighteen additive tables now establish storage for Community content, academic terms/Assessments/results, and formal/Practice Quiz. The approved class targets, direct student targets, materialized Quiz recipients, shared `multiple_choice`/`true_false` option storage, result publication state, revision links, attempts, and answers are represented.
 - The migration does not seed or infer posts, terms, dates, results, audiences, recipients, or Quiz attempts and does not alter current student, guardian, finance, payment, receipt, or role rows.
 - This is schema only. Community media/publishing, result publication, Quiz generation/delivery/scoring, authorization services, mutation audits, and APIs remain unimplemented; the App screens remain previews until those slices are connected.
 
-## 2026-08-13 Community Workflow
+## 2026-08-13 Community Workflow (historical social-workflow record; superseded by School Updates)
 
 - Community publishing and reading are connected to the shared Laravel API and database. School/Super Admin may publish school-wide; Teachers may publish only to classes covered by current Teaching Assignments; Parent and Student feeds resolve linked current enrolments.
 - Private photos, short videos, and PDFs are stored outside the public web root and downloaded only after the containing post audience is authorized. Appreciations, controlled comments, owner/author comment removal, Staff post hiding with reasons, and mutation audit events are implemented.
