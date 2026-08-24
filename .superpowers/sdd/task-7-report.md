@@ -5,6 +5,7 @@
 - Added one historical School Updates compatibility regression.
 - Updated canonical documentation and the School Updates design status to describe the implemented active workflow and retained historical Community storage.
 - No schema, route, frontend-source, or deployment change was made.
+- Follow-up review corrections aligned the canonical mobile roadmap, testing/release guidance, and README inventory with the implemented School Updates, Assessment publication, and formal Quiz status.
 
 ## Compatibility Evidence
 
@@ -35,6 +36,8 @@ Focused result: 1 test, 11 assertions, exit 0.
 | Markdown relative-link and fence checks | passed |
 | Secret-pattern scan of changed documentation | no matches |
 | `git diff --check` | passed |
+
+Follow-up documentation re-review reran the focused compatibility test (1 passed, 11 assertions), Markdown relative-link/fence checks, the changed-document secret scan, and `git diff --check`; all passed.
 
 ## Limitations
 

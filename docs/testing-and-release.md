@@ -88,9 +88,9 @@ The commands above validate only the Admin UI. Run the same install/test/lint/bu
 
 Mobile work requires evidence beyond narrow viewport checks of the current Admin UI:
 
-- Phase B: role-aware Parent/Student/Teacher/Staff shell, loading/empty/error behavior, session/CSRF preservation, direct API denial, accessibility, responsive browser QA, and staging topology.
+- Phase B: role-aware Parent/Student/Teacher shell, loading/empty/error behavior, session/CSRF preservation, direct API denial, accessibility, responsive browser QA, and staging topology.
 - Phase C: Admin-versus-Parent finance parity, guardian relationship/capability enforcement, cross-school/IDOR denial, and reuse of authoritative receipt output.
-- Attendance/Assessment slice: Teacher assignment scope, enrolment membership, correction reason/audit, draft-result denial, and Parent/Student relationship/self scope. Daily Attendance is implemented; Assessment publication remains planned.
+- Attendance/Assessment slice: Teacher assignment scope, enrolment membership, correction reason/audit, draft-result denial, and Parent/Student relationship/self scope. Daily Attendance and Assessment publication are implemented; retain these checks for regressions and future changes.
 - Quiz slice: class and direct-student targeting, recipient deduplication, server-side scoring, attempt concurrency, and historical enrolment behavior.
 - Reminder/push slice: authoritative balance recheck, recipient resolution, transactional audit/history, duplicate suppression, and durable notification behavior independent of push delivery.
 - Phase F: native credential/token storage and revocation, device-token privacy, deep links, signed Android build, real-device push behavior, and platform-specific release checks.
