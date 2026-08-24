@@ -116,9 +116,9 @@ class User extends Authenticatable
         return $this->hasMany(CalendarEvent::class, 'updated_by');
     }
 
-    public function hasPermissionTo(string $permissionSlug): bool
+    public function hasPermissionTo(string $permissionSlug, ?int $schoolId = null): bool
     {
-        return app(UserPermissionResolver::class)->has($this, $permissionSlug);
+        return app(UserPermissionResolver::class)->has($this, $permissionSlug, $schoolId);
     }
 
     /**

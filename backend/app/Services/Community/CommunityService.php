@@ -113,8 +113,8 @@ class CommunityService
         if ((int) $post->school_id !== $schoolId) {
             abort(403, 'Post is outside your school scope.');
         }
-        $isManager = $actor->hasPermissionTo('community.moderate');
-        if (($post->author_user_id !== $actor->id || ! $actor->hasPermissionTo('community.publish')) && ! $isManager) {
+        $isManager = $actor->hasPermissionTo('community.moderate', $schoolId);
+        if (($post->author_user_id !== $actor->id || ! $actor->hasPermissionTo('community.publish', $schoolId)) && ! $isManager) {
             abort(403, 'Only the author or an authorized moderator may edit this post.');
         }
         $inspection = $this->safetyFilter->inspect($data['body']);
@@ -125,10 +125,10 @@ class CommunityService
         return DB::transaction(function () use ($schoolId, $post, $actor, $context, $inspection): CommunityPost {
             $locked = CommunityPost::query()->whereKey($post->id)->lockForUpdate()->firstOrFail();
             abort_unless((int) $locked->school_id === $schoolId, 403, 'Post is outside your school scope.');
-            $isManager = $actor->hasPermissionTo('community.moderate');
-            abort_unless(($locked->author_user_id === $actor->id && $actor->hasPermissionTo('community.publish')) || $isManager, 403, 'Only the author or an authorized moderator may edit this post.');
+            $isManager = $actor->hasPermissionTo('community.moderate', $schoolId);
+            abort_unless(($locked->author_user_id === $actor->id && $actor->hasPermissionTo('community.publish', $schoolId)) || $isManager, 403, 'Only the author or an authorized moderator may edit this post.');
             abort_if($locked->status === CommunityPost::STATUS_DELETED, 409, 'Deleted posts cannot be edited.');
-            abort_if($locked->status === CommunityPost::STATUS_HIDDEN && ! $actor->hasPermissionTo('community.moderate'), 403, 'Hidden posts cannot be edited by their author.');
+            abort_if($locked->status === CommunityPost::STATUS_HIDDEN && ! $actor->hasPermissionTo('community.moderate', $schoolId), 403, 'Hidden posts cannot be edited by their author.');
 
             $oldValues = [
                 'body' => $locked->body,
@@ -168,7 +168,7 @@ class CommunityService
         if ((int) $post->school_id !== $schoolId) {
             abort(403, 'Post is outside your school scope.');
         }
-        $isManager = $actor->hasPermissionTo('community.moderate');
+        $isManager = $actor->hasPermissionTo('community.moderate', $schoolId);
         if ($post->author_user_id !== $actor->id && ! $isManager) {
             abort(403, 'Only the author or an authorized manager may withdraw this post.');
         }
@@ -259,7 +259,7 @@ class CommunityService
         if (! $inspection->allowed) {
             throw ValidationException::withMessages(['body' => 'This content is not allowed under the Community Standards.']);
         }
-        $isModerator = $actor->hasPermissionTo('community.moderate');
+        $isModerator = $actor->hasPermissionTo('community.moderate', $schoolId);
 
         return DB::transaction(function () use ($inspection, $isModerator, $schoolId, $post, $actor, $context): CommunityComment {
             $comment = CommunityComment::query()->create([
@@ -282,7 +282,7 @@ class CommunityService
     {
         $post = CommunityPost::query()->findOrFail($comment->community_post_id);
         $this->access->findVisible($actor, $schoolId, $post);
-        abort_unless($comment->user_id === $actor->id || $post->author_user_id === $actor->id || $actor->hasPermissionTo('community.moderate'), 403);
+        abort_unless($comment->user_id === $actor->id || $post->author_user_id === $actor->id || $actor->hasPermissionTo('community.moderate', $schoolId), 403);
         DB::transaction(function () use ($schoolId, $comment, $actor, $context): void {
             $comment->update(['status' => 'removed', 'removed_at' => now()]);
             $this->audit->record(new AuditEvent(action: AuditAction::CommunityCommentRemoved, module: AuditModule::Community, schoolId: $schoolId, subjectType: AuditSubject::CommunityComment, subjectId: $comment->id, newValues: ['removed_by' => $actor->id]), $context);
@@ -291,7 +291,7 @@ class CommunityService
 
     public function hidePost(int $schoolId, CommunityPost $post, string $reason, User $actor, AuditContext $context): void
     {
-        abort_unless((int) $post->school_id === $schoolId && $actor->hasPermissionTo('community.moderate'), 403);
+        abort_unless((int) $post->school_id === $schoolId && $actor->hasPermissionTo('community.moderate', $schoolId), 403);
         DB::transaction(function () use ($schoolId, $post, $reason, $actor, $context): void {
             $post->update(['status' => 'hidden', 'hidden_at' => now(), 'hidden_by_user_id' => $actor->id, 'moderation_reason' => trim($reason)]);
             $this->audit->record(new AuditEvent(action: AuditAction::CommunityPostHidden, module: AuditModule::Community, schoolId: $schoolId, subjectType: AuditSubject::CommunityPost, subjectId: $post->id, newValues: ['reason' => trim($reason)]), $context);
@@ -371,7 +371,7 @@ class CommunityService
 
     public function isAuthoritativePublisher(User $actor, int $schoolId): bool
     {
-        if ($actor->hasPermissionTo('community.moderate')) {
+        if ($actor->hasPermissionTo('community.moderate', $schoolId)) {
             return true;
         }
         if ($actor->teachingAssignments()->where('school_id', $schoolId)->exists()) {

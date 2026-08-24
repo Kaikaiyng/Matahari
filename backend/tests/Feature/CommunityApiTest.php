@@ -165,6 +165,48 @@ class CommunityApiTest extends TestCase
         }
     }
 
+    public function test_selected_school_publish_denial_cannot_be_bypassed_by_the_default_school_permission(): void
+    {
+        $publisher = User::query()->where('username', 'admin')->firstOrFail();
+        $otherSchool = School::query()->create([
+            'tenant_id' => $publisher->school->tenant_id,
+            'code' => 'MIS2',
+            'name' => 'Second Campus',
+            'receipt_prefix' => 'MIS2',
+            'invoice_prefix' => 'MIS2-INV',
+            'email' => 'second-campus@example.test',
+            'phone' => '+60 3-0000 0002',
+            'address' => 'Second campus',
+            'status' => 'active',
+        ]);
+        $publisher->tenantMembership($publisher->school->tenant_id)->schools()->attach($otherSchool->id, ['tenant_id' => $otherSchool->tenant_id]);
+        foreach (CommunityPolicyVersion::query()->whereIn('policy_type', ['terms', 'community_standards'])->get() as $policy) {
+            CommunityPolicyAcceptance::query()->create([
+                'tenant_id' => $otherSchool->tenant_id,
+                'school_id' => $otherSchool->id,
+                'user_id' => $publisher->id,
+                'community_policy_version_id' => $policy->id,
+                'accepted_at' => now(),
+            ]);
+        }
+        UserPermissionOverride::query()->create([
+            'school_id' => $otherSchool->id,
+            'user_id' => $publisher->id,
+            'permission_id' => Permission::query()->where('slug', 'community.publish')->valueOrFail('id'),
+            'allowed' => false,
+            'reason' => 'Publishing is not authorized at the selected campus.',
+            'updated_by' => $publisher->id,
+        ]);
+
+        $this->actingAs($publisher)->postJson('http://127.0.0.1/api/v1/community/posts', [
+            'school_id' => $otherSchool->id,
+            'body' => 'Selected-school denial.',
+            'audiences' => [['type' => 'school']],
+        ])->assertForbidden();
+
+        $this->assertDatabaseMissing('community_posts', ['school_id' => $otherSchool->id]);
+    }
+
     public function test_historical_direct_student_posts_remain_visible_after_class_visibility_delegation(): void
     {
         $admin = User::query()->where('username', 'admin')->firstOrFail();
@@ -491,6 +533,29 @@ class CommunityApiTest extends TestCase
             'status' => CommunityPost::STATUS_PUBLISHED,
         ]);
         $this->assertSame($notificationCount, PortalNotification::query()->where('type', 'school_update')->where('context_json->post_id', $postId)->count());
+    }
+
+    public function test_publish_denied_author_is_not_offered_editing(): void
+    {
+        $teacher = User::query()->where('username', 'teacher.lim')->firstOrFail();
+        $class = SchoolClass::query()->where('name', 'MB1')->firstOrFail();
+        $postId = $this->actingAs($teacher)->postJson('http://127.0.0.1/api/v1/community/posts', [
+            'body' => 'Former publisher update.',
+            'audiences' => [['type' => 'class', 'class_id' => $class->id]],
+        ])->assertCreated()->json('data.id');
+        UserPermissionOverride::query()->create([
+            'school_id' => $teacher->school_id,
+            'user_id' => $teacher->id,
+            'permission_id' => Permission::query()->where('slug', 'community.publish')->valueOrFail('id'),
+            'allowed' => false,
+            'reason' => 'Publishing duty has ended.',
+            'updated_by' => User::query()->where('username', 'admin')->valueOrFail('id'),
+        ]);
+
+        $this->actingAs($teacher)->getJson('http://127.0.0.1/api/v1/community/posts')
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $postId)
+            ->assertJsonPath('data.0.can_edit', false);
     }
 
     public function test_author_edit_of_published_post_remains_published_without_a_new_submission_report(): void

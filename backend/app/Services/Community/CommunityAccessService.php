@@ -62,7 +62,7 @@ class CommunityAccessService
 
     public function assertCanPublish(User $user, int $schoolId, array $audiences): void
     {
-        abort_unless($user->hasPermissionTo('community.publish'), 403, 'This action is not permitted.');
+        abort_unless($user->hasPermissionTo('community.publish', $schoolId), 403, 'This action is not permitted.');
         $tenantId = (int) School::query()->whereKey($schoolId)->value('tenant_id');
         $canPublishSchool = $user->is_platform_owner || $user->tenantMembership($tenantId)?->roles()
             ->whereIn('slug', ['school-admin', 'finance'])

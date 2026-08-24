@@ -4,6 +4,9 @@ namespace Tests\Feature;
 
 use App\Models\CommunityPolicyAcceptance;
 use App\Models\CommunityPolicyVersion;
+use App\Models\CommunityPost;
+use App\Models\CommunityPostAudience;
+use App\Models\CommunityReport;
 use App\Models\SchoolClass;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -24,10 +27,37 @@ class CommunityAppealApiTest extends TestCase
         $teacher = $this->user('teacher.lim');
         $this->acceptPolicies($teacher);
         $class = SchoolClass::query()->where('name', 'MB1')->firstOrFail();
-        $this->actingAs($teacher)->postJson('http://127.0.0.1/api/v1/community/posts', [
-            'body' => 'Pending update', 'audiences' => [['type' => 'class', 'class_id' => $class->id]],
-        ])->assertCreated();
-        $reportId = (int) $this->app['db']->table('community_reports')->where('source', 'submission')->value('id');
+        $post = CommunityPost::query()->create([
+            'tenant_id' => $teacher->school->tenant_id,
+            'school_id' => $teacher->school_id,
+            'author_user_id' => $teacher->id,
+            'post_type' => 'post',
+            'body' => 'Historical pending update',
+            'comments_enabled' => true,
+            'status' => CommunityPost::STATUS_PENDING_REVIEW,
+        ]);
+        CommunityPostAudience::query()->create([
+            'school_id' => $teacher->school_id,
+            'community_post_id' => $post->id,
+            'audience_type' => 'class',
+            'class_id' => $class->id,
+            'audience_key' => "class:{$class->id}",
+        ]);
+        $report = CommunityReport::query()->create([
+            'tenant_id' => $teacher->school->tenant_id,
+            'school_id' => $teacher->school_id,
+            'reporter_user_id' => $teacher->id,
+            'source' => 'submission',
+            'target_type' => 'post',
+            'community_post_id' => $post->id,
+            'reported_user_id' => $teacher->id,
+            'reason_code' => 'other',
+            'priority' => 'normal',
+            'status' => CommunityReport::STATUS_SUBMITTED,
+            'target_snapshot' => [],
+            'due_at' => now()->addDay(),
+        ]);
+        $reportId = $report->id;
 
         $originalModerator = $this->user('admin');
         $this->actingAs($originalModerator)->postJson("http://localhost/api/v1/admin/community-moderation/reports/{$reportId}/decision", [

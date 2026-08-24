@@ -5,13 +5,14 @@ namespace Tests\Feature;
 use App\Models\CommunityPolicyAcceptance;
 use App\Models\CommunityPolicyVersion;
 use App\Models\CommunityPost;
+use App\Models\CommunityPostAudience;
+use App\Models\CommunityPostMedia;
+use App\Models\CommunityReport;
 use App\Models\School;
 use App\Models\SchoolClass;
 use App\Models\TenantUserMembership;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class CommunityModerationQueueApiTest extends TestCase
@@ -26,15 +27,9 @@ class CommunityModerationQueueApiTest extends TestCase
 
     public function test_school_queue_approves_pending_submission_and_releases_media(): void
     {
-        Storage::fake('local');
-        $teacher = $this->user('teacher.lim');
-        $this->acceptPolicies($teacher);
-        $class = SchoolClass::query()->where('name', 'MB1')->firstOrFail();
-        $postId = $this->actingAs($teacher)->withHeader('Accept', 'application/json')->post('http://127.0.0.1/api/v1/community/posts', [
-            'body' => 'Pending class update',
-            'audiences' => [['type' => 'class', 'class_id' => $class->id]],
-            'media' => [UploadedFile::fake()->create('lesson.pdf', 10, 'application/pdf')],
-        ])->assertCreated()->json('data.id');
+        $submission = $this->pendingSubmission();
+        $teacher = $submission['teacher'];
+        $postId = $submission['post']->id;
 
         $queue = $this->actingAs($this->user('admin'))->getJson('http://localhost/api/v1/admin/community-moderation/reports')
             ->assertOk()->assertJsonPath('data.0.source', 'submission');
@@ -130,25 +125,78 @@ class CommunityModerationQueueApiTest extends TestCase
 
     private function pendingSubmissionReportId(): int
     {
-        $teacher = $this->user('teacher.lim');
-        $this->acceptPolicies($teacher);
-        $class = SchoolClass::query()->where('name', 'MB1')->firstOrFail();
-        $this->actingAs($teacher)->postJson('http://127.0.0.1/api/v1/community/posts', [
-            'body' => 'Pending update', 'audiences' => [['type' => 'class', 'class_id' => $class->id]],
-        ])->assertCreated();
-
-        return (int) $this->app['db']->table('community_reports')->where('source', 'submission')->value('id');
+        return $this->pendingSubmission()['report']->id;
     }
 
     private function publishedPost(): CommunityPost
     {
         $admin = $this->user('admin');
-        $this->acceptPolicies($admin);
-        $id = $this->actingAs($admin)->postJson('http://127.0.0.1/api/v1/community/posts', [
-            'body' => 'School notice', 'audiences' => [['type' => 'school']],
-        ])->assertCreated()->json('data.id');
+        $post = CommunityPost::query()->create([
+            'tenant_id' => $admin->school->tenant_id,
+            'school_id' => $admin->school_id,
+            'author_user_id' => $admin->id,
+            'post_type' => 'post',
+            'body' => 'Historical school discussion',
+            'comments_enabled' => true,
+            'status' => CommunityPost::STATUS_PUBLISHED,
+            'published_at' => now(),
+        ]);
+        CommunityPostAudience::query()->create([
+            'school_id' => $admin->school_id,
+            'community_post_id' => $post->id,
+            'audience_type' => 'school',
+            'audience_key' => 'school',
+        ]);
 
-        return CommunityPost::query()->findOrFail($id);
+        return $post;
+    }
+
+    /** @return array{teacher: User, post: CommunityPost, report: CommunityReport} */
+    private function pendingSubmission(): array
+    {
+        $teacher = $this->user('teacher.lim');
+        $class = SchoolClass::query()->where('name', 'MB1')->firstOrFail();
+        $post = CommunityPost::query()->create([
+            'tenant_id' => $teacher->school->tenant_id,
+            'school_id' => $teacher->school_id,
+            'author_user_id' => $teacher->id,
+            'post_type' => 'post',
+            'body' => 'Historical pending submission',
+            'comments_enabled' => true,
+            'status' => CommunityPost::STATUS_PENDING_REVIEW,
+        ]);
+        CommunityPostAudience::query()->create([
+            'school_id' => $teacher->school_id,
+            'community_post_id' => $post->id,
+            'audience_type' => 'class',
+            'class_id' => $class->id,
+            'audience_key' => "class:{$class->id}",
+        ]);
+        CommunityPostMedia::query()->create([
+            'school_id' => $teacher->school_id,
+            'community_post_id' => $post->id,
+            'media_type' => 'image',
+            'storage_disk' => 'local',
+            'storage_path' => 'community/historical-pending.png',
+            'mime_type' => 'image/png',
+            'status' => 'quarantined',
+        ]);
+        $report = CommunityReport::query()->create([
+            'tenant_id' => $teacher->school->tenant_id,
+            'school_id' => $teacher->school_id,
+            'reporter_user_id' => $teacher->id,
+            'source' => 'submission',
+            'target_type' => 'post',
+            'community_post_id' => $post->id,
+            'reported_user_id' => $teacher->id,
+            'reason_code' => 'other',
+            'priority' => 'normal',
+            'status' => CommunityReport::STATUS_SUBMITTED,
+            'target_snapshot' => [],
+            'due_at' => now()->addDay(),
+        ]);
+
+        return compact('teacher', 'post', 'report');
     }
 
     private function acceptPolicies(User $user): void

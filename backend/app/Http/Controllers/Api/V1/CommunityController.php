@@ -150,14 +150,17 @@ class CommunityController extends Controller
     private function response(CommunityPost $post): array
     {
         $userId = auth()->id();
-        $isModerator = (bool) auth()->user()?->hasPermissionTo('community.moderate');
+        $viewer = auth()->user();
+        $isModerator = (bool) $viewer?->hasPermissionTo('community.moderate', (int) $post->school_id);
+        $canEdit = ($post->author_user_id === $userId && $viewer?->hasPermissionTo('community.publish', (int) $post->school_id)) || $isModerator;
 
         return ['id' => $post->id, 'body' => $post->body, 'status' => $post->status, 'comments_enabled' => $post->comments_enabled, 'published_at' => $post->published_at?->toIso8601String(),
             'author' => ['id' => $post->author->id, 'name' => $post->author->name],
             'can_report_content' => $post->author_user_id !== $userId,
             'can_report_user' => $post->author_user_id !== $userId,
-            'can_edit' => $post->author_user_id === $userId || $isModerator,
-            'can_withdraw' => $post->author_user_id === $userId || $isModerator,
+            'can_edit' => $canEdit,
+            'can_withdraw' => $canEdit,
+            'can_delete' => $canEdit,
             'audiences' => $post->audiences->map(fn ($a) => ['type' => $a->audience_type, 'class_id' => $a->class_id, 'student_id' => $a->student_id]),
             'media' => $post->media->map(fn ($m) => ['id' => $m->id, 'type' => $m->media_type, 'name' => $m->original_name, 'url' => "/api/v1/community/media/{$m->id}"]),
             'reaction_count' => (int) ($post->reactions_count ?? 0), 'reacted_by_me' => (bool) ($post->reacted_by_me ?? false),

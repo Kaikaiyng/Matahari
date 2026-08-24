@@ -7,6 +7,8 @@ use App\Models\CommunityPolicyAcceptance;
 use App\Models\CommunityPolicyVersion;
 use App\Models\CommunityPost;
 use App\Models\CommunityPostAudience;
+use App\Models\CommunityPostMedia;
+use App\Models\CommunityReport;
 use App\Models\Role;
 use App\Models\SchoolClass;
 use App\Models\TenantDomain;
@@ -14,7 +16,6 @@ use App\Models\TenantFeature;
 use App\Models\TenantUserMembership;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 use Tests\TestCase;
@@ -224,14 +225,48 @@ class CommunityReportAndBlockApiTest extends TestCase
     {
         Storage::fake('local');
         $teacher = $this->user('teacher.lim');
-        $this->acceptRequiredPolicies($teacher);
         $class = SchoolClass::query()->where('name', 'MB1')->firstOrFail();
-        $created = $this->actingAs($teacher)->withHeader('Accept', 'application/json')->post('http://127.0.0.1/api/v1/community/posts', [
-            'body' => 'Pending class note', 'audiences' => [['type' => 'class', 'class_id' => $class->id]],
-            'media' => [UploadedFile::fake()->create('pending.pdf', 10, 'application/pdf')],
-        ])->assertCreated();
-        $postId = $created->json('data.id');
-        $mediaUrl = $created->json('data.media.0.url');
+        $post = CommunityPost::query()->create([
+            'tenant_id' => $teacher->school->tenant_id,
+            'school_id' => $teacher->school_id,
+            'author_user_id' => $teacher->id,
+            'post_type' => 'post',
+            'body' => 'Historical pending class note',
+            'comments_enabled' => true,
+            'status' => CommunityPost::STATUS_PENDING_REVIEW,
+        ]);
+        CommunityPostAudience::query()->create([
+            'school_id' => $teacher->school_id,
+            'community_post_id' => $post->id,
+            'audience_type' => 'class',
+            'class_id' => $class->id,
+            'audience_key' => "class:{$class->id}",
+        ]);
+        $media = CommunityPostMedia::query()->create([
+            'school_id' => $teacher->school_id,
+            'community_post_id' => $post->id,
+            'media_type' => 'image',
+            'storage_disk' => 'local',
+            'storage_path' => 'community/pending-image.png',
+            'mime_type' => 'image/png',
+            'status' => 'quarantined',
+        ]);
+        CommunityReport::query()->create([
+            'tenant_id' => $teacher->school->tenant_id,
+            'school_id' => $teacher->school_id,
+            'reporter_user_id' => $teacher->id,
+            'source' => 'submission',
+            'target_type' => 'post',
+            'community_post_id' => $post->id,
+            'reported_user_id' => $teacher->id,
+            'reason_code' => 'other',
+            'priority' => 'normal',
+            'status' => CommunityReport::STATUS_SUBMITTED,
+            'target_snapshot' => [],
+            'due_at' => now()->addDay(),
+        ]);
+        $postId = $post->id;
+        $mediaUrl = "/api/v1/community/media/{$media->id}";
 
         $this->actingAs($teacher)->getJson('http://127.0.0.1/api/v1/community/content/mine')
             ->assertOk()->assertJsonPath('data.0.id', $postId)->assertJsonPath('data.0.status', 'pending_review')
@@ -278,11 +313,24 @@ class CommunityReportAndBlockApiTest extends TestCase
     {
         $admin = $this->user('admin');
         $this->acceptRequiredPolicies($admin);
-        $postId = $this->actingAs($admin)->postJson('http://127.0.0.1/api/v1/community/posts', [
-            'body' => 'Visible school notice', 'audiences' => [['type' => 'school']],
-        ])->assertCreated()->json('data.id');
+        $post = CommunityPost::query()->create([
+            'tenant_id' => $admin->school->tenant_id,
+            'school_id' => $admin->school_id,
+            'author_user_id' => $admin->id,
+            'post_type' => 'post',
+            'body' => 'Historical visible discussion post',
+            'comments_enabled' => true,
+            'status' => CommunityPost::STATUS_PUBLISHED,
+            'published_at' => now(),
+        ]);
+        CommunityPostAudience::query()->create([
+            'school_id' => $admin->school_id,
+            'community_post_id' => $post->id,
+            'audience_type' => 'school',
+            'audience_key' => 'school',
+        ]);
 
-        return CommunityPost::query()->with('author')->findOrFail($postId);
+        return $post->load('author');
     }
 
     private function foreignTenantPost(): CommunityPost
