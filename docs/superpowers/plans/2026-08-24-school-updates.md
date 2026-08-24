@@ -38,7 +38,7 @@
 
 **Interfaces:**
 - Produces the active ability contract: `community.view`, `community.publish`, and `community.moderate`.
-- Retains the historical `community.interact` permission row for data compatibility but removes it from active employee templates, dependencies, and UI.
+- Retains the historical `community.interact` permission row and its temporary seeded role assignments until Task 4 retires the dependent routes; removes it now from active Employee ability templates, dependencies, and UI.
 - Later tasks rely on `community.view` for Likes, `community.publish` for creation/author changes, and `community.moderate` for Post Reports/all-post management.
 
 - [ ] **Step 1: Add failing backend catalog/seed tests**
@@ -56,7 +56,7 @@ $this->assertSame('community.view', app(EmployeeAccessCatalog::class)->dependenc
 $this->assertSame('community.view', app(EmployeeAccessCatalog::class)->dependencies()['community.moderate']);
 ```
 
-Also assert Parent/Student roles retain `community.view` but no role relies on `community.interact` for active behavior.
+Also assert Parent/Student roles retain `community.view` and the existing seeded `community.interact` compatibility assignments remain until Task 4 retires the routes that still require them.
 
 - [ ] **Step 2: Run the focused backend tests and confirm failure**
 
@@ -67,7 +67,7 @@ cd backend
 ..\tools\php\php-local.cmd vendor\bin\phpunit tests\Feature\EmployeeAccessTest.php tests\Feature\Audit\AuditPermissionSeedTest.php
 ```
 
-Expected: failure showing the old Community labels and `community.interact` catalog/default assignments.
+Expected: failure showing the old Community labels and active `community.interact` catalog entry.
 
 - [ ] **Step 3: Update the catalog and seed templates**
 
@@ -81,7 +81,7 @@ Use this active catalog shape:
 ]),
 ```
 
-Keep `community.publish => community.view` and `community.moderate => community.view` dependencies. Remove `community.interact` from seeded role-permission arrays without deleting the permission definition or historical database rows.
+Keep `community.publish => community.view` and `community.moderate => community.view` dependencies. Keep the historical permission definition and seeded compatibility assignments temporarily; Task 4 removes those assignments atomically with the routes that still require them.
 
 - [ ] **Step 4: Update Admin ability copy and tests**
 
@@ -325,7 +325,9 @@ git commit -m "feat: publish official school updates"
 - Modify: `backend/app/Http/Controllers/Api/V1/CommunitySafetyController.php`
 - Modify: `backend/app/Http/Controllers/Api/V1/CommunityModerationController.php`
 - Modify: `backend/app/Services/Community/CommunityModerationService.php`
+- Modify: `backend/database/seeders/DatabaseSeeder.php`
 - Modify: `backend/tests/Feature/CommunityApiTest.php`
+- Modify: `backend/tests/Feature/Audit/AuditPermissionSeedTest.php`
 - Modify: `backend/tests/Feature/CommunityReportAndBlockApiTest.php`
 - Modify: `backend/tests/Feature/CommunityModerationQueueApiTest.php`
 
@@ -334,6 +336,7 @@ git commit -m "feat: publish official school updates"
 - Active report creation accepts only `target_type=post` and a visible post ID.
 - Active Admin queue returns user-reported post cases only; historical comment/user/submission cases remain stored and may be read only where compatibility requires it.
 - Comment, user-block, Student authorization, restriction, and appeal mutation routes are removed from the active route set.
+- Active seeded roles no longer receive `community.interact`; the permission row remains for historical data compatibility.
 
 - [ ] **Step 1: Replace social workflow tests with retired-route and post-report tests**
 
@@ -353,6 +356,8 @@ $this->actingAs($student)->postJson('/api/v1/community/reports', [
 
 Also assert user/comment report, block/unblock, authorization, restriction, and appeal mutation routes are unavailable; hidden/invisible/cross-school posts cannot be reported; and Likes work with `community.view` only.
 
+Assert reseeding removes `community.interact` from active role assignments while retaining the permission definition for historical records.
+
 - [ ] **Step 2: Run the focused safety/moderation tests and confirm failure**
 
 Run:
@@ -367,6 +372,8 @@ Expected: old comment/user/block/appeal workflows are still active.
 - [ ] **Step 3: Remove retired active routes and controller actions**
 
 Keep policy acceptance/current policy, post feeds/media/reactions, post reports, `reports/mine`, and school Post Reports management. Remove active routes for comments, comment removal, blocked users, user blocking, Student Community authorization, content/mine, appeals, user restrictions, and appeal decisions.
+
+At the same time, remove `community.interact` from the seeded role-permission arrays. Do not delete the permission definition or historical database rows.
 
 Do not drop models or tables; historical records remain queryable for audit/recovery.
 
@@ -397,7 +404,7 @@ Expected: Post Reports and policy acceptance pass; retired routes return 404; hi
 - [ ] **Step 6: Commit the narrowed moderation workflow**
 
 ```powershell
-git add backend/routes/api.php backend/app/Http/Controllers/Api/V1/CommunityController.php backend/app/Http/Controllers/Api/V1/CommunitySafetyController.php backend/app/Http/Controllers/Api/V1/CommunityModerationController.php backend/app/Services/Community/CommunityModerationService.php backend/tests/Feature/CommunityApiTest.php backend/tests/Feature/CommunityReportAndBlockApiTest.php backend/tests/Feature/CommunityModerationQueueApiTest.php
+git add backend/routes/api.php backend/app/Http/Controllers/Api/V1/CommunityController.php backend/app/Http/Controllers/Api/V1/CommunitySafetyController.php backend/app/Http/Controllers/Api/V1/CommunityModerationController.php backend/app/Services/Community/CommunityModerationService.php backend/database/seeders/DatabaseSeeder.php backend/tests/Feature/CommunityApiTest.php backend/tests/Feature/Audit/AuditPermissionSeedTest.php backend/tests/Feature/CommunityReportAndBlockApiTest.php backend/tests/Feature/CommunityModerationQueueApiTest.php
 git commit -m "refactor: reduce community moderation to post reports"
 ```
 
