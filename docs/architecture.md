@@ -45,11 +45,11 @@ flowchart LR
 
 The Admin frontend, multi-role Community App, and backend are separate applications. Laravel remains the shared security and persistence boundary; neither React client is authoritative for permissions or financial state. Both clients reuse the same API, database, identity/RBAC, and domain services rather than creating a second mobile backend.
 
-## Community Safety Boundary
+## School Updates Boundary
 
-Community contribution always follows host-resolved tenant, active membership, permission and school/audience scope. The client never submits a tenant or school ID for policy acceptance, reporting, blocking, moderation or appeals. Laravel is authoritative for policy versions, adult authorization, restrictions, visibility and state transitions.
+School Updates always follow host-resolved tenant, active membership, effective ability, and school/audience scope. The client never submits a tenant or school ID as authority. Laravel resolves the whole-school or selected active-class audience and is authoritative for visibility, notification recipients, Likes, reports, logical withdrawal, and state transitions.
 
-Ordinary contributions enter `pending_review`; authorized moderators may publish directly. Media remains quarantined until approval. Reports snapshot evidence transactionally; severe child-safety, sexual-content and violence categories quarantine content immediately. School moderators cannot access another school. Platform detail is limited to severe or explicitly escalated cases and access is audited.
+Only an employee with `community.publish` can create an immediate official text Update with optional JPEG, PNG, or WebP images. `community.view` permits an authorized audience member to read; `community.moderate` permits same-school management and Post Report decisions. Parent and Student personas never imply publishing. The active client/API has no comments, direct-Student publishing, blocking, appeals, or routine approval. Historical Community storage remains readable only where compatibility requires it and is retained rather than deleted.
 
 The App exposes public `/legal/*` routes backed by a no-session public API. Responses contain effective policy sections, tenant presentation and configured support contacts only—never report, reporter or evidence data.
 
@@ -93,7 +93,7 @@ The Admin Sidebar uses MAW-style navigation behavior with MIS branding: standalo
 
 `frontend/` and `app/` are independent React workspaces. Admin and the Community App are built and deployed separately on different domains, while each domain reverse-proxies its own `/api` path to the same Laravel backend. This same-origin browser topology preserves the existing session-cookie and CSRF model. A native workspace and store packaging do not exist yet.
 
-The approved App direction adds a Teacher/Staff mobile mode without turning `app/` into an administrative back door. Community publication is school/class-audience scoped; attendance and academic mutations remain teaching-assignment scoped; Parent/Student reads remain guardian-child or student-self scoped. Admin moderation and broad operational management remain in `frontend/`.
+The App exposes Updates without turning `app/` into an administrative back door. Employee publication is whole-school or school/class-audience scoped and permission-gated; attendance and academic mutations remain teaching-assignment scoped; Parent/Student reads remain relationship or self scoped. Post Reports management remains in `frontend/`.
 
 ## Authentication Flow
 

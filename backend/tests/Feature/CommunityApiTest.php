@@ -9,10 +9,12 @@ use App\Contracts\AuditLoggerContract;
 use App\Models\AcademicYear;
 use App\Models\AuditLog;
 use App\Models\ClassEnrolment;
+use App\Models\CommunityComment;
 use App\Models\CommunityPolicyAcceptance;
 use App\Models\CommunityPolicyVersion;
 use App\Models\CommunityPost;
 use App\Models\CommunityPostAudience;
+use App\Models\CommunityReport;
 use App\Models\Guardian;
 use App\Models\Permission;
 use App\Models\PortalNotification;
@@ -242,6 +244,93 @@ class CommunityApiTest extends TestCase
         $this->actingAs($student)->getJson('http://127.0.0.1/api/v1/community/posts')
             ->assertOk()
             ->assertJsonPath('data.0.body', 'Historical direct student notice');
+    }
+
+    public function test_historical_direct_student_content_remains_private_and_managers_preserve_it_when_closing_cases(): void
+    {
+        $manager = User::query()->where('username', 'admin')->firstOrFail();
+        $targetStudent = User::query()->where('username', 'alyssa.tan')->firstOrFail();
+        $unrelatedStudent = $this->createAudienceMember($manager->school, 'student', 'historical.unrelated.student');
+        Student::query()->where('school_id', $manager->school_id)->where('student_no', 'MIS-2026-002')->firstOrFail()
+            ->update(['user_id' => $unrelatedStudent->id]);
+
+        $directStudentPost = CommunityPost::query()->create([
+            'tenant_id' => $manager->school->tenant_id,
+            'school_id' => $manager->school_id,
+            'author_user_id' => $manager->id,
+            'post_type' => 'post',
+            'body' => 'Historical direct student notice',
+            'comments_enabled' => true,
+            'status' => CommunityPost::STATUS_PUBLISHED,
+            'published_at' => now()->subDay(),
+        ]);
+        CommunityPostAudience::query()->create([
+            'school_id' => $manager->school_id,
+            'community_post_id' => $directStudentPost->id,
+            'audience_type' => 'student',
+            'student_id' => $targetStudent->studentProfile->id,
+            'audience_key' => "student:{$targetStudent->studentProfile->id}",
+        ]);
+        $comment = CommunityComment::query()->create([
+            'tenant_id' => $manager->school->tenant_id,
+            'school_id' => $manager->school_id,
+            'community_post_id' => $directStudentPost->id,
+            'user_id' => $manager->id,
+            'body' => 'Historical visible comment',
+            'status' => CommunityComment::STATUS_VISIBLE,
+        ]);
+        $report = CommunityReport::query()->create([
+            'tenant_id' => $manager->school->tenant_id,
+            'school_id' => $manager->school_id,
+            'reporter_user_id' => $targetStudent->id,
+            'source' => 'user_report',
+            'target_type' => 'post',
+            'community_post_id' => $directStudentPost->id,
+            'reported_user_id' => $manager->id,
+            'reason_code' => 'outdated',
+            'priority' => 'normal',
+            'status' => CommunityReport::STATUS_SUBMITTED,
+            'target_snapshot' => ['post' => ['id' => $directStudentPost->id]],
+            'due_at' => now()->addDay(),
+        ]);
+        $pendingPost = CommunityPost::query()->create([
+            'tenant_id' => $manager->school->tenant_id,
+            'school_id' => $manager->school_id,
+            'author_user_id' => $manager->id,
+            'post_type' => 'post',
+            'body' => 'Historical pending-review post',
+            'comments_enabled' => true,
+            'status' => CommunityPost::STATUS_PENDING_REVIEW,
+        ]);
+        CommunityPostAudience::query()->create([
+            'school_id' => $manager->school_id,
+            'community_post_id' => $pendingPost->id,
+            'audience_type' => 'student',
+            'student_id' => $targetStudent->studentProfile->id,
+            'audience_key' => "student:{$targetStudent->studentProfile->id}",
+        ]);
+
+        $this->actingAs($targetStudent)->getJson('http://127.0.0.1/api/v1/community/posts')
+            ->assertOk()
+            ->assertJsonPath('data.0.comments', [])
+            ->assertJsonMissing(['body' => 'Historical pending-review post']);
+
+        $this->actingAs($unrelatedStudent)->getJson('http://127.0.0.1/api/v1/community/posts')
+            ->assertOk()
+            ->assertJsonMissing(['id' => $directStudentPost->id]);
+
+        $this->actingAs($manager)->deleteJson("http://127.0.0.1/api/v1/community/posts/{$pendingPost->id}", [
+            'reason' => 'Historical pending post is no longer appropriate.',
+        ])->assertOk();
+        $this->actingAs($manager)->postJson("http://localhost/api/v1/admin/community-moderation/reports/{$report->id}/decision", [
+            'decision' => 'no_action',
+            'reason_code' => 'outdated',
+            'reason' => 'Resolved while retaining the historical record.',
+        ])->assertOk()->assertJsonPath('data.status', CommunityReport::STATUS_RESOLVED);
+
+        $this->assertDatabaseHas('community_comments', ['id' => $comment->id, 'status' => CommunityComment::STATUS_VISIBLE]);
+        $this->assertDatabaseHas('community_reports', ['id' => $report->id, 'status' => CommunityReport::STATUS_RESOLVED]);
+        $this->assertDatabaseHas('community_posts', ['id' => $pendingPost->id, 'status' => CommunityPost::STATUS_DELETED]);
     }
 
     #[TestDox('publishing context and audience preview resolve unique active class recipients')]

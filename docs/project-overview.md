@@ -48,6 +48,7 @@ Do not describe the system as unlimited or use the historical cost estimate as p
 - MIS-branded demo identities for Admin, Teacher, Parent, and Student; an independent role-filtered `app/` web shell; self-profile/enrolment endpoints; and user-scoped in-app notification storage.
 - Assignment-scoped daily Attendance sessions/records, Teacher roster marking, correction reasons and audit, linked-child Parent history reads, and explicit Student exclusion.
 - Phone-first Community App presentation with a compact header, role-specific liquid-glass bottom navigation, and profile-based sign out.
+- Official School Updates: employees with `community.publish` create immediate whole-school or multi-class text/image updates, optionally notify the resolved audience, and audit publication. Teachers, Parents, and Students read authorized Updates and can Like or report them; comments and new direct-Student targeting are unavailable.
 
 ### Partially Implemented
 
@@ -59,7 +60,7 @@ Do not describe the system as unlimited or use the historical cost estimate as p
 - Payments and receipts: real workflows are implemented within Student Detail; there are no separate top-level modules.
 - Invoices: legacy schema and a permission/school-scoped monthly-generation API remain, but the active Fee Record workflow does not use invoices as its source of truth and no invoice UI exists.
 - Audit: critical authentication, student, agreement, Fee Record activation/manual charge, payment, and receipt actions are covered. Calendar changes, exports, user management, generic correction, and recovery audit flows are not integrated because those features are lower-risk operational changes or absent from the current product.
-- Community App: login, role shell, notification drawer, self-service identity, read-only parent finance, and daily Attendance are functional slices. Additive Community, Assessment, and Quiz tables now reserve the approved persistence model, while publishing/media delivery, result publication, formal/Practice Quiz services, and Schedule remain explicitly labelled previews.
+- Community App: login, role shell, notification drawer, self-service identity, read-only parent finance, daily Attendance, School Updates, published Assessment results, Schedule, and formal Quiz are functional slices. Historical Community comments, direct-Student posts, reports, and pending-review rows remain preserved storage, not active social workflows. Native/store delivery remains unimplemented.
 
 ### Approved Product Direction, Not Implemented
 

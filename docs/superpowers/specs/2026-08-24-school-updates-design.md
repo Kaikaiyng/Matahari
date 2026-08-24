@@ -1,6 +1,6 @@
 # School Updates Design
 
-**Status:** Approved in discussion on 2026-08-24; implementation has not started.
+**Status:** Implemented on the local `feat/school-updates` branch and locally verified on 2026-08-24. Disposable MariaDB audience-query behavior and browser/manual UAT remain **Not verified**.
 
 ## Goal
 

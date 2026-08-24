@@ -1,6 +1,6 @@
 # Current Status
 
-**Snapshot date:** 2026-08-23
+**Snapshot date:** 2026-08-24
 
 **Inspected Phase A implementation commit:** `ecaa0a1f177292ae99c9338e255a1f93312971f5`
 
@@ -8,7 +8,15 @@
 
 **Current merged delivery:** `ddd7e193179129be35f7a2b1c408eb809734f8d4` (`Merge project-wide documentation update`)
 
-**Overall status:** SaaS multi-tenant foundation in final validation, with MIS as the first tenant; separate Admin and multi-role App clients, live Community, daily Attendance, Assessment publication, Parent Finance reads/receipt access/manual in-app reminders, class Schedule, and formal Quiz V1 remain shared tenant-aware modules. Practice/AI Quiz, native/store delivery, automated DNS/TLS and production operations remain incomplete.
+**Overall status:** SaaS multi-tenant foundation in final validation, with MIS as the first tenant; separate Admin and multi-role App clients, live School Updates, daily Attendance, Assessment publication, Parent Finance reads/receipt access/manual in-app reminders, class Schedule, and formal Quiz V1 remain shared tenant-aware modules. Practice/AI Quiz, native/store delivery, automated DNS/TLS and production operations remain incomplete.
+
+## 2026-08-24 School Updates Delivery (local feature branch)
+
+- The active App feature is **School Updates/Updates**, replacing the former social Community workflow. Effective `community.view` reads the resolved feed; only active employees with `community.publish` create immediate official text updates with optional JPEG/PNG/WebP images, a whole-school or multi-class audience, and optional in-app notifications. `community.moderate` manages same-school Updates and Post Reports.
+- Teacher, Parent, and Student audiences read authorized Updates and can Like or report them. Parent and Student personas cannot publish. Active workflows have no comments, new direct-Student audience, user blocking, appeals, or routine approval.
+- Historical Community posts, comments, reports, and pending-review rows remain retained storage. The feed suppresses comments, preserves direct-Student visibility only for its stored recipient, excludes pending posts from public visibility, and managers close cases through logical withdrawal or report resolution without physical deletion.
+- Compatibility regression: the focused PHPUnit test passed with 1 test and 11 assertions. Full backend PHPUnit passed: 384 discovered, 372 passed, 12 existing MariaDB-gated skips, and 2,095 assertions. Pint passed and `route:list --path=api --except-vendor` loaded 151 routes. Admin passed 186/186 Vitest tests; lint exited 0 with 9 existing Calendar Fast Refresh warnings; TypeScript/Vite build passed. App passed 46/46 Vitest tests with clean lint and TypeScript/Vite build.
+- No migration was added, so a new SQLite lifecycle is not applicable to this delivery. Disposable MariaDB audience-query behavior is **Not verified**. Browser/manual UAT and real-device or hardware checks are **Not verified** for this delivery. The repository remains not production-ready.
 
 ## 2026-08-23 Role and User Abilities Consolidation
 
@@ -27,7 +35,7 @@
 - Dedicated assigned/school view/manage permissions and audited time-bound user abilities replace reuse of Student permissions. Parents see linked-child campus status and class Attendance; Students no longer receive Attendance data.
 - The final combined verification evidence is recorded in the Role and User Abilities section above. MariaDB compatibility and real Hikvision hardware ingestion are **Not verified** in this local pass.
 
-## 2026-08-20 Returned Workspace Integration
+## 2026-08-20 Returned Workspace Integration (historical social-workflow record)
 
 - Reviewed and selectively integrated the returned Admin/App UI, attendance/gate, Community safety, notification, and store-readiness work. Runtime dependencies, `.env` files, databases, logs, tunnel state, uploaded Community media, generated releases, and duplicate changelogs were excluded.
 - Admin attendance now uses only `/api/v1/admin/attendance/*` with resolved school context. Current `class_enrolments` is authoritative, `unmarked` is display-only, and an absent row is no longer inferred merely because a session exists.
@@ -35,7 +43,7 @@
 - Non-moderator post edits return to pending review. Post edits/deletes and audit entries are transactional, and deletion is logical so moderation evidence and private media references remain preserved.
 - Local qualification passed: backend 362 discovered (350 passed, 12 existing MariaDB-gated skips), 2,028 assertions, Pint and 147 API routes; Admin 178/178 with build and the 9 existing Calendar Fast Refresh warnings; App 29/29 with clean lint/build; deployment contracts 19/19. MariaDB-specific row-lock/concurrency behavior remains **Not verified** because no disposable MariaDB run was performed.
 
-## 2026-08-16 Strict UGC Moderation & Store-Safety Enhancement
+## 2026-08-16 Strict UGC Moderation & Store-Safety Enhancement (historical social-workflow record)
 
 - Community features include a fail-closed first-login App gate for versioned Terms and Community Standards acceptance, multi-layer inappropriate content pre-filtering (profanity, hate, grooming, violence), automated contact/handle leakage pattern interception (WhatsApp, Telegram, WeChat, IG, TikTok, LINE, phone regex variants), pending review/quarantined media, separate content/user reporting, Community-only blocking, scoped restrictions, private status, appeals, and adult authorization for Student freeform interaction.
 - Student users receive a pre-social composition safety banner ("Do not share phone numbers, addresses, social handles, or private photos. Be respectful."). Parents retain granular permission controls (`can_post_community`, `can_upload_media`) over linked student social capabilities. Zero 1-on-1 private messaging or unmonitored direct discovery is provided.

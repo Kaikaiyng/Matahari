@@ -21,8 +21,8 @@ Implemented workflows include:
 - Phase A academic foundation APIs for academic years, class enrolments, subjects, teaching assignments, and reviewed portal identity links.
 - Independent `app/` Community App views for Teacher, Parent, and Student, with first-use choice for multi-persona users, role-aware liquid-glass navigation, self-service identity endpoints, personal notifications, and read-only parent finance.
 - Daily class Attendance: assignment-scoped Teacher roster marking, linked-child Parent history reads, Student exclusion, correction reasons, and transactional audit logging.
-- Scoped Community publishing and feeds with private authorized media, appreciations, controlled comments, moderation history, and transactional audit logging.
-- Strict in-app UGC safety controls: policy acceptance, pending review, separate content/user reports, Community-only blocking, private case status, appeals, school moderation, severe platform escalation, and public legal/safety pages.
+- Official **School Updates**: employees with the publishing ability post required text and optional images to the whole school or selected active classes; notifications are optional and recipient resolution is server-side.
+- Teachers, Parents, and Students can read their authorized Updates and Like or report them. New posts have no comments, direct-Student audience, user blocking, appeals, or routine approval. Older Community comments, direct-Student posts, reports, and pending cases remain historical storage only and are never physically deleted by this workflow.
 - Teaching Assignment-scoped Assessments with draft result entry, explicit complete-roster publication, and authorized Parent/Student published-result views.
 - Permission-filtered, grouped/collapsible navigation plus Super Admin-only Audit Trail and sanitized Application Logs views.
 - Responsive desktop, tablet, and mobile administration UI.

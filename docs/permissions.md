@@ -34,7 +34,7 @@ The App exposes exactly **Teacher**, **Parent**, and **Student** personas. There
 3. Same-school explicit grant/deny override.
 4. Active historical time-window Attendance grant compatibility.
 
-The Admin Employees editor groups grantable abilities under Students, Classes, Attendance, Calendar, Finance, Community, Academics, Employees, and App. Manage abilities imply their View dependency. Clearing View also clears dependent Manage selections.
+The Admin Employees editor groups grantable abilities under Students, Classes, Attendance, Calendar, Finance, School Updates, Academics, Employees, and App. Manage abilities imply their View dependency. Clearing View also clears dependent Manage selections.
 
 School Admin and Finance may edit another same-school School Admin, Finance, or Teacher when they have `employees.abilities.manage`. They cannot edit themselves, a platform owner, a different-school user, platform-only permissions, or grant Super Admin. Every position, ability, or Teacher App Access change requires a non-empty reason and writes Audit Trail records in the same database transaction. Audit failure rolls back the access change.
 
@@ -49,10 +49,12 @@ School Admin and Finance may edit another same-school School Admin, Finance, or 
 | Calendar | `calendar.view` | `calendar.create`, `calendar.update`, `calendar.delete` |
 | Finance | fee/payment/receipt `.view` permissions | record, verify, void, print, reminder, and agreement mutations |
 | Academics | year/subject/schedule views | their manage permissions plus school-wide assessment/quiz permissions |
-| Community | `community.view` | publish, interact, school moderation |
+| School Updates | `community.view` (read authorized Updates) | `community.publish` (official publish/edit/withdraw own), `community.moderate` (manage same-school Updates and Post Reports) |
 | App | relationship self-service permissions | `app.teacher_access` |
 
 `audit.view`, `logs.view`, tenant configuration, platform Community intervention, domain activation, and cross-tenant operations remain platform-only unless a later reviewed policy explicitly changes them.
+
+`community.view` is required for the Updates feed. `community.publish` never follows from the Teacher, Parent, or Student persona: only an active employee with the effective same-school ability can publish. `community.moderate` is same-school management only. Parent and Student active access is read-and-Like-only. `community.interact` remains a historical compatibility permission; it does not enable an active social workflow.
 
 ## Scope Rules
 

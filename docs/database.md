@@ -39,8 +39,8 @@ The role/Attendance delivery adds `user_permission_overrides`, campus Attendance
 | School operations | `calendar_events` |
 | Academic foundation | `academic_years`, `class_enrolments`, `subjects`, `teaching_assignments` |
 | Portal and Attendance | `portal_notifications`, `attendance_sessions`, `attendance_records`, `campus_attendance_events`, `attendance_devices`, `attendance_settings`, `user_attendance_abilities` |
-| Community content | `community_posts`, `community_post_audiences`, `community_post_media`, `community_post_reactions`, `community_comments` |
-| Community safety | `community_policy_versions`, `community_policy_acceptances`, `community_reports`, `community_report_actions`, `community_user_blocks`, `community_user_restrictions`, `community_appeals`, `student_community_authorizations` |
+| School Updates and historical Community storage | `community_posts`, `community_post_audiences`, `community_post_media`, `community_post_reactions`, `community_comments` |
+| Post Reports and historical Community safety storage | `community_policy_versions`, `community_policy_acceptances`, `community_reports`, `community_report_actions`, `community_user_blocks`, `community_user_restrictions`, `community_appeals`, `student_community_authorizations` |
 | Assessments | `academic_terms`, `assessments`, `assessment_class_targets`, `assessment_results` |
 | Quiz | `quizzes`, `quiz_questions`, `quiz_options`, `quiz_assignments`, `quiz_assignment_class_targets`, `quiz_assignment_student_targets`, `quiz_assignment_recipients`, `quiz_attempts`, `quiz_attempt_answers` |
 
@@ -129,7 +129,7 @@ Important lookup indexes cover student status/class/level, agreement current loo
 
 Phase A adds nullable unique `parents.user_id` and `students.user_id` references without backfill. Guardian access/history fields are nullable for existing unreviewed links. The current enrolment unique key is `(school_id, academic_year_id, student_id, current_slot)`; historical rows use `NULL`. Teaching assignments use the equivalent nullable-current-slot pattern across school/year/class/subject/teacher.
 
-The Community foundation deduplicates each post audience with `(community_post_id, audience_key)` and each user's reaction with `(community_post_id, user_id)`. Assessment results allow one row per `(assessment_id, student_id)`. Formal Quiz assignments preserve separate class and direct-student targets, then deduplicate effective access in `quiz_assignment_recipients` with `(quiz_assignment_id, student_id)`. Quiz attempt numbering is unique per student and materialized `attempt_context_key`, allowing formal assignment attempts and private Practice attempts to share the scoring engine without conflating the products.
+School Updates deduplicate each post audience with `(community_post_id, audience_key)` and each user's Like with `(community_post_id, user_id)`. Active publishing creates only `school` or `class` audience rows; historical direct-Student rows remain for compatibility. Assessment results allow one row per `(assessment_id, student_id)`. Formal Quiz assignments preserve separate class and direct-student targets, then deduplicate effective access in `quiz_assignment_recipients` with `(quiz_assignment_id, student_id)`. Quiz attempt numbering is unique per student and materialized `attempt_context_key`, allowing formal assignment attempts and private Practice attempts to share the scoring engine without conflating the products.
 
 ## Community App Data Boundary
 
@@ -145,7 +145,7 @@ The first Attendance slice adds `attendance_sessions` and `attendance_records` t
 
 Campus Attendance is stored independently as append-only `campus_attendance_events`. Each event preserves school-local date/time, absolute timestamp, student, entry/exit direction, face/card/manual method, optional registered device, source, and external event ID. Device credentials use Laravel's encrypted cast and are hidden from API responses. `attendance_settings` holds one school's arrival/dismissal and guardian notification defaults. `user_attendance_abilities` preserves effective/expiry windows and revocation history rather than deleting grants.
 
-The Community foundation stores posts, explicit school/class/direct-student audience rows, private storage references for media, one reaction per user, and moderation-preserving comments. Application deletion changes a post to `deleted` and retains its audiences, media references, comments, reactions, reports, report actions, and audit record; it does not use physical deletion as the normal workflow. `calendar_event_id` is optional so an event post can reuse the authoritative calendar record.
+School Updates reuse the Community tables: active posts have explicit school/class audience rows, private image-storage references, one Like per user, and Post Reports. Direct-Student audiences, comments, blocks, restrictions, appeals, and student authorizations are retained only for historical compatibility; active feed responses do not return comments and new publishing does not create direct-Student audiences. Logical withdrawal changes a post to `deleted` and retains its audiences, media references, comments, reactions, reports, report actions, and audit record. `calendar_event_id` is optional so an event post can reuse the authoritative calendar record.
 
 The Assessment foundation stores optional-date academic terms, subject assessments, multiple class targets, and one draft/published result per student. It does not infer terms, dates, historical marks, weights, grade formulas, or publication status.
 
@@ -158,7 +158,7 @@ Known integrity gaps:
 - Most status columns are unconstrained strings rather than enums/checks.
 - Actor `user_id` and financial row `school_id` are not protected by composite foreign keys.
 
-Community safety rows carry tenant and school ownership, including composite tenant/school foreign-key guards. Reports preserve snapshots, priority, due time, resolution and evidence hold; actions preserve append-only history. Blocks are revocable, restrictions are scope/expiry based, appeals reference the source action, and student authorizations preserve authorizer/revoker timestamps. No automatic evidence-retention schedule exists.
+Post Report and historical Community-safety rows carry tenant and school ownership, including composite tenant/school foreign-key guards. Reports preserve snapshots, priority, due time, resolution and evidence hold; actions preserve append-only history. Block, restriction, appeal, and student-authorization rows remain historical storage and are not active School Updates workflows. No automatic evidence-retention schedule exists.
 
 ## Financial Columns
 
