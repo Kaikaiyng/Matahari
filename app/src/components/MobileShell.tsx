@@ -37,8 +37,8 @@ const navByRole: Record<AppRole, NavItem[]> = {
   ],
 }
 
-export function MobileShell({ activeTab, onTabChange, userRole, allowedRoles, onRoleChange, userName: _userName, environment = 'staging', children }: {
-  activeTab: string; onTabChange: (tab: string) => void; userRole: AppRole; allowedRoles: AppRole[]; onRoleChange?: (role: AppRole) => void; userName: string; environment?: 'staging' | 'production'; children: ReactNode
+export function MobileShell({ activeTab, onTabChange, userRole, allowedRoles, onRoleChange, userName: _userName, environment = 'staging', canPublishUpdates = false, children }: {
+  activeTab: string; onTabChange: (tab: string) => void; userRole: AppRole; allowedRoles: AppRole[]; onRoleChange?: (role: AppRole) => void; userName: string; environment?: 'staging' | 'production'; canPublishUpdates?: boolean; children: ReactNode
 }) {
   const tenant = useTenantConfiguration()
   const [showNotifications, setShowNotifications] = useState(false)
@@ -55,7 +55,7 @@ export function MobileShell({ activeTab, onTabChange, userRole, allowedRoles, on
     return () => window.removeEventListener('app-refresh', fetchUnread)
   }, [])
   const featureByTab: Record<string, string> = { home: 'community', create: 'community', review: 'community', attendance: 'attendance', finance: 'parent_finance', academics: 'assessments', quiz: 'formal_quiz', schedule: 'schedule' }
-  const navigation = navByRole[userRole].filter((item) => !featureByTab[item.id] || tenant.features[featureByTab[item.id]] !== false)
+  const navigation = navByRole[userRole].filter((item) => (item.id !== 'create' || canPublishUpdates) && (!featureByTab[item.id] || tenant.features[featureByTab[item.id]] !== false))
   const lastPrimaryTabRef = useRef(navigation[0]?.id ?? 'home')
   const isPrimaryTab = navigation.some((item) => item.id === activeTab)
   if (isPrimaryTab) lastPrimaryTabRef.current = activeTab

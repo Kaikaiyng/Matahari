@@ -1,20 +1,24 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { MobileShell } from './MobileShell'
 import { ParentPortalView } from './ParentPortalView'
 import { StudentPortalView } from './StudentPortalView'
 import { TeacherPortalView } from './TeacherPortalView'
+import { CommunityFeed } from './CommunityFeed'
 import { portalApi } from '../api/portalApi'
 
 // Mock the portalApi so components don't make real HTTP calls in tests
 vi.mock('../api/portalApi', () => ({
   portalApi: {
-    getCommunityPosts: vi.fn().mockResolvedValue({ data: [{ id: 1, body: 'A real school update', comments_enabled: true, published_at: '2026-08-13T12:00:00Z', author: { id: 4, name: 'Teacher Lim' }, audiences: [{ type: 'class', class_id: 1, student_id: null }], media: [], reaction_count: 2, reacted_by_me: false, comments: [], can_moderate: false }] }),
-    toggleCommunityReaction: vi.fn(),
-    addCommunityComment: vi.fn(),
-    createCommunityPost: vi.fn(),
-    removeCommunityComment: vi.fn(),
-    hideCommunityPost: vi.fn(),
+    getSchoolUpdates: vi.fn().mockResolvedValue({ data: [{ id: 1, body: 'A real school update', published_at: '2026-08-13T12:00:00Z', author: { id: 4, name: 'Teacher Lim' }, audiences: [{ type: 'class', class_id: 1, student_id: null }], media: [], reaction_count: 2, reacted_by_me: false, can_report: true, can_edit: false, can_withdraw: false, can_moderate: false }] }),
+    getPublishingContext: vi.fn().mockResolvedValue({ data: { classes: [{ id: 1, name: 'MB1' }], max_images: 6, notify_default: true } }),
+    previewUpdateAudience: vi.fn().mockResolvedValue({ data: { recipient_count: 2, class_ids: [1], audience_label: 'MB1' } }),
+    createSchoolUpdate: vi.fn(),
+    updateSchoolUpdate: vi.fn(),
+    toggleSchoolUpdateLike: vi.fn(),
+    hideSchoolUpdate: vi.fn(),
+    withdrawSchoolUpdate: vi.fn(),
+    reportSchoolUpdate: vi.fn(),
     getCurrentCommunityPolicies: vi.fn().mockResolvedValue({ data: {
       terms: { id: 1, title: 'Terms of Use', accepted: true },
       community_standards: { id: 2, title: 'Community Standards', accepted: true },
@@ -100,7 +104,69 @@ describe('MobileShell & Portal Views', () => {
     // Welcome greeting includes first name.
     expect(screen.getAllByText(/Rachel/)[0]).toBeDefined()
     expect(document.querySelector('.context-card')).toBeTruthy()
-    expect(screen.getByText('School community')).toBeDefined()
+    expect(screen.getByRole('heading', { name: 'School Updates' })).toBeDefined()
+  })
+
+  it.each(['parent', 'student'] as const)('%s can read and Like school updates without comment controls', async (role) => {
+    render(<CommunityFeed role={role} userName="Alyssa Tan" activeTab="home" />)
+
+    expect(await screen.findByRole('heading', { name: 'School Updates' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Like' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Comment/ })).not.toBeInTheDocument()
+    expect(screen.queryByText(/video|attachment|block user/i)).not.toBeInTheDocument()
+  })
+
+  it.each(['parent', 'student'] as const)('%s stays read-and-Like-only even if an update response includes management flags', async (role) => {
+    vi.mocked(portalApi.getSchoolUpdates).mockResolvedValueOnce({ data: [{ id: 8, body: 'Official update', status: 'published', published_at: '2026-08-13T12:00:00Z', author: { id: 4, name: 'Teacher Lim' }, audiences: [{ type: 'school', class_id: null, student_id: null }], media: [], reaction_count: 0, reacted_by_me: false, can_report: true, can_edit: true, can_withdraw: true, can_moderate: true }] })
+    render(<CommunityFeed role={role} userName="Alyssa Tan" activeTab="home" />)
+
+    expect(await screen.findByRole('button', { name: 'Like' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Update options' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Safety actions' })).not.toBeInTheDocument()
+  })
+
+  it('keeps attendance available without community.publish and hides every class publishing entry point', async () => {
+    vi.mocked(portalApi.getTeacherAssignments).mockResolvedValueOnce({ data: [{ id: 7, academic_year: { id: 1, code: '2026' }, class: { id: 2, name: 'MB1' }, subject: { id: 3, code: 'ENG', name: 'English' } }] })
+    vi.mocked(portalApi.getTeacherStudents).mockResolvedValue({ data: [] })
+    render(<TeacherPortalView teacherName="Teacher Lim" activeTab="classes" onTabChange={() => {}} onLogout={() => {}} />)
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Open class MB1 English' }))
+    expect(await screen.findByText('Check Daily Attendance')).toBeInTheDocument()
+    expect(screen.queryByText('Publish Class Announcement')).not.toBeInTheDocument()
+    expect(screen.queryByText('Class posts')).not.toBeInTheDocument()
+  })
+
+  it('lets an authorized Teacher choose whole-school or multiple classes, previews recipients, and defaults notification on', async () => {
+    render(<TeacherPortalView teacherName="Teacher Lim" activeTab="create" onTabChange={() => {}} onLogout={() => {}} canPublishUpdates />)
+
+    expect(await screen.findByRole('heading', { name: 'Create school update' })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'Whole school' })).toBeChecked()
+    expect(screen.getByLabelText('Notify audience')).toBeChecked()
+    fireEvent.click(screen.getByRole('radio', { name: 'Selected classes' }))
+    fireEvent.click(screen.getByRole('checkbox', { name: /MB1/ }))
+    await waitFor(() => expect(screen.getByText(/MB1.*2 recipients/)).toBeInTheDocument())
+    expect(document.querySelector('input[type="file"]')).toHaveAttribute('accept', 'image/jpeg,image/png,image/webp')
+  })
+
+  it('preserves a school update form after a publish error', async () => {
+    vi.mocked(portalApi.createSchoolUpdate).mockRejectedValueOnce(new Error('Network unavailable'))
+    render(<TeacherPortalView teacherName="Teacher Lim" activeTab="create" onTabChange={() => {}} onLogout={() => {}} canPublishUpdates />)
+    const field = await screen.findByRole('textbox', { name: /Update/ })
+    fireEvent.change(field, { target: { value: 'Sports day is Friday.' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Publish update' }))
+    expect(await screen.findByText('Network unavailable')).toBeInTheDocument()
+    expect(field).toHaveValue('Sports day is Friday.')
+  })
+
+  it('offers edit, withdraw, and manager hide actions only from the school update menu', async () => {
+    vi.mocked(portalApi.getSchoolUpdates).mockResolvedValueOnce({ data: [{ id: 7, body: 'Correction', status: 'published', published_at: '2026-08-13T12:00:00Z', author: { id: 4, name: 'Teacher Lim' }, audiences: [{ type: 'school', class_id: null, student_id: null }], media: [], reaction_count: 0, reacted_by_me: false, can_report: false, can_edit: true, can_withdraw: true, can_moderate: true }] })
+    render(<CommunityFeed role="teacher" userName="Teacher Lim" activeTab="home" />)
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Update options' }))
+    expect(screen.getByRole('button', { name: /Edit update/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Withdraw update/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Hide update/ })).toBeInTheDocument()
+    expect(screen.queryByText(/permanent delete/i)).not.toBeInTheDocument()
   })
 
   it('renders ParentPortalView finance tab in loading state', () => {
@@ -113,7 +179,7 @@ describe('MobileShell & Portal Views', () => {
     render(<StudentPortalView studentName="Alyssa Tan" activeTab="home" onLogout={() => {}} />)
 
     expect(screen.getByText(/Hello, Alyssa/)).toBeDefined()
-    expect(screen.getByText('School community')).toBeDefined()
+    expect(screen.getByRole('heading', { name: 'School Updates' })).toBeDefined()
   })
 
   it('triggers onTabChange when bottom navigation item is clicked', () => {

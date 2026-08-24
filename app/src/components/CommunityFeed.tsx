@@ -1,395 +1,44 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { ChevronLeft, Heart, MessageCircle, MoreVertical, Pencil, Trash2, EyeOff } from 'lucide-react'
-import { portalApi, type CommunityPost } from '../api/portalApi'
+import { ChevronLeft, EyeOff, Heart, MoreVertical, Pencil, Trash2 } from 'lucide-react'
+import { portalApi, type SchoolUpdate } from '../api/portalApi'
 import { CommunitySafetyMenu } from '../features/community-safety/CommunitySafetyMenu'
 import { useSwipeBack } from './useSwipeBack'
 
 type FeedRole = 'parent' | 'student' | 'teacher'
+type Props = { role: FeedRole; userName: string; onOpenFinance?: () => void; onCreateUpdate?: () => void; canPublishUpdates?: boolean; canManageUpdates?: boolean; activeTab?: string }
 
-type CommunityFeedProps = {
-  role: FeedRole
-  userName: string
-  onOpenFinance?: () => void
-  onCreatePost?: () => void
-  moderation?: boolean
-  activeTab?: string
-}
-
-/** Three-dot dropdown menu for a single post */
-function PostMenu({ post, onEdit, onDelete, onHide }: { post: CommunityPost; onEdit: () => void; onDelete: () => void; onHide: () => void }) {
+function UpdateMenu({ update, onEdit, onWithdraw, onHide }: { update: SchoolUpdate; onEdit: () => void; onWithdraw: () => void; onHide: () => void }) {
   const [open, setOpen] = useState(false)
-  const menuRef = useRef<HTMLDivElement>(null)
-  const hasActions = post.can_edit || post.can_delete || (post.can_moderate)
-
-  useEffect(() => {
-    if (!open) return
-    const close = (e: MouseEvent) => { if (menuRef.current && !menuRef.current.contains(e.target as Node)) setOpen(false) }
-    document.addEventListener('mousedown', close)
-    return () => document.removeEventListener('mousedown', close)
-  }, [open])
-
-  if (!hasActions) return null
-
-  return (
-    <div ref={menuRef} style={{ position: 'relative', marginLeft: 'auto', flexShrink: 0 }}>
-      <button
-        type="button"
-        aria-label="Post options"
-        onClick={() => setOpen((v) => !v)}
-        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px', color: '#888', display: 'flex', alignItems: 'center', borderRadius: '8px', transition: 'background 0.15s' }}
-        onMouseOver={(e) => (e.currentTarget.style.background = 'rgba(0,0,0,0.06)')}
-        onMouseOut={(e) => (e.currentTarget.style.background = 'none')}
-      >
-        <MoreVertical size={18} />
-      </button>
-      {open && (
-        <div style={{
-          position: 'absolute', top: 'calc(100% + 4px)', right: 0, zIndex: 9999,
-          background: '#fff', borderRadius: '14px', boxShadow: '0 8px 32px rgba(0,0,0,0.14)',
-          border: '1px solid rgba(0,0,0,0.07)', minWidth: '160px', overflow: 'hidden',
-          animation: 'fadeIn 0.12s ease',
-        }}>
-          {post.can_edit && (
-            <button type="button" onClick={() => { setOpen(false); onEdit() }} style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '13px 16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: 500, color: '#1a1a2e', textAlign: 'left' }}
-              onMouseOver={(e) => (e.currentTarget.style.background = '#f5f5f5')} onMouseOut={(e) => (e.currentTarget.style.background = 'none')}>
-              <Pencil size={15} color="#555" /> Edit post
-            </button>
-          )}
-          {post.can_delete && (
-            <button type="button" onClick={() => { setOpen(false); onDelete() }} style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '13px 16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: 500, color: '#c0392b', textAlign: 'left' }}
-              onMouseOver={(e) => (e.currentTarget.style.background = '#fff5f5')} onMouseOut={(e) => (e.currentTarget.style.background = 'none')}>
-              <Trash2 size={15} /> Delete post
-            </button>
-          )}
-          {post.can_moderate && (
-            <button type="button" onClick={() => { setOpen(false); onHide() }} style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '13px 16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: 500, color: '#777', textAlign: 'left' }}
-              onMouseOver={(e) => (e.currentTarget.style.background = '#f5f5f5')} onMouseOut={(e) => (e.currentTarget.style.background = 'none')}>
-              <EyeOff size={15} color="#999" /> Hide post
-            </button>
-          )}
-        </div>
-      )}
-    </div>
-  )
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => { if (!open) return; const close = (event: MouseEvent) => { if (ref.current && !ref.current.contains(event.target as Node)) setOpen(false) }; document.addEventListener('mousedown', close); return () => document.removeEventListener('mousedown', close) }, [open])
+  if (!update.can_edit && !update.can_withdraw && !update.can_moderate) return null
+  return <div ref={ref} style={{ position: 'relative', marginLeft: 'auto' }}><button type="button" aria-label="Update options" className="plain-icon" onClick={() => setOpen((value) => !value)}><MoreVertical size={18} /></button>{open && <div className="safety-popover" role="menu" style={{ right: 0, left: 'auto' }}>{update.can_edit && <button type="button" onClick={() => { setOpen(false); onEdit() }}><Pencil size={15} /> Edit update</button>}{update.can_withdraw && <button type="button" onClick={() => { setOpen(false); onWithdraw() }}><Trash2 size={15} /> Withdraw update</button>}{update.can_moderate && <button type="button" onClick={() => { setOpen(false); onHide() }}><EyeOff size={15} /> Hide update</button>}</div>}</div>
 }
 
-export function CommunityFeed({ role, userName, onOpenFinance, onCreatePost, moderation: _moderation = false, activeTab }: CommunityFeedProps) {
-  const [posts, setPosts] = useState<CommunityPost[]>([])
+export function CommunityFeed({ role, userName, onOpenFinance, onCreateUpdate, canPublishUpdates = false, canManageUpdates = role === 'teacher', activeTab }: Props) {
+  const [updates, setUpdates] = useState<SchoolUpdate[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [commenting, setCommenting] = useState<number | null>(null)
-  const [comment, setComment] = useState('')
-  const [editingPost, setEditingPost] = useState<CommunityPost | null>(null)
-  const [deleteConfirmPostId, setDeleteConfirmPostId] = useState<number | null>(null)
-  const [hidePromptPostId, setHidePromptPostId] = useState<number | null>(null)
-  const [hideReasonText, setHideReasonText] = useState('')
-  const [actionBusy, setActionBusy] = useState(false)
+  const [editing, setEditing] = useState<SchoolUpdate | null>(null)
+  const [withdrawal, setWithdrawal] = useState<SchoolUpdate | null>(null)
+  const [hiding, setHiding] = useState<SchoolUpdate | null>(null)
+  const load = () => portalApi.getSchoolUpdates().then(({ data }) => setUpdates(data)).catch(() => setError('Unable to load school updates.')).finally(() => setLoading(false))
+  useEffect(() => { if (!activeTab || activeTab === 'home') void load() }, [activeTab])
+  useEffect(() => { const refresh = () => void load(); window.addEventListener('app-refresh', refresh); return () => window.removeEventListener('app-refresh', refresh) }, [])
+  const toggleLike = async (id: number) => { try { const { data } = await portalApi.toggleSchoolUpdateLike(id); setUpdates((items) => items.map((item) => item.id === id ? { ...item, reacted_by_me: data.reacted, reaction_count: data.reaction_count } : item)) } catch { setError('Unable to update your Like.') } }
   const firstName = userName.split(' ')[0]
-
-  const load = () => portalApi.getCommunityPosts().then(({ data }) => setPosts(Array.isArray(data) ? data : [])).catch(() => setError('Unable to load community posts.')).finally(() => setLoading(false))
-
-  useEffect(() => {
-    if (!activeTab || activeTab === 'home') {
-      void load()
-    }
-  }, [activeTab])
-
-  useEffect(() => {
-    const handleAppRefresh = () => { void load() }
-    window.addEventListener('app-refresh', handleAppRefresh)
-    return () => window.removeEventListener('app-refresh', handleAppRefresh)
-  }, [])
-
-  const toggleLike = async (postId: number) => {
-    try {
-      const { data } = await portalApi.toggleCommunityReaction(postId)
-      setPosts((items) => items.map((post) => post.id === postId ? { ...post, reacted_by_me: data.reacted, reaction_count: data.reaction_count } : post))
-    } catch { setError('Unable to update your appreciation.') }
-  }
-
-  const submitComment = async (postId: number) => {
-    if (!comment.trim()) return
-    try {
-      const { data } = await portalApi.addCommunityComment(postId, comment)
-      setPosts((items) => items.map((post) => post.id === postId ? { ...post, comments: [...post.comments, data] } : post))
-      setComment(''); setCommenting(null)
-    } catch { setError('Unable to add your comment.') }
-  }
-
-  const removeComment = async (postId: number, commentId: number) => {
-    try { await portalApi.removeCommunityComment(commentId); setPosts((items) => items.map((post) => post.id === postId ? { ...post, comments: post.comments.filter((item) => item.id !== commentId) } : post)) } catch { setError('Unable to remove this comment.') }
-  }
-
-  const deletePost = (postId: number) => {
-    setDeleteConfirmPostId(postId)
-  }
-
-  const hidePost = (postId: number) => {
-    setHidePromptPostId(postId)
-    setHideReasonText('')
-  }
-
-  const handlePostUpdated = (updatedPost: CommunityPost) => {
-    setPosts((items) => items.map((post) => (post.id === updatedPost.id ? updatedPost : post)))
-  }
-
-  return (
-    <div className="community-page">
-      <section className="community-welcome">
-        <div><p>School community</p><h1>{role === 'student' ? `Hello, ${firstName}` : `Welcome, ${firstName}`}</h1></div>
-        <span className="role-chip">{role[0].toUpperCase() + role.slice(1)}</span>
-      </section>
-
-      {role === 'parent' && (
-        <button type="button" className="attention-strip context-card" onClick={onOpenFinance}>
-          <span className="attention-icon">RM</span>
-          <span><strong>View school account</strong><small>Open read-only finance records for your linked children</small></span>
-          <b>View</b>
-        </button>
-      )}
-
-      {role === 'teacher' && (
-        <button type="button" className="create-strip context-card" onClick={onCreatePost}>
-          <span>Share a school moment</span>
-          <b>Create post</b>
-        </button>
-      )}
-
-      {loading ? (
-        <div className="app-skeleton large" />
-      ) : error && posts.length === 0 ? (
-        <div className="app-empty"><h2>Community unavailable</h2><p>{error}</p></div>
-      ) : posts.length === 0 ? (
-        <div className="app-empty"><h2>No posts yet</h2><p>Authorized school updates will appear here.</p></div>
-      ) : (
-        <section className="feed-list" aria-label="School community posts">
-          {error && <p className="form-error">{error}</p>}
-          {posts.map((post) => (
-            <article className="feed-post" key={post.id}>
-              <header className="feed-post-header">
-                <span className="feed-avatar">{post.author.name.split(' ').map((part) => part[0]).slice(0, 2).join('')}</span>
-                <span className="feed-author">
-                  <strong>{post.author.name}</strong>
-                  <span className="feed-post-meta"><small>{post.status === 'pending_review' ? 'Pending review' : post.published_at ? new Date(post.published_at).toLocaleString() : 'Published'}</small></span>
-                </span>
-                <PostMenu
-                  post={post}
-                  onEdit={() => setEditingPost(post)}
-                  onDelete={() => void deletePost(post.id)}
-                  onHide={() => void hidePost(post.id)}
-                />
-                <CommunitySafetyMenu targetType="post" targetId={post.id} authorUserId={post.author.id} canReportContent={post.can_report_content} canReportUser={post.can_report_user} onBlocked={() => void load()} />
-              </header>
-              <div className="feed-copy"><p>{post.body}</p></div>
-              {post.media.map((media) => media.type === 'image' ? <img className="feed-uploaded-image" key={media.id} src={media.url} alt={media.name ?? 'Community photo'} /> : media.type === 'video' ? <video className="feed-uploaded-video" key={media.id} src={media.url} controls /> : <a key={media.id} href={media.url}>{media.name ?? 'Download attachment'}</a>)}
-              <div className="feed-counts">{post.reaction_count} appreciations · {post.comments_enabled ? `${post.comments.length} comments` : 'Comments closed'}</div>
-              <footer className="feed-actions">
-                <button type="button" className={post.reacted_by_me ? 'liked' : ''} onClick={() => void toggleLike(post.id)}>
-                  <Heart size={19} fill={post.reacted_by_me ? 'currentColor' : 'none'} />{post.reacted_by_me ? 'Appreciated' : 'Appreciate'}
-                </button>
-                <button type="button" disabled={!post.comments_enabled} onClick={() => setCommenting(commenting === post.id ? null : post.id)}>
-                  <MessageCircle size={19} />{post.comments_enabled ? 'Comment' : 'Comments off'}
-                </button>
-              </footer>
-              {post.comments.map((item) => (
-                <div className="community-comment" key={item.id}>
-                  <strong>{item.author}</strong><span>{item.body}</span>{item.can_remove && <button type="button" onClick={() => void removeComment(post.id, item.id)}>Remove</button>}
-                  <CommunitySafetyMenu targetType="comment" targetId={item.id} authorUserId={item.author_user_id} canReportContent={item.can_report_content} canReportUser={item.can_report_user} onBlocked={() => void load()} />
-                </div>
-              ))}
-              {commenting === post.id && (
-                <div className="community-comment-form">
-                  <input value={comment} maxLength={2000} onChange={(event) => setComment(event.target.value)} placeholder="Write a comment" />
-                  <button type="button" onClick={() => void submitComment(post.id)}>Send</button>
-                </div>
-              )}
-            </article>
-          ))}
-        </section>
-      )}
-
-      {editingPost && <EditPostSubpage post={editingPost} onSaved={handlePostUpdated} onClose={() => setEditingPost(null)} />}
-
-      {deleteConfirmPostId !== null && createPortal(
-        <div className="community-policy-modal-overlay" role="dialog" aria-modal="true" aria-label="Confirm post deletion">
-          <div className="community-policy-gate-modal" style={{ maxWidth: '380px' }}>
-            <h2>Delete Post?</h2>
-            <p className="policy-gate-desc">This action cannot be undone. The post and all its comments will be permanently removed.</p>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '12px' }}>
-              <button
-                type="button"
-                className="secondary-action"
-                style={{ minHeight: '42px', padding: '0 16px', width: 'auto' }}
-                onClick={() => setDeleteConfirmPostId(null)}
-                disabled={actionBusy}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="primary-action"
-                style={{ minHeight: '42px', padding: '0 16px', width: 'auto', background: 'var(--app-red, #b42318)' }}
-                disabled={actionBusy}
-                onClick={async () => {
-                  setActionBusy(true)
-                  try {
-                    await portalApi.deleteCommunityPost(deleteConfirmPostId)
-                    setPosts((items) => items.filter((p) => p.id !== deleteConfirmPostId))
-                    setDeleteConfirmPostId(null)
-                  } catch {
-                    setError('Unable to delete this post.')
-                  } finally {
-                    setActionBusy(false)
-                  }
-                }}
-              >
-                {actionBusy ? 'Deleting…' : 'Delete'}
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {hidePromptPostId !== null && createPortal(
-        <div className="community-policy-modal-overlay" role="dialog" aria-modal="true" aria-label="Hide post dialog">
-          <div className="community-policy-gate-modal" style={{ maxWidth: '420px' }}>
-            <h2>Hide Post</h2>
-            <p className="policy-gate-desc">Provide a reason for hiding this post from the community feed.</p>
-            <textarea
-              className="custom-textarea"
-              rows={3}
-              value={hideReasonText}
-              onChange={(e) => setHideReasonText(e.target.value)}
-              placeholder="Enter moderation reason…"
-              style={{ width: '100%', boxSizing: 'border-box', marginTop: '6px' }}
-              autoFocus
-            />
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '12px' }}>
-              <button
-                type="button"
-                className="secondary-action"
-                style={{ minHeight: '42px', padding: '0 16px', width: 'auto' }}
-                onClick={() => {
-                  setHidePromptPostId(null)
-                  setHideReasonText('')
-                }}
-                disabled={actionBusy}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="primary-action"
-                style={{ minHeight: '42px', padding: '0 16px', width: 'auto' }}
-                disabled={actionBusy || !hideReasonText.trim()}
-                onClick={async () => {
-                  setActionBusy(true)
-                  try {
-                    await portalApi.hideCommunityPost(hidePromptPostId, hideReasonText.trim())
-                    setPosts((items) => items.filter((post) => post.id !== hidePromptPostId))
-                    setHidePromptPostId(null)
-                    setHideReasonText('')
-                  } catch {
-                    setError('Unable to hide this post.')
-                  } finally {
-                    setActionBusy(false)
-                  }
-                }}
-              >
-                {actionBusy ? 'Hiding…' : 'Confirm & Hide'}
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-    </div>
-  )
+  return <div className="community-page"><section className="community-welcome"><div><p>Updates</p><h1>School Updates</h1><small>{role === 'student' ? `Hello, ${firstName}` : `Welcome, ${firstName}`}</small></div><span className="role-chip">{role[0].toUpperCase() + role.slice(1)}</span></section>{role === 'parent' && <button type="button" className="attention-strip context-card" onClick={onOpenFinance}><span className="attention-icon">RM</span><span><strong>View school account</strong><small>Open read-only finance records for your linked children</small></span><b>View</b></button>}{role === 'teacher' && canPublishUpdates && <button type="button" className="create-strip context-card" onClick={onCreateUpdate}><span>Share a school update</span><b>Create update</b></button>}{loading ? <div className="app-skeleton large" /> : updates.length === 0 ? <div className="app-empty"><h2>No updates yet</h2><p>Authorized school updates will appear here.</p></div> : <section className="feed-list" aria-label="School Updates">{error && <p className="form-error">{error}</p>}{updates.map((update) => <article className="feed-post" key={update.id}><header className="feed-post-header"><span className="feed-avatar">{update.author.name.split(' ').map((part) => part[0]).slice(0, 2).join('')}</span><span className="feed-author"><strong>{update.author.name}</strong><span className="feed-post-meta"><small>{update.published_at ? new Date(update.published_at).toLocaleString() : 'Published'}</small><small>{audienceLabel(update)}</small></span></span>{canManageUpdates && <><UpdateMenu update={update} onEdit={() => setEditing(update)} onWithdraw={() => setWithdrawal(update)} onHide={() => setHiding(update)} /><CommunitySafetyMenu postId={update.id} canReport={update.can_report} /></>}</header><div className="feed-copy"><p>{update.body}</p></div>{update.media.filter((media) => media.type === 'image').map((media) => <img className="feed-uploaded-image" key={media.id} src={media.url} alt={media.name ?? 'School update image'} />)}<div className="feed-counts">{update.reaction_count} Like{update.reaction_count === 1 ? '' : 's'}</div><footer className="feed-actions"><button type="button" className={update.reacted_by_me ? 'liked' : ''} onClick={() => void toggleLike(update.id)}><Heart size={19} fill={update.reacted_by_me ? 'currentColor' : 'none'} />{update.reacted_by_me ? 'Liked' : 'Like'}</button></footer></article>)}</section>}{editing && <EditUpdate update={editing} onClose={() => setEditing(null)} onSaved={(saved) => setUpdates((items) => items.map((item) => item.id === saved.id ? saved : item))} />}{withdrawal && <ReasonDialog title="Withdraw update" copy="This preserves the update history and removes it from the feed." onCancel={() => setWithdrawal(null)} onConfirm={async (reason) => { await portalApi.withdrawSchoolUpdate(withdrawal.id, reason); setUpdates((items) => items.filter((item) => item.id !== withdrawal.id)); setWithdrawal(null) }} />}{hiding && <ReasonDialog title="Hide update" copy="Give the school record a reason for hiding this update." required onCancel={() => setHiding(null)} onConfirm={async (reason) => { await portalApi.hideSchoolUpdate(hiding.id, reason); setUpdates((items) => items.filter((item) => item.id !== hiding.id)); setHiding(null) }} />}</div>
 }
 
-function EditPostSubpage({ post, onSaved, onClose }: { post: CommunityPost; onSaved: (updatedPost: CommunityPost) => void; onClose: () => void }) {
-  const [body, setBody] = useState(post.body)
-  const [commentsEnabled, setCommentsEnabled] = useState(post.comments_enabled)
-  const [saving, setSaving] = useState(false)
-  const [notice, setNotice] = useState('')
-  const { isExiting, requestBack: handleClose, surfaceStyle, gestureHandlers } = useSwipeBack(onClose)
+function audienceLabel(update: SchoolUpdate) { const classCount = update.audiences.filter((item) => item.type === 'class').length; return update.audiences.some((item) => item.type === 'school') ? 'Whole school' : `${classCount} class audience${classCount === 1 ? '' : 's'}` }
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!body.trim()) return
-    setSaving(true)
-    setNotice('')
-    try {
-      const response = await portalApi.updateCommunityPost(post.id, body, commentsEnabled)
-      onSaved(response.data)
-      handleClose()
-    } catch (err) {
-      setNotice(err instanceof Error ? err.message : 'Unable to save changes.')
-    } finally {
-      setSaving(false)
-    }
-  }
+function EditUpdate({ update, onClose, onSaved }: { update: SchoolUpdate; onClose: () => void; onSaved: (update: SchoolUpdate) => void }) {
+  const [body, setBody] = useState(update.body); const [error, setError] = useState(''); const [saving, setSaving] = useState(false); const { isExiting, requestBack, surfaceStyle, gestureHandlers } = useSwipeBack(onClose)
+  return createPortal(<div className={`subpage-slide-overlay ${isExiting ? 'subpage-slide-out' : ''}`} role="dialog" aria-label="Edit school update" {...gestureHandlers} style={{ position: 'fixed', inset: 0, zIndex: 99990, background: '#f6f3ee', overflowY: 'auto', ...surfaceStyle }}><form className="subpage-container" onSubmit={async (event) => { event.preventDefault(); setSaving(true); setError(''); try { onSaved((await portalApi.updateSchoolUpdate(update.id, body)).data); requestBack() } catch { setError('Unable to save this update.') } finally { setSaving(false) } }}><header className="subpage-header"><button type="button" className="subpage-back-btn" onClick={requestBack} aria-label="Cancel editing"><ChevronLeft /></button><h1 className="subpage-nav-title">Edit update</h1><button type="submit" className="primary-action-btn" disabled={saving || !body.trim()}>Save</button></header>{error && <p className="form-error">{error}</p>}<label className="composer-field"><span className="field-label">Update</span><textarea className="custom-textarea" value={body} onChange={(event) => setBody(event.target.value)} maxLength={5000} rows={6} required /></label></form></div>, document.body)
+}
 
-  return createPortal(
-    <div
-      className={`subpage-slide-overlay ${isExiting ? 'subpage-slide-out' : ''}`}
-      role="dialog"
-      aria-label={`Edit post ${post.id}`}
-      {...gestureHandlers}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 99990,
-        background: '#f6f3ee',
-        overflowY: 'auto',
-        ...surfaceStyle,
-      }}
-    >
-      <form className="subpage-container" onSubmit={handleSave}>
-        <header className="subpage-header">
-          <button type="button" className="subpage-back-btn" onClick={handleClose} aria-label="Cancel editing">
-            <ChevronLeft size={20} />
-          </button>
-          <h1 className="subpage-nav-title">Edit Post</h1>
-          <button type="submit" className="primary-action-btn" disabled={saving || !body.trim()} style={{ background: 'var(--app-primary, #bd284a)', color: '#fff', border: 'none', borderRadius: '18px', padding: '6px 16px', fontWeight: 600, fontSize: '13px' }}>
-            {saving ? 'Saving...' : 'Save'}
-          </button>
-        </header>
-
-        <section style={{ margin: '16px 0 0', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {notice && <p className="form-error" role="alert">{notice}</p>}
-
-          <div style={{ background: '#fff', borderRadius: '16px', padding: '16px', border: '1px solid rgba(23,32,51,0.08)' }}>
-            <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#666', marginBottom: '8px' }}>Post message</label>
-            <textarea
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-              rows={5}
-              maxLength={5000}
-              style={{ width: '100%', border: 'none', outline: 'none', resize: 'none', font: 'inherit', fontSize: '14px', background: 'transparent' }}
-              placeholder="What would you like to update?"
-              required
-            />
-            <div style={{ textAlign: 'right', fontSize: '11px', color: '#999' }}>{body.length} / 5000</div>
-          </div>
-
-          <div style={{ background: '#fff', borderRadius: '16px', padding: '16px', border: '1px solid rgba(23,32,51,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span>
-              <strong style={{ display: 'block', fontSize: '14px' }}>Allow comments</strong>
-              <small style={{ color: '#666', fontSize: '12px' }}>School members can reply to this post</small>
-            </span>
-            <input
-              type="checkbox"
-              checked={commentsEnabled}
-              onChange={(e) => setCommentsEnabled(e.target.checked)}
-              style={{ width: '20px', height: '20px', accentColor: 'var(--app-primary, #bd284a)', cursor: 'pointer' }}
-            />
-          </div>
-        </section>
-      </form>
-    </div>,
-    document.body
-  )
+function ReasonDialog({ title, copy, required = false, onCancel, onConfirm }: { title: string; copy: string; required?: boolean; onCancel: () => void; onConfirm: (reason: string) => Promise<void> }) {
+  const [reason, setReason] = useState(''); const [error, setError] = useState(''); const [busy, setBusy] = useState(false)
+  return createPortal(<div className="community-policy-modal-overlay" role="dialog" aria-modal="true" aria-label={title}><div className="community-policy-gate-modal"><h2>{title}</h2><p>{copy}</p><label><span>Reason{required ? '' : ' (optional)'}</span><textarea className="custom-textarea" value={reason} onChange={(event) => setReason(event.target.value)} rows={3} /></label>{error && <p className="form-error">{error}</p>}<div className="safety-dialog-actions"><button type="button" onClick={onCancel}>Cancel</button><button type="button" className="danger-action" disabled={busy || (required && !reason.trim())} onClick={async () => { setBusy(true); setError(''); try { await onConfirm(reason.trim()) } catch { setError(`Unable to ${title.toLowerCase()}.`) } finally { setBusy(false) } }}>{busy ? 'Saving…' : title}</button></div></div></div>, document.body)
 }

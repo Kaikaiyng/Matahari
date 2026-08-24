@@ -73,6 +73,7 @@ function App() {
   }, [personaStorageKey, allowedRoles])
   const activeRole = selectedRole && allowedRoles.includes(selectedRole) ? selectedRole : allowedRoles.length === 1 ? allowedRoles[0] : null
   const elevatedTeacher = Boolean(user && (user.permissions.includes('attendance.view_school') || user.permissions.includes('assessments.manage_school') || user.permissions.includes('community.moderate')))
+  const canPublishUpdates = Boolean(user?.permissions.includes('community.publish'))
   const chooseRole = (role: AppRole) => {
     setSelectedRole(role)
     if (personaStorageKey) window.localStorage.setItem(personaStorageKey, role)
@@ -124,10 +125,11 @@ function App() {
           onRoleChange={chooseRole}
           userName={user.name}
           environment={environment}
+          canPublishUpdates={canPublishUpdates}
         >
           {activeRole === 'student' && <StudentPortalView studentName={user.name} activeTab={activeTab} onTabChange={setActiveTab} onLogout={() => void logout()} />}
           {activeRole === 'parent' && <ParentPortalView parentName={user.name} activeTab={activeTab} onTabChange={setActiveTab} onLogout={() => void logout()} />}
-          {activeRole === 'teacher' && <TeacherPortalView teacherName={user.name} activeTab={activeTab} onTabChange={setActiveTab} onLogout={() => void logout()} staffMode={elevatedTeacher} />}
+          {activeRole === 'teacher' && <TeacherPortalView teacherName={user.name} activeTab={activeTab} onTabChange={setActiveTab} onLogout={() => void logout()} staffMode={elevatedTeacher} canPublishUpdates={canPublishUpdates} />}
         </MobileShell>
       </div>
       {!policiesAccepted && <CommunityPolicyGate role={activeRole} onReadyChange={setPoliciesAccepted} />}
@@ -138,6 +140,6 @@ function App() {
 export default App
 
 function legalPolicySlug(pathname: string): string | null {
-  const match = pathname.match(/^\/legal\/(terms|privacy|community-standards|child-safety|support)\/?$/)
+  const match = pathname.match(/^\/legal\/(terms|privacy|community-standards|child-safety|support|account-deletion)\/?$/)
   return match?.[1] ?? null
 }

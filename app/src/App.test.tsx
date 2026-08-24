@@ -49,6 +49,8 @@ describe('separate MIS portal app', () => {
     render(<App />)
 
     expect(await screen.findByRole('button', { name: 'Attendance' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Create' })).not.toBeInTheDocument()
+    expect(screen.queryByText('Share a school moment')).not.toBeInTheDocument()
     expect(screen.queryByText('Admin Panel')).not.toBeInTheDocument()
   })
 
@@ -67,7 +69,7 @@ describe('separate MIS portal app', () => {
 
     expect(await screen.findByRole('heading', { name: 'Before you continue' })).toBeInTheDocument()
     expect(screen.getByRole('navigation', { name: 'Mobile Navigation', hidden: true })).toBeInTheDocument()
-    expect(screen.getAllByText('Share a school moment').length).toBeGreaterThan(0)
+    expect(screen.getAllByRole('heading', { name: 'School Updates', hidden: true }).length).toBeGreaterThan(0)
     expect(screen.getByTestId('authenticated-app-shell')).toHaveAttribute('inert')
     expect(screen.getByTestId('authenticated-app-shell')).toHaveAttribute('aria-hidden', 'true')
   })
@@ -94,7 +96,7 @@ describe('separate MIS portal app', () => {
     expect(await screen.findByRole('heading', { name: 'Welcome to MIS' })).toBeInTheDocument()
   })
 
-  it('renders the elevated Teacher shell when a school administrator has Teacher App Access', async () => {
+  it('does not infer update publishing from Teacher access or moderation', async () => {
     vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
       const path = new URL(String(input), window.location.origin).pathname
       if (path.endsWith('/me')) return json({ user: { id: 1, name: 'Admin', username: 'admin', school_id: 1, roles: ['school-admin'], permissions: ['app.teacher_access', 'community.moderate'] } })
@@ -103,7 +105,23 @@ describe('separate MIS portal app', () => {
     })
     render(<App />)
 
+    expect(await screen.findByRole('button', { name: 'Attendance' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Create' })).not.toBeInTheDocument()
+  })
+
+  it('shows the Updates composer only when community.publish is returned for the Teacher', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
+      const path = new URL(String(input), window.location.origin).pathname
+      if (path.endsWith('/me')) return json({ user: { id: 4, name: 'Ms Lim', username: 'teacher.lim', school_id: 1, roles: ['teacher'], permissions: ['teaching_scope.view', 'community.publish'] } })
+      if (path.endsWith('/community/policies/current')) return json({ data: { terms: { id: 1, title: 'Terms of Use', accepted: true }, community_standards: { id: 2, title: 'Community Standards', accepted: true } } })
+      if (path.endsWith('/community/publishing-context')) return json({ data: { classes: [{ id: 1, name: 'MB1' }], max_images: 6, notify_default: true } })
+      if (path.endsWith('/portal/notifications')) return json({ data: [], meta: { unread_count: 0 } })
+      return json({ data: [] })
+    })
+    render(<App />)
+
     expect(await screen.findByRole('button', { name: 'Create' })).toBeInTheDocument()
+    expect(screen.getByText('Share a school update')).toBeInTheDocument()
   })
 
   it('rejects a finance-only account from the community App', async () => {

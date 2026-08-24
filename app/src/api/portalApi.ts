@@ -173,31 +173,27 @@ export interface TeacherStudent {
 }
 export interface AcademicYearItem { id: number; code: string; name: string; is_current: boolean }
 
-export interface CommunityComment { id: number; body: string; author: string; author_user_id: number; created_at: string | null; can_remove?: boolean; can_report_content: boolean; can_report_user: boolean }
-export interface CommunityPost {
+export type UpdateAudience = { type: 'school' } | { type: 'class'; class_id: number }
+export interface PublishingContext { classes: Array<{ id: number; name: string }>; max_images: number; notify_default: true }
+export interface AudiencePreview { recipient_count: number; class_ids: number[]; audience_label: string }
+export interface SchoolUpdate {
   id: number
   body: string
-  status: 'pending_review' | 'published' | 'rejected' | 'hidden' | 'deleted'
-  comments_enabled: boolean
+  status: 'published' | 'hidden' | 'deleted'
   published_at: string | null
   author: { id: number; name: string }
-  can_report_content: boolean
-  can_report_user: boolean
+  can_report: boolean
   can_edit: boolean
-  can_delete: boolean
+  can_withdraw: boolean
   audiences: Array<{ type: 'school' | 'class' | 'student'; class_id: number | null; student_id: number | null }>
   media: Array<{ id: number; type: string; name: string | null; url: string }>
   reaction_count: number
   reacted_by_me: boolean
-  comments: CommunityComment[]
   can_moderate: boolean
 }
 
 export interface CommunityPolicy { id: number; title: string; version?: string; public_path?: string; effective_at?: string; accepted: boolean }
-export interface CommunityReportSummary { id: number; target_type: 'post' | 'comment' | 'user'; reason_code: string; status: string; created_at: string | null; due_at?: string | null; resolved_at?: string | null; priority?: string }
-export interface CommunityBlockedUser { id: number; user: { id: number; name: string }; blocked_at: string | null; active: boolean }
-export interface CommunityOwnContent { id: number; type: 'post' | 'comment'; body: string; status: string; moderation_reason_code: string | null; created_at: string | null; report_id?: number | null }
-export interface CommunityAppeal { id: number; report_id: number; status: string; decision: string | null; decision_reason: string | null; created_at: string | null; reviewed_at: string | null }
+export interface CommunityReportSummary { id: number; target_type: 'post'; reason_code: string; status: string; created_at: string | null }
 
 export interface PublishedAssessmentResult { id: number; assessment_id: number; title: string; assessment_type: string; subject: string; score: number; max_score: number; grade_label: string | null; teacher_comment: string | null; published_at: string | null }
 export interface ScheduleEntry { id: number; title: string; day_of_week: number; starts_at: string; ends_at: string; location: string | null; subject: string | null; teacher: string | null; effective_from: string | null; effective_to: string | null }
@@ -214,39 +210,32 @@ export interface AssessmentItem {
 // ─── API Calls ────────────────────────────────────────────────────────────────
 
 export const portalApi = {
-  getCommunityPosts: () => apiRequest<{ data: CommunityPost[] }>('/v1/community/posts'),
-  createCommunityPost: (body: string, commentsEnabled: boolean, audiences: Array<{ type: 'school' } | { type: 'class'; class_id: number }>, files: File[] = []) => {
+  getSchoolUpdates: () => apiRequest<{ data: SchoolUpdate[] }>('/v1/community/posts'),
+  getPublishingContext: () => apiRequest<{ data: PublishingContext }>('/v1/community/publishing-context'),
+  previewUpdateAudience: (audiences: UpdateAudience[]) => apiRequest<{ data: AudiencePreview }>('/v1/community/audience-preview', { method: 'POST', body: { audiences } }),
+  createSchoolUpdate: (body: string, audiences: UpdateAudience[], notifyAudience: boolean, files: File[] = []) => {
     const form = new FormData()
     form.append('body', body)
-    form.append('comments_enabled', commentsEnabled ? '1' : '0')
+    form.append('notify_audience', notifyAudience ? '1' : '0')
     audiences.forEach((audience, index) => {
       form.append(`audiences[${index}][type]`, audience.type)
       if (audience.type === 'class') form.append(`audiences[${index}][class_id]`, String(audience.class_id))
     })
-    files.forEach((file) => form.append('media[]', file))
-    return apiRequest<{ data: CommunityPost }>('/v1/community/posts', { method: 'POST', body: form })
+    files.filter((file) => ['image/jpeg', 'image/png', 'image/webp'].includes(file.type)).slice(0, 6).forEach((file) => form.append('media[]', file))
+    return apiRequest<{ data: SchoolUpdate }>('/v1/community/posts', { method: 'POST', body: form })
   },
-  updateCommunityPost: (postId: number, body: string, commentsEnabled?: boolean) =>
-    apiRequest<{ data: CommunityPost }>(`/v1/community/posts/${postId}`, {
+  updateSchoolUpdate: (postId: number, body: string) =>
+    apiRequest<{ data: SchoolUpdate }>(`/v1/community/posts/${postId}`, {
       method: 'PUT',
-      body: { body, comments_enabled: commentsEnabled },
+      body: { body },
     }),
-  toggleCommunityReaction: (postId: number) => apiRequest<{ data: { post_id: number; reacted: boolean; reaction_count: number } }>(`/v1/community/posts/${postId}/reaction`, { method: 'POST' }),
-  addCommunityComment: (postId: number, body: string) => apiRequest<{ data: CommunityComment }>(`/v1/community/posts/${postId}/comments`, { method: 'POST', body: { body } }),
-  removeCommunityComment: (commentId: number) => apiRequest<{ success: boolean }>(`/v1/community/comments/${commentId}`, { method: 'DELETE' }),
-  hideCommunityPost: (postId: number, reason: string) => apiRequest<{ success: boolean }>(`/v1/community/posts/${postId}/hide`, { method: 'POST', body: { reason } }),
-  deleteCommunityPost: (postId: number) => apiRequest<{ success: boolean }>(`/v1/community/posts/${postId}`, { method: 'DELETE' }),
+  toggleSchoolUpdateLike: (postId: number) => apiRequest<{ data: { post_id: number; reacted: boolean; reaction_count: number } }>(`/v1/community/posts/${postId}/reaction`, { method: 'POST' }),
+  hideSchoolUpdate: (postId: number, reason: string) => apiRequest<{ success: boolean }>(`/v1/community/posts/${postId}/hide`, { method: 'POST', body: { reason } }),
+  withdrawSchoolUpdate: (postId: number, reason = '') => apiRequest<{ success: boolean }>(`/v1/community/posts/${postId}`, { method: 'DELETE', body: { reason: reason || undefined } }),
   getCurrentCommunityPolicies: () => apiRequest<{ data: Record<string, CommunityPolicy> }>('/v1/community/policies/current'),
   acceptCommunityPolicy: (policyId: number) => apiRequest<{ data: { accepted: boolean } }>(`/v1/community/policies/${policyId}/accept`, { method: 'POST' }),
-  reportCommunityContent: (targetType: 'post' | 'comment', targetId: number, reasonCode: string, details: string) => apiRequest<{ data: { id: number; status: string } }>('/v1/community/reports', { method: 'POST', body: { target_type: targetType, target_id: targetId, reason_code: reasonCode, details: details || null } }),
-  reportCommunityUser: (userId: number, reasonCode: string, details: string) => apiRequest<{ data: { id: number; status: string } }>('/v1/community/reports', { method: 'POST', body: { target_type: 'user', target_id: userId, reason_code: reasonCode, details: details || null } }),
-  blockCommunityUser: (userId: number) => apiRequest<{ data: { active: boolean } }>(`/v1/community/users/${userId}/block`, { method: 'POST' }),
-  unblockCommunityUser: (userId: number) => apiRequest<{ data: { active: boolean } }>(`/v1/community/users/${userId}/block`, { method: 'DELETE' }),
+  reportSchoolUpdate: (postId: number, reasonCode: string, details: string) => apiRequest<{ data: { id: number; status: string } }>('/v1/community/reports', { method: 'POST', body: { target_type: 'post', target_id: postId, reason_code: reasonCode, details: details || null } }),
   getCommunityReports: () => apiRequest<{ data: CommunityReportSummary[] }>('/v1/community/reports/mine'),
-  getBlockedCommunityUsers: () => apiRequest<{ data: CommunityBlockedUser[] }>('/v1/community/blocked-users'),
-  getMyCommunityContent: () => apiRequest<{ data: CommunityOwnContent[] }>('/v1/community/content/mine'),
-  getCommunityAppeals: () => apiRequest<{ data: CommunityAppeal[] }>('/v1/community/appeals/mine'),
-  submitCommunityAppeal: (reportId: number, statement: string) => apiRequest<{ data: CommunityAppeal }>('/v1/community/appeals', { method: 'POST', body: { report_id: reportId, statement } }),
   getGuardianMe: () => portalRequest<GuardianMe>('/parent/me'),
   getChildOutstanding: (studentId: number, academicYear: string) =>
     portalRequest<{ data: OutstandingCharge[] }>(`/parent/children/${studentId}/outstanding?academic_year=${academicYear}`),

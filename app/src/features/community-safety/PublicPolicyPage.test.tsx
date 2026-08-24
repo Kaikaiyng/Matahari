@@ -25,4 +25,15 @@ describe('public Community policies', () => {
     expect(await screen.findByRole('heading', { name: 'Child Safety Standards' })).toBeInTheDocument()
     expect(fetchMock.mock.calls.some(([input]) => new URL(String(input), window.location.origin).pathname.endsWith('/me'))).toBe(false)
   })
+
+  it('routes the account-deletion public policy before authentication', async () => {
+    window.history.replaceState({}, '', '/legal/account-deletion')
+    const accountDeletionPolicy = { data: { ...policy.data, slug: 'account-deletion', title: 'Account Deletion' } }
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify(accountDeletionPolicy), { status: 200, headers: { 'Content-Type': 'application/json' } }))
+    render(<App />)
+
+    expect(await screen.findByRole('heading', { name: 'Account Deletion' })).toBeInTheDocument()
+    expect(fetchMock.mock.calls.some(([input]) => new URL(String(input), window.location.origin).pathname.endsWith('/v1/public/community-policies/account-deletion'))).toBe(true)
+    expect(fetchMock.mock.calls.some(([input]) => new URL(String(input), window.location.origin).pathname.endsWith('/me'))).toBe(false)
+  })
 })

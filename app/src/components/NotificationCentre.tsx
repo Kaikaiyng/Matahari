@@ -22,7 +22,7 @@ export interface NotificationCentreProps {
   onNavigate?: (tab: string) => void
 }
 
-type NotificationCategory = 'all' | 'unread' | 'finance' | 'academic' | 'attendance' | 'general'
+type NotificationCategory = 'all' | 'unread' | 'updates' | 'finance' | 'academic' | 'attendance' | 'general'
 
 export const NotificationCentre: React.FC<NotificationCentreProps> = ({
   onClose,
@@ -89,6 +89,7 @@ export const NotificationCentre: React.FC<NotificationCentreProps> = ({
   const filteredNotifications = useMemo(() => {
     return notifications.filter((n) => {
       if (activeFilter === 'unread') return !n.read_at
+      if (activeFilter === 'updates') return n.type === 'school_update'
       if (activeFilter === 'finance') return n.type === 'finance' || n.type === 'payment_reminder'
       if (activeFilter === 'academic') return n.type === 'academic' || n.type === 'quiz' || n.type === 'assessment'
       if (activeFilter === 'attendance') return n.type === 'attendance'
@@ -110,6 +111,8 @@ export const NotificationCentre: React.FC<NotificationCentreProps> = ({
 
   const getNotificationConfig = (type: string) => {
     switch (type) {
+      case 'school_update':
+        return { icon: <Bell size={18} />, badgeClass: 'nc-badge-general', label: 'Updates', targetTab: 'home' }
       case 'finance':
       case 'payment_reminder':
         return {
@@ -225,6 +228,7 @@ export const NotificationCentre: React.FC<NotificationCentreProps> = ({
           >
             Unread {unreadCount > 0 && <span className="nc-chip-badge">{unreadCount}</span>}
           </button>
+          <button type="button" className={`nc-filter-chip ${activeFilter === 'updates' ? 'active' : ''}`} onClick={() => setActiveFilter('updates')}>Updates</button>
           <button
             type="button"
             className={`nc-filter-chip ${activeFilter === 'finance' ? 'active' : ''}`}

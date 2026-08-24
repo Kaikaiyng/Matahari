@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Check, ChevronDown, ChevronLeft, ChevronRight, Circle, ClipboardCheck, FileText, LogOut, MessageCircle, School, Send, Upload, UsersRound, X } from 'lucide-react'
+import { Check, ChevronLeft, ChevronRight, Circle, ClipboardCheck, FileText, LogOut, MessageCircle, School, Send, Upload, UsersRound, X } from 'lucide-react'
 import { portalApi, type AssessmentItem, type AttendanceStatus, type TeacherAssignment, type TeacherCampusAttendance, type TeacherStudent } from '../api/portalApi'
 import { CommunityFeed } from './CommunityFeed'
 import { CommunitySafetyCentre } from '../features/community-safety/CommunitySafetyCentre'
@@ -10,7 +10,7 @@ import { CustomSelect } from './CustomSelect'
 import { useSwipe } from './MobileShell'
 import { useSwipeBack } from './useSwipeBack'
 
-export function TeacherPortalView({ teacherName, activeTab, onTabChange, onLogout, staffMode = false }: { teacherName: string; activeTab: string; onTabChange: (tab: string) => void; onLogout: () => void; staffMode?: boolean }) {
+export function TeacherPortalView({ teacherName, activeTab, onTabChange, onLogout, staffMode = false, canPublishUpdates = false }: { teacherName: string; activeTab: string; onTabChange: (tab: string) => void; onLogout: () => void; staffMode?: boolean; canPublishUpdates?: boolean }) {
   const { dragOffset, isDragging } = useSwipe()
   const [previousTab, setPreviousTab] = useState<string>(staffMode ? 'classes' : 'home')
 
@@ -20,9 +20,7 @@ export function TeacherPortalView({ teacherName, activeTab, onTabChange, onLogou
     }
   }, [activeTab])
 
-  const primaryTabs = staffMode
-    ? ['home', 'classes', 'create', 'review', 'more']
-    : ['home', 'classes', 'create', 'attendance', 'more']
+  const primaryTabs = ['home', 'classes', ...(canPublishUpdates ? ['create'] : []), staffMode ? 'review' : 'attendance', 'more']
   const isSecondaryPage = ['safety', 'assessments', 'quizzes'].includes(activeTab)
   const visibleTab = isSecondaryPage ? previousTab : activeTab
   const activeIndex = primaryTabs.indexOf(visibleTab)
@@ -43,17 +41,15 @@ export function TeacherPortalView({ teacherName, activeTab, onTabChange, onLogou
         }}
       >
         <div className={`portal-tab-slide ${visibleTab === 'home' ? 'active' : ''} ${isDragging ? 'swiping' : ''}`}>
-          <CommunityFeed role="teacher" userName={teacherName} onCreatePost={() => onTabChange('create')} activeTab={visibleTab} />
+          <CommunityFeed role="teacher" userName={teacherName} onCreateUpdate={() => onTabChange('create')} canPublishUpdates={canPublishUpdates} canManageUpdates activeTab={visibleTab} />
         </div>
         <div className={`portal-tab-slide ${visibleTab === 'classes' ? 'active' : ''} ${isDragging ? 'swiping' : ''}`}>
-          <ClassesPage staffMode={staffMode} onAssessments={() => onTabChange('assessments')} onQuizzes={() => onTabChange('quizzes')} onReview={() => onTabChange('review')} onAttendance={() => onTabChange('attendance')} onCreatePost={() => onTabChange('create')} />
+          <ClassesPage staffMode={staffMode} canPublishUpdates={canPublishUpdates} onAssessments={() => onTabChange('assessments')} onQuizzes={() => onTabChange('quizzes')} onReview={() => onTabChange('review')} onAttendance={() => onTabChange('attendance')} onCreatePost={() => onTabChange('create')} />
         </div>
-        <div className={`portal-tab-slide ${visibleTab === 'create' ? 'active' : ''} ${isDragging ? 'swiping' : ''}`}>
-          <CreatePost staffMode={staffMode} onPublished={() => onTabChange('home')} />
-        </div>
+        {canPublishUpdates && <div className={`portal-tab-slide ${visibleTab === 'create' ? 'active' : ''} ${isDragging ? 'swiping' : ''}`}><CreatePost onPublished={() => onTabChange('home')} /></div>}
         <div className={`portal-tab-slide ${(staffMode ? visibleTab === 'review' : visibleTab === 'attendance') ? 'active' : ''} ${isDragging ? 'swiping' : ''}`}>
           {staffMode ? (
-            <CommunityFeed role="teacher" userName={teacherName} moderation />
+            <CommunityFeed role="teacher" userName={teacherName} canManageUpdates />
           ) : (
             <AttendancePage />
           )}
@@ -74,6 +70,7 @@ function Title({ eyebrow, title, copy }: { eyebrow: string; title: string; copy:
 
 function ClassesPage({
   staffMode,
+  canPublishUpdates,
   onAssessments,
   onQuizzes,
   onReview,
@@ -81,6 +78,7 @@ function ClassesPage({
   onCreatePost,
 }: {
   staffMode: boolean
+  canPublishUpdates: boolean
   onAssessments: () => void
   onQuizzes: () => void
   onReview: () => void
@@ -136,11 +134,11 @@ function ClassesPage({
           <span><strong>Assessments</strong><small>Create, score, and publish class results</small></span>
           <ChevronRight />
         </button>
-        <button type="button" onClick={onCreatePost}>
+        {canPublishUpdates && <button type="button" onClick={onCreatePost}>
           <MessageCircle />
           <span><strong>Class posts</strong><small>Publish announcements for your assigned classes</small></span>
           <ChevronRight />
-        </button>
+        </button>}
       </section>
 
       {selectedClass && (
@@ -151,6 +149,7 @@ function ClassesPage({
           onAttendance={onAttendance}
           onAssessments={onAssessments}
           onCreatePost={onCreatePost}
+          canPublishUpdates={canPublishUpdates}
         />
       )}
     </div>
@@ -190,6 +189,7 @@ function ClassDetailSubpage({
   onAttendance,
   onAssessments,
   onCreatePost,
+  canPublishUpdates,
 }: {
   assignment: TeacherAssignment
   studentCount: number
@@ -197,6 +197,7 @@ function ClassDetailSubpage({
   onAttendance: () => void
   onAssessments: () => void
   onCreatePost: () => void
+  canPublishUpdates: boolean
 }) {
   const [students, setStudents] = useState<TeacherStudent[]>([])
   const [loading, setLoading] = useState(true)
@@ -276,7 +277,7 @@ function ClassDetailSubpage({
               <ChevronRight size={18} className="about-item-arrow" />
             </button>
 
-            <button
+            {canPublishUpdates && <button
               type="button"
               className="about-policy-item"
               onClick={() => { onClose(); onCreatePost() }}
@@ -284,7 +285,7 @@ function ClassDetailSubpage({
               <Send size={18} className="about-item-icon" />
               <span className="about-item-title">Publish Class Announcement</span>
               <ChevronRight size={18} className="about-item-arrow" />
-            </button>
+            </button>}
           </div>
         </section>
 
@@ -330,196 +331,20 @@ function ClassDetailSubpage({
   )
 }
 
-function AudienceSelect({
-  value,
-  onChange,
-  options,
-}: {
-  value: string
-  onChange: (val: string) => void
-  options: Array<{ value: string; label: string }>
-}) {
-  const [isOpen, setIsOpen] = useState(false)
-  const selectedOption = options.find((opt) => opt.value === value) ?? options[0]
-
-  return (
-    <div className="custom-select-container">
-      <button
-        type="button"
-        className="custom-select-trigger"
-        onClick={() => setIsOpen((prev) => !prev)}
-        aria-expanded={isOpen}
-      >
-        <span>{selectedOption?.label ?? 'Select audience'}</span>
-        <ChevronDown size={18} className={`select-arrow-icon ${isOpen ? 'open' : ''}`} />
-      </button>
-
-      {isOpen && (
-        <>
-          <div className="select-backdrop" onClick={() => setIsOpen(false)} />
-          <div className="custom-select-dropdown">
-            {options.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                className={`custom-select-option ${value === option.value ? 'active' : ''}`}
-                onClick={() => {
-                  onChange(option.value)
-                  setIsOpen(false)
-                }}
-              >
-                <span>{option.label}</span>
-                {value === option.value && <Check size={16} className="check-icon" />}
-              </button>
-            ))}
-          </div>
-        </>
-      )}
-    </div>
-  )
-}
-
-function CreatePost({ staffMode, onPublished }: { staffMode: boolean; onPublished: () => void }) {
-  const [assignments, setAssignments] = useState<TeacherAssignment[]>([])
-  const [audience, setAudience] = useState(staffMode ? 'school' : '')
-  const [comments, setComments] = useState(true)
-  const [message, setMessage] = useState('')
-  const [notice, setNotice] = useState('')
-  const [saving, setSaving] = useState(false)
-  const [files, setFiles] = useState<File[]>([])
-
-  useEffect(() => {
-    if (!staffMode) {
-      portalApi.getTeacherAssignments()
-        .then(({ data }) => {
-          setAssignments(data)
-          setAudience(data.length > 1 ? 'all_classes' : (data[0] ? String(data[0].class.id) : ''))
-        })
-        .catch(() => setNotice('Unable to load your assigned classes.'))
-    }
-  }, [staffMode])
-
-  const audienceOptions = [
-    ...(staffMode ? [{ value: 'school', label: 'Whole school' }] : []),
-    ...(assignments.length > 0 ? [{ value: 'all_classes', label: 'All assigned classes' }] : []),
-    ...assignments.map((item) => ({
-      value: String(item.class.id),
-      label: `${item.class.name} · ${item.subject.name}`,
-    })),
-  ]
-
-  const submit = async (event: React.FormEvent) => {
-    event.preventDefault()
-    if (!audience) return
-    setSaving(true)
-    setNotice('')
-    try {
-      const uniqueClassIds = Array.from(new Set(assignments.map((item) => item.class.id)))
-      const targetAudiences = audience === 'school'
-        ? [{ type: 'school' as const }]
-        : audience === 'all_classes'
-          ? uniqueClassIds.map((id) => ({ type: 'class' as const, class_id: id }))
-          : [{ type: 'class' as const, class_id: Number(audience) }]
-
-      await portalApi.createCommunityPost(
-        message,
-        comments,
-        targetAudiences,
-        files
-      )
-      setMessage('')
-      setFiles([])
-      window.dispatchEvent(new CustomEvent('app-refresh'))
-      onPublished()
-    } catch (error) {
-      setNotice(error instanceof Error ? error.message : 'Unable to publish this post.')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const removeFile = (index: number) => {
-    setFiles((current) => current.filter((_, i) => i !== index))
-  }
-
-  return (
-    <div className="record-page">
-      <Title eyebrow="Community" title="Share a school moment" copy="Choose an authorized audience before publishing." />
-      <form className="post-composer" onSubmit={submit}>
-        <div className="composer-field">
-          <span className="field-label">Audience</span>
-          <AudienceSelect
-            value={audience}
-            onChange={setAudience}
-            options={audienceOptions}
-          />
-        </div>
-
-        <div className="composer-field">
-          <span className="field-label">Post</span>
-          <textarea
-            className="custom-textarea"
-            value={message}
-            onChange={(event) => setMessage(event.target.value)}
-            placeholder="What happened in class today?"
-            rows={5}
-            maxLength={5000}
-            required
-          />
-        </div>
-
-        <div className="composer-field">
-          <span className="field-label">Photos, short video, or PDF</span>
-          <label className="file-upload-dropzone">
-            <Upload size={20} />
-            <div>
-              <strong>Choose files</strong>
-              <small>Images, MP4 video, or PDF document</small>
-            </div>
-            <input
-              type="file"
-              multiple
-              accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,application/pdf"
-              className="sr-only"
-              onChange={(event) => setFiles((prev) => [...prev, ...Array.from(event.target.files ?? [])].slice(0, 6))}
-            />
-          </label>
-
-          {files.length > 0 && (
-            <div className="file-pills-list">
-              {files.map((file, index) => (
-                <span className="file-pill" key={`${file.name}-${index}`}>
-                  <span className="file-name">{file.name}</span>
-                  <button type="button" className="file-remove-btn" onClick={() => removeFile(index)} aria-label={`Remove ${file.name}`}>
-                    <X size={14} />
-                  </button>
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <label className="comment-toggle">
-          <span>
-            <strong>Allow comments</strong>
-            <small>Families and students in this audience may respond.</small>
-          </span>
-          <input
-            type="checkbox"
-            className="custom-checkbox"
-            checked={comments}
-            onChange={(event) => setComments(event.target.checked)}
-          />
-        </label>
-
-        {notice && <p className="composer-notice">{notice}</p>}
-
-        <button className="publish-btn" type="submit" disabled={saving || !audience}>
-          <Send size={18} /> {saving ? 'Publishing…' : 'Publish post'}
-        </button>
-      </form>
-    </div>
-  )
+function CreatePost({ onPublished }: { onPublished: () => void }) {
+  const [classes, setClasses] = useState<Array<{ id: number; name: string }>>([])
+  const [maxImages, setMaxImages] = useState(6)
+  const [audienceMode, setAudienceMode] = useState<'school' | 'classes'>('school')
+  const [selectedClassIds, setSelectedClassIds] = useState<number[]>([])
+  const [notifyAudience, setNotifyAudience] = useState(true)
+  const [recipientLabel, setRecipientLabel] = useState('Whole school')
+  const [recipientCount, setRecipientCount] = useState<number | null>(null)
+  const [message, setMessage] = useState(''); const [notice, setNotice] = useState(''); const [saving, setSaving] = useState(false); const [files, setFiles] = useState<File[]>([])
+  const audiences = audienceMode === 'school' ? [{ type: 'school' as const }] : selectedClassIds.map((class_id) => ({ type: 'class' as const, class_id }))
+  useEffect(() => { portalApi.getPublishingContext().then(({ data }) => { setClasses(data.classes); setMaxImages(data.max_images); setNotifyAudience(data.notify_default) }).catch(() => setNotice('Unable to load publishing options.')) }, [])
+  useEffect(() => { if (!audiences.length) { setRecipientLabel('No classes selected'); setRecipientCount(0); return }; const timeout = window.setTimeout(() => { portalApi.previewUpdateAudience(audiences).then(({ data }) => { setRecipientLabel(data.audience_label); setRecipientCount(data.recipient_count) }).catch(() => setNotice('Unable to preview this audience.')) }, 250); return () => window.clearTimeout(timeout) }, [audienceMode, selectedClassIds.join(',')])
+  const submit = async (event: React.FormEvent) => { event.preventDefault(); if (!audiences.length) return; setSaving(true); setNotice(''); try { await portalApi.createSchoolUpdate(message, audiences, notifyAudience, files); setMessage(''); setFiles([]); window.dispatchEvent(new CustomEvent('app-refresh')); onPublished() } catch (error) { setNotice(error instanceof Error ? error.message : 'Unable to publish this update.') } finally { setSaving(false) } }
+  return <div className="record-page"><Title eyebrow="Updates" title="Create school update" copy="Choose a whole-school or multi-class audience before publishing." /><form className="post-composer" onSubmit={submit}><div className="composer-field"><span className="field-label">Audience</span><label><input type="radio" name="audience-mode" checked={audienceMode === 'school'} onChange={() => setAudienceMode('school')} /> Whole school</label><label><input type="radio" name="audience-mode" checked={audienceMode === 'classes'} onChange={() => setAudienceMode('classes')} /> Selected classes</label>{audienceMode === 'classes' && <div className="file-pills-list">{classes.map((schoolClass) => <label className="file-pill" key={schoolClass.id}><input type="checkbox" checked={selectedClassIds.includes(schoolClass.id)} onChange={() => setSelectedClassIds((ids) => ids.includes(schoolClass.id) ? ids.filter((id) => id !== schoolClass.id) : [...ids, schoolClass.id])} /> {schoolClass.name}</label>)}</div>}<small>{recipientLabel}{recipientCount !== null ? ` · ${recipientCount} recipient${recipientCount === 1 ? '' : 's'}` : ''}</small>{recipientCount === 0 && <p className="composer-notice">This audience currently has no recipients. You may still publish an authorized update.</p>}</div><label className="composer-field"><span className="field-label">Update</span><textarea className="custom-textarea" value={message} onChange={(event) => setMessage(event.target.value)} placeholder="What should families and students know?" rows={5} maxLength={5000} required /></label><div className="composer-field"><span className="field-label">Images</span><label className="file-upload-dropzone"><Upload size={20} /><div><strong>Choose images</strong><small>JPEG, PNG or WebP · up to {maxImages}</small></div><input type="file" multiple accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(event) => setFiles((current) => [...current, ...Array.from(event.target.files ?? []).filter((file) => ['image/jpeg', 'image/png', 'image/webp'].includes(file.type))].slice(0, maxImages))} /></label>{files.length > 0 && <div className="file-pills-list">{files.map((file, index) => <span className="file-pill" key={`${file.name}-${index}`}>{file.name}<button type="button" className="file-remove-btn" onClick={() => setFiles((items) => items.filter((_, itemIndex) => itemIndex !== index))} aria-label={`Remove ${file.name}`}><X size={14} /></button></span>)}</div>}</div><label className="comment-toggle"><span><strong>Notify audience</strong><small>Send an in-app school update notification.</small></span><input aria-label="Notify audience" type="checkbox" className="custom-checkbox" checked={notifyAudience} onChange={(event) => setNotifyAudience(event.target.checked)} /></label>{notice && <p className="composer-notice">{notice}</p>}<button className="publish-btn" type="submit" disabled={saving || !message.trim() || !audiences.length}><Send size={18} /> {saving ? 'Publishing…' : 'Publish update'}</button></form></div>
 }
 
 function AssessmentPage({ staffMode = false, onBack }: { staffMode?: boolean; onBack?: () => void }) {
