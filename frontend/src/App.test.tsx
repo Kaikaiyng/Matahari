@@ -673,14 +673,23 @@ describe('demo shell', () => {
     expect(within(navigation).queryByRole('button', { name: 'Audit Trail' })).not.toBeInTheDocument()
   })
 
-  it('shows Community Safety only with a moderation permission', async () => {
+  it('shows Post Reports only with the school post-report permission', async () => {
     const user = userEvent.setup()
     installApiUser({ ...currentUser, permissions: [...currentUser.permissions, 'community.moderate'] })
     await renderAuthenticatedApp()
 
     const navigation = screen.getByRole('navigation', { name: 'Main navigation' })
     await user.click(within(navigation).getByRole('button', { name: 'Administration navigation group' }))
-    expect(within(navigation).getByRole('button', { name: 'Community Safety' })).toBeInTheDocument()
+    expect(within(navigation).getByRole('button', { name: 'Post Reports' })).toBeInTheDocument()
+  })
+
+  it('does not expose Post Reports to a platform-only moderator', async () => {
+    installApiUser({ ...currentUser, permissions: [...currentUser.permissions, 'community.moderate_platform'] })
+    await renderAuthenticatedApp()
+
+    const navigation = screen.getByRole('navigation', { name: 'Main navigation' })
+    expect(within(navigation).queryByRole('button', { name: 'Administration navigation group' })).not.toBeInTheDocument()
+    expect(within(navigation).queryByRole('button', { name: 'Post Reports' })).not.toBeInTheDocument()
   })
 
   it('presents Community abilities as official School Updates', async () => {

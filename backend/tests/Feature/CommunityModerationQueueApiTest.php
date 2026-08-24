@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\CommunityPost;
 use App\Models\CommunityPostAudience;
 use App\Models\CommunityReport;
+use App\Models\SchoolClass;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -21,12 +22,12 @@ class CommunityModerationQueueApiTest extends TestCase
 
     public function test_school_post_reports_queue_contains_only_active_user_reported_posts_and_removes_content(): void
     {
-        $post = $this->publishedPost();
+        $post = $this->publishedPost(classAudience: true);
         $case = CommunityReport::query()->create([
             'tenant_id' => $post->tenant_id, 'school_id' => $post->school_id, 'reporter_user_id' => $this->user('rachel.wong')->id,
             'source' => 'user_report', 'target_type' => 'post', 'community_post_id' => $post->id,
             'reported_user_id' => $post->author_user_id, 'reason_code' => 'inappropriate', 'priority' => 'normal',
-            'status' => CommunityReport::STATUS_SUBMITTED, 'target_snapshot' => ['post' => ['id' => $post->id]], 'due_at' => now()->addDay(),
+            'status' => CommunityReport::STATUS_SUBMITTED, 'details' => 'Please review this update.', 'target_snapshot' => ['post' => ['id' => $post->id]], 'due_at' => now()->addDay(),
         ]);
         $historical = CommunityReport::query()->create([
             'tenant_id' => $post->tenant_id, 'school_id' => $post->school_id, 'reporter_user_id' => $post->author_user_id,
@@ -36,7 +37,12 @@ class CommunityModerationQueueApiTest extends TestCase
         ]);
 
         $this->actingAs($this->user('admin'))->getJson('http://localhost/api/v1/admin/community-moderation/reports')
-            ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $case->id);
+            ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $case->id)
+            ->assertJsonPath('data.0.reporter.name', $this->user('rachel.wong')->name)
+            ->assertJsonPath('data.0.post.author.name', $this->user('admin')->name)
+            ->assertJsonPath('data.0.post.audience.school', false)
+            ->assertJsonPath('data.0.details', 'Please review this update.')
+            ->assertJsonPath('data.0.post.audience.classes.0.name', SchoolClass::query()->where('school_id', $post->school_id)->firstOrFail()->name);
         $this->actingAs($this->user('admin'))->postJson("http://localhost/api/v1/admin/community-moderation/reports/{$case->id}/decision", [
             'decision' => 'remove_content', 'reason_code' => 'inappropriate', 'reason' => 'Removed after report review.',
         ])->assertOk()->assertJsonPath('data.status', 'resolved');
@@ -81,7 +87,7 @@ class CommunityModerationQueueApiTest extends TestCase
         $this->assertDatabaseHas('community_posts', ['id' => $post->id, 'status' => CommunityPost::STATUS_HIDDEN]);
     }
 
-    private function publishedPost(): CommunityPost
+    private function publishedPost(bool $classAudience = false): CommunityPost
     {
         $admin = $this->user('admin');
         $post = CommunityPost::query()->create([
@@ -89,7 +95,12 @@ class CommunityModerationQueueApiTest extends TestCase
             'post_type' => 'update', 'body' => 'Reported update', 'comments_enabled' => false,
             'status' => CommunityPost::STATUS_PUBLISHED, 'published_at' => now(),
         ]);
-        CommunityPostAudience::query()->create(['school_id' => $admin->school_id, 'community_post_id' => $post->id, 'audience_type' => 'school', 'audience_key' => 'school']);
+        if ($classAudience) {
+            $schoolClass = SchoolClass::query()->where('school_id', $admin->school_id)->firstOrFail();
+            CommunityPostAudience::query()->create(['school_id' => $admin->school_id, 'community_post_id' => $post->id, 'audience_type' => 'class', 'class_id' => $schoolClass->id, 'audience_key' => "class:{$schoolClass->id}"]);
+        } else {
+            CommunityPostAudience::query()->create(['school_id' => $admin->school_id, 'community_post_id' => $post->id, 'audience_type' => 'school', 'audience_key' => 'school']);
+        }
 
         return $post;
     }

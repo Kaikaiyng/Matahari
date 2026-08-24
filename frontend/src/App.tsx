@@ -419,7 +419,7 @@ const navGroups: NavigationGroup<PageKey>[] = [
     label: 'Administration',
     icon: ShieldCheck as any,
     items: [
-      { key: 'moderation', label: 'Community Safety', icon: ShieldCheck as any, requiredAnyPermissions: ['community.moderate', 'community.moderate_platform'] },
+      { key: 'moderation', label: 'Post Reports', icon: ShieldCheck as any, requiredPermission: 'community.moderate' },
     ],
   },
   {
@@ -5011,7 +5011,7 @@ function App() {
     }
 
     if (activePage === 'moderation') {
-      return <UgcModerationPage permissions={user.permissions} currentUserId={user.id} />
+      return <UgcModerationPage />
     }
 
     if (activePage === 'settings') {

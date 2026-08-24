@@ -19,6 +19,7 @@ class CommunityModerationController extends Controller
     {
         [$tenantId, $schoolId] = $this->scope($request);
         $reports = $this->activePostReports($tenantId, $schoolId)
+            ->with($this->reportRelations())
             ->orderBy('due_at')->limit(100)->get();
 
         return response()->json(['data' => $reports->map(fn (CommunityReport $report) => $this->response($report))]);
@@ -27,9 +28,9 @@ class CommunityModerationController extends Controller
     public function show(Request $request, CommunityReport $communityReport): JsonResponse
     {
         [$tenantId, $schoolId] = $this->scope($request);
-        $report = $this->activePostReports($tenantId, $schoolId)->whereKey($communityReport->id)->firstOrFail();
+        $report = $this->activePostReports($tenantId, $schoolId)->with($this->reportRelations())->whereKey($communityReport->id)->firstOrFail();
 
-        return response()->json(['data' => $this->response($report->load('actions.actor:id,name'))]);
+        return response()->json(['data' => $this->response($report)]);
     }
 
     public function decide(Request $request, CommunityReport $communityReport, CommunityModerationService $service, AuditContextFactory $contexts): JsonResponse
@@ -62,16 +63,38 @@ class CommunityModerationController extends Controller
             ->whereIn('status', [CommunityReport::STATUS_SUBMITTED, CommunityReport::STATUS_REVIEWING]);
     }
 
+    /** @return array<int, string> */
+    private function reportRelations(): array
+    {
+        return ['reporter:id,name', 'post.author:id,name', 'post.audiences.schoolClass:id,name', 'actions.actor:id,name'];
+    }
+
     /** @return array<string, mixed> */
     private function response(CommunityReport $report): array
     {
+        $post = $report->post;
+
         return [
             'id' => $report->id, 'source' => $report->source, 'target_type' => $report->target_type,
             'reason_code' => $report->reason_code, 'priority' => $report->priority, 'status' => $report->status,
+            'details' => $report->details, 'created_at' => $report->created_at?->toIso8601String(),
             'due_at' => $report->due_at?->toIso8601String(),
             'overdue' => $report->due_at?->isPast() && $report->status !== CommunityReport::STATUS_RESOLVED,
             'target_snapshot' => $report->target_snapshot, 'resolution_code' => $report->resolution_code,
-            'actions' => $report->relationLoaded('actions') ? $report->actions : [],
+            'reporter' => $report->reporter ? ['id' => $report->reporter->id, 'name' => $report->reporter->name] : null,
+            'post' => $post ? [
+                'author' => $post->author ? ['id' => $post->author->id, 'name' => $post->author->name] : null,
+                'audience' => [
+                    'school' => $post->audiences->contains('audience_type', 'school'),
+                    'classes' => $post->audiences->where('audience_type', 'class')->map(fn ($audience) => $audience->schoolClass ? ['id' => $audience->schoolClass->id, 'name' => $audience->schoolClass->name] : null)->filter()->values(),
+                ],
+            ] : null,
+            'actions' => $report->actions->map(fn ($action) => [
+                'id' => $action->id, 'action' => $action->action, 'reason_code' => $action->reason_code,
+                'reason' => $action->reason,
+                'actor' => $action->actor ? ['id' => $action->actor->id, 'name' => $action->actor->name] : null,
+                'created_at' => $action->created_at?->toIso8601String(),
+            ])->values(),
         ];
     }
 }

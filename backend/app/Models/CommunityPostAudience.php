@@ -13,4 +13,9 @@ class CommunityPostAudience extends Model
     {
         return $this->belongsTo(CommunityPost::class, 'community_post_id');
     }
+
+    public function schoolClass(): BelongsTo
+    {
+        return $this->belongsTo(SchoolClass::class, 'class_id');
+    }
 }
