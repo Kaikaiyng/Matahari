@@ -8,13 +8,16 @@ use App\Models\CommunityComment;
 use App\Models\CommunityPost;
 use App\Models\CommunityPostMedia;
 use App\Models\School;
+use App\Models\SchoolClass;
 use App\Services\Community\CommunityAccessService;
 use App\Services\Community\CommunityService;
+use App\Services\Community\SchoolUpdateAudienceResolver;
 use App\Support\SchoolContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -38,17 +41,34 @@ class CommunityController extends Controller
     {
         $data = $request->validate([
             'body' => ['required', 'string', 'max:5000'], 'comments_enabled' => ['sometimes', 'boolean'],
-            'audiences' => ['required', 'array', 'min:1', 'max:20'],
-            'audiences.*.type' => ['required', Rule::in(['school', 'class', 'student'])],
-            'audiences.*.class_id' => ['nullable', 'integer', 'required_if:audiences.*.type,class'],
-            'audiences.*.student_id' => ['nullable', 'integer', 'required_if:audiences.*.type,student'],
             'media' => ['sometimes', 'array', 'max:6'],
             'media.*' => ['file', 'max:51200', 'mimetypes:image/jpeg,image/png,image/webp,video/mp4,video/quicktime,application/pdf'],
         ]);
-        $post = $service->publish(SchoolContext::fromRequest($request)->schoolId, $data, $request->user(), $contexts->fromRequest($request));
+        $schoolId = SchoolContext::fromRequest($request)->schoolId;
+        $data['audiences'] = $this->validatedAudiences($request, $schoolId);
+        $post = $service->publish($schoolId, $data, $request->user(), $contexts->fromRequest($request));
         $post->load(['author:id,name', 'audiences', 'media', 'comments.user'])->loadCount('reactions')->setAttribute('reacted_by_me', false);
 
         return response()->json(['data' => $this->response($post)], 201);
+    }
+
+    public function publishingContext(Request $request): JsonResponse
+    {
+        $schoolId = SchoolContext::fromRequest($request)->schoolId;
+
+        return response()->json(['data' => [
+            'classes' => SchoolClass::query()->where('school_id', $schoolId)->where('status', 'active')->orderBy('name')
+                ->get(['id', 'name'])->map(fn (SchoolClass $class): array => ['id' => $class->id, 'name' => $class->name])->all(),
+            'max_images' => 6,
+            'notify_default' => true,
+        ]]);
+    }
+
+    public function audiencePreview(Request $request, SchoolUpdateAudienceResolver $resolver): JsonResponse
+    {
+        $schoolId = SchoolContext::fromRequest($request)->schoolId;
+
+        return response()->json(['data' => $resolver->preview($schoolId, $this->validatedAudiences($request, $schoolId), $request->user()->id)]);
     }
 
     public function update(Request $request, CommunityPost $communityPost, CommunityService $service, AuditContextFactory $contexts): JsonResponse
@@ -148,5 +168,31 @@ class CommunityController extends Controller
             ]),
             'can_moderate' => $isModerator,
         ];
+    }
+
+    /** @return list<array{type:'school'|'class',class_id?:int}> */
+    private function validatedAudiences(Request $request, int $schoolId): array
+    {
+        $data = $request->validate([
+            'audiences' => ['required', 'array', 'min:1', 'max:20'],
+            'audiences.*.type' => ['required', Rule::in(['school', 'class'])],
+            'audiences.*.class_id' => ['nullable', 'integer', 'required_if:audiences.*.type,class'],
+        ]);
+        $audiences = $data['audiences'];
+        $hasSchoolAudience = collect($audiences)->contains(fn (array $audience): bool => $audience['type'] === 'school');
+        if ($hasSchoolAudience && count($audiences) !== 1) {
+            throw ValidationException::withMessages(['audiences' => 'A whole-school audience cannot be combined with other audiences.']);
+        }
+
+        $classIds = collect($audiences)->where('type', 'class')->pluck('class_id')->map(fn ($id): int => (int) $id)->values();
+        if ($classIds->count() !== $classIds->unique()->count()) {
+            throw ValidationException::withMessages(['audiences' => 'Each class may be selected only once.']);
+        }
+        if ($classIds->isNotEmpty() && SchoolClass::query()->where('school_id', $schoolId)->where('status', 'active')
+            ->whereIn('id', $classIds->all())->count() !== $classIds->count()) {
+            throw ValidationException::withMessages(['audiences' => 'Every class audience must be active and within the current school.']);
+        }
+
+        return $audiences;
     }
 }

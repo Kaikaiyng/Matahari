@@ -2,7 +2,6 @@
 
 namespace App\Services\Community;
 
-use App\Models\ClassEnrolment;
 use App\Models\CommunityPost;
 use App\Models\CommunityUserBlock;
 use App\Models\School;
@@ -12,10 +11,12 @@ use Illuminate\Database\Eloquent\Builder;
 
 class CommunityAccessService
 {
+    public function __construct(private readonly SchoolUpdateAudienceResolver $audiences) {}
+
     public function visiblePosts(User $user, int $schoolId): Builder
     {
         $tenantId = (int) School::query()->whereKey($schoolId)->value('tenant_id');
-        $classIds = $this->visibleClassIds($user, $schoolId);
+        $classIds = $this->audiences->visibleClassIds($user, $schoolId);
         $studentId = $user->studentProfile?->id;
         $blockedUserIds = $this->blockedUserIds($user, $tenantId, $schoolId);
 
@@ -77,25 +78,5 @@ class CommunityAccessService
                 abort(403, 'Direct student posts require authorized school staff.');
             }
         }
-    }
-
-    private function visibleClassIds(User $user, int $schoolId): array
-    {
-        $ids = TeachingAssignment::query()->where('school_id', $schoolId)->where('teacher_user_id', $user->id)
-            ->where('status', 'active')->where('current_slot', 1)->pluck('class_id');
-
-        if ($user->studentProfile) {
-            $ids = $ids->merge(ClassEnrolment::query()->where('school_id', $schoolId)->where('student_id', $user->studentProfile->id)
-                ->where('status', 'active')->where('current_slot', 1)->pluck('class_id'));
-        }
-
-        if ($user->guardianProfile) {
-            $studentIds = $user->guardianProfile->students()->wherePivot('school_id', $schoolId)
-                ->wherePivot('status', 'active')->wherePivot('current_slot', 1)->pluck('students.id');
-            $ids = $ids->merge(ClassEnrolment::query()->where('school_id', $schoolId)->whereIn('student_id', $studentIds)
-                ->where('status', 'active')->where('current_slot', 1)->pluck('class_id'));
-        }
-
-        return $ids->map(fn ($id) => (int) $id)->unique()->values()->all();
     }
 }
