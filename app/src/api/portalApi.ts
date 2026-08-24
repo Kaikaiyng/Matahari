@@ -214,6 +214,7 @@ export interface AssessmentItem {
 
 export const portalApi = {
   getSchoolUpdates: () => apiRequest<{ data: SchoolUpdate[] }>('/v1/community/posts'),
+  getSchoolUpdate: (postId: number) => apiRequest<{ data: SchoolUpdate }>(`/v1/community/posts/${postId}`),
   getPublishingContext: () => apiRequest<{ data: PublishingContext }>('/v1/community/publishing-context'),
   previewUpdateAudience: (audiences: UpdateAudience[]) => apiRequest<{ data: AudiencePreview }>('/v1/community/audience-preview', { method: 'POST', body: { audiences } }),
   createSchoolUpdate: (body: string, audiences: UpdateAudience[], notifyAudience: boolean, files: File[] = []) => {

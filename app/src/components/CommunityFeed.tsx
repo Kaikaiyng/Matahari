@@ -65,7 +65,14 @@ export function CommunityFeed({ role, userName, onOpenFinance, onCreateUpdate, c
       const postId = Number((event as CustomEvent<{ postId?: number }>).detail?.postId)
       if (!Number.isInteger(postId) || postId <= 0) return
       focusPostId.current = postId
+      setError('')
       void load()
+        .then(() => portalApi.getSchoolUpdate(postId))
+        .then(({ data }) => {
+          setError('')
+          setUpdates((items) => [data, ...items.filter((item) => item.id !== data.id)])
+        })
+        .catch(() => setError('Unable to open this school update.'))
     }
     window.addEventListener('school-update-focus', focus)
     return () => window.removeEventListener('school-update-focus', focus)

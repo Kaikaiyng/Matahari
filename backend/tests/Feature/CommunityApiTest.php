@@ -41,6 +41,7 @@ use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\TestDox;
 use RuntimeException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
 
 class CommunityApiTest extends TestCase
@@ -763,6 +764,190 @@ class CommunityApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.0.id', $postId)
             ->assertJsonPath('data.0.can_edit', false);
+    }
+
+    public function test_publish_denied_author_is_not_offered_withdrawal_and_delete_is_forbidden(): void
+    {
+        $teacher = User::query()->where('username', 'teacher.lim')->firstOrFail();
+        $class = SchoolClass::query()->where('name', 'MB1')->firstOrFail();
+        $postId = $this->actingAs($teacher)->postJson('http://127.0.0.1/api/v1/community/posts', [
+            'body' => 'Former publisher cannot withdraw.',
+            'audiences' => [['type' => 'class', 'class_id' => $class->id]],
+        ])->assertCreated()->json('data.id');
+        UserPermissionOverride::query()->create([
+            'school_id' => $teacher->school_id,
+            'user_id' => $teacher->id,
+            'permission_id' => Permission::query()->where('slug', 'community.publish')->valueOrFail('id'),
+            'allowed' => false,
+            'reason' => 'Publishing and author withdrawal duty has ended.',
+            'updated_by' => User::query()->where('username', 'admin')->valueOrFail('id'),
+        ]);
+
+        $post = collect($this->actingAs($teacher)->getJson('http://127.0.0.1/api/v1/community/posts')->assertOk()->json('data'))
+            ->firstWhere('id', $postId);
+        $this->assertFalse($post['can_withdraw']);
+        $this->assertFalse($post['can_delete']);
+        $this->actingAs($teacher)->deleteJson("http://127.0.0.1/api/v1/community/posts/{$postId}")->assertForbidden();
+        $this->assertDatabaseHas('community_posts', ['id' => $postId, 'status' => CommunityPost::STATUS_PUBLISHED]);
+    }
+
+    public function test_community_service_rejects_revoked_author_withdrawal_even_without_route_middleware(): void
+    {
+        $teacher = User::query()->where('username', 'teacher.lim')->firstOrFail();
+        $class = SchoolClass::query()->where('name', 'MB1')->firstOrFail();
+        $postId = $this->actingAs($teacher)->postJson('http://127.0.0.1/api/v1/community/posts', [
+            'body' => 'Service-layer withdrawal guard.',
+            'audiences' => [['type' => 'class', 'class_id' => $class->id]],
+        ])->assertCreated()->json('data.id');
+        UserPermissionOverride::query()->create([
+            'school_id' => $teacher->school_id,
+            'user_id' => $teacher->id,
+            'permission_id' => Permission::query()->where('slug', 'community.publish')->valueOrFail('id'),
+            'allowed' => false,
+            'reason' => 'Publishing and author withdrawal duty has ended.',
+            'updated_by' => User::query()->where('username', 'admin')->valueOrFail('id'),
+        ]);
+
+        try {
+            app(CommunityService::class)->withdrawPost(
+                $teacher->school_id,
+                CommunityPost::query()->findOrFail($postId),
+                $teacher,
+                app(AuditContextFactory::class)->system(),
+            );
+            $this->fail('The service must reject an author whose publishing ability was revoked.');
+        } catch (HttpException $exception) {
+            $this->assertSame(403, $exception->getStatusCode());
+        }
+
+        $this->assertDatabaseHas('community_posts', ['id' => $postId, 'status' => CommunityPost::STATUS_PUBLISHED]);
+    }
+
+    public function test_moderator_is_not_offered_post_reporting(): void
+    {
+        $teacher = User::query()->where('username', 'teacher.lim')->firstOrFail();
+        $manager = User::query()->where('username', 'admin')->firstOrFail();
+        $class = SchoolClass::query()->where('name', 'MB1')->firstOrFail();
+        $postId = $this->actingAs($teacher)->postJson('http://127.0.0.1/api/v1/community/posts', [
+            'body' => 'Manager-owned workflow, not manager report.',
+            'audiences' => [['type' => 'class', 'class_id' => $class->id]],
+        ])->assertCreated()->json('data.id');
+
+        $post = collect($this->actingAs($manager)->getJson('http://127.0.0.1/api/v1/community/posts')->assertOk()->json('data'))
+            ->firstWhere('id', $postId);
+        $this->assertFalse($post['can_report']);
+    }
+
+    public function test_authorized_notification_target_can_be_fetched_beyond_the_latest_fifty_posts(): void
+    {
+        $school = School::query()->where('code', 'MIS')->firstOrFail();
+        $author = User::query()->where('username', 'admin')->firstOrFail();
+        $viewer = User::query()->where('username', 'rachel.wong')->firstOrFail();
+        $target = CommunityPost::query()->create([
+            'tenant_id' => $school->tenant_id,
+            'school_id' => $school->id,
+            'author_user_id' => $author->id,
+            'post_type' => CommunityPost::POST_TYPE_UPDATE,
+            'body' => 'Older notification target.',
+            'comments_enabled' => false,
+            'status' => CommunityPost::STATUS_PUBLISHED,
+            'published_at' => now()->subDays(2),
+        ]);
+        CommunityPostAudience::query()->create([
+            'school_id' => $school->id,
+            'community_post_id' => $target->id,
+            'audience_type' => 'school',
+            'audience_key' => 'school',
+        ]);
+        foreach (range(1, 50) as $index) {
+            $newer = CommunityPost::query()->create([
+                'tenant_id' => $school->tenant_id,
+                'school_id' => $school->id,
+                'author_user_id' => $author->id,
+                'post_type' => CommunityPost::POST_TYPE_UPDATE,
+                'body' => "Newer update {$index}",
+                'comments_enabled' => false,
+                'status' => CommunityPost::STATUS_PUBLISHED,
+                'published_at' => now()->subMinutes(51 - $index),
+            ]);
+            CommunityPostAudience::query()->create([
+                'school_id' => $school->id,
+                'community_post_id' => $newer->id,
+                'audience_type' => 'school',
+                'audience_key' => 'school',
+            ]);
+        }
+
+        $this->actingAs($viewer)->getJson('http://127.0.0.1/api/v1/community/posts')
+            ->assertOk()
+            ->assertJsonMissing(['id' => $target->id]);
+        $this->actingAs($viewer)->getJson("http://127.0.0.1/api/v1/community/posts/{$target->id}")
+            ->assertOk()
+            ->assertJsonPath('data.id', $target->id)
+            ->assertJsonPath('data.body', 'Older notification target.');
+    }
+
+    public function test_single_post_endpoint_rejects_an_unauthorized_same_school_audience(): void
+    {
+        $school = School::query()->where('code', 'MIS')->firstOrFail();
+        $author = User::query()->where('username', 'admin')->firstOrFail();
+        $viewer = User::query()->where('username', 'rachel.wong')->firstOrFail();
+        $unrelatedClass = SchoolClass::query()->where('school_id', $school->id)->where('name', 'MC1')->firstOrFail();
+        $post = CommunityPost::query()->create([
+            'tenant_id' => $school->tenant_id,
+            'school_id' => $school->id,
+            'author_user_id' => $author->id,
+            'post_type' => CommunityPost::POST_TYPE_UPDATE,
+            'body' => 'Unauthorized class target.',
+            'comments_enabled' => false,
+            'status' => CommunityPost::STATUS_PUBLISHED,
+            'published_at' => now(),
+        ]);
+        CommunityPostAudience::query()->create([
+            'school_id' => $school->id,
+            'community_post_id' => $post->id,
+            'audience_type' => 'class',
+            'class_id' => $unrelatedClass->id,
+            'audience_key' => "class:{$unrelatedClass->id}",
+        ]);
+
+        $this->actingAs($viewer)->getJson("http://127.0.0.1/api/v1/community/posts/{$post->id}")->assertForbidden();
+    }
+
+    public function test_single_post_endpoint_rejects_a_cross_school_post(): void
+    {
+        $school = School::query()->where('code', 'MIS')->firstOrFail();
+        $author = User::query()->where('username', 'admin')->firstOrFail();
+        $viewer = User::query()->where('username', 'rachel.wong')->firstOrFail();
+        $otherSchool = School::query()->create([
+            'tenant_id' => $school->tenant_id,
+            'code' => 'MIS-NOTIFICATION-OTHER',
+            'name' => 'Notification Other Campus',
+            'receipt_prefix' => 'MNO',
+            'invoice_prefix' => 'MNO-INV',
+            'email' => 'notification-other@example.test',
+            'phone' => '+60 3-0000 0042',
+            'address' => 'Other campus',
+            'status' => 'active',
+        ]);
+        $post = CommunityPost::query()->create([
+            'tenant_id' => $school->tenant_id,
+            'school_id' => $otherSchool->id,
+            'author_user_id' => $author->id,
+            'post_type' => CommunityPost::POST_TYPE_UPDATE,
+            'body' => 'Cross-school notification target.',
+            'comments_enabled' => false,
+            'status' => CommunityPost::STATUS_PUBLISHED,
+            'published_at' => now(),
+        ]);
+        CommunityPostAudience::query()->create([
+            'school_id' => $otherSchool->id,
+            'community_post_id' => $post->id,
+            'audience_type' => 'school',
+            'audience_key' => 'school',
+        ]);
+
+        $this->actingAs($viewer)->getJson("http://127.0.0.1/api/v1/community/posts/{$post->id}")->assertForbidden();
     }
 
     public function test_author_edit_of_published_post_remains_published_without_a_new_submission_report(): void

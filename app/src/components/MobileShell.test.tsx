@@ -13,6 +13,7 @@ import { ApiError } from '../api'
 vi.mock('../api/portalApi', () => ({
   portalApi: {
     getSchoolUpdates: vi.fn().mockResolvedValue({ data: [{ id: 1, body: 'A real school update', status: 'published', published_at: '2026-08-13T12:00:00Z', author: { id: 4, name: 'Teacher Lim' }, audiences: [{ type: 'class', class_id: 1, student_id: null }], media: [], reaction_count: 2, reacted_by_me: false, can_report: true, can_edit: false, can_withdraw: false, can_moderate: false }] }),
+    getSchoolUpdate: vi.fn(),
     getPublishingContext: vi.fn().mockResolvedValue({ data: { classes: [{ id: 1, name: 'MB1' }], max_images: 6, notify_default: true } }),
     previewUpdateAudience: vi.fn().mockResolvedValue({ data: { recipient_count: 2, class_ids: [1], audience_label: 'MB1' } }),
     createSchoolUpdate: vi.fn(),
@@ -224,6 +225,19 @@ describe('MobileShell & Portal Views', () => {
 
     fireEvent.click(await screen.findByText('Sports day'))
     expect(navigate).toHaveBeenCalledWith('home', { schoolUpdatePostId: 73 })
+  })
+
+  it('fetches and focuses a notification target that is outside the latest feed page', async () => {
+    vi.mocked(portalApi.getSchoolUpdates).mockResolvedValueOnce({ data: [{ id: 1, body: 'Latest update', status: 'published', published_at: '2026-08-25T12:00:00Z', author: { id: 4, name: 'Teacher Lim' }, audiences: [{ type: 'school', class_id: null, student_id: null }], media: [], reaction_count: 0, reacted_by_me: false, can_report: true, can_edit: false, can_withdraw: false, can_moderate: false }] })
+    vi.mocked(portalApi.getSchoolUpdate).mockResolvedValueOnce({ data: { id: 73, body: 'Older notification target', status: 'published', published_at: '2026-08-20T12:00:00Z', author: { id: 4, name: 'Teacher Lim' }, audiences: [{ type: 'school', class_id: null, student_id: null }], media: [], reaction_count: 0, reacted_by_me: false, can_report: true, can_edit: false, can_withdraw: false, can_moderate: false } })
+    render(<CommunityFeed role="parent" userName="Rachel Wong" activeTab="home" />)
+    await screen.findByText('Latest update')
+
+    fireEvent(window, new CustomEvent('school-update-focus', { detail: { postId: 73 } }))
+
+    await waitFor(() => expect(portalApi.getSchoolUpdate).toHaveBeenCalledWith(73))
+    expect(await screen.findByText('Older notification target')).toBeInTheDocument()
+    expect(document.activeElement).toHaveAttribute('id', 'school-update-73')
   })
 
   it('renders ParentPortalView finance tab in loading state', () => {

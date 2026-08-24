@@ -177,7 +177,8 @@ class CommunityService
             abort(403, 'Post is outside your school scope.');
         }
         $isManager = $actor->hasPermissionTo('community.moderate', $schoolId);
-        if ($post->author_user_id !== $actor->id && ! $isManager) {
+        $isAuthorizedAuthor = $post->author_user_id === $actor->id && $actor->hasPermissionTo('community.publish', $schoolId);
+        if (! $isAuthorizedAuthor && ! $isManager) {
             abort(403, 'Only the author or an authorized manager may withdraw this post.');
         }
         $isManagerWithdrawal = $post->author_user_id !== $actor->id && $isManager;
@@ -188,7 +189,11 @@ class CommunityService
         DB::transaction(function () use ($schoolId, $post, $actor, $context, $isManager, $reason): void {
             $locked = CommunityPost::query()->whereKey($post->id)->lockForUpdate()->firstOrFail();
             abort_unless((int) $locked->school_id === $schoolId, 403, 'Post is outside your school scope.');
-            abort_unless($locked->author_user_id === $actor->id || $isManager, 403, 'Only the author or an authorized manager may withdraw this post.');
+            abort_unless(
+                ($locked->author_user_id === $actor->id && $actor->hasPermissionTo('community.publish', $schoolId)) || $isManager,
+                403,
+                'Only the author or an authorized manager may withdraw this post.',
+            );
             abort_if($locked->status === CommunityPost::STATUS_DELETED, 409, 'Post is already deleted.');
             $isManagerWithdrawal = $locked->author_user_id !== $actor->id && $isManager;
             if ($isManagerWithdrawal && trim((string) $reason) === '') {
@@ -382,23 +387,5 @@ class CommunityService
             'action' => 'resubmitted_after_edit',
             'reason_code' => $reasonCode,
         ]);
-    }
-
-    public function isAuthoritativePublisher(User $actor, int $schoolId): bool
-    {
-        if ($actor->hasPermissionTo('community.moderate', $schoolId)) {
-            return true;
-        }
-        if ($actor->teachingAssignments()->where('school_id', $schoolId)->exists()) {
-            return true;
-        }
-        if ($actor->tenantMemberships()->whereHas('roles', fn ($q) => $q->whereIn('slug', ['teacher', 'staff', 'admin', 'school_admin', 'super_admin']))->exists()) {
-            return true;
-        }
-        if (! $actor->guardianProfile && ! $actor->studentProfile) {
-            return true;
-        }
-
-        return false;
     }
 }

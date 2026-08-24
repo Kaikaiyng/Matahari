@@ -33,6 +33,20 @@ class CommunityController extends Controller
         return response()->json(['data' => $posts->map(fn (CommunityPost $post) => $this->response($post))]);
     }
 
+    public function show(Request $request, CommunityPost $communityPost, CommunityAccessService $access): JsonResponse
+    {
+        $post = $access->findVisible(
+            $request->user(),
+            SchoolContext::fromRequest($request)->schoolId,
+            $communityPost,
+        );
+        $post->load(['author:id,name', 'audiences', 'media'])
+            ->loadCount('reactions')
+            ->setAttribute('reacted_by_me', $post->reactions()->where('user_id', $request->user()->id)->exists());
+
+        return response()->json(['data' => $this->response($post)]);
+    }
+
     public function store(Request $request, CommunityService $service, AuditContextFactory $contexts): JsonResponse
     {
         $data = $request->validate([
@@ -129,16 +143,17 @@ class CommunityController extends Controller
         $viewer = auth()->user();
         $isModerator = (bool) $viewer?->hasPermissionTo('community.moderate', (int) $post->school_id);
         $isAuthor = $post->author_user_id === $userId;
+        $canPublish = (bool) $viewer?->hasPermissionTo('community.publish', (int) $post->school_id);
         $canEdit = $isModerator || (
             $isAuthor
             && $post->status === CommunityPost::STATUS_PUBLISHED
-            && $viewer?->hasPermissionTo('community.publish', (int) $post->school_id)
+            && $canPublish
         );
-        $canWithdraw = $isAuthor || $isModerator;
+        $canWithdraw = $isModerator || ($isAuthor && $canPublish);
 
         return ['id' => $post->id, 'body' => $post->body, 'status' => $post->status, 'comments_enabled' => $post->comments_enabled, 'published_at' => $post->published_at?->toIso8601String(),
             'author' => ['id' => $post->author->id, 'name' => $post->author->name],
-            'can_report' => $post->status === CommunityPost::STATUS_PUBLISHED && ! $isAuthor,
+            'can_report' => $post->status === CommunityPost::STATUS_PUBLISHED && ! $isAuthor && ! $isModerator,
             'can_report_content' => false,
             'can_report_user' => false,
             'can_edit' => $canEdit,

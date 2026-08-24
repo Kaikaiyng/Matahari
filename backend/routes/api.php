@@ -183,6 +183,7 @@ Route::middleware([...$sessionMiddleware, 'auth', 'active', 'tenant.member', 'te
 Route::prefix('v1')->middleware([...$sessionMiddleware, 'auth', 'active', 'tenant.member', 'school.context'])->group(function (): void {
     Route::prefix('community')->middleware(['tenant.surface:app', 'tenant.feature:community', 'permission:community.view'])->group(function (): void {
         Route::get('/posts', [CommunityController::class, 'index']);
+        Route::get('/posts/{communityPost}', [CommunityController::class, 'show']);
         Route::get('/publishing-context', [CommunityController::class, 'publishingContext'])->middleware('permission:community.publish');
         Route::post('/audience-preview', [CommunityController::class, 'audiencePreview'])->middleware('permission:community.publish');
         Route::get('/policies/current', [CommunitySafetyController::class, 'currentPolicies']);

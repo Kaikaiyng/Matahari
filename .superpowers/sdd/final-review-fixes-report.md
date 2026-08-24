@@ -77,6 +77,30 @@ One first attempt at the broader focused command referenced nonexistent `tests\F
 - Admin defensive contract: `moderationApi.ts`, `UgcModerationPage.tsx`, `UgcModerationPage.test.tsx`.
 - Canonical documentation: `docs/architecture.md`, `docs/business-rules.md`, `docs/current-status.md`, `docs/permissions.md`.
 
+## Final Re-review Corrections
+
+The subsequent independent re-review identified one Important and three Minor gaps. They are resolved as follows:
+
+- Revoked authors now receive `can_withdraw: false`/`can_delete: false`; DELETE remains permission-middleware denied, and `CommunityService::withdrawPost` independently requires `community.moderate` or authorship plus effective same-school `community.publish` both before and inside its transaction.
+- Authors and moderators are both excluded from `can_report`; eligible Parent/Student readers retain Post Report.
+- `GET /api/v1/community/posts/{communityPost}` loads one record only after the existing App tenant/membership/school middleware and `CommunityAccessService::findVisible`. Notifications use this endpoint, merge the authorized result into the feed, and focus it even when it is older than the 50-row feed limit. Same-school unauthorized-audience and cross-school requests return 403.
+- The unused `CommunityService::isAuthoritativePublisher` legacy position/assignment heuristic was removed. Effective same-school `community.publish` remains the sole publishing authority.
+
+Re-review TDD evidence:
+
+- RED backend: `..\tools\php\php-local.cmd vendor\bin\phpunit tests\Feature\CommunityApiTest.php` — exit 1; 36 tests, 30 passed/6 failed, 173 assertions. Failures reproduced the capability leak, service-layer withdrawal leak, moderator report capability, missing older-post endpoint, and missing unauthorized/cross-school endpoint guards.
+- RED App: `npm.cmd test -- --run src/components/MobileShell.test.tsx` — exit 1; 29 tests, 28 passed/1 failed. The notification target did not call the single-post fetch.
+- GREEN backend focused: the same command — exit 0; 36 tests, 179 assertions.
+- GREEN App focused: the same command — exit 0; 29 tests.
+
+Re-review final validation:
+
+- `..\tools\php\php-local.cmd vendor\bin\phpunit` — exit 0; 395 discovered, 383 passed, 12 existing MariaDB-gated skips, 2,141 assertions.
+- `..\tools\php\php-local.cmd vendor\bin\pint --test` — exit 0; passed.
+- `..\tools\php\php-local.cmd artisan route:list --path=api --except-vendor --json` — exit 0; 152 API routes loaded, including the scoped single-Update GET route.
+- App `npm.cmd test` — exit 0; 9 files, 54 tests. `npm.cmd run lint` and `npm.cmd run build` also exited 0.
+- Admin was unchanged by the re-review correction and was not rerun; its preceding full validation above remains the evidence for the committed Admin changes.
+
 ## Limitations and Not Verified
 
 - Disposable MariaDB behavior, including JSON expressions and the set-based audience query on MariaDB, is **Not verified** in this correction run. The 12 MariaDB-gated PHPUnit cases remained skipped in the default SQLite suite.
