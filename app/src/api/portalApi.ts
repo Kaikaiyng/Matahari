@@ -174,17 +174,20 @@ export interface TeacherStudent {
 export interface AcademicYearItem { id: number; code: string; name: string; is_current: boolean }
 
 export type UpdateAudience = { type: 'school' } | { type: 'class'; class_id: number }
+export type SchoolUpdateStatus = 'published' | 'pending_review' | 'rejected' | 'hidden' | 'deleted'
+export type SchoolUpdateReportReason = 'incorrect' | 'outdated' | 'inappropriate' | 'other'
 export interface PublishingContext { classes: Array<{ id: number; name: string }>; max_images: number; notify_default: true }
 export interface AudiencePreview { recipient_count: number; class_ids: number[]; audience_label: string }
 export interface SchoolUpdate {
   id: number
   body: string
-  status: 'published' | 'hidden' | 'deleted'
+  status: SchoolUpdateStatus
   published_at: string | null
   author: { id: number; name: string }
   can_report: boolean
   can_edit: boolean
   can_withdraw: boolean
+  withdrawal_reason_required?: boolean
   audiences: Array<{ type: 'school' | 'class' | 'student'; class_id: number | null; student_id: number | null }>
   media: Array<{ id: number; type: string; name: string | null; url: string }>
   reaction_count: number
@@ -234,7 +237,7 @@ export const portalApi = {
   withdrawSchoolUpdate: (postId: number, reason = '') => apiRequest<{ success: boolean }>(`/v1/community/posts/${postId}`, { method: 'DELETE', body: { reason: reason || undefined } }),
   getCurrentCommunityPolicies: () => apiRequest<{ data: Record<string, CommunityPolicy> }>('/v1/community/policies/current'),
   acceptCommunityPolicy: (policyId: number) => apiRequest<{ data: { accepted: boolean } }>(`/v1/community/policies/${policyId}/accept`, { method: 'POST' }),
-  reportSchoolUpdate: (postId: number, reasonCode: string, details: string) => apiRequest<{ data: { id: number; status: string } }>('/v1/community/reports', { method: 'POST', body: { target_type: 'post', target_id: postId, reason_code: reasonCode, details: details || null } }),
+  reportSchoolUpdate: (postId: number, reasonCode: SchoolUpdateReportReason, details: string) => apiRequest<{ data: { id: number; status: string } }>('/v1/community/reports', { method: 'POST', body: { target_type: 'post', target_id: postId, reason_code: reasonCode, details: details || null } }),
   getCommunityReports: () => apiRequest<{ data: CommunityReportSummary[] }>('/v1/community/reports/mine'),
   getGuardianMe: () => portalRequest<GuardianMe>('/parent/me'),
   getChildOutstanding: (studentId: number, academicYear: string) =>

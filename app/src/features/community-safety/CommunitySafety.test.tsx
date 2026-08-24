@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { portalApi } from '../../api/portalApi'
+import { ApiError } from '../../api'
 import { CommunityPolicyGate } from './CommunityPolicyGate'
 import { CommunitySafetyCentre } from './CommunitySafetyCentre'
 import { CommunitySafetyMenu } from './CommunitySafetyMenu'
@@ -55,10 +56,23 @@ describe('Community safety', () => {
     expect(screen.queryByRole('button', { name: /Block/ })).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Report update' }))
-    fireEvent.click(screen.getByLabelText('Bullying or harassment'))
+    fireEvent.click(screen.getByLabelText('Incorrect information'))
     fireEvent.click(screen.getByRole('button', { name: 'Submit report' }))
-    await waitFor(() => expect(report).toHaveBeenCalledWith(7, 'bullying_harassment', ''))
+    await waitFor(() => expect(report).toHaveBeenCalledWith(7, 'incorrect', ''))
     expect(await screen.findByText(/report was sent/i)).toBeInTheDocument()
+  })
+
+  it('uses the exact report reasons, limits details, and surfaces backend field errors', async () => {
+    vi.spyOn(portalApi, 'reportSchoolUpdate').mockRejectedValue(new ApiError(422, 'Please check the form and try again.', { details: ['Report details may not be greater than 1000 characters.'] }))
+    render(<CommunitySafetyMenu postId={7} canReport />)
+    fireEvent.click(screen.getByRole('button', { name: 'Safety actions' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Report update' }))
+
+    expect(screen.getAllByRole('radio').map((item) => (item as HTMLInputElement).value)).toEqual(['incorrect', 'outdated', 'inappropriate', 'other'])
+    expect(screen.getByLabelText('More details (optional)')).toHaveAttribute('maxlength', '1000')
+    fireEvent.click(screen.getByLabelText('Other'))
+    fireEvent.click(screen.getByRole('button', { name: 'Submit report' }))
+    expect(await screen.findByText('Report details may not be greater than 1000 characters.')).toBeInTheDocument()
   })
 
   it('keeps Safety Centre to report status and public policy/support links', async () => {

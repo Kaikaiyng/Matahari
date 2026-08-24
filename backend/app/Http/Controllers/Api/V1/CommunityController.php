@@ -128,16 +128,23 @@ class CommunityController extends Controller
         $userId = auth()->id();
         $viewer = auth()->user();
         $isModerator = (bool) $viewer?->hasPermissionTo('community.moderate', (int) $post->school_id);
-        $canEdit = ($post->author_user_id === $userId && $viewer?->hasPermissionTo('community.publish', (int) $post->school_id)) || $isModerator;
+        $isAuthor = $post->author_user_id === $userId;
+        $canEdit = $isModerator || (
+            $isAuthor
+            && $post->status === CommunityPost::STATUS_PUBLISHED
+            && $viewer?->hasPermissionTo('community.publish', (int) $post->school_id)
+        );
+        $canWithdraw = $isAuthor || $isModerator;
 
         return ['id' => $post->id, 'body' => $post->body, 'status' => $post->status, 'comments_enabled' => $post->comments_enabled, 'published_at' => $post->published_at?->toIso8601String(),
             'author' => ['id' => $post->author->id, 'name' => $post->author->name],
-            'can_report' => $post->author_user_id !== $userId,
+            'can_report' => $post->status === CommunityPost::STATUS_PUBLISHED && ! $isAuthor,
             'can_report_content' => false,
             'can_report_user' => false,
             'can_edit' => $canEdit,
-            'can_withdraw' => $canEdit,
-            'can_delete' => $canEdit,
+            'can_withdraw' => $canWithdraw,
+            'can_delete' => $canWithdraw,
+            'withdrawal_reason_required' => $isModerator && ! $isAuthor,
             'audiences' => $post->audiences->map(fn ($a) => ['type' => $a->audience_type, 'class_id' => $a->class_id, 'student_id' => $a->student_id]),
             'media' => $post->media->map(fn ($m) => ['id' => $m->id, 'type' => $m->media_type, 'name' => $m->original_name, 'url' => "/api/v1/community/media/{$m->id}"]),
             'reaction_count' => (int) ($post->reactions_count ?? 0), 'reacted_by_me' => (bool) ($post->reacted_by_me ?? false),

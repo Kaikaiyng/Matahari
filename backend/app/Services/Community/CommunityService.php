@@ -37,10 +37,6 @@ class CommunityService
         $school = School::query()->findOrFail($schoolId);
         $tenantId = (int) $school->tenant_id;
         $this->policy->assertCanContribute($actor, $tenantId, $schoolId);
-        $this->policy->assertNotRestricted($actor, $tenantId, $schoolId, 'publish');
-        if (($data['media'] ?? []) !== []) {
-            $this->policy->assertNotRestricted($actor, $tenantId, $schoolId, 'media');
-        }
         if (collect($data['audiences'])->contains(fn (array $audience): bool => ! in_array($audience['type'], ['school', 'class'], true))) {
             throw ValidationException::withMessages(['audiences' => 'School updates may target only the whole school or active classes.']);
         }
@@ -129,6 +125,11 @@ class CommunityService
             abort_unless(($locked->author_user_id === $actor->id && $actor->hasPermissionTo('community.publish', $schoolId)) || $isManager, 403, 'Only the author or an authorized moderator may edit this post.');
             abort_if($locked->status === CommunityPost::STATUS_DELETED, 409, 'Deleted posts cannot be edited.');
             abort_if($locked->status === CommunityPost::STATUS_HIDDEN && ! $actor->hasPermissionTo('community.moderate', $schoolId), 403, 'Hidden posts cannot be edited by their author.');
+            abort_if(
+                in_array($locked->status, [CommunityPost::STATUS_PENDING_REVIEW, CommunityPost::STATUS_REJECTED], true) && ! $isManager,
+                409,
+                'Pending or rejected posts require an authorized manager review before publication.',
+            );
 
             $oldValues = [
                 'body' => $locked->body,
@@ -142,7 +143,14 @@ class CommunityService
                 'status' => CommunityPost::STATUS_PUBLISHED,
                 'published_at' => $locked->published_at ?? now(),
             ];
+            if (in_array($locked->status, [CommunityPost::STATUS_PENDING_REVIEW, CommunityPost::STATUS_REJECTED], true)) {
+                $attributes['reviewed_at'] = now();
+                $attributes['reviewed_by_user_id'] = $actor->id;
+                $attributes['moderation_reason'] = null;
+                $attributes['moderation_reason_code'] = $inspection->reasonCode;
+            }
             $locked->update($attributes);
+            $locked->media()->where('status', 'quarantined')->update(['status' => 'ready']);
 
             $this->audit->record(new AuditEvent(
                 action: AuditAction::CommunityPostUpdated,
@@ -172,7 +180,8 @@ class CommunityService
         if ($post->author_user_id !== $actor->id && ! $isManager) {
             abort(403, 'Only the author or an authorized manager may withdraw this post.');
         }
-        if ($isManager && trim((string) $reason) === '') {
+        $isManagerWithdrawal = $post->author_user_id !== $actor->id && $isManager;
+        if ($isManagerWithdrawal && trim((string) $reason) === '') {
             throw ValidationException::withMessages(['reason' => 'A withdrawal reason is required for managers.']);
         }
 
@@ -181,7 +190,12 @@ class CommunityService
             abort_unless((int) $locked->school_id === $schoolId, 403, 'Post is outside your school scope.');
             abort_unless($locked->author_user_id === $actor->id || $isManager, 403, 'Only the author or an authorized manager may withdraw this post.');
             abort_if($locked->status === CommunityPost::STATUS_DELETED, 409, 'Post is already deleted.');
-            $withdrawalReason = $isManager ? trim((string) $reason) : CommunityPost::AUTHOR_WITHDRAWN_REASON;
+            $isManagerWithdrawal = $locked->author_user_id !== $actor->id && $isManager;
+            if ($isManagerWithdrawal && trim((string) $reason) === '') {
+                throw ValidationException::withMessages(['reason' => 'A withdrawal reason is required for managers.']);
+            }
+            $withdrawalReason = $isManagerWithdrawal ? trim((string) $reason) : CommunityPost::AUTHOR_WITHDRAWN_REASON;
+            $withdrawalAction = $isManagerWithdrawal ? 'manager_withdrawn' : 'author_withdrawn';
             $oldValues = [
                 'status' => $locked->status,
                 'hidden_at' => $locked->hidden_at?->toIso8601String(),
@@ -199,18 +213,18 @@ class CommunityService
                 ->whereIn('status', [CommunityReport::STATUS_SUBMITTED, CommunityReport::STATUS_REVIEWING])
                 ->lockForUpdate()
                 ->get()
-                ->each(function (CommunityReport $report) use ($actor): void {
+                ->each(function (CommunityReport $report) use ($actor, $withdrawalAction): void {
                     $report->update([
                         'status' => CommunityReport::STATUS_RESOLVED,
                         'resolved_at' => now(),
-                        'resolution_code' => 'author_deleted',
+                        'resolution_code' => $withdrawalAction,
                     ]);
                     $report->actions()->create([
                         'tenant_id' => $report->tenant_id,
                         'school_id' => $report->school_id,
                         'actor_user_id' => $actor->id,
-                        'action' => 'author_deleted',
-                        'reason_code' => 'author_deleted',
+                        'action' => $withdrawalAction,
+                        'reason_code' => $withdrawalAction,
                     ]);
                 });
 
@@ -235,6 +249,7 @@ class CommunityService
     public function toggleReaction(int $schoolId, CommunityPost $post, User $actor, AuditContext $context): CommunityPost
     {
         $this->access->findVisible($actor, $schoolId, $post);
+        abort_unless($post->status === CommunityPost::STATUS_PUBLISHED, 409, 'Only published posts can receive reactions.');
 
         return DB::transaction(function () use ($schoolId, $post, $actor, $context): CommunityPost {
             $existing = CommunityPostReaction::query()->where('community_post_id', $post->id)->where('user_id', $actor->id)->lockForUpdate()->first();

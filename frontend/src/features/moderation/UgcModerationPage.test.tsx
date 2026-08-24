@@ -73,6 +73,25 @@ describe('Post Reports workspace', () => {
     expect(screen.queryByRole('button', { name: 'Apply restriction' })).not.toBeInTheDocument()
   })
 
+  it('renders a backend-accepted partial post snapshot without media', async () => {
+    const partialSnapshot = {
+      ...postReport,
+      target_snapshot: {
+        target_type: 'post',
+        reported_user_id: 44,
+        post: { id: 3, body: 'Partial preserved evidence', status: 'published', author_user_id: 44 },
+      },
+    } as unknown as ModerationCase
+    vi.spyOn(moderationApi, 'getSchoolQueue').mockResolvedValue({ data: [partialSnapshot] })
+    vi.spyOn(moderationApi, 'getSchoolCase').mockResolvedValue({ data: partialSnapshot })
+
+    render(<UgcModerationPage />)
+    fireEvent.click(await screen.findByRole('button', { name: /Post report #9/i }))
+
+    expect(await screen.findByText('Partial preserved evidence')).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Post report #9 detail' })).toBeInTheDocument()
+  })
+
   it('keeps the client API limited to school report list, detail, and decision calls', () => {
     expect(Object.keys(moderationApi).sort()).toEqual(['decideSchoolCase', 'getSchoolCase', 'getSchoolQueue'])
   })

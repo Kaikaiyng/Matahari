@@ -54,7 +54,7 @@ School Admin and Finance may edit another same-school School Admin, Finance, or 
 
 `audit.view`, `logs.view`, tenant configuration, platform Community intervention, domain activation, and cross-tenant operations remain platform-only unless a later reviewed policy explicitly changes them.
 
-`community.view` is required for the Updates feed. `community.publish` never follows from the Teacher, Parent, or Student persona: only an active employee with the effective same-school ability can publish. `community.moderate` is same-school management only. Parent and Student active access is read-and-Like-only. `community.interact` remains a historical compatibility permission; it does not enable an active social workflow.
+`community.view` is required for the Updates feed. The effective same-school `community.publish` ability is the backend publishing authority; it permits whole-school and any active same-school class audience and does not add a second position or Teaching Assignment check. The current Admin ability editor grants it only through employee access management, and it never follows from the Teacher, Parent, or Student persona itself. `community.moderate` is same-school management only. Parent and Student active access is read, Like, and Post Report; it does not include publish, edit, withdraw, hide, or report decisions. `community.interact` and historical block/restriction/appeal permissions do not enable active social or School Update workflows.
 
 ## Scope Rules
 

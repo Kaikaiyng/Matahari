@@ -73,6 +73,10 @@ class CommunityModerationController extends Controller
     private function response(CommunityReport $report): array
     {
         $post = $report->post;
+        $targetSnapshot = $report->target_snapshot ?? [];
+        if (isset($targetSnapshot['post']) && is_array($targetSnapshot['post'])) {
+            $targetSnapshot['post']['media'] = $targetSnapshot['post']['media'] ?? [];
+        }
 
         return [
             'id' => $report->id, 'source' => $report->source, 'target_type' => $report->target_type,
@@ -80,7 +84,7 @@ class CommunityModerationController extends Controller
             'details' => $report->details, 'created_at' => $report->created_at?->toIso8601String(),
             'due_at' => $report->due_at?->toIso8601String(),
             'overdue' => $report->due_at?->isPast() && $report->status !== CommunityReport::STATUS_RESOLVED,
-            'target_snapshot' => $report->target_snapshot, 'resolution_code' => $report->resolution_code,
+            'target_snapshot' => $targetSnapshot, 'resolution_code' => $report->resolution_code,
             'reporter' => $report->reporter ? ['id' => $report->reporter->id, 'name' => $report->reporter->name] : null,
             'post' => $post ? [
                 'author' => $post->author ? ['id' => $post->author->id, 'name' => $post->author->name] : null,

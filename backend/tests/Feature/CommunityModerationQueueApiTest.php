@@ -39,6 +39,7 @@ class CommunityModerationQueueApiTest extends TestCase
 
         $this->actingAs($this->user('admin'))->getJson('http://localhost/api/v1/admin/community-moderation/reports')
             ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $case->id)
+            ->assertJsonPath('data.0.target_snapshot.post.media', [])
             ->assertJsonPath('data.0.reporter.name', $this->user('rachel.wong')->name)
             ->assertJsonPath('data.0.post.author.name', $this->user('admin')->name)
             ->assertJsonPath('data.0.post.audience.school', false)

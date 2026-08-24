@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { ChevronLeft, EyeOff, Heart, MoreVertical, Pencil, Trash2 } from 'lucide-react'
 import { portalApi, type SchoolUpdate } from '../api/portalApi'
@@ -11,9 +11,30 @@ type Props = { role: FeedRole; userName: string; onOpenFinance?: () => void; onC
 function UpdateMenu({ update, onEdit, onWithdraw, onHide }: { update: SchoolUpdate; onEdit: () => void; onWithdraw: () => void; onHide: () => void }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
-  useEffect(() => { if (!open) return; const close = (event: MouseEvent) => { if (ref.current && !ref.current.contains(event.target as Node)) setOpen(false) }; document.addEventListener('mousedown', close); return () => document.removeEventListener('mousedown', close) }, [open])
+  useEffect(() => {
+    if (!open) return
+    const close = (event: MouseEvent) => {
+      if (ref.current && !ref.current.contains(event.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [open])
+
   if (!update.can_edit && !update.can_withdraw && !update.can_moderate) return null
-  return <div ref={ref} style={{ position: 'relative', marginLeft: 'auto' }}><button type="button" aria-label="Update options" className="plain-icon" onClick={() => setOpen((value) => !value)}><MoreVertical size={18} /></button>{open && <div className="safety-popover" role="menu" style={{ right: 0, left: 'auto' }}>{update.can_edit && <button type="button" onClick={() => { setOpen(false); onEdit() }}><Pencil size={15} /> Edit update</button>}{update.can_withdraw && <button type="button" onClick={() => { setOpen(false); onWithdraw() }}><Trash2 size={15} /> Withdraw update</button>}{update.can_moderate && <button type="button" onClick={() => { setOpen(false); onHide() }}><EyeOff size={15} /> Hide update</button>}</div>}</div>
+  const historical = update.status === 'pending_review' || update.status === 'rejected'
+
+  return (
+    <div ref={ref} style={{ position: 'relative', marginLeft: 'auto' }}>
+      <button type="button" aria-label="Update options" className="plain-icon" onClick={() => setOpen((value) => !value)}><MoreVertical size={18} /></button>
+      {open && (
+        <div className="safety-popover" role="menu" style={{ right: 0, left: 'auto' }}>
+          {update.can_edit && <button type="button" onClick={() => { setOpen(false); onEdit() }}><Pencil size={15} /> {historical ? 'Review and publish' : 'Edit update'}</button>}
+          {update.can_withdraw && <button type="button" onClick={() => { setOpen(false); onWithdraw() }}><Trash2 size={15} /> Withdraw update</button>}
+          {update.can_moderate && <button type="button" onClick={() => { setOpen(false); onHide() }}><EyeOff size={15} /> Hide update</button>}
+        </div>
+      )}
+    </div>
+  )
 }
 
 export function CommunityFeed({ role, userName, onOpenFinance, onCreateUpdate, canPublishUpdates = false, canManageUpdates = role === 'teacher', activeTab }: Props) {
@@ -23,22 +44,127 @@ export function CommunityFeed({ role, userName, onOpenFinance, onCreateUpdate, c
   const [editing, setEditing] = useState<SchoolUpdate | null>(null)
   const [withdrawal, setWithdrawal] = useState<SchoolUpdate | null>(null)
   const [hiding, setHiding] = useState<SchoolUpdate | null>(null)
-  const load = () => portalApi.getSchoolUpdates().then(({ data }) => setUpdates(data)).catch(() => setError('Unable to load school updates.')).finally(() => setLoading(false))
-  useEffect(() => { if (!activeTab || activeTab === 'home') void load() }, [activeTab])
-  useEffect(() => { const refresh = () => void load(); window.addEventListener('app-refresh', refresh); return () => window.removeEventListener('app-refresh', refresh) }, [])
-  const toggleLike = async (id: number) => { try { const { data } = await portalApi.toggleSchoolUpdateLike(id); setUpdates((items) => items.map((item) => item.id === id ? { ...item, reacted_by_me: data.reacted, reaction_count: data.reaction_count } : item)) } catch { setError('Unable to update your Like.') } }
+  const focusPostId = useRef<number | null>(null)
+
+  const load = useCallback(() => {
+    setError('')
+    return portalApi.getSchoolUpdates()
+      .then(({ data }) => setUpdates(data))
+      .catch(() => setError('Unable to load school updates.'))
+      .finally(() => setLoading(false))
+  }, [])
+
+  useEffect(() => { if (!activeTab || activeTab === 'home') void load() }, [activeTab, load])
+  useEffect(() => {
+    const refresh = () => void load()
+    window.addEventListener('app-refresh', refresh)
+    return () => window.removeEventListener('app-refresh', refresh)
+  }, [load])
+  useEffect(() => {
+    const focus = (event: Event) => {
+      const postId = Number((event as CustomEvent<{ postId?: number }>).detail?.postId)
+      if (!Number.isInteger(postId) || postId <= 0) return
+      focusPostId.current = postId
+      void load()
+    }
+    window.addEventListener('school-update-focus', focus)
+    return () => window.removeEventListener('school-update-focus', focus)
+  }, [load])
+  useEffect(() => {
+    if (focusPostId.current === null) return
+    const target = document.getElementById(`school-update-${focusPostId.current}`)
+    if (!target) return
+    target.scrollIntoView?.({ block: 'center' })
+    target.focus()
+    focusPostId.current = null
+  }, [updates])
+
+  const toggleLike = async (id: number) => {
+    try {
+      const { data } = await portalApi.toggleSchoolUpdateLike(id)
+      setUpdates((items) => items.map((item) => item.id === id ? { ...item, reacted_by_me: data.reacted, reaction_count: data.reaction_count } : item))
+    } catch {
+      setError('Unable to update your Like.')
+    }
+  }
   const firstName = userName.split(' ')[0]
-  return <div className="community-page"><section className="community-welcome"><div><p>Updates</p><h1>School Updates</h1><small>{role === 'student' ? `Hello, ${firstName}` : `Welcome, ${firstName}`}</small></div><span className="role-chip">{role[0].toUpperCase() + role.slice(1)}</span></section>{role === 'parent' && <button type="button" className="attention-strip context-card" onClick={onOpenFinance}><span className="attention-icon">RM</span><span><strong>View school account</strong><small>Open read-only finance records for your linked children</small></span><b>View</b></button>}{role === 'teacher' && canPublishUpdates && <button type="button" className="create-strip context-card" onClick={onCreateUpdate}><span>Share a school update</span><b>Create update</b></button>}{loading ? <div className="app-skeleton large" /> : updates.length === 0 ? <div className="app-empty"><h2>No updates yet</h2><p>Authorized school updates will appear here.</p></div> : <section className="feed-list" aria-label="School Updates">{error && <p className="form-error">{error}</p>}{updates.map((update) => <article className="feed-post" key={update.id}><header className="feed-post-header"><span className="feed-avatar">{update.author.name.split(' ').map((part) => part[0]).slice(0, 2).join('')}</span><span className="feed-author"><strong>{update.author.name}</strong><span className="feed-post-meta"><small>{update.published_at ? new Date(update.published_at).toLocaleString() : 'Published'}</small><small>{audienceLabel(update)}</small></span></span>{canManageUpdates && <><UpdateMenu update={update} onEdit={() => setEditing(update)} onWithdraw={() => setWithdrawal(update)} onHide={() => setHiding(update)} /><CommunitySafetyMenu postId={update.id} canReport={update.can_report} /></>}</header><div className="feed-copy"><p>{update.body}</p></div>{update.media.filter((media) => media.type === 'image').map((media) => <img className="feed-uploaded-image" key={media.id} src={media.url} alt={media.name ?? 'School update image'} />)}<div className="feed-counts">{update.reaction_count} Like{update.reaction_count === 1 ? '' : 's'}</div><footer className="feed-actions"><button type="button" className={update.reacted_by_me ? 'liked' : ''} onClick={() => void toggleLike(update.id)}><Heart size={19} fill={update.reacted_by_me ? 'currentColor' : 'none'} />{update.reacted_by_me ? 'Liked' : 'Like'}</button></footer></article>)}</section>}{editing && <EditUpdate update={editing} onClose={() => setEditing(null)} onSaved={(saved) => setUpdates((items) => items.map((item) => item.id === saved.id ? saved : item))} />}{withdrawal && <ReasonDialog title="Withdraw update" copy="This preserves the update history and removes it from the feed." onCancel={() => setWithdrawal(null)} onConfirm={async (reason) => { await portalApi.withdrawSchoolUpdate(withdrawal.id, reason); setUpdates((items) => items.filter((item) => item.id !== withdrawal.id)); setWithdrawal(null) }} />}{hiding && <ReasonDialog title="Hide update" copy="Give the school record a reason for hiding this update." required onCancel={() => setHiding(null)} onConfirm={async (reason) => { await portalApi.hideSchoolUpdate(hiding.id, reason); setUpdates((items) => items.filter((item) => item.id !== hiding.id)); setHiding(null) }} />}</div>
+
+  return (
+    <div className="community-page">
+      <section className="community-welcome">
+        <div><p>Updates</p><h1>School Updates</h1><small>{role === 'student' ? `Hello, ${firstName}` : `Welcome, ${firstName}`}</small></div>
+        <span className="role-chip">{role[0].toUpperCase() + role.slice(1)}</span>
+      </section>
+      {role === 'parent' && <button type="button" className="attention-strip context-card" onClick={onOpenFinance}><span className="attention-icon">RM</span><span><strong>View school account</strong><small>Open read-only finance records for your linked children</small></span><b>View</b></button>}
+      {role === 'teacher' && canPublishUpdates && <button type="button" className="create-strip context-card" onClick={onCreateUpdate}><span>Share a school update</span><b>Create update</b></button>}
+      {loading ? (
+        <div className="app-skeleton large" />
+      ) : error ? (
+        <p className="form-error">{error}</p>
+      ) : updates.length === 0 ? (
+        <div className="app-empty"><h2>No updates yet</h2><p>Authorized school updates will appear here.</p></div>
+      ) : (
+        <section className="feed-list" aria-label="School Updates">
+          {updates.map((update) => (
+            <article className="feed-post" id={`school-update-${update.id}`} tabIndex={-1} key={update.id}>
+              <header className="feed-post-header">
+                <span className="feed-avatar">{update.author.name.split(' ').map((part) => part[0]).slice(0, 2).join('')}</span>
+                <span className="feed-author"><strong>{update.author.name}</strong><span className="feed-post-meta"><small>{statusLabel(update)}</small><small>{audienceLabel(update)}</small></span></span>
+                {canManageUpdates && <UpdateMenu update={update} onEdit={() => setEditing(update)} onWithdraw={() => setWithdrawal(update)} onHide={() => setHiding(update)} />}
+                <CommunitySafetyMenu postId={update.id} canReport={update.can_report} />
+              </header>
+              <div className="feed-copy"><p>{update.body}</p></div>
+              {(update.media ?? []).filter((media) => media.type === 'image').map((media) => <img className="feed-uploaded-image" key={media.id} src={media.url} alt={media.name ?? 'School update image'} />)}
+              {update.status === 'published' && <><div className="feed-counts">{update.reaction_count} Like{update.reaction_count === 1 ? '' : 's'}</div><footer className="feed-actions"><button type="button" className={update.reacted_by_me ? 'liked' : ''} onClick={() => void toggleLike(update.id)}><Heart size={19} fill={update.reacted_by_me ? 'currentColor' : 'none'} />{update.reacted_by_me ? 'Liked' : 'Like'}</button></footer></>}
+            </article>
+          ))}
+        </section>
+      )}
+      {editing && <EditUpdate update={editing} onClose={() => setEditing(null)} onSaved={(saved) => setUpdates((items) => items.map((item) => item.id === saved.id ? saved : item))} />}
+      {withdrawal && <ReasonDialog title="Withdraw update" copy="This preserves the update history and removes it from the feed." required={Boolean(withdrawal.withdrawal_reason_required)} onCancel={() => setWithdrawal(null)} onConfirm={async (reason) => { await portalApi.withdrawSchoolUpdate(withdrawal.id, reason); setUpdates((items) => items.filter((item) => item.id !== withdrawal.id)); setWithdrawal(null) }} />}
+      {hiding && <ReasonDialog title="Hide update" copy="Give the school record a reason for hiding this update." required onCancel={() => setHiding(null)} onConfirm={async (reason) => { await portalApi.hideSchoolUpdate(hiding.id, reason); setUpdates((items) => items.filter((item) => item.id !== hiding.id)); setHiding(null) }} />}
+    </div>
+  )
 }
 
-function audienceLabel(update: SchoolUpdate) { const classCount = update.audiences.filter((item) => item.type === 'class').length; return update.audiences.some((item) => item.type === 'school') ? 'Whole school' : `${classCount} class audience${classCount === 1 ? '' : 's'}` }
+function statusLabel(update: SchoolUpdate) {
+  if (update.status === 'pending_review') return 'Pending review'
+  if (update.status === 'rejected') return 'Rejected'
+  if (update.published_at) return new Date(update.published_at).toLocaleString()
+  return update.status[0].toUpperCase() + update.status.slice(1)
+}
+
+function audienceLabel(update: SchoolUpdate) {
+  const classCount = update.audiences.filter((item) => item.type === 'class').length
+  return update.audiences.some((item) => item.type === 'school') ? 'Whole school' : `${classCount} class audience${classCount === 1 ? '' : 's'}`
+}
 
 function EditUpdate({ update, onClose, onSaved }: { update: SchoolUpdate; onClose: () => void; onSaved: (update: SchoolUpdate) => void }) {
-  const [body, setBody] = useState(update.body); const [error, setError] = useState(''); const [saving, setSaving] = useState(false); const { isExiting, requestBack, surfaceStyle, gestureHandlers } = useSwipeBack(onClose)
-  return createPortal(<div className={`subpage-slide-overlay ${isExiting ? 'subpage-slide-out' : ''}`} role="dialog" aria-label="Edit school update" {...gestureHandlers} style={{ position: 'fixed', inset: 0, zIndex: 99990, background: '#f6f3ee', overflowY: 'auto', ...surfaceStyle }}><form className="subpage-container" onSubmit={async (event) => { event.preventDefault(); setSaving(true); setError(''); try { onSaved((await portalApi.updateSchoolUpdate(update.id, body)).data); requestBack() } catch { setError('Unable to save this update.') } finally { setSaving(false) } }}><header className="subpage-header"><button type="button" className="subpage-back-btn" onClick={requestBack} aria-label="Cancel editing"><ChevronLeft /></button><h1 className="subpage-nav-title">Edit update</h1><button type="submit" className="primary-action-btn" disabled={saving || !body.trim()}>Save</button></header>{error && <p className="form-error">{error}</p>}<label className="composer-field"><span className="field-label">Update</span><textarea className="custom-textarea" value={body} onChange={(event) => setBody(event.target.value)} maxLength={5000} rows={6} required /></label></form></div>, document.body)
+  const [body, setBody] = useState(update.body)
+  const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
+  const { isExiting, requestBack, surfaceStyle, gestureHandlers } = useSwipeBack(onClose)
+  const historical = update.status === 'pending_review' || update.status === 'rejected'
+
+  return createPortal(
+    <div className={`subpage-slide-overlay ${isExiting ? 'subpage-slide-out' : ''}`} role="dialog" aria-label={historical ? 'Review school update' : 'Edit school update'} {...gestureHandlers} style={{ position: 'fixed', inset: 0, zIndex: 99990, background: '#f6f3ee', overflowY: 'auto', ...surfaceStyle }}>
+      <form className="subpage-container" onSubmit={async (event) => { event.preventDefault(); setSaving(true); setError(''); try { onSaved((await portalApi.updateSchoolUpdate(update.id, body)).data); requestBack() } catch { setError('Unable to save this update.') } finally { setSaving(false) } }}>
+        <header className="subpage-header"><button type="button" className="subpage-back-btn" onClick={requestBack} aria-label="Cancel editing"><ChevronLeft /></button><h1 className="subpage-nav-title">{historical ? 'Review and publish' : 'Edit update'}</h1><button type="submit" className="primary-action-btn" disabled={saving || !body.trim()}>{historical ? 'Publish' : 'Save'}</button></header>
+        {historical && <p className="composer-notice">Publishing records this manager review and makes the update visible to its audience.</p>}
+        {error && <p className="form-error">{error}</p>}
+        <label className="composer-field"><span className="field-label">Update</span><textarea className="custom-textarea" value={body} onChange={(event) => setBody(event.target.value)} maxLength={5000} rows={6} required /></label>
+      </form>
+    </div>,
+    document.body,
+  )
 }
 
 function ReasonDialog({ title, copy, required = false, onCancel, onConfirm }: { title: string; copy: string; required?: boolean; onCancel: () => void; onConfirm: (reason: string) => Promise<void> }) {
-  const [reason, setReason] = useState(''); const [error, setError] = useState(''); const [busy, setBusy] = useState(false)
-  return createPortal(<div className="community-policy-modal-overlay" role="dialog" aria-modal="true" aria-label={title}><div className="community-policy-gate-modal"><h2>{title}</h2><p>{copy}</p><label><span>Reason{required ? '' : ' (optional)'}</span><textarea className="custom-textarea" value={reason} onChange={(event) => setReason(event.target.value)} rows={3} /></label>{error && <p className="form-error">{error}</p>}<div className="safety-dialog-actions"><button type="button" onClick={onCancel}>Cancel</button><button type="button" className="danger-action" disabled={busy || (required && !reason.trim())} onClick={async () => { setBusy(true); setError(''); try { await onConfirm(reason.trim()) } catch { setError(`Unable to ${title.toLowerCase()}.`) } finally { setBusy(false) } }}>{busy ? 'Saving…' : title}</button></div></div></div>, document.body)
+  const [reason, setReason] = useState('')
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+  return createPortal(
+    <div className="community-policy-modal-overlay" role="dialog" aria-modal="true" aria-label={title}><div className="community-policy-gate-modal"><h2>{title}</h2><p>{copy}</p><label><span>Reason{required ? '' : ' (optional)'}</span><textarea className="custom-textarea" value={reason} onChange={(event) => setReason(event.target.value)} rows={3} /></label>{error && <p className="form-error">{error}</p>}<div className="safety-dialog-actions"><button type="button" onClick={onCancel}>Cancel</button><button type="button" className="danger-action" disabled={busy || (required && !reason.trim())} onClick={async () => { setBusy(true); setError(''); try { await onConfirm(reason.trim()) } catch { setError(`Unable to ${title.toLowerCase()}.`) } finally { setBusy(false) } }}>{busy ? 'Saving…' : title}</button></div></div></div>,
+    document.body,
+  )
 }

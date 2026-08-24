@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Check, ChevronLeft, ChevronRight, Circle, ClipboardCheck, FileText, LogOut, MessageCircle, School, Send, Upload, UsersRound, X } from 'lucide-react'
+import { ApiError } from '../api'
 import { portalApi, type AssessmentItem, type AttendanceStatus, type TeacherAssignment, type TeacherCampusAttendance, type TeacherStudent } from '../api/portalApi'
 import { CommunityFeed } from './CommunityFeed'
 import { CommunitySafetyCentre } from '../features/community-safety/CommunitySafetyCentre'
@@ -331,6 +332,13 @@ function ClassDetailSubpage({
   )
 }
 
+const MAX_UPDATE_IMAGE_BYTES = 10 * 1024 * 1024
+
+function firstValidationError(error: unknown): string | null {
+  if (!(error instanceof ApiError) || !error.errors) return null
+  return Object.values(error.errors).flat()[0] ?? null
+}
+
 function CreatePost({ onPublished }: { onPublished: () => void }) {
   const [classes, setClasses] = useState<Array<{ id: number; name: string }>>([])
   const [maxImages, setMaxImages] = useState(6)
@@ -343,8 +351,25 @@ function CreatePost({ onPublished }: { onPublished: () => void }) {
   const audiences = audienceMode === 'school' ? [{ type: 'school' as const }] : selectedClassIds.map((class_id) => ({ type: 'class' as const, class_id }))
   useEffect(() => { portalApi.getPublishingContext().then(({ data }) => { setClasses(data.classes); setMaxImages(data.max_images); setNotifyAudience(data.notify_default) }).catch(() => setNotice('Unable to load publishing options.')) }, [])
   useEffect(() => { if (!audiences.length) { setRecipientLabel('No classes selected'); setRecipientCount(0); return }; const timeout = window.setTimeout(() => { portalApi.previewUpdateAudience(audiences).then(({ data }) => { setRecipientLabel(data.audience_label); setRecipientCount(data.recipient_count) }).catch(() => setNotice('Unable to preview this audience.')) }, 250); return () => window.clearTimeout(timeout) }, [audienceMode, selectedClassIds.join(',')])
-  const submit = async (event: React.FormEvent) => { event.preventDefault(); if (!audiences.length) return; setSaving(true); setNotice(''); try { await portalApi.createSchoolUpdate(message, audiences, notifyAudience, files); setMessage(''); setFiles([]); window.dispatchEvent(new CustomEvent('app-refresh')); onPublished() } catch (error) { setNotice(error instanceof Error ? error.message : 'Unable to publish this update.') } finally { setSaving(false) } }
-  return <div className="record-page"><Title eyebrow="Updates" title="Create school update" copy="Choose a whole-school or multi-class audience before publishing." /><form className="post-composer" onSubmit={submit}><div className="composer-field"><span className="field-label">Audience</span><label><input type="radio" name="audience-mode" checked={audienceMode === 'school'} onChange={() => setAudienceMode('school')} /> Whole school</label><label><input type="radio" name="audience-mode" checked={audienceMode === 'classes'} onChange={() => setAudienceMode('classes')} /> Selected classes</label>{audienceMode === 'classes' && <div className="file-pills-list">{classes.map((schoolClass) => <label className="file-pill" key={schoolClass.id}><input type="checkbox" checked={selectedClassIds.includes(schoolClass.id)} onChange={() => setSelectedClassIds((ids) => ids.includes(schoolClass.id) ? ids.filter((id) => id !== schoolClass.id) : [...ids, schoolClass.id])} /> {schoolClass.name}</label>)}</div>}<small>{recipientLabel}{recipientCount !== null ? ` · ${recipientCount} recipient${recipientCount === 1 ? '' : 's'}` : ''}</small>{recipientCount === 0 && <p className="composer-notice">This audience currently has no recipients. You may still publish an authorized update.</p>}</div><label className="composer-field"><span className="field-label">Update</span><textarea className="custom-textarea" value={message} onChange={(event) => setMessage(event.target.value)} placeholder="What should families and students know?" rows={5} maxLength={5000} required /></label><div className="composer-field"><span className="field-label">Images</span><label className="file-upload-dropzone"><Upload size={20} /><div><strong>Choose images</strong><small>JPEG, PNG or WebP · up to {maxImages}</small></div><input type="file" multiple accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(event) => setFiles((current) => [...current, ...Array.from(event.target.files ?? []).filter((file) => ['image/jpeg', 'image/png', 'image/webp'].includes(file.type))].slice(0, maxImages))} /></label>{files.length > 0 && <div className="file-pills-list">{files.map((file, index) => <span className="file-pill" key={`${file.name}-${index}`}>{file.name}<button type="button" className="file-remove-btn" onClick={() => setFiles((items) => items.filter((_, itemIndex) => itemIndex !== index))} aria-label={`Remove ${file.name}`}><X size={14} /></button></span>)}</div>}</div><label className="comment-toggle"><span><strong>Notify audience</strong><small>Send an in-app school update notification.</small></span><input aria-label="Notify audience" type="checkbox" className="custom-checkbox" checked={notifyAudience} onChange={(event) => setNotifyAudience(event.target.checked)} /></label>{notice && <p className="composer-notice">{notice}</p>}<button className="publish-btn" type="submit" disabled={saving || !message.trim() || !audiences.length}><Send size={18} /> {saving ? 'Publishing…' : 'Publish update'}</button></form></div>
+  const selectFiles = (selected: File[]) => {
+    const accepted: File[] = []
+    const rejected: string[] = []
+    for (const file of selected) {
+      if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+        rejected.push(`${file.name}: choose a JPEG, PNG or WebP image.`)
+      } else if (file.size > MAX_UPDATE_IMAGE_BYTES) {
+        rejected.push(`${file.name}: images must be 10 MB or smaller.`)
+      } else if (files.length + accepted.length >= maxImages) {
+        rejected.push(`${file.name}: only ${maxImages} images may be attached.`)
+      } else {
+        accepted.push(file)
+      }
+    }
+    setFiles((current) => [...current, ...accepted])
+    setNotice(rejected.join(' '))
+  }
+  const submit = async (event: React.FormEvent) => { event.preventDefault(); if (!audiences.length) return; setSaving(true); setNotice(''); try { await portalApi.createSchoolUpdate(message, audiences, notifyAudience, files); setMessage(''); setFiles([]); window.dispatchEvent(new CustomEvent('app-refresh')); onPublished() } catch (error) { setNotice(firstValidationError(error) ?? (error instanceof Error ? error.message : 'Unable to publish this update.')) } finally { setSaving(false) } }
+  return <div className="record-page"><Title eyebrow="Updates" title="Create school update" copy="Choose a whole-school or multi-class audience before publishing." /><form className="post-composer" onSubmit={submit}><div className="composer-field"><span className="field-label">Audience</span><label><input type="radio" name="audience-mode" checked={audienceMode === 'school'} onChange={() => setAudienceMode('school')} /> Whole school</label><label><input type="radio" name="audience-mode" checked={audienceMode === 'classes'} onChange={() => setAudienceMode('classes')} /> Selected classes</label>{audienceMode === 'classes' && <div className="file-pills-list">{classes.map((schoolClass) => <label className="file-pill" key={schoolClass.id}><input type="checkbox" checked={selectedClassIds.includes(schoolClass.id)} onChange={() => setSelectedClassIds((ids) => ids.includes(schoolClass.id) ? ids.filter((id) => id !== schoolClass.id) : [...ids, schoolClass.id])} /> {schoolClass.name}</label>)}</div>}<small>{recipientLabel}{recipientCount !== null ? ` · ${recipientCount} recipient${recipientCount === 1 ? '' : 's'}` : ''}</small>{recipientCount === 0 && <p className="composer-notice">This audience currently has no recipients. You may still publish an authorized update.</p>}</div><label className="composer-field"><span className="field-label">Update</span><textarea className="custom-textarea" value={message} onChange={(event) => setMessage(event.target.value)} placeholder="What should families and students know?" rows={5} maxLength={5000} required /></label><div className="composer-field"><span className="field-label">Images</span><label className="file-upload-dropzone"><Upload size={20} /><div><strong>Choose images</strong><small>JPEG, PNG or WebP · up to {maxImages} · 10 MB each</small></div><input type="file" multiple accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(event) => selectFiles(Array.from(event.target.files ?? []))} /></label>{files.length > 0 && <div className="file-pills-list">{files.map((file, index) => <span className="file-pill" key={`${file.name}-${index}`}>{file.name}<button type="button" className="file-remove-btn" onClick={() => setFiles((items) => items.filter((_, itemIndex) => itemIndex !== index))} aria-label={`Remove ${file.name}`}><X size={14} /></button></span>)}</div>}</div><label className="comment-toggle"><span><strong>Notify audience</strong><small>Send an in-app school update notification.</small></span><input aria-label="Notify audience" type="checkbox" className="custom-checkbox" checked={notifyAudience} onChange={(event) => setNotifyAudience(event.target.checked)} /></label>{notice && <p className="composer-notice">{notice}</p>}<button className="publish-btn" type="submit" disabled={saving || !message.trim() || !audiences.length}><Send size={18} /> {saving ? 'Publishing…' : 'Publish update'}</button></form></div>
 }
 
 function AssessmentPage({ staffMode = false, onBack }: { staffMode?: boolean; onBack?: () => void }) {

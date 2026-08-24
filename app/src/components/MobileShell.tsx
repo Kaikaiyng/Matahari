@@ -221,7 +221,12 @@ export function MobileShell({ activeTab, onTabChange, userRole, allowedRoles, on
           <NotificationCentre
             onClose={() => setShowNotifications(false)}
             onUnreadCountChange={setUnreadCount}
-            onNavigate={(tab) => handleTabChange(tab)}
+            onNavigate={(tab, target) => {
+              handleTabChange(tab)
+              if (target?.schoolUpdatePostId) {
+                window.dispatchEvent(new CustomEvent('school-update-focus', { detail: { postId: target.schoolUpdatePostId } }))
+              }
+            }}
           />
         )}
       </div>

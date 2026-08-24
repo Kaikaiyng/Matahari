@@ -19,7 +19,7 @@ import { useSwipeBack } from './useSwipeBack'
 export interface NotificationCentreProps {
   onClose: () => void
   onUnreadCountChange?: (count: number) => void
-  onNavigate?: (tab: string) => void
+  onNavigate?: (tab: string, target?: { schoolUpdatePostId: number }) => void
 }
 
 type NotificationCategory = 'all' | 'unread' | 'updates' | 'finance' | 'academic' | 'attendance' | 'general'
@@ -161,8 +161,13 @@ export const NotificationCentre: React.FC<NotificationCentreProps> = ({
     }
     const config = getNotificationConfig(n.type)
     if (config.targetTab && onNavigate) {
+      const rawPostId = n.context_json?.post_id
+      const postId = typeof rawPostId === 'number' ? rawPostId : Number(rawPostId)
+      const target = n.type === 'school_update' && Number.isInteger(postId) && postId > 0
+        ? { schoolUpdatePostId: postId }
+        : undefined
       handleBack()
-      onNavigate(config.targetTab)
+      onNavigate(config.targetTab, target)
     }
   }
 

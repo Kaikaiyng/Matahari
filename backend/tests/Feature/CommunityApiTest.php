@@ -15,6 +15,7 @@ use App\Models\CommunityPolicyVersion;
 use App\Models\CommunityPost;
 use App\Models\CommunityPostAudience;
 use App\Models\CommunityReport;
+use App\Models\CommunityUserRestriction;
 use App\Models\Guardian;
 use App\Models\Permission;
 use App\Models\PortalNotification;
@@ -23,12 +24,14 @@ use App\Models\School;
 use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Models\StudentCommunityAuthorization;
+use App\Models\StudentParentLink;
 use App\Models\Subject;
 use App\Models\TeachingAssignment;
 use App\Models\TenantUserMembership;
 use App\Models\User;
 use App\Models\UserPermissionOverride;
 use App\Services\Community\CommunityService;
+use App\Services\Community\SchoolUpdateAudienceResolver;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Events\Dispatcher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -124,12 +127,37 @@ class CommunityApiTest extends TestCase
         $this->actingAs($student)->postJson("http://127.0.0.1/api/v1/community/posts/{$adminPostId}/comments", ['body' => 'That was fun.'])->assertNotFound();
     }
 
-    public function test_teacher_cannot_publish_to_an_unrelated_class_or_the_whole_school(): void
+    public function test_teacher_with_publish_ability_can_publish_to_any_active_same_school_class_and_the_whole_school(): void
     {
         $teacher = User::query()->where('username', 'teacher.lim')->firstOrFail();
         $unrelated = SchoolClass::query()->where('name', 'MC1')->firstOrFail();
-        $this->actingAs($teacher)->postJson('http://127.0.0.1/api/v1/community/posts', ['body' => 'No', 'audiences' => [['type' => 'class', 'class_id' => $unrelated->id]]])->assertForbidden();
-        $this->actingAs($teacher)->postJson('http://127.0.0.1/api/v1/community/posts', ['body' => 'No', 'audiences' => [['type' => 'school']]])->assertForbidden();
+        $this->actingAs($teacher)->postJson('http://127.0.0.1/api/v1/community/posts', [
+            'body' => 'All-class notice',
+            'audiences' => [['type' => 'class', 'class_id' => $unrelated->id]],
+        ])->assertCreated();
+        $this->actingAs($teacher)->postJson('http://127.0.0.1/api/v1/community/posts', [
+            'body' => 'Whole-school notice',
+            'audiences' => [['type' => 'school']],
+        ])->assertCreated();
+        $this->assertDatabaseCount('community_posts', 2);
+    }
+
+    public function test_teacher_without_publish_ability_cannot_publish(): void
+    {
+        $teacher = User::query()->where('username', 'teacher.lim')->firstOrFail();
+        UserPermissionOverride::query()->create([
+            'school_id' => $teacher->school_id,
+            'user_id' => $teacher->id,
+            'permission_id' => Permission::query()->where('slug', 'community.publish')->valueOrFail('id'),
+            'allowed' => false,
+            'reason' => 'Publishing duty was removed.',
+            'updated_by' => User::query()->where('username', 'admin')->valueOrFail('id'),
+        ]);
+
+        $this->actingAs($teacher)->postJson('http://127.0.0.1/api/v1/community/posts', [
+            'body' => 'Not authorized',
+            'audiences' => [['type' => 'school']],
+        ])->assertForbidden();
         $this->assertDatabaseCount('community_posts', 0);
     }
 
@@ -397,6 +425,38 @@ class CommunityApiTest extends TestCase
             'phone' => '+60 12-999 0000',
         ]);
 
+        $inactiveDomainStudentUser = $this->createAudienceMember($school, 'student', 'audience.inactive-domain.student');
+        $inactiveDomainStudent = Student::query()->create([
+            'school_id' => $school->id,
+            'user_id' => $inactiveDomainStudentUser->id,
+            'student_no' => 'MIS-AUDIENCE-INACTIVE-DOMAIN',
+            'full_name' => 'Inactive Domain Student',
+            'status' => 'inactive',
+        ]);
+        ClassEnrolment::query()->create([
+            'school_id' => $school->id,
+            'academic_year_id' => $year->id,
+            'class_id' => $classA->id,
+            'student_id' => $inactiveDomainStudent->id,
+            'status' => 'active',
+            'current_slot' => 1,
+        ]);
+        $inactiveDomainParentUser = $this->createAudienceMember($school, 'parent', 'audience.inactive-domain.parent');
+        $inactiveDomainGuardian = Guardian::query()->create([
+            'school_id' => $school->id,
+            'user_id' => $inactiveDomainParentUser->id,
+            'full_name' => 'Inactive Domain Parent',
+            'phone' => '+60 12-999 0001',
+        ]);
+        StudentParentLink::query()->create([
+            'school_id' => $school->id,
+            'student_id' => $inactiveDomainStudent->id,
+            'parent_id' => $inactiveDomainGuardian->id,
+            'relationship' => 'guardian',
+            'status' => 'active',
+            'current_slot' => 1,
+        ]);
+
         $context = $this->actingAs($publisher)
             ->getJson('http://127.0.0.1/api/v1/community/publishing-context')
             ->assertOk()
@@ -422,6 +482,55 @@ class CommunityApiTest extends TestCase
         $this->actingAs($publisher)->postJson('http://127.0.0.1/api/v1/community/audience-preview', [
             'audiences' => [['type' => 'class', 'class_id' => $emptyClass->id]],
         ])->assertOk()->assertJsonPath('data.recipient_count', 0);
+    }
+
+    public function test_manager_sees_all_same_school_class_updates_but_is_not_notified_without_a_recipient_relationship(): void
+    {
+        $school = School::query()->where('code', 'MIS')->firstOrFail();
+        $publisher = User::query()->where('username', 'admin')->firstOrFail();
+        $manager = $this->createAudienceMember($school, 'teacher', 'audience.manager-only');
+        UserPermissionOverride::query()->create([
+            'school_id' => $school->id,
+            'user_id' => $manager->id,
+            'permission_id' => Permission::query()->where('slug', 'community.moderate')->valueOrFail('id'),
+            'allowed' => true,
+            'reason' => 'Post management duty.',
+            'updated_by' => $publisher->id,
+        ]);
+        $class = SchoolClass::query()->where('school_id', $school->id)->where('name', 'MC1')->firstOrFail();
+
+        $postId = $this->actingAs($publisher)->postJson('http://127.0.0.1/api/v1/community/posts', [
+            'body' => 'Class update for manager visibility.',
+            'audiences' => [['type' => 'class', 'class_id' => $class->id]],
+            'notify_audience' => true,
+        ])->assertCreated()->json('data.id');
+
+        $this->assertDatabaseMissing('portal_notifications', [
+            'recipient_user_id' => $manager->id,
+            'type' => 'school_update',
+            'context_json->post_id' => $postId,
+        ]);
+        $this->actingAs($manager)->getJson('http://127.0.0.1/api/v1/community/posts')
+            ->assertOk()
+            ->assertJsonFragment(['id' => $postId]);
+    }
+
+    public function test_whole_school_preview_excludes_non_app_admin_and_platform_only_identities_with_bounded_queries(): void
+    {
+        $school = School::query()->where('code', 'MIS')->firstOrFail();
+        $publisher = User::query()->where('username', 'admin')->firstOrFail();
+        foreach (range(1, 30) as $index) {
+            $this->createAudienceMember($school, 'school-admin', "audience.non-app-admin.{$index}");
+        }
+
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+        $preview = app(SchoolUpdateAudienceResolver::class)->preview($school->id, [['type' => 'school']], $publisher->id);
+        $queryCount = count(DB::getQueryLog());
+        DB::disableQueryLog();
+
+        $this->assertSame(3, $preview['recipient_count']);
+        $this->assertLessThanOrEqual(12, $queryCount, "Audience preview executed {$queryCount} queries.");
     }
 
     #[TestDox('audience preview rejects mixed duplicate inactive and cross school classes')]
@@ -674,6 +783,75 @@ class CommunityApiTest extends TestCase
         $this->assertDatabaseHas('audit_logs', ['entity_id' => $postId, 'action' => 'community.post_updated']);
     }
 
+    public function test_historical_pending_and_rejected_posts_require_an_explicit_manager_transition(): void
+    {
+        $author = User::query()->where('username', 'teacher.lim')->firstOrFail();
+        $manager = User::query()->where('username', 'admin')->firstOrFail();
+        $class = SchoolClass::query()->where('name', 'MB1')->firstOrFail();
+        $posts = collect([CommunityPost::STATUS_PENDING_REVIEW, CommunityPost::STATUS_REJECTED])->map(function (string $status) use ($author, $class): CommunityPost {
+            $post = CommunityPost::query()->create([
+                'tenant_id' => $author->school->tenant_id,
+                'school_id' => $author->school_id,
+                'author_user_id' => $author->id,
+                'post_type' => 'post',
+                'body' => "Historical {$status} update",
+                'comments_enabled' => true,
+                'status' => $status,
+            ]);
+            CommunityPostAudience::query()->create([
+                'school_id' => $author->school_id,
+                'community_post_id' => $post->id,
+                'audience_type' => 'class',
+                'class_id' => $class->id,
+                'audience_key' => "class:{$class->id}",
+            ]);
+
+            return $post;
+        });
+        $pending = $posts->firstWhere('status', CommunityPost::STATUS_PENDING_REVIEW);
+
+        $authorPosts = collect($this->actingAs($author)->getJson('http://127.0.0.1/api/v1/community/posts')->assertOk()->json('data'));
+        $this->assertFalse($authorPosts->firstWhere('id', $pending->id)['can_edit']);
+        $this->assertSame(CommunityPost::STATUS_REJECTED, $authorPosts->firstWhere('status', CommunityPost::STATUS_REJECTED)['status']);
+        $this->actingAs($author)->putJson("http://127.0.0.1/api/v1/community/posts/{$pending->id}", [
+            'body' => 'Author cannot republish this.',
+        ])->assertConflict();
+
+        $managerPosts = collect($this->actingAs($manager)->getJson('http://127.0.0.1/api/v1/community/posts')->assertOk()->json('data'));
+        $this->assertTrue($managerPosts->firstWhere('id', $pending->id)['can_edit']);
+        $this->assertNotNull($managerPosts->firstWhere('status', CommunityPost::STATUS_REJECTED));
+        $this->actingAs($manager)->putJson("http://127.0.0.1/api/v1/community/posts/{$pending->id}", [
+            'body' => 'Manager reviewed and published this update.',
+        ])->assertOk()->assertJsonPath('data.status', CommunityPost::STATUS_PUBLISHED);
+        $audit = AuditLog::query()->where('entity_id', $pending->id)->where('action', 'community.post_updated')->sole();
+        $this->assertSame(CommunityPost::STATUS_PENDING_REVIEW, $audit->old_values['status']);
+        $this->assertSame(CommunityPost::STATUS_PUBLISHED, $audit->new_values['status']);
+    }
+
+    public function test_historical_community_restriction_does_not_block_school_update_publication_or_media(): void
+    {
+        Storage::fake('local');
+        $teacher = User::query()->where('username', 'teacher.lim')->firstOrFail();
+        $class = SchoolClass::query()->where('name', 'MB1')->firstOrFail();
+        CommunityUserRestriction::query()->create([
+            'tenant_id' => $teacher->school->tenant_id,
+            'school_id' => $teacher->school_id,
+            'user_id' => $teacher->id,
+            'scope' => 'all',
+            'reason_code' => 'other',
+            'reason' => 'Historical social-workflow restriction.',
+            'starts_at' => now()->subDay(),
+            'applied_by_user_id' => User::query()->where('username', 'admin')->valueOrFail('id'),
+            'status' => 'active',
+        ]);
+
+        $this->actingAs($teacher)->post('http://127.0.0.1/api/v1/community/posts', [
+            'body' => 'Official update unaffected by historical restrictions.',
+            'audiences' => [['type' => 'class', 'class_id' => $class->id]],
+            'media' => [UploadedFile::fake()->create('official.png', 1, 'image/png')],
+        ])->assertCreated()->assertJsonPath('data.media.0.name', 'official.png');
+    }
+
     public function test_author_withdrawal_is_logical_and_preserves_moderation_history(): void
     {
         $teacher = User::query()->where('username', 'teacher.lim')->firstOrFail();
@@ -682,10 +860,34 @@ class CommunityApiTest extends TestCase
             'body' => 'Withdraw this submission',
             'audiences' => [['type' => 'class', 'class_id' => $class->id]],
         ])->assertCreated()->json('data.id');
+        UserPermissionOverride::query()->create([
+            'school_id' => $teacher->school_id,
+            'user_id' => $teacher->id,
+            'permission_id' => Permission::query()->where('slug', 'community.moderate')->valueOrFail('id'),
+            'allowed' => true,
+            'reason' => 'Author also manages posts.',
+            'updated_by' => User::query()->where('username', 'admin')->valueOrFail('id'),
+        ]);
+        $report = CommunityReport::query()->create([
+            'tenant_id' => $teacher->school->tenant_id,
+            'school_id' => $teacher->school_id,
+            'reporter_user_id' => User::query()->where('username', 'rachel.wong')->valueOrFail('id'),
+            'source' => 'user_report',
+            'target_type' => 'post',
+            'community_post_id' => $postId,
+            'reported_user_id' => $teacher->id,
+            'reason_code' => 'outdated',
+            'priority' => 'normal',
+            'status' => CommunityReport::STATUS_SUBMITTED,
+            'target_snapshot' => ['post' => ['id' => $postId]],
+            'due_at' => now()->addDay(),
+        ]);
         $this->actingAs($teacher)->deleteJson("http://127.0.0.1/api/v1/community/posts/{$postId}")->assertOk();
 
         $this->assertDatabaseHas('community_posts', ['id' => $postId, 'status' => CommunityPost::STATUS_DELETED]);
         $this->assertDatabaseHas('audit_logs', ['entity_id' => $postId, 'action' => 'community.post_withdrawn']);
+        $this->assertDatabaseHas('community_reports', ['id' => $report->id, 'resolution_code' => 'author_withdrawn']);
+        $this->assertDatabaseHas('community_report_actions', ['community_report_id' => $report->id, 'action' => 'author_withdrawn']);
         $this->actingAs($teacher)->getJson('http://127.0.0.1/api/v1/community/posts')->assertJsonMissing(['id' => $postId]);
         $this->actingAs($teacher)->putJson("http://127.0.0.1/api/v1/community/posts/{$postId}", ['body' => 'Restore it'])->assertConflict();
     }
@@ -699,6 +901,20 @@ class CommunityApiTest extends TestCase
             'body' => 'Withdraw me',
             'audiences' => [['type' => 'class', 'class_id' => $class->id]],
         ])->assertCreated()->json('data.id');
+        $report = CommunityReport::query()->create([
+            'tenant_id' => $teacher->school->tenant_id,
+            'school_id' => $teacher->school_id,
+            'reporter_user_id' => User::query()->where('username', 'rachel.wong')->valueOrFail('id'),
+            'source' => 'user_report',
+            'target_type' => 'post',
+            'community_post_id' => $postId,
+            'reported_user_id' => $teacher->id,
+            'reason_code' => 'outdated',
+            'priority' => 'normal',
+            'status' => CommunityReport::STATUS_SUBMITTED,
+            'target_snapshot' => ['post' => ['id' => $postId]],
+            'due_at' => now()->addDay(),
+        ]);
 
         $this->actingAs($admin)->deleteJson("http://127.0.0.1/api/v1/community/posts/{$postId}")->assertUnprocessable();
         $this->actingAs($admin)->deleteJson("http://127.0.0.1/api/v1/community/posts/{$postId}", ['reason' => 'Superseded by corrected notice.'])->assertOk();
@@ -708,6 +924,8 @@ class CommunityApiTest extends TestCase
             'status' => CommunityPost::STATUS_DELETED,
             'moderation_reason' => 'Superseded by corrected notice.',
         ]);
+        $this->assertDatabaseHas('community_reports', ['id' => $report->id, 'resolution_code' => 'manager_withdrawn']);
+        $this->assertDatabaseHas('community_report_actions', ['community_report_id' => $report->id, 'action' => 'manager_withdrawn']);
     }
 
     public function test_moderate_only_manager_can_edit_and_withdraw_another_authors_update(): void
