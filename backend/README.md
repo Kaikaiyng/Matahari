@@ -146,14 +146,7 @@ See [System Architecture](../docs/SYSTEM_ARCHITECTURE.md) for the complete endpo
 
 `phpunit.xml` forces SQLite `:memory:` so the automated suite does not modify the active local development/demo database.
 
-Last verified on merged `master` on 2026-08-13:
-
-```text
-255 tests discovered
-247 passed
-8 opt-in MariaDB tests skipped
-1,314 assertions
-```
+Use [Current Status](../docs/current-status.md) and [Testing and Release](../docs/testing-and-release.md) for the newest dated test evidence and explicit database limitations.
 
 ## Deferred Backend Scope
 

@@ -157,8 +157,19 @@ describe('MobileShell & Portal Views', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: 'Open class MB1 English' }))
     expect(await screen.findByText('Check Daily Attendance')).toBeInTheDocument()
-    expect(screen.queryByText('Publish Class Announcement')).not.toBeInTheDocument()
+    expect(screen.queryByText('Create school update')).not.toBeInTheDocument()
     expect(screen.queryByText('Class posts')).not.toBeInTheDocument()
+  })
+
+  it('labels the authorized class-detail action as the general school update composer', async () => {
+    vi.mocked(portalApi.getTeacherAssignments).mockResolvedValueOnce({ data: [{ id: 7, academic_year: { id: 1, code: '2026' }, class: { id: 2, name: 'MB1' }, subject: { id: 3, code: 'ENG', name: 'English' } }] })
+    vi.mocked(portalApi.getTeacherStudents).mockResolvedValue({ data: [] })
+    const changeTab = vi.fn()
+    render(<TeacherPortalView teacherName="Teacher Lim" activeTab="classes" onTabChange={changeTab} onLogout={() => {}} canPublishUpdates />)
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Open class MB1 English' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Create school update' }))
+    expect(changeTab).toHaveBeenCalledWith('create')
   })
 
   it('lets an authorized Teacher choose whole-school or multiple classes, previews recipients, and defaults notification on', async () => {

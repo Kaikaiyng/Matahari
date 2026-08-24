@@ -123,3 +123,5 @@ Fresh final validation on 2026-08-25:
 - App: 55/55 tests, lint, and production build passed.
 - Admin: 187/187 tests and production build passed; lint exited 0 with nine existing `CalendarViews.tsx` Fast Refresh warnings.
 - Focused RED/GREEN: moderator direct-report test failed with HTTP 201 before the guard and passed with HTTP 403 plus seven assertions afterward; Teacher publishing-copy test failed before the copy/visibility change and passed afterward.
+
+Release re-review then found two copy-only inconsistencies. The class-detail action now says `Create school update`, matching the general composer and its default whole-school audience, and an App regression verifies that navigation. README wording now distinguishes eligible reporters from authors/managers and removes obsolete backend test totals in favor of canonical dated evidence.

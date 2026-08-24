@@ -284,7 +284,7 @@ function ClassDetailSubpage({
               onClick={() => { onClose(); onCreatePost() }}
             >
               <Send size={18} className="about-item-icon" />
-              <span className="about-item-title">Publish Class Announcement</span>
+              <span className="about-item-title">Create school update</span>
               <ChevronRight size={18} className="about-item-arrow" />
             </button>}
           </div>

@@ -5,7 +5,7 @@ This is the independent mobile-first web workspace for Parent, Student, and Teac
 ## Current Experience
 
 - Role-aware floating liquid-glass navigation with distinct Parent, Student, and Teacher destinations.
-- Live School Updates: visible users can read, Like, and report posts; Teachers with `community.publish` can publish immediately to the whole school or multiple classes with images and optional audience notifications.
+- Live School Updates: visible users can read and Like posts; eligible readers who are neither the author nor a Post manager may report them. Teachers with `community.publish` can publish immediately to the whole school or multiple classes with images and optional audience notifications.
 - Live scoped Parent/Student identity and Attendance reads.
 - Live assignment-scoped Teacher daily Attendance marking with correction reasons.
 - Live Teacher Classes cards derived from the same current teaching assignments and scoped rosters used by Attendance.
