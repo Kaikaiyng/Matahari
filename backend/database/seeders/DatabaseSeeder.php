@@ -257,7 +257,6 @@ class DatabaseSeeder extends Seeder
             'employees.abilities.manage',
             'community.view',
             'community.publish',
-            'community.interact',
             'community.moderate',
             'assessments.manage',
             'assessments.manage_school',
@@ -290,7 +289,6 @@ class DatabaseSeeder extends Seeder
             'attendance.manage_assigned',
             'community.view',
             'community.publish',
-            'community.interact',
             'assessments.manage',
             'schedule.view',
             'quizzes.manage',
@@ -299,14 +297,12 @@ class DatabaseSeeder extends Seeder
         $roles['parent']->permissions()->sync($permissions->only([
             'parent.self_service',
             'community.view',
-            'community.interact',
             'assessments.view_published',
             'schedule.view',
         ])->pluck('id')->all());
         $roles['student']->permissions()->sync($permissions->only([
             'student.self_service',
             'community.view',
-            'community.interact',
             'assessments.view_published',
             'schedule.view',
             'quizzes.attempt',

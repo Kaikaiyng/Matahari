@@ -189,21 +189,11 @@ Route::prefix('v1')->middleware([...$sessionMiddleware, 'auth', 'active', 'tenan
         Route::post('/policies/{communityPolicyVersion}/accept', [CommunitySafetyController::class, 'acceptPolicy']);
         Route::post('/reports', [CommunitySafetyController::class, 'storeReport']);
         Route::get('/reports/mine', [CommunitySafetyController::class, 'myReports']);
-        Route::post('/users/{user}/block', [CommunitySafetyController::class, 'block']);
-        Route::delete('/users/{user}/block', [CommunitySafetyController::class, 'unblock']);
-        Route::get('/blocked-users', [CommunitySafetyController::class, 'blockedUsers']);
-        Route::get('/content/mine', [CommunitySafetyController::class, 'myContent']);
-        Route::post('/appeals', [CommunitySafetyController::class, 'submitAppeal']);
-        Route::get('/appeals/mine', [CommunitySafetyController::class, 'myAppeals']);
-        Route::post('/students/{student}/authorization', [CommunitySafetyController::class, 'authorizeStudent']);
-        Route::delete('/students/{student}/authorization', [CommunitySafetyController::class, 'revokeStudentAuthorization']);
         Route::post('/posts', [CommunityController::class, 'store'])->middleware('permission:community.publish');
         Route::put('/posts/{communityPost}', [CommunityController::class, 'update'])->middleware('permission:community.publish,community.moderate');
         Route::delete('/posts/{communityPost}', [CommunityController::class, 'destroy'])->middleware('permission:community.publish,community.moderate');
-        Route::post('/posts/{communityPost}/reaction', [CommunityController::class, 'reaction'])->middleware('permission:community.interact');
-        Route::post('/posts/{communityPost}/comments', [CommunityController::class, 'comment'])->middleware('permission:community.interact');
+        Route::post('/posts/{communityPost}/reaction', [CommunityController::class, 'reaction']);
         Route::get('/media/{communityPostMedia}', [CommunityController::class, 'media']);
-        Route::delete('/comments/{communityComment}', [CommunityController::class, 'removeComment'])->middleware('permission:community.interact');
         Route::post('/posts/{communityPost}/hide', [CommunityController::class, 'hide'])->middleware('permission:community.moderate');
     });
 
@@ -212,9 +202,6 @@ Route::prefix('v1')->middleware([...$sessionMiddleware, 'auth', 'active', 'tenan
             Route::get('/reports', [CommunityModerationController::class, 'index']);
             Route::get('/reports/{communityReport}', [CommunityModerationController::class, 'show']);
             Route::post('/reports/{communityReport}/decision', [CommunityModerationController::class, 'decide']);
-            Route::post('/users/{user}/restrictions', [CommunityModerationController::class, 'restrict']);
-            Route::delete('/restrictions/{communityUserRestriction}', [CommunityModerationController::class, 'revokeRestriction']);
-            Route::post('/appeals/{communityAppeal}/decision', [CommunityModerationController::class, 'decideAppeal']);
         });
         Route::get('/academic-years', [AcademicYearController::class, 'index'])->middleware('permission:academic_years.view');
         Route::post('/academic-years', [AcademicYearController::class, 'store'])->middleware('permission:academic_years.manage');

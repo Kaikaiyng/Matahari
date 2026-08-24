@@ -28,36 +28,10 @@ class CommunityModerationService
 
     public function resolveTarget(User $reporter, int $schoolId, string $type, int $targetId): ReportTarget
     {
-        if ($type === 'post') {
-            $post = CommunityPost::query()->with('media')->findOrFail($targetId);
-            $this->access->findVisible($reporter, $schoolId, $post);
+        $post = CommunityPost::query()->with('media')->findOrFail($targetId);
+        $this->access->findVisible($reporter, $schoolId, $post);
 
-            return new ReportTarget($type, $post, null, $post->author()->firstOrFail());
-        }
-
-        if ($type === 'comment') {
-            $comment = CommunityComment::query()->where('school_id', $schoolId)->where('status', CommunityComment::STATUS_VISIBLE)->findOrFail($targetId);
-            $post = CommunityPost::query()->with('media')->findOrFail($comment->community_post_id);
-            $this->access->findVisible($reporter, $schoolId, $post);
-
-            return new ReportTarget($type, $post, $comment, $comment->user()->firstOrFail());
-        }
-
-        $reportedUser = User::query()->findOrFail($targetId);
-        $visiblePostIds = $this->access->visiblePosts($reporter, $schoolId)->select('community_posts.id');
-        $isVisibleParticipant = CommunityPost::query()
-            ->whereIn('id', clone $visiblePostIds)
-            ->where('author_user_id', $reportedUser->id)
-            ->exists()
-            || CommunityComment::query()
-                ->where('school_id', $schoolId)
-                ->where('status', CommunityComment::STATUS_VISIBLE)
-                ->where('user_id', $reportedUser->id)
-                ->whereIn('community_post_id', clone $visiblePostIds)
-                ->exists();
-        abort_unless($isVisibleParticipant, 403, 'This Community user is outside your authorized audience.');
-
-        return new ReportTarget($type, null, null, $reportedUser);
+        return new ReportTarget($type, $post, null, $post->author()->firstOrFail());
     }
 
     public function submitReport(User $reporter, int $tenantId, int $schoolId, ReportTarget $target, string $reasonCode, ?string $details, AuditContext $context): CommunityReport
@@ -188,25 +162,29 @@ class CommunityModerationService
                 throw ValidationException::withMessages(['decision' => 'This decision is not valid for a user report.']);
             }
 
+            $storageDecision = match ($decision) {
+                'remove_content' => 'hide',
+                default => $decision,
+            };
             $post = $locked->community_post_id ? CommunityPost::query()->whereKey($locked->community_post_id)->lockForUpdate()->first() : null;
             $comment = $locked->community_comment_id ? CommunityComment::query()->whereKey($locked->community_comment_id)->lockForUpdate()->first() : null;
             $now = now();
-            if (in_array($decision, ['approve', 'no_violation'], true)) {
+            if (in_array($storageDecision, ['approve', 'no_violation'], true)) {
                 if ($comment) {
                     $comment->update(['status' => CommunityComment::STATUS_VISIBLE, 'reviewed_at' => $now, 'reviewed_by_user_id' => $actor->id, 'moderation_reason_code' => $reasonCode, 'hidden_at' => null, 'hidden_by_user_id' => null]);
                 } elseif ($post) {
                     $post->update(['status' => CommunityPost::STATUS_PUBLISHED, 'published_at' => $post->published_at ?? $now, 'reviewed_at' => $now, 'reviewed_by_user_id' => $actor->id, 'moderation_reason_code' => $reasonCode, 'hidden_at' => null, 'hidden_by_user_id' => null]);
                     $post->media()->update(['status' => 'ready']);
                 }
-            } elseif ($decision === 'reject') {
+            } elseif ($storageDecision === 'reject') {
                 ($comment ?? $post)?->update(['status' => 'rejected', 'reviewed_at' => $now, 'reviewed_by_user_id' => $actor->id, 'moderation_reason_code' => $reasonCode, 'moderation_reason' => trim($reason)]);
                 $post?->media()->update(['status' => 'quarantined']);
-            } elseif ($decision === 'hide') {
+            } elseif ($storageDecision === 'hide') {
                 ($comment ?? $post)?->update(['status' => 'hidden', 'hidden_at' => $now, 'hidden_by_user_id' => $actor->id, 'reviewed_at' => $now, 'reviewed_by_user_id' => $actor->id, 'moderation_reason_code' => $reasonCode, 'moderation_reason' => trim($reason)]);
                 $post?->media()->update(['status' => 'quarantined']);
             }
 
-            $escalated = $decision === 'escalate';
+            $escalated = $storageDecision === 'escalate';
             $locked->update([
                 'status' => $escalated ? CommunityReport::STATUS_REVIEWING : CommunityReport::STATUS_RESOLVED,
                 'priority' => $escalated ? 'severe' : $locked->priority,

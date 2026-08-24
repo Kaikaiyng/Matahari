@@ -3,7 +3,6 @@
 namespace App\Services\Community;
 
 use App\Models\CommunityPost;
-use App\Models\CommunityUserBlock;
 use App\Models\School;
 use App\Models\TeachingAssignment;
 use App\Models\User;
@@ -18,13 +17,11 @@ class CommunityAccessService
         $tenantId = (int) School::query()->whereKey($schoolId)->value('tenant_id');
         $classIds = $this->audiences->visibleClassIds($user, $schoolId);
         $studentId = $user->studentProfile?->id;
-        $blockedUserIds = $this->blockedUserIds($user, $tenantId, $schoolId);
 
         return CommunityPost::query()
             ->where('tenant_id', $tenantId)
             ->where('school_id', $schoolId)
             ->whereNull('hidden_at')
-            ->when($blockedUserIds !== [], fn (Builder $query) => $query->whereNotIn('author_user_id', $blockedUserIds))
             ->where(function (Builder $query) use ($classIds, $studentId, $user): void {
                 $query->where(fn (Builder $my) => $my->where('author_user_id', $user->id)->whereIn('status', ['published', 'pending_review']))
                     ->orWhere(function (Builder $published) use ($classIds, $studentId): void {
@@ -36,19 +33,6 @@ class CommunityAccessService
                             });
                     });
             });
-    }
-
-    /** @return list<int> */
-    public function blockedUserIds(User $user, int $tenantId, int $schoolId): array
-    {
-        return CommunityUserBlock::query()
-            ->where('tenant_id', $tenantId)
-            ->where('school_id', $schoolId)
-            ->whereNull('revoked_at')
-            ->where(fn (Builder $query) => $query->where('blocker_user_id', $user->id)->orWhere('blocked_user_id', $user->id))
-            ->get(['blocker_user_id', 'blocked_user_id'])
-            ->map(fn (CommunityUserBlock $block): int => (int) ($block->blocker_user_id === $user->id ? $block->blocked_user_id : $block->blocker_user_id))
-            ->unique()->values()->all();
     }
 
     public function findVisible(User $user, int $schoolId, CommunityPost $post): CommunityPost

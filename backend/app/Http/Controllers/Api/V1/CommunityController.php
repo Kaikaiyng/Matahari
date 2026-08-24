@@ -4,10 +4,8 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Audit\AuditContextFactory;
 use App\Http\Controllers\Controller;
-use App\Models\CommunityComment;
 use App\Models\CommunityPost;
 use App\Models\CommunityPostMedia;
-use App\Models\School;
 use App\Models\SchoolClass;
 use App\Services\Community\CommunityAccessService;
 use App\Services\Community\CommunityService;
@@ -26,11 +24,9 @@ class CommunityController extends Controller
     public function index(Request $request, CommunityAccessService $access): JsonResponse
     {
         $schoolId = SchoolContext::fromRequest($request)->schoolId;
-        $tenantId = (int) School::query()->whereKey($schoolId)->value('tenant_id');
-        $blockedUserIds = $access->blockedUserIds($request->user(), $tenantId, $schoolId);
         $posts = $access->visiblePosts($request->user(), $schoolId)
-            ->with(['author:id,name', 'audiences', 'media', 'comments' => fn ($q) => $q->where('status', 'visible')->when($blockedUserIds !== [], fn ($comments) => $comments->whereNotIn('user_id', $blockedUserIds))->with('user:id,name')->oldest()])
-            ->withCount(['reactions' => fn ($q) => $q->when($blockedUserIds !== [], fn ($reactions) => $reactions->whereNotIn('user_id', $blockedUserIds))])
+            ->with(['author:id,name', 'audiences', 'media'])
+            ->withCount('reactions')
             ->withExists(['reactions as reacted_by_me' => fn ($q) => $q->where('user_id', $request->user()->id)])
             ->latest('published_at')->limit(50)->get();
 
@@ -48,7 +44,7 @@ class CommunityController extends Controller
         $schoolId = SchoolContext::fromRequest($request)->schoolId;
         $data['audiences'] = $this->validatedAudiences($request, $schoolId);
         $post = $service->publish($schoolId, $data, $request->user(), $contexts->fromRequest($request));
-        $post->load(['author:id,name', 'audiences', 'media', 'comments.user'])->loadCount('reactions')->setAttribute('reacted_by_me', false);
+        $post->load(['author:id,name', 'audiences', 'media'])->loadCount('reactions')->setAttribute('reacted_by_me', false);
 
         return response()->json(['data' => $this->response($post)], 201);
     }
@@ -78,7 +74,7 @@ class CommunityController extends Controller
             'body' => ['required', 'string', 'max:5000'],
         ]);
         $post = $service->updatePost(SchoolContext::fromRequest($request)->schoolId, $communityPost, $data, $request->user(), $contexts->fromRequest($request));
-        $post->load(['author:id,name', 'audiences', 'media', 'comments' => fn ($query) => $query->where('status', 'visible')->with('user:id,name')])
+        $post->load(['author:id,name', 'audiences', 'media'])
             ->loadCount('reactions')
             ->setAttribute('reacted_by_me', $post->reactions()->where('user_id', $request->user()->id)->exists());
 
@@ -104,13 +100,6 @@ class CommunityController extends Controller
         ]);
     }
 
-    public function removeComment(Request $request, CommunityComment $communityComment, CommunityService $service, AuditContextFactory $contexts): JsonResponse
-    {
-        $service->removeComment(SchoolContext::fromRequest($request)->schoolId, $communityComment, $request->user(), $contexts->fromRequest($request));
-
-        return response()->json(['success' => true]);
-    }
-
     public function hide(Request $request, CommunityPost $communityPost, CommunityService $service, AuditContextFactory $contexts): JsonResponse
     {
         $data = $request->validate(['reason' => ['required', 'string', 'max:500']]);
@@ -134,19 +123,6 @@ class CommunityController extends Controller
         return response()->json(['data' => ['post_id' => $post->id, 'reacted' => $post->reactions()->where('user_id', $request->user()->id)->exists(), 'reaction_count' => $post->reactions()->count()]]);
     }
 
-    public function comment(Request $request, CommunityPost $communityPost, CommunityService $service, AuditContextFactory $contexts): JsonResponse
-    {
-        $data = $request->validate(['body' => ['required', 'string', 'max:2000']]);
-        $comment = $service->comment(SchoolContext::fromRequest($request)->schoolId, $communityPost, $data['body'], $request->user(), $contexts->fromRequest($request))->load('user:id,name');
-
-        return response()->json(['data' => [
-            'id' => $comment->id, 'body' => $comment->body, 'status' => $comment->status,
-            'author' => $comment->user->name, 'author_user_id' => $comment->user_id,
-            'created_at' => $comment->created_at?->toIso8601String(),
-            'can_report_content' => false, 'can_report_user' => false,
-        ]], 201);
-    }
-
     private function response(CommunityPost $post): array
     {
         $userId = auth()->id();
@@ -156,20 +132,16 @@ class CommunityController extends Controller
 
         return ['id' => $post->id, 'body' => $post->body, 'status' => $post->status, 'comments_enabled' => $post->comments_enabled, 'published_at' => $post->published_at?->toIso8601String(),
             'author' => ['id' => $post->author->id, 'name' => $post->author->name],
-            'can_report_content' => $post->author_user_id !== $userId,
-            'can_report_user' => $post->author_user_id !== $userId,
+            'can_report' => $post->author_user_id !== $userId,
+            'can_report_content' => false,
+            'can_report_user' => false,
             'can_edit' => $canEdit,
             'can_withdraw' => $canEdit,
             'can_delete' => $canEdit,
             'audiences' => $post->audiences->map(fn ($a) => ['type' => $a->audience_type, 'class_id' => $a->class_id, 'student_id' => $a->student_id]),
             'media' => $post->media->map(fn ($m) => ['id' => $m->id, 'type' => $m->media_type, 'name' => $m->original_name, 'url' => "/api/v1/community/media/{$m->id}"]),
             'reaction_count' => (int) ($post->reactions_count ?? 0), 'reacted_by_me' => (bool) ($post->reacted_by_me ?? false),
-            'comments' => $post->comments->map(fn ($c) => [
-                'id' => $c->id, 'body' => $c->body, 'author' => $c->user->name, 'author_user_id' => $c->user_id,
-                'created_at' => $c->created_at?->toIso8601String(),
-                'can_remove' => $c->user_id === $userId || $post->author_user_id === $userId || $isModerator,
-                'can_report_content' => $c->user_id !== $userId, 'can_report_user' => $c->user_id !== $userId,
-            ]),
+            'comments' => [],
             'can_moderate' => $isModerator,
         ];
     }

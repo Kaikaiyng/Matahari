@@ -108,9 +108,18 @@ class CommunityApiTest extends TestCase
             $this->actingAs($user)->getJson('http://127.0.0.1/api/v1/community/posts')->assertOk()->assertJsonFragment(['id' => $adminPostId]);
         }
 
+        $this->actingAs(User::query()->where('username', 'rachel.wong')->firstOrFail())->getJson('http://127.0.0.1/api/v1/community/posts')
+            ->assertOk()
+            ->assertJsonPath('data.0.comments', [])
+            ->assertJsonPath('data.0.can_report_content', false)
+            ->assertJsonPath('data.0.can_report_user', false);
+
         $student = User::query()->where('username', 'alyssa.tan')->firstOrFail();
+        $student->roles()->firstOrFail()->permissions()->detach(
+            Permission::query()->where('slug', 'community.interact')->valueOrFail('id'),
+        );
         $this->actingAs($student)->postJson("http://127.0.0.1/api/v1/community/posts/{$adminPostId}/reaction")->assertOk()->assertJsonPath('data.reacted', true);
-        $this->actingAs($student)->postJson("http://127.0.0.1/api/v1/community/posts/{$adminPostId}/comments", ['body' => 'That was fun.'])->assertConflict();
+        $this->actingAs($student)->postJson("http://127.0.0.1/api/v1/community/posts/{$adminPostId}/comments", ['body' => 'That was fun.'])->assertNotFound();
     }
 
     public function test_teacher_cannot_publish_to_an_unrelated_class_or_the_whole_school(): void

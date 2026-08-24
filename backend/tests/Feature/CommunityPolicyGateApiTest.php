@@ -7,7 +7,6 @@ use App\Models\CommunityPolicyVersion;
 use App\Models\CommunityPost;
 use App\Models\CommunityPostAudience;
 use App\Models\SchoolClass;
-use App\Models\StudentCommunityAuthorization;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -69,7 +68,7 @@ class CommunityPolicyGateApiTest extends TestCase
         $this->assertDatabaseHas('community_posts', ['status' => 'published']);
     }
 
-    public function test_student_freeform_comment_requires_active_adult_authorization(): void
+    public function test_student_comment_route_is_retired_even_when_policies_are_accepted(): void
     {
         $student = User::query()->where('username', 'alyssa.tan')->firstOrFail();
         $this->acceptRequiredPolicies($student);
@@ -77,35 +76,9 @@ class CommunityPolicyGateApiTest extends TestCase
 
         $this->actingAs($student)->postJson("http://127.0.0.1/api/v1/community/posts/{$postId}/comments", [
             'body' => 'Thank you',
-        ])->assertUnprocessable()->assertJsonValidationErrors('community_policy');
+        ])->assertNotFound();
 
         $this->assertDatabaseCount('community_comments', 0);
-    }
-
-    public function test_reviewed_guardian_authorization_allows_student_pending_comment_and_revocation_denies_it(): void
-    {
-        $student = User::query()->where('username', 'alyssa.tan')->firstOrFail();
-        $guardian = User::query()->where('username', 'rachel.wong')->firstOrFail();
-        $this->acceptRequiredPolicies($student);
-        $postId = $this->publishedSchoolPost();
-        $authorization = StudentCommunityAuthorization::query()->create([
-            'tenant_id' => $student->school->tenant_id,
-            'school_id' => $student->school_id,
-            'student_user_id' => $student->id,
-            'authorized_by_user_id' => $guardian->id,
-            'capability' => StudentCommunityAuthorization::CAPABILITY_FREEFORM_INTERACTION,
-            'effective_at' => now(),
-        ]);
-
-        $this->actingAs($student)->postJson("http://127.0.0.1/api/v1/community/posts/{$postId}/comments", [
-            'body' => 'Thank you',
-        ])->assertCreated()->assertJsonPath('data.status', 'pending_review');
-
-        $authorization->update(['revoked_at' => now(), 'revoked_by_user_id' => $guardian->id]);
-
-        $this->actingAs($student)->postJson("http://127.0.0.1/api/v1/community/posts/{$postId}/comments", [
-            'body' => 'Another comment',
-        ])->assertUnprocessable()->assertJsonValidationErrors('community_policy');
     }
 
     public function test_prohibited_text_creates_no_content_or_media(): void

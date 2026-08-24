@@ -34,7 +34,7 @@ class AuditPermissionSeedTest extends TestCase
         }
     }
 
-    public function test_community_interact_compatibility_remains_seeded_until_routes_retire(): void
+    public function test_community_interact_definition_remains_but_is_not_assigned_to_active_roles(): void
     {
         $this->seed();
 
@@ -48,7 +48,7 @@ class AuditPermissionSeedTest extends TestCase
                 ->pluck('slug');
 
             $this->assertTrue($permissions->contains('community.view'));
-            $this->assertTrue($permissions->contains('community.interact'));
+            $this->assertFalse($permissions->contains('community.interact'));
         }
     }
 }
