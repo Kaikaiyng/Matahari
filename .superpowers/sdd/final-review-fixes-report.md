@@ -120,7 +120,7 @@ Fresh final validation on 2026-08-25:
 
 - Backend PHPUnit: 395 discovered; 383 passed; 12 MariaDB-gated skips; 2,145 assertions.
 - Backend Pint and API route loading: passed; 152 non-vendor API routes loaded.
-- App: 55/55 tests, lint, and production build passed.
+- App: 56/56 tests, lint, and production build passed after the final class-detail navigation copy regression was added.
 - Admin: 187/187 tests and production build passed; lint exited 0 with nine existing `CalendarViews.tsx` Fast Refresh warnings.
 - Focused RED/GREEN: moderator direct-report test failed with HTTP 201 before the guard and passed with HTTP 403 plus seven assertions afterward; Teacher publishing-copy test failed before the copy/visibility change and passed afterward.
 

@@ -1,21 +1,23 @@
 # Current Status
 
-**Snapshot date:** 2026-08-24
+**Snapshot date:** 2026-08-26
 
 **Inspected Phase A implementation commit:** `ecaa0a1f177292ae99c9338e255a1f93312971f5`
 
 **Default branch:** `master`
 
-**Current merged delivery:** `ddd7e193179129be35f7a2b1c408eb809734f8d4` (`Merge project-wide documentation update`)
+**Current integrated feature delivery:** `b71e482e8eaa249958285d8e2adc821d763cf462` (`docs: clarify school update publishing scope`) on `feat/admin-application-logs`
 
 **Overall status:** SaaS multi-tenant foundation in final validation, with MIS as the first tenant; separate Admin and multi-role App clients, live School Updates, daily Attendance, Assessment publication, Parent Finance reads/receipt access/manual in-app reminders, class Schedule, and formal Quiz V1 remain shared tenant-aware modules. Practice/AI Quiz, native/store delivery, automated DNS/TLS and production operations remain incomplete.
 
-## 2026-08-24 School Updates Delivery (local feature branch)
+## 2026-08-26 School Updates Delivery (integrated and pushed feature branch)
 
 - The active App feature is **School Updates/Updates**, replacing the former social Community workflow. Effective `community.view` reads the resolved feed; effective same-school `community.publish` creates immediate official text updates with optional JPEG/PNG/WebP images for the whole school or any active same-school class, without a second position or Teaching Assignment rule. `community.moderate` manages same-school Updates and Post Reports but does not alone make a manager a class-notification recipient.
 - Teacher, Parent, and Student audiences read authorized Updates and can Like or report them. Parent and Student personas cannot publish. Active workflows have no comments, new direct-Student audience, user blocking, appeals, or routine approval.
 - Historical Community posts, comments, reports, pending/rejected rows, blocks, restrictions, and appeals remain retained storage. Blocking, freeform contribution, restrictions, and appeals are historical-only behavior; restrictions do not block active Update publication/media. The feed suppresses comments, preserves direct-Student visibility only for its stored recipient, lets managers discover pending/rejected rows for an explicit audited publish transition, and preserves records through logical withdrawal or report resolution rather than physical deletion.
-- Final-review regressions passed in the focused backend Community/ability/audit run: 52 tests and 307 assertions. After the final re-review corrections, full backend PHPUnit passed: 395 discovered, 383 passed, 12 existing MariaDB-gated skips, and 2,141 assertions. Pint passed and `route:list --path=api --except-vendor` loaded 152 routes. Admin passed 187/187 Vitest tests before the App/backend-only re-review corrections; lint exited 0 with 9 existing Calendar Fast Refresh warnings; TypeScript/Vite build passed. App passed 54/54 Vitest tests with clean lint and TypeScript/Vite build.
+- Final-review regressions passed in the focused backend Community/ability/audit run: 52 tests and 307 assertions. Final full backend PHPUnit passed: 395 discovered, 383 passed, 12 existing MariaDB-gated skips, and 2,145 assertions. Pint passed and `route:list --path=api --except-vendor` loaded 152 routes. Admin passed 187/187 Vitest tests; lint exited 0 with 9 existing Calendar Fast Refresh warnings; TypeScript/Vite build passed. App passed 56/56 Vitest tests with clean lint and TypeScript/Vite build.
+- The School Updates delivery was fast-forward integrated through `b71e482e8eaa249958285d8e2adc821d763cf462` and pushed to `origin/feat/admin-application-logs`. It has **not** been merged into the default `master` branch and is not a production deployment.
+- Local reachability was rechecked on 2026-08-26: the tenant-aware backend endpoint, Admin root, and App root each returned HTTP 200. This is a service-reachability smoke check only, not browser/manual UAT.
 - No migration was added, so a new SQLite lifecycle is not applicable to this delivery. Disposable MariaDB audience-query behavior is **Not verified**. Browser/manual UAT and real-device or hardware checks are **Not verified** for this delivery. The repository remains not production-ready.
 
 ## 2026-08-23 Role and User Abilities Consolidation
