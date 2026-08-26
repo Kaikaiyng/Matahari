@@ -6,13 +6,13 @@ This is the independent mobile-first web workspace for Parent, Student, and Teac
 
 - Role-aware floating liquid-glass navigation with distinct Parent, Student, and Teacher destinations.
 - Live School Updates: visible users can read and Like posts; eligible readers who are neither the author nor a Post manager may report them. Teachers with `community.publish` can publish immediately to the whole school or multiple classes with images and optional audience notifications.
-- Live scoped Parent/Student identity and Attendance reads.
+- Live Parent linked-child identity, class Attendance, and campus entry/exit reads; Student identity is live but Student Attendance is intentionally excluded.
 - Live assignment-scoped Teacher daily Attendance marking with correction reasons.
 - Live Teacher Classes cards derived from the same current teaching assignments and scoped rosters used by Attendance.
 - Read-only Parent finance backed by the existing finance source of truth; there is no payment interface.
 - Live Schedule, formal Quiz, Assessment publication/results, and School Updates surfaces; Practice Quiz generation remains planned.
 
-Sign out is available from each role's More/Profile page. Admin/Finance/CEO operations remain in `frontend/`; Teacher-only, Parent-only, and Student-only accounts do not enter the Admin Panel. Parent Finance derives its requested academic year from the child's current enrolment and never displays a hard-coded preview balance as live data. Native authentication, push delivery, and store packaging are not part of the current web workspace.
+Sign out is available from each role's More/Profile page. Super Admin, School Admin, and Finance operations remain in `frontend/`; Teacher-only, Parent-only, and Student-only accounts do not enter the Admin Panel. Parent Finance derives its requested academic year from the child's current enrolment and never displays a hard-coded preview balance as live data. Native authentication, push delivery, and store packaging are not part of the current web workspace.
 
 ## Local Development
 

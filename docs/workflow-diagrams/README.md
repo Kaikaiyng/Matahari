@@ -2,7 +2,7 @@
 
 Status: Historical workflow snapshot from 2026-07-14
 
-The Mermaid/FigJam atlas predates username authentication, Calendar, Classes, Phase A academic foundations, the Community App, and daily Attendance. Its old 35-route/27-permission inventory is historical; the 2026-08-13 generated API inventory is 74 routes. Use [Architecture](../architecture.md) and [Project Workflow Catalog](../PROJECT_WORKFLOW_CATALOG.md) for current behavior until the diagrams are regenerated.
+The Mermaid/FigJam atlas predates username authentication, Calendar, Classes, Phase A academic foundations, the School App, Attendance Hub, User Abilities, Application Logs, and School Updates. Its 35-route/27-permission inventory and the later 74-route checkpoint are historical evidence only. Use [Architecture](../architecture.md), [Permissions](../permissions.md), [Database](../database.md), and [Current Status](../current-status.md) for current behavior; the Project Workflow Catalog is also a dated historical snapshot.
 
 Editable FigJam board: [RYLAY Complete Project Workflow Atlas](https://www.figma.com/board/sGDlrRbsbHsuT5laZEzKa8?utm_source=other&utm_content=edit_in_figjam&oai_id=v1%2FwOVdpwOgFVs6eNhbOHdwC1cOfCUWewcVQHceqgjBVtixXsxAsX2TAY&request_id=5a0a7805-91cc-4e9d-8bc8-d191c5b72bb5)
 

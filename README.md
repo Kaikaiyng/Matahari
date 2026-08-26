@@ -1,6 +1,6 @@
 # RYLAY — Multi-Tenant School Administration Platform
 
-This repository is the RYLAY configurable school-administration SaaS under incremental development. Matahari International School (MIS) is the first tenant and demo configuration. The product contains an Admin/Finance browser surface and an independent mobile-first Community App with Teacher, Parent, and Student personas. Both clients use the same Laravel API and authoritative database, resolve a tenant from their subdomain, and remain separate builds/deployments. It is not yet production-ready or a native store release.
+This repository is the RYLAY configurable school-administration SaaS under incremental development. Matahari International School (MIS) is the first tenant and demo configuration. The product contains an Admin/Finance browser surface and an independent mobile-first School App with Teacher, Parent, and Student personas. Both clients use the same Laravel API and authoritative database, resolve a tenant from their subdomain, and remain separate builds/deployments. It is not yet production-ready or a native store release.
 
 All tenants run the same Admin/App code and shared backend. Tenant-specific presentation and availability may differ only through host-resolved `branding` and `features`; tenant-specific frontend copies or code branches are not part of the architecture.
 
@@ -19,8 +19,9 @@ Implemented workflows include:
 - Payment allocation, verification, void safeguards, receipt generation, browser printing, and receipt void/regeneration.
 - Shared school calendar CRUD.
 - Phase A academic foundation APIs for academic years, class enrolments, subjects, teaching assignments, and reviewed portal identity links.
-- Independent `app/` Community App views for Teacher, Parent, and Student, with first-use choice for multi-persona users, role-aware liquid-glass navigation, self-service identity endpoints, personal notifications, and read-only parent finance.
+- Independent `app/` School App views for Teacher, Parent, and Student, with first-use choice for multi-persona users, role-aware liquid-glass navigation, self-service identity endpoints, personal notifications, and read-only parent finance.
 - Daily class Attendance: assignment-scoped Teacher roster marking, linked-child Parent history reads, Student exclusion, correction reasons, and transactional audit logging.
+- Campus Attendance: immutable entry/exit timelines, face/card/manual method records, idempotent external event IDs, device/settings preparation, Parent linked-child status, and explicit Student exclusion. Real Hikvision protocol/authentication is not verified.
 - Official **School Updates**: employees with the publishing ability post required text and optional images to the whole school or selected active classes; notifications are optional and recipient resolution is server-side.
 - Teachers, Parents, and Students can read their authorized Updates and Like or report them. New posts have no comments, direct-Student audience, user blocking, appeals, or routine approval. Older Community comments, direct-Student posts, reports, and pending cases remain historical storage only and are never physically deleted by this workflow.
 - Teaching Assignment-scoped Assessments with draft result entry, explicit complete-roster publication, and authorized Parent/Student published-result views.
@@ -30,7 +31,7 @@ Implemented workflows include:
 
 Important boundaries:
 
-- `frontend/` is Admin-only. `app/` is the separate multi-role Community App surface. Attendance, School Updates (which retain Community route/storage names), Assessment results, class Schedule, and formal Teacher-assigned Quiz use live scoped APIs. Practice/AI Quiz remains disabled.
+- `frontend/` is Admin-only. `app/` is the separate multi-role School App surface. Attendance, School Updates (which retain historical Community route/storage names), Assessment results, class Schedule, and formal Teacher-assigned Quiz use live scoped APIs. Practice/AI Quiz remains disabled.
 - Parent finance is read-only and has no payment interface. Parents can switch among finance-authorized linked children, review balances and full payment history, and view or browser-print/save authoritative receipt snapshots. Authorized Admin users can send recalculated in-app payment reminders; automatic reminders, external delivery, native authentication, Firebase, Capacitor, and app-store packaging remain unimplemented. See [Mobile Product Architecture and Roadmap](docs/mobile-product-roadmap.md).
 
 - Payments and receipts are implemented inside Student Detail; unimplemented top-level placeholder navigation has been removed.
@@ -50,14 +51,14 @@ Important boundaries:
 | Backend tests | PHPUnit `12.5.30` |
 | Frontend tests/lint | Vitest, Testing Library, Oxlint |
 
-The repository does not use Laravel 10. Admin is under `frontend/`, the multi-role Community App is under `app/`, and the npm manifest under `backend/` is Laravel scaffold tooling.
+The repository does not use Laravel 10. Admin is under `frontend/`, the multi-role School App is under `app/`, and the npm manifest under `backend/` is Laravel scaffold tooling.
 
 ## Repository Structure
 
 ```text
 backend/             Laravel API, domain services, schema, seeders, tests
 frontend/            Admin-only React application, components, feature models, tests
-app/                 Independent multi-role mobile-first React Community App
+app/                 Independent multi-role mobile-first React School App
 docs/                Current documentation and historical delivery records
 tools/php/           Windows PHP launchers and local SQLite demo helpers
 tools/public-demo/   Temporary Cloudflare Quick Tunnel demo tooling
@@ -115,7 +116,7 @@ cd frontend
 npm.cmd run dev
 ```
 
-Start the Community App in a third terminal:
+Start the School App in a third terminal:
 
 ```powershell
 cd app
@@ -171,7 +172,7 @@ npm.cmd run lint
 npm.cmd run build
 ```
 
-The Community App uses the same three commands from `app/`.
+The School App uses the same three commands from `app/`.
 
 Before Apple App Store or Google Play submission, configure the real HTTPS policy/support URLs and monitored contacts, then run `..\tools\php\php-local.cmd artisan app:store-readiness` from `backend/`. Passing is a configuration gate, not a guarantee of approval. See [UGC Store Submission Checklist](docs/store-submission-ugc-checklist.md).
 
@@ -206,7 +207,7 @@ Before Apple App Store or Google Play submission, configure the real HTTPS polic
 - [Testing and Release](docs/testing-and-release.md)
 - [Phase A Academic Foundation Delivery](docs/phase-a-academic-foundation.md)
 - [Mobile Product Architecture and Roadmap](docs/mobile-product-roadmap.md)
-- [MIS App Product Specification](docs/mobile-app-product-spec.md)
+- [Historical MIS App Product Specification](docs/mobile-app-product-spec.md)
 - [MIS App Design System](DESIGN.md)
 - [Deployment Foundation](docs/deployment-foundation.md)
 - [Staging and Production Deployment Design](docs/superpowers/specs/2026-08-06-staging-production-deployment-design.md) — approved direction; repository foundation partially implemented
@@ -217,6 +218,6 @@ Before Apple App Store or Google Play submission, configure the real HTTPS polic
 - No formal load or concurrency limit has been validated. Historical planning used approximately 200 students for cost estimation only; this is not a tested capacity claim.
 - The default automated backend suite uses SQLite and cannot prove MariaDB JSON, index, locking, foreign-key, or rollback behavior.
 - No stable hosting or production environment exists. CI and portable Docker/Compose source are included, but real container startup, remote deployment, monitoring, and backup/restore remain unverified.
-- User administration and password reset are not implemented.
+- Full user lifecycle administration and password reset remain incomplete. The Employees editor does implement same-school Position, explicit User Abilities, and Teacher App Access changes with protected-target guards, reasons, and audit history.
 - General reports, exports, statements, automatic/external payment reminders, server-side PDF generation, production-ready Parent Finance operations, Practice/AI Quiz, and complete academic ERP modules are not implemented. School Updates, Attendance, Assessment, Schedule, formal Quiz, notifications, read-only Parent Finance, receipt viewing/browser PDF saving, and manual in-app reminders now use live scoped APIs; native/store delivery remains a separate controlled gate.
 - Operational readiness remains incomplete: production hosting, remote release operations, monitoring, runtime grant execution, backups, restore drills, and approved discount/correction policies are not verified. See [Current Status](docs/current-status.md).

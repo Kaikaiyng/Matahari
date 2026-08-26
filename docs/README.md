@@ -25,23 +25,17 @@ The root [README](../README.md) is the human entry point. Future coding agents m
 
 ## Supporting Current References
 
-- [2026-08-13 Change Log](daily-change-log-2026-08-13.md)
-- [MIS App Product Specification](mobile-app-product-spec.md)
 - [MIS App Design System](../DESIGN.md)
 - [Maintenance Guide](MAINTENANCE_GUIDE.md)
 - [Deployment Foundation](deployment-foundation.md)
-- [System Architecture](SYSTEM_ARCHITECTURE.md)
-- [Database Design](DATABASE_DESIGN.md)
 - [Implementation Status](IMPLEMENTATION_STATUS.md)
 - [Development Setup](DEVELOPMENT_SETUP.md)
-- [Project Workflow Catalog](PROJECT_WORKFLOW_CATALOG.md)
 - [UAT Checklist](UAT_CHECKLIST.md)
 - [Demo Review Script](DEMO_REVIEW_SCRIPT.md)
 - [Temporary Public Demo](PUBLIC_DEMO.md)
 - [Audit Log Operations](AUDIT_LOG_OPERATIONS.md)
-- [Workflow Atlas](workflow-diagrams/README.md)
 
-Supporting references are synchronized at a summary level, but some retain dated validation evidence. When counts differ, use the newest dated evidence in [Current Status](current-status.md); current code/tests remain authoritative.
+Supporting references describe the current contributor, operator, demo, and acceptance workflows. Verification counts remain dated evidence; when counts differ, use the newest dated evidence in [Current Status](current-status.md), and treat current code/tests as authoritative.
 
 ## Business Input Requiring Approval
 
@@ -58,6 +52,12 @@ Supporting references are synchronized at a summary level, but some retain dated
 - [Implementation Backlog](IMPLEMENTATION_BACKLOG.md)
 - [Decision Log](DECISIONS.md)
 - [Roadmap](ROADMAP.md)
+- [2026-08-13 Change Log](daily-change-log-2026-08-13.md)
+- [Historical MIS App Product Specification](mobile-app-product-spec.md)
+- [Historical Detailed System Architecture](SYSTEM_ARCHITECTURE.md)
+- [Historical Detailed Database Design](DATABASE_DESIGN.md)
+- [Historical Project Workflow Catalog](PROJECT_WORKFLOW_CATALOG.md)
+- [Historical Workflow Atlas](workflow-diagrams/README.md)
 
 Files under `superpowers/specs/` and `superpowers/plans/`, dated change logs, `design-qa.md`, and the workflow atlas preserve delivery decisions and execution history. They are intentionally not rewritten as current completion claims. The documentation-foundation execution plan is [here](superpowers/plans/2026-08-03-project-knowledge-foundation.md).
 

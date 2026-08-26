@@ -1,8 +1,8 @@
 # Audit Log Operations
 
-**Reviewed:** 2026-08-13
+**Reviewed:** 2026-08-26
 
-The same append-only and least-privilege rules apply to Admin, Phase A foundation, and daily Attendance audit events. Attendance writes/corrections and their audit rows are committed in one transaction; a failed audit insert must roll back the mutation.
+The same append-only and least-privilege rules apply to Admin, Phase A foundation, finance, class/campus Attendance, employee Position/User Ability changes, and School Updates/Post Report audit events. Material Attendance, employee-access, School Update, student, and finance mutations write their audit row in the same transaction; a failed audit insert must roll back the mutation. Application Logs are a separate sanitized read-only operational view and never replace Audit Trail records.
 
 ## Security Boundary
 

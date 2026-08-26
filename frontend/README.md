@@ -1,6 +1,6 @@
-# MIS Administration System Frontend
+# RYLAY Admin Panel
 
-The frontend is the Admin-only React and TypeScript administration/finance workspace for the active SaaS tenant. Community App functionality lives in the separate root `app/` workspace. At startup it fetches `/api/tenant-context`, requires an `admin` surface, and applies that tenant's labels, logo, colors and feature flags. A fresh disposable backend demo seed supplies the local MIS tenant.
+The frontend is the Admin-only React and TypeScript administration/finance workspace for the active SaaS tenant. School App functionality lives in the separate root `app/` workspace. At startup it fetches `/api/tenant-context`, requires an `admin` surface, and applies that tenant's labels, logo, colors and feature flags. A fresh disposable backend demo seed supplies the local MIS tenant.
 
 Do not use presentation changes to rename existing tenant data or historical receipt identifiers. Admin remains the desktop location for broad operational management, permission-sensitive finance actions, moderation, and audit review.
 
@@ -54,9 +54,12 @@ That topology may require explicit cross-origin and session-cookie configuration
 
 - Login and session restoration
 - Permission-aware application shell and navigation
+- MAW-style grouped sidebar with aligned icons, animated group expansion, full desktop slide-away collapse, a persistent edge toggle, and a drawer below 1181px
 - Dashboard collection metrics, Fee Record outstanding total, and explicit unavailable state
 - Shared Calendar CRUD with responsive month/mobile layouts
-- Read-only Classes directory and active-student rosters
+- Attendance Hub with combined Overview/campus records, Class Register, device configuration, school settings, and per-student movement timelines
+- Classes directory with active rosters and class-register deep links
+- Schedule management and employee Position/User Abilities editing
 - Student list, fee-period filtering, create, detail, and status workflow
 - Fee Agreement create and supersede flows
 - Billing configuration with Charge Type, Billing Pattern, and billing months
@@ -67,15 +70,17 @@ That topology may require explicit cross-origin and session-cookie configuration
 - Receipt history, receipt view, print, void, and regeneration
 - Fee Record Summary
 - Category Monthly Jan-Dec ledger
+- Post Report management for School Updates
+- Super Admin-only Audit Trail and sanitized Application Logs
+- Shared MIS-styled date, time, and select controls instead of visible browser-native popups in supported Admin forms
 
-Navigation entries for Dashboard, Parents, Fees, Invoices, Reports, and Settings include demo or future-phase content where their full backend modules are not implemented. See the root [Implementation Status](../docs/IMPLEMENTATION_STATUS.md) before treating a visible navigation item as complete.
+Parents and Fees still expose limited foundation/display content rather than complete management workflows. Payments and Receipts remain implemented inside Student Detail, and removed placeholder navigation must not be treated as a hidden module. See [Implementation Status](../docs/IMPLEMENTATION_STATUS.md) before treating any visible navigation item as complete.
 
 ## Responsive Behavior
 
-- `1181px+`: full desktop sidebar
-- `1024-1180px`: compact labelled rail for iPad landscape
-- `768-1023px`: drawer navigation for iPad portrait
-- Below `768px`: drawer navigation, stacked forms, mobile finance records, and contained ledger scrolling
+- `1181px+`: full 256px sidebar that slides completely away with a persisted collapse preference and edge-mounted restore control
+- `1180px` and below: off-canvas drawer with backdrop, focus-safe close behavior, and no compact intermediate rail
+- Below `681px`: compact utility header plus stacked forms, mobile records, and contained ledger scrolling
 
 Touch-oriented controls use 44px targets on tablet/mobile. Wide finance ledgers keep readable column widths and scroll inside `.table-wrap` containers.
 
@@ -91,6 +96,9 @@ Touch-oriented controls use 44px targets on tablet/mobile. Wide finance ledgers 
 | `src/components/ClassesPage.tsx` | Class directory, active rosters, and Student Detail handoff |
 | `src/components/AdminShell.tsx` | Responsive application shell and navigation behavior |
 | `src/components/AdminUi.tsx` | Shared admin page, panel, status, and data-display primitives |
+| `src/components/SystemDateTimePicker.tsx` | Shared styled date/time picker used instead of browser-native popup UI |
+| `src/features/attendance/AttendanceHubPage.tsx` | Campus and class Attendance workspace, devices, settings, and timelines |
+| `src/features/logs/ApplicationLogsPage.tsx` | Sanitized, filtered, read-only Laravel application log viewer |
 
 `App.tsx` remains large and still owns most finance workflows. Add focused pages under `src/components/` when they can own their data and behavior without duplicating the Student Detail finance state.
 
@@ -104,11 +112,11 @@ npm.cmd audit --omit=dev --audit-level=moderate
 npm.cmd audit --audit-level=moderate
 ```
 
-Last verified on merged `master` on 2026-08-13:
+Latest integrated feature-branch validation on 2026-08-25:
 
-- Vitest passed 169 tests across 15 files.
+- Vitest passed 187 tests.
 - Oxlint exited 0 with 9 existing `react(only-export-components)` Fast Refresh organization warnings in `CalendarViews.tsx`.
-- TypeScript and the production build passed with 83 modules transformed.
-- The earlier production-only and complete-tree npm audit run reported 0 vulnerabilities; rerun audits for release evidence because registry state changes over time.
+- TypeScript and the production build passed.
+- Dependency audits were not rerun in the final School Updates correction; rerun both audit commands for release evidence because registry state changes over time.
 
 The responsive acceptance details are in [the implemented responsive design](../docs/superpowers/specs/2026-07-11-ipad-first-responsive-demo-design.md).

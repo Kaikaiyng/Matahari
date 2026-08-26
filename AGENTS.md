@@ -16,7 +16,7 @@ RYLAY is a multi-tenant school administration, finance, and community SaaS using
 
 - `backend/`: Laravel application, API routes, domain services, migrations, seeders, and PHPUnit tests.
 - `frontend/`: Admin-only React application, shared components, feature editors, Vitest tests, and Vite configuration.
-- `app/`: Parent/Student/Teacher/Staff Community App, role-aware navigation, portal views, Vitest tests, and independent Vite configuration.
+- `app/`: Parent/Student/Teacher School App, role-aware navigation, portal views, Vitest tests, and independent Vite configuration. Elevated employees remain in the Teacher persona through explicit abilities; there is no Staff persona.
 - `docs/`: canonical current documentation plus historical plans and decision records.
 - `tools/php/`: Windows PHP launchers and local SQLite demo helpers.
 - `tools/public-demo/`: temporary demo tunnel tooling; it is not production deployment infrastructure.
@@ -60,7 +60,7 @@ RYLAY is a multi-tenant school administration, finance, and community SaaS using
 - Make the smallest complete change and avoid unrelated refactoring.
 - Follow existing controller/request/service/model boundaries. Financial mutations belong in transactions and should use row locks where concurrent updates matter.
 - Do not add a package without a concrete justification and lockfile update.
-- Keep `frontend/` (Admin), `app/` (multi-role Community App), and Laravel scaffold assets in `backend/` as separate runtime/build boundaries.
+- Keep `frontend/` (Admin), `app/` (multi-role School App), and Laravel scaffold assets in `backend/` as separate runtime/build boundaries.
 - Update relevant canonical documentation in the same change when behavior, permissions, schema, commands, or status changes.
 
 ## Testing Requirements

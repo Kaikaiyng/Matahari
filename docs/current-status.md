@@ -6,9 +6,16 @@
 
 **Default branch:** `master`
 
-**Current integrated feature delivery:** `b71e482e8eaa249958285d8e2adc821d763cf462` (`docs: clarify school update publishing scope`) on `feat/admin-application-logs`
+**Pre-reconciliation pushed baseline:** `49e3e6662679dd32aa743c53917d8e97abbe8206` (`docs: record integrated school updates delivery`) on `feat/admin-application-logs`
 
 **Overall status:** SaaS multi-tenant foundation in final validation, with MIS as the first tenant; separate Admin and multi-role App clients, live School Updates, daily Attendance, Assessment publication, Parent Finance reads/receipt access/manual in-app reminders, class Schedule, and formal Quiz V1 remain shared tenant-aware modules. Practice/AI Quiz, native/store delivery, automated DNS/TLS and production operations remain incomplete.
+
+## 2026-08-26 Project-wide Documentation Reconciliation
+
+- Root, package, canonical, contributor, operator, demo, UAT, design, store-review, and agent instruction documents were reconciled with the integrated Attendance, User Abilities, Application Logs, swipe navigation, policy gate, and School Updates behavior.
+- Current documents now use the Parent/Student/Teacher School App model, explicit Student Attendance exclusion, employee publishing abilities, immediate whole-school/multi-class Updates, Likes/Post Reports without comments, and the current Admin sidebar/Attendance/operations boundaries.
+- The detailed 2026-08-13/14 System Architecture, Database Design, Project Workflow Catalog, mobile product specification, dated plans/specifications, and Workflow Atlas are preserved as historical snapshots and no longer presented as current route/schema/role evidence.
+- Documentation validation checked all 113 tracked Markdown files: relative links outside code blocks resolved, fenced code blocks were balanced, diff whitespace passed, and changed lines contained no secret-like values. Application test suites were not rerun for this documentation-only reconciliation; the latest code evidence remains below.
 
 ## 2026-08-26 School Updates Delivery (integrated and pushed feature branch)
 
@@ -189,7 +196,7 @@ Later school-specific branding requires explicit approval and a controlled updat
 ## 2026-08-13 Mobile App Visual Refinement
 
 - The App shell now uses a compact MIS Community header and a role-aware floating liquid-glass navigation capsule. The active destination shows icon and label; inactive destinations retain icons with accessible names.
-- Parent, Student, Teacher, and authorized Staff receive distinct five-item navigation sets. Sign out moved from the persistent header into each role's More/Profile page.
+- At this historical visual checkpoint, Parent, Student, Teacher, and an authorized Staff persona received distinct navigation. The Staff persona was removed by the 2026-08-23 consolidation; current App personas are Parent, Student, and Teacher. Sign out remains in More/Profile.
 - Feed and record surfaces use calmer phone-first spacing, fewer nested borders, stronger content hierarchy, and at least 44px interactive targets. Community publishing, reading, interaction, and moderation are connected to scoped APIs.
 - Automated browser checks covered 39 representative role/page/viewport combinations at 360x800, 390x844, and 430x932. No horizontal overflow or undersized visible interactive target remained after correction.
 - The browser helper's packaged Windows server lacked its Playwright dependency; validation used a cached Playwright runner with installed Chrome and did not add a project dependency.
@@ -215,8 +222,8 @@ The confirmed earlier technology direction named Laravel 10, but this repository
 ## Implemented Features
 
 - Phase A academic foundation: additive academic-year, class-enrolment, subject, teaching-assignment, and nullable parent/student portal-link schema; `/api/v1` school context; scoped admin/teacher APIs; teacher assignment access; and transactional audit events.
-- Teacher, parent, and student role definitions coexist with the existing many-to-many RBAC. Existing Admin/Finance assignments are preserved, and foundation role management changes only those three new roles.
-- School Admin/Super Admin can create minimum active foundation accounts with teacher/parent/student roles and can later change only those foundation roles. Full account lifecycle and password recovery remain incomplete.
+- Super Admin is the protected platform owner; active employee positions are School Admin, Finance, and Teacher. Parent and Student remain relationship/App identities, and historical CEO/Tenant Owner rows are not seeded or assignable.
+- Same-school employee Position, explicit User Abilities, and Teacher App Access are editable with protected-target guards, required reasons, and transactional audit. Full account lifecycle and password recovery remain incomplete.
 
 - Session username authentication, CSRF-protected mutations, username-plus-IP login throttling, logout, `/me`, active-user request checks, roles, and permissions.
 - Permission-filtered navigation backed by authoritative route permissions.
@@ -242,14 +249,14 @@ The confirmed earlier technology direction named Laravel 10, but this repository
 - Discount definitions are stored as snapshots, but approved formulas and eligibility rules do not exist. Charge preview/activation is blocked for non-zero discounts.
 - Payments and receipts work inside Student Detail; there are no independent top-level modules.
 - Legacy invoices remain separate from the implemented Fee Record ledger and have no frontend workflow.
-- Audit covers implemented critical authentication, student, agreement, Fee Record, payment, receipt, and manual payment-reminder actions. Generic correction, recovery, and export are not implemented.
+- Audit covers implemented critical authentication, student, agreement, Fee Record, payment, receipt, manual payment-reminder, Attendance, employee-access, School Update, and Post Report actions. Generic correction, recovery, and export are not implemented.
 
 ## Known Incomplete Features
 
 - Existing guardian links remain `unreviewed` with nullable access flags, and no live parent/student user association or enrolment history is inferred. Portal activation and production backfill require a separately approved workflow.
-- The independent `app/` workspace now provides user-scoped notifications, Parent/Student self-service, Teacher daily Attendance, read-only guardian finance with linked-child switching and receipt viewing/browser PDF saving, scoped Community, published Assessment results, recurring Schedule, and formal Quiz delivery/scoring. Admin remains in `frontend/`; both clients share the backend/database but have independent builds and intended domains. Manual in-app payment reminders are implemented; automatic/external reminders, online parent payment, Practice/AI Quiz, Firebase, Capacitor, native authentication, and native packaging remain unimplemented.
+- The independent `app/` School App provides user-scoped notifications, Parent/Student self-service, Teacher class/campus Attendance, Parent linked-child Attendance, explicit Student Attendance exclusion, read-only guardian finance with linked-child switching and receipt viewing/browser PDF saving, School Updates, published Assessment results, recurring Schedule, and formal Quiz delivery/scoring. Admin remains in `frontend/`; both clients share the backend/database but have independent builds and intended domains. Manual in-app payment reminders are implemented; automatic/external reminders, online parent payment, Practice/AI Quiz, Firebase, Capacitor, native authentication, and native packaging remain unimplemented.
 
-- Parent CRUD, fee catalogue management, user/role management, password reset, and a global school selector.
+- Parent CRUD, fee catalogue management, full user lifecycle/password reset, and a global school selector. Employee Position/User Ability editing is implemented but is not complete account administration.
 - Reports beyond Fee Record views, exports, statements, automatic/external reminders, full parent portal operations, and server-side PDF.
 - Refund, credit, overpayment, write-off, and approved correction/recovery workflows.
 - Full academic ERP modules.
@@ -264,7 +271,7 @@ Remaining concerns are operational or planned-scope limitations:
 1. Seeded demo accounts use a known development password and must never be deployed unchanged.
 2. HTTPS termination, secure-cookie flags, proxy trust, CORS, shared session/rate-limit storage, and multi-instance behavior require environment-specific verification.
 3. Audit append-only protection exists at the Eloquent model layer; raw SQL or privileged database users require least-privilege grants and database operations controls.
-4. No production secret-management, CI, monitoring, alerting, backup, restore, or incident-response implementation is present.
+4. Repository CI/deployment foundations exist, but production secret management, deployed monitoring/alerting, backup/restore, and incident-response operations are not verified.
 5. Guardian data is returned with Student Detail under `students.view`; the intended independent role of `parents.view` is **Needs confirmation**.
 
 No item above is evidence of production readiness. They must be addressed in a real deployment plan.
@@ -401,7 +408,7 @@ Admin operations reference refresh on 2026-08-21:
 Community App gesture refinement on 2026-08-21:
 
 - Existing App secondary pages now share a reusable MAW-style right-swipe return gesture with direction locking, fast-flick and proportional thresholds, follow-finger movement, rebound, interactive-target exclusion, and duplicate-return protection. This covers Notifications, post editing, receipts, Student quiz attempts, Teacher class/assessment/quiz pages, and the nested safety/policy pages.
-- Parent, Student, and Teacher/Staff route-like secondary pages keep their previous primary page mounted as a fixed lower layer. Dragging the secondary layer therefore reveals the unchanged previous page and preserves the prior bottom-capsule selection, matching the MAW stacked-page model.
+- Parent, Student, and Teacher route-like secondary pages keep their previous primary page mounted as a fixed lower layer. Dragging the secondary layer therefore reveals the unchanged previous page and preserves the prior bottom-capsule selection, matching the MAW stacked-page model.
 - The horizontally scrollable Notification category pills are excluded from page-return recognition, so scrolling them in either direction cannot close Notifications. Leftward gestures never trigger back.
 - The existing RYLAY liquid-glass bottom navigation capsule and its animation are unchanged. Seven focused gesture/safety tests, App lint, and the App production build passed.
 
@@ -422,7 +429,7 @@ The repository must not be described as production-ready.
 ## Immediate Recommended Priorities
 
 1. Plan controlled academic-year, enrolment, portal-link, and guardian-access production-data gates without inferred backfill.
-2. Run real-device and school UAT for the independent Community App, then separately approve native authentication and store packaging before adding any native dependency.
+2. Run real-device and school UAT for the independent School App, then separately approve native authentication and store packaging before adding any native dependency.
 3. Confirm discount formulas/eligibility and the approved correction/reconciliation policy before enabling discounted or retroactive billing.
 4. Define refund, credit, overpayment, write-off, and audit-driven correction/recovery workflows.
 5. Run and stabilize CI on `master`, then verify remote staging/production operations, least-privilege database grants, monitoring, backups, and restore/reconciliation.

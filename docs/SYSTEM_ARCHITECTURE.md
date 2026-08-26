@@ -1,10 +1,10 @@
 # System Architecture
 
-Status: Current implementation reference
+Status: Historical detailed implementation snapshot; use the canonical references below for current behavior
 
-Last updated: 2026-08-14
+Snapshot date: 2026-08-14; classified as historical on 2026-08-26
 
-This file summarizes the tenant-aware Admin Web, Community App, and shared Laravel runtime. Each Admin/App hostname resolves a tenant before membership/role/school scope; the clients share the API and authoritative database but have separate domains and builds. Native store packaging is not implemented. Canonical references are [Architecture](architecture.md) and [SaaS Multi-Tenancy](saas-multitenancy.md).
+This file preserves the detailed architecture inventory as it stood on 2026-08-14. Its route count, responsive sidebar model, portal boundaries, and deferred-module list were superseded by later Attendance, User Abilities, Application Logs, swipe navigation, and School Updates deliveries. Current behavior is documented in [Architecture](architecture.md), [Database](database.md), [Permissions](permissions.md), [Current Status](current-status.md), and [SaaS Multi-Tenancy](saas-multitenancy.md).
 
 ## 1. Runtime Topology
 
@@ -174,7 +174,7 @@ cd backend
 ..\tools\php\php-local.cmd artisan route:list --path=api --except-vendor
 ```
 
-Current route count: 74. The tables below document the original Admin groups; `/api/v1/admin`, `/api/v1/teacher`, and `/api/v1/portal` add the academic foundation, portal self-service, notifications, and Attendance routes. Always regenerate the authoritative list with the command above.
+Snapshot route count: 74. The tables below document the original Admin groups as of 2026-08-14; later deliveries added and changed routes. Always regenerate the authoritative current list with the command above.
 
 ### Auth and legacy dashboard
 

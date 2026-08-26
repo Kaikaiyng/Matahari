@@ -1,11 +1,11 @@
-# Design System — MIS App
+# Design System — RYLAY School App (MIS tenant)
 
-**Current visual baseline:** merged `master` at `816ea1d` (2026-08-13)
+**Current visual baseline:** integrated feature delivery reviewed 2026-08-26
 
 ## Product Context
 
-- **What this is:** A private school-community and self-service App sharing the MIS Laravel API and database with the Admin Panel.
-- **Who it serves:** Parents, students, teachers, and authorized school staff.
+- **What this is:** A private school communication and self-service App sharing the MIS Laravel API and database with the Admin Panel.
+- **Who it serves:** Parents, students, and teachers. Elevated employees remain in the Teacher persona through explicit User Abilities.
 - **Product posture:** The Home screen should feel alive with real school moments. Academic, attendance, and finance records must feel precise and trustworthy.
 - **Memorable quality:** Parents should feel that they can see school life and understand what needs attention without learning an ERP.
 
@@ -13,7 +13,7 @@
 
 - **Direction:** Warm School Editorial.
 - **Decoration:** Intentional. Photography and school content provide personality; interface chrome stays restrained.
-- **Layout:** Feed-first hybrid. Story pages use a generous single column; records use compact structured rows and clear totals.
+- **Layout:** School Updates-first hybrid. Update pages use a generous single column; records use compact structured rows and clear totals.
 - **Avoid:** Generic blue-white ERP dashboards, decorative gradients, identical card grids, childish game styling, fake operational buttons, and public-social-network mechanics.
 
 ## Typography
@@ -50,7 +50,7 @@
 
 - Parent: Home, Children, Academics, Finance, More.
 - Student: Home, Learn, Quiz, Schedule, More.
-- Teacher/Staff: Home, Classes, Create, Attendance, More.
+- Teacher: Home, Classes, Create, Attendance, More.
 - The primary mobile navigation is a floating liquid-glass capsule above the device safe area. Its active destination shows icon and label; inactive destinations remain recognizable icons with accessible labels.
 - The capsule uses a translucent white fallback everywhere and adds `backdrop-filter` blur/saturation only where supported. Content keeps sufficient bottom clearance so the navigation never hides the final action.
 - Notifications open from the persistent top bar rather than consuming a bottom-navigation slot.
@@ -61,13 +61,15 @@
 
 - **Approach:** Minimal and functional.
 - Use 120–220ms transitions for sheets, tab changes, media viewers, and reaction feedback.
+- Secondary pages support left-edge swipe-back: the current page follows the gesture while the previous page remains fixed beneath it. Horizontal category/content scrolling must not trigger navigation.
 - Respect `prefers-reduced-motion`.
 - Do not use splash screens, forced tours, or scroll choreography.
 
 ## Content and Trust
 
-- Feed visibility is private and relationship-scoped by Laravel.
-- Staff and assigned teachers may publish; Parent/Student users react and comment only where enabled.
+- School Update visibility is private and relationship-scoped by Laravel.
+- Employees with effective same-school `community.publish` may publish immediately to the whole school or multiple active classes. Parent and Student never publish from their persona.
+- Authorized readers may Like or submit a Post Report when eligible. Current Updates have no comments, new direct-Student targeting, blocking, appeals, or routine approval.
 - Likes show count and the current user's state, not a public list of minors.
 - Finance is read-only: no `Pay now`, payment simulation, or gateway language.
 - Draft assessments and unpublished Quiz results never appear to Parent/Student users.
@@ -77,10 +79,12 @@
 
 | Date | Decision | Rationale |
 | --- | --- | --- |
-| 2026-08-12 | Community Feed is the Home experience | School moments create a reason to open the App; personal records remain one clear navigation step away. |
-| 2026-08-12 | Controlled comments rather than an open forum | Provides participation while keeping school moderation and child privacy manageable. |
+| 2026-08-12 | Community Feed was selected as the original Home direction | Historical decision superseded by official School Updates while retaining school moments on Home. |
+| 2026-08-12 | Controlled comments rather than an open forum | Historical decision superseded on 2026-08-24; active School Updates have Likes and Post Reports but no comments. |
 | 2026-08-12 | General attendance-session model | Supports daily, lesson, and event attendance without rewriting history; the first UI exposes daily attendance. |
 | 2026-08-12 | Assigned Quiz and Practice Quiz are separate | Formal teacher assessments must not be mixed with student self-practice. |
 | 2026-08-12 | Parent Finance is read-only | The App reuses authoritative finance records without adding a payment interface. |
 | 2026-08-13 | Role-aware liquid-glass mobile navigation | A floating capsule preserves thumb reach and role clarity while reducing the visual weight of five persistent labels. |
 | 2026-08-13 | Calm phone-first record surfaces | More spacing, fewer nested borders, and grouped rows make academic, attendance, finance, Quiz, and profile pages easier to scan on 360â€“430px screens. |
+| 2026-08-21 | Fixed-underlay swipe-back | Revealing a stationary previous page beneath the moving secondary page makes back navigation feel continuous without disturbing horizontal content controls. |
+| 2026-08-24 | Official School Updates replace social posting | Authorized employees publish immediately to whole-school or selected-class audiences; Likes and Post Reports remain, while comments and open social mechanics are removed. |

@@ -1,10 +1,10 @@
 # Database Design
 
-Status: Current implementation reference
+Status: Historical detailed schema snapshot; use the canonical Database reference for current schema
 
-Last updated: 2026-08-14
+Snapshot date: 2026-08-14; classified as historical on 2026-08-26
 
-The shared database now begins with `tenants`; each tenant owns branding, verified domains, features, memberships and one or more schools. Business history remains owned through `school_id`. See [Database](database.md) and [SaaS Multi-Tenancy](saas-multitenancy.md) for the canonical schema and migration rules.
+This file preserves the detailed 61-table schema inventory from 2026-08-14. It predates the User Ability overrides, campus Attendance devices/settings/events, later Community safety storage, and live School Updates behavior. See [Database](database.md), [Permissions](permissions.md), [Current Status](current-status.md), and [SaaS Multi-Tenancy](saas-multitenancy.md) for the current schema and migration rules.
 
 Repeatable demo and default test database: SQLite
 
@@ -48,7 +48,7 @@ The active finance UI uses Fee Agreements and Fee Record charges. Legacy invoice
 
 ## 3. Schema Inventory
 
-The current disposable schema contains 61 non-SQLite-internal tables, including Laravel infrastructure.
+At this 2026-08-14 snapshot, the disposable schema contained 61 non-SQLite-internal tables, including Laravel infrastructure.
 
 ### Laravel infrastructure (7)
 
@@ -354,4 +354,4 @@ The historical payment-allocation foreign-key ordering problem is corrected by a
 
 ## 11. Deferred Schema Areas
 
-The current schema reserves Community posts/media/reactions/comments, Assessments/results, and formal/Practice Quiz records, but does not implement their services, authorization policies, audit-integrated mutations, media delivery, generation, scoring, or APIs. It also does not complete payment reminders, device/push delivery, Statements, general Reports/Exports, PDF documents, or production dashboard aggregates. Parent/Student self-service and daily Attendance are partial implemented slices, not complete portal/academic products.
+At this 2026-08-14 snapshot, the schema reserved Community posts/media/reactions/comments, Assessments/results, and formal/Practice Quiz records without their later live services. This statement is retained only as historical context; use the canonical [Database](database.md) and [Current Status](current-status.md) for current implementations and remaining gaps.
