@@ -70,6 +70,11 @@ class School extends Model
         return $this->hasMany(AcademicYear::class);
     }
 
+    public function notificationDestinations(): HasMany
+    {
+        return $this->hasMany(NotificationDestination::class);
+    }
+
     public function subjects(): HasMany
     {
         return $this->hasMany(Subject::class);

@@ -14,8 +14,9 @@ use App\Models\CommunityPost;
 use App\Models\CommunityReport;
 use App\Models\CommunityUserBlock;
 use App\Models\CommunityUserRestriction;
-use App\Models\PortalNotification;
 use App\Models\User;
+use App\Services\Notifications\NotificationDispatcher;
+use App\Services\Notifications\NotificationMessage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -24,6 +25,7 @@ class CommunityModerationService
     public function __construct(
         private readonly CommunityAccessService $access,
         private readonly AuditLoggerContract $audit,
+        private readonly NotificationDispatcher $notifications,
     ) {}
 
     public function resolveTarget(User $reporter, int $schoolId, string $type, int $targetId): ReportTarget
@@ -201,12 +203,14 @@ class CommunityModerationService
                 'tenant_id' => $tenantId, 'school_id' => $schoolId, 'actor_user_id' => $actor->id,
                 'action' => $decision, 'reason_code' => $reasonCode, 'reason' => trim($reason),
             ]);
-            PortalNotification::query()->create([
-                'school_id' => $schoolId, 'recipient_user_id' => $locked->reported_user_id,
-                'type' => 'community_moderation', 'title' => 'Community review update',
-                'body' => $escalated ? 'A Community case was escalated for further review.' : 'A Community moderation decision is available.',
-                'context_json' => ['report_id' => $locked->id, 'action_id' => $action->id, 'decision' => $decision],
-            ]);
+            $this->notifications->sendInApp(new NotificationMessage(
+                tenantId: $tenantId,
+                schoolId: $schoolId,
+                type: 'community_moderation',
+                title: 'Community review update',
+                body: $escalated ? 'A Community case was escalated for further review.' : 'A Community moderation decision is available.',
+                context: ['report_id' => $locked->id, 'action_id' => $action->id, 'decision' => $decision],
+            ), [$locked->reported_user_id]);
             $this->audit->record(new AuditEvent(
                 action: $escalated ? AuditAction::CommunityReportEscalated : AuditAction::CommunityReportReviewed,
                 module: AuditModule::Community, schoolId: $schoolId,
@@ -235,11 +239,14 @@ class CommunityModerationService
                 'starts_at' => now(), 'ends_at' => $endsAt, 'applied_by_user_id' => $actor->id,
                 'status' => CommunityUserRestriction::STATUS_ACTIVE,
             ]);
-            PortalNotification::query()->create([
-                'school_id' => $schoolId, 'recipient_user_id' => $target->id, 'type' => 'community_moderation',
-                'title' => 'Community access restricted', 'body' => 'A Community-only restriction was applied to your account.',
-                'context_json' => ['restriction_id' => $restriction->id, 'scope' => $scope],
-            ]);
+            $this->notifications->sendInApp(new NotificationMessage(
+                tenantId: $tenantId,
+                schoolId: $schoolId,
+                type: 'community_moderation',
+                title: 'Community access restricted',
+                body: 'A Community-only restriction was applied to your account.',
+                context: ['restriction_id' => $restriction->id, 'scope' => $scope],
+            ), [$target->id]);
             $this->audit->record(new AuditEvent(
                 action: AuditAction::CommunityRestrictionApplied, module: AuditModule::Community, schoolId: $schoolId,
                 subjectType: AuditSubject::CommunityUserRestriction, subjectId: $restriction->id,
@@ -295,7 +302,7 @@ class CommunityModerationService
     {
         abort_unless((int) $appeal->tenant_id === $tenantId && (int) $appeal->school_id === $schoolId, 403);
 
-        return DB::transaction(function () use ($appeal, $actor, $decision, $reason, $schoolId, $context): CommunityAppeal {
+        return DB::transaction(function () use ($appeal, $actor, $decision, $reason, $tenantId, $schoolId, $context): CommunityAppeal {
             $locked = CommunityAppeal::query()->whereKey($appeal->id)->lockForUpdate()->firstOrFail();
             $sourceAction = $locked->sourceAction()->firstOrFail();
             if ((int) $sourceAction->actor_user_id === $actor->id) {
@@ -317,11 +324,14 @@ class CommunityModerationService
             }
             $locked->update(['status' => CommunityAppeal::STATUS_DECIDED, 'reviewed_by_user_id' => $actor->id, 'decision' => $decision, 'decision_reason' => trim($reason), 'reviewed_at' => now()]);
             $report->actions()->create(['tenant_id' => $report->tenant_id, 'school_id' => $report->school_id, 'actor_user_id' => $actor->id, 'action' => "appeal_{$decision}", 'reason' => trim($reason)]);
-            PortalNotification::query()->create([
-                'school_id' => $schoolId, 'recipient_user_id' => $locked->appellant_user_id, 'type' => 'community_moderation',
-                'title' => 'Community appeal decided', 'body' => 'Your Community appeal has been reviewed.',
-                'context_json' => ['appeal_id' => $locked->id, 'decision' => $decision],
-            ]);
+            $this->notifications->sendInApp(new NotificationMessage(
+                tenantId: $tenantId,
+                schoolId: $schoolId,
+                type: 'community_moderation',
+                title: 'Community appeal decided',
+                body: 'Your Community appeal has been reviewed.',
+                context: ['appeal_id' => $locked->id, 'decision' => $decision],
+            ), [$locked->appellant_user_id]);
             $this->audit->record(new AuditEvent(
                 action: AuditAction::CommunityAppealDecided, module: AuditModule::Community, schoolId: $schoolId,
                 subjectType: AuditSubject::CommunityAppeal, subjectId: $locked->id,

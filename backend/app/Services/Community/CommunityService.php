@@ -12,10 +12,11 @@ use App\Models\CommunityComment;
 use App\Models\CommunityPost;
 use App\Models\CommunityPostReaction;
 use App\Models\CommunityReport;
-use App\Models\PortalNotification;
 use App\Models\School;
 use App\Models\SchoolClass;
 use App\Models\User;
+use App\Services\Notifications\NotificationDispatcher;
+use App\Services\Notifications\NotificationMessage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -30,6 +31,7 @@ class CommunityService
         private readonly CommunityPolicyService $policy,
         private readonly CommunitySafetyFilter $safetyFilter,
         private readonly AuditLoggerContract $audit,
+        private readonly NotificationDispatcher $notifications,
     ) {}
 
     public function publish(int $schoolId, array $data, User $actor, AuditContext $context): CommunityPost
@@ -83,16 +85,14 @@ class CommunityService
                 $recipientIds = [];
                 if ($data['notify_audience'] ?? true) {
                     $recipientIds = $this->audiences->recipientUserIds($schoolId, $data['audiences'], $actor->id);
-                    PortalNotification::query()->insert(collect($recipientIds)->map(fn (int $recipientId): array => [
-                        'school_id' => $schoolId,
-                        'recipient_user_id' => $recipientId,
-                        'type' => 'school_update',
-                        'title' => 'School update',
-                        'body' => $post->body,
-                        'context_json' => json_encode(['post_id' => $post->id, 'audience_type' => $audienceType, 'class_ids' => $classIds], JSON_THROW_ON_ERROR),
-                        'created_at' => $now,
-                        'updated_at' => $now,
-                    ])->all());
+                    $this->notifications->sendInApp(new NotificationMessage(
+                        tenantId: $tenantId,
+                        schoolId: $schoolId,
+                        type: 'school_update',
+                        title: 'School update',
+                        body: $post->body,
+                        context: ['post_id' => $post->id, 'audience_type' => $audienceType, 'class_ids' => $classIds],
+                    ), $recipientIds);
                 }
                 $this->audit->record(new AuditEvent(action: AuditAction::CommunityPostPublished, module: AuditModule::Community, schoolId: $schoolId, subjectType: AuditSubject::CommunityPost, subjectId: $post->id, newValues: ['audiences' => $post->audiences()->pluck('audience_key')->all(), 'audience_type' => $audienceType, 'class_ids' => $classIds, 'recipient_count' => count($recipientIds), 'comments_enabled' => $post->comments_enabled, 'status' => $post->status]), $context);
 

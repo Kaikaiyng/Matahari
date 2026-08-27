@@ -2,7 +2,7 @@
 
 **Status:** Current schema reference
 
-**Repository baseline:** Role and User Abilities delivery (2026-08-23)
+**Repository baseline:** Extensible Notification Channel foundation (2026-08-27)
 
 ## Engines and Configuration
 
@@ -38,7 +38,7 @@ The role/Attendance delivery adds `user_permission_overrides`, campus Attendance
 | Payments and receipts | `payments`, `payment_allocations`, `receipt_sequences`, `receipts`, `receipt_items` |
 | School operations | `calendar_events` |
 | Academic foundation | `academic_years`, `class_enrolments`, `subjects`, `teaching_assignments` |
-| Portal and Attendance | `portal_notifications`, `attendance_sessions`, `attendance_records`, `campus_attendance_events`, `attendance_devices`, `attendance_settings`, `user_attendance_abilities` |
+| Portal notifications and Attendance | `portal_notifications`, `notification_destinations`, `attendance_sessions`, `attendance_records`, `campus_attendance_events`, `attendance_devices`, `attendance_settings`, `user_attendance_abilities` |
 | School Updates and historical Community storage | `community_posts`, `community_post_audiences`, `community_post_media`, `community_post_reactions`, `community_comments` |
 | Post Reports and historical Community safety storage | `community_policy_versions`, `community_policy_acceptances`, `community_reports`, `community_report_actions`, `community_user_blocks`, `community_user_restrictions`, `community_appeals`, `student_community_authorizations` |
 | Assessments | `academic_terms`, `assessments`, `assessment_class_targets`, `assessment_results` |
@@ -140,6 +140,8 @@ Parent Finance must continue to derive outstanding amounts from `fee_record_char
 Manual payment reminders reuse `portal_notifications`; no tenant-specific reminder or finance database is introduced. Each row stores the resolved school and recipient user plus a child/year/outstanding snapshot in `context_json`. Current balance remains authoritative in Fee Record and is recalculated before sending.
 
 The experimental portal adds `portal_notifications`, scoped by `school_id` and `recipient_user_id`, with JSON context and nullable read time. It does not add device tokens or push delivery.
+
+`notification_destinations` is external operational configuration, not user notification/read-state storage. Nullable `tenant_id` and `school_id` encode exact scope: both null is RYLAY-global, tenant only is tenant-wide, and both set is school-specific. A composite foreign key to `schools(tenant_id, id)` prevents a school destination from crossing tenant ownership; the model also rejects a school without a tenant. `channel`, `destination_type`, `destination_address`, `purpose`, `status`, and optional non-secret JSON `configuration` remain provider-neutral. The table contains no Telegram-specific field, user binding, Bot token, queue/outbox, attempt, or delivery history.
 
 The first Attendance slice adds `attendance_sessions` and `attendance_records` through an additive migration. Sessions are school/year/class scoped and use a school-unique key such as `daily:2026-08-12:class:4`; the general columns also leave room for later `lesson` and `event` sessions. Records enforce one row per session/student, use `present`, `late`, `absent`, or `excused`, retain the original marker, and preserve correction actor/reason/time. `unmarked` means that no row exists. No historical attendance is inferred or backfilled.
 

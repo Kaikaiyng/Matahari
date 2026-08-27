@@ -11,22 +11,26 @@ use App\Contracts\AuditLoggerContract;
 use App\Models\AttendanceDevice;
 use App\Models\AttendanceSetting;
 use App\Models\CampusAttendanceEvent;
-use App\Models\PortalNotification;
 use App\Models\Student;
 use App\Models\StudentParentLink;
 use App\Models\User;
+use App\Services\Notifications\NotificationDispatcher;
+use App\Services\Notifications\NotificationMessage;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class CampusAttendanceService
 {
-    public function __construct(private readonly AuditLoggerContract $auditLogger) {}
+    public function __construct(
+        private readonly AuditLoggerContract $auditLogger,
+        private readonly NotificationDispatcher $notifications,
+    ) {}
 
     public function record(int $schoolId, array $data, ?User $actor, AuditContext $context): array
     {
         return DB::transaction(function () use ($schoolId, $data, $actor, $context): array {
-            $student = Student::query()->where('school_id', $schoolId)
+            $student = Student::query()->with('school')->where('school_id', $schoolId)
                 ->when($data['student_no'] ?? null, fn ($query, $value) => $query->where('student_no', $value))
                 ->when(! isset($data['student_no']) && isset($data['student_id']), fn ($query) => $query->whereKey($data['student_id']))
                 ->first();
@@ -124,16 +128,14 @@ class CampusAttendanceService
             ->whereNotNull('parents.user_id')
             ->pluck('parents.user_id')->unique();
         $verb = $event->direction === 'entry' ? 'entered school' : 'left school';
-        foreach ($recipientIds as $recipientId) {
-            PortalNotification::query()->create([
-                'school_id' => $event->school_id,
-                'recipient_user_id' => $recipientId,
-                'type' => 'attendance',
-                'title' => $event->direction === 'entry' ? 'School Entry' : 'School Exit',
-                'body' => "{$student->full_name} {$verb} at ".Carbon::parse($event->event_time)->format('g:i A').'.',
-                'context_json' => ['student_id' => $student->id, 'campus_attendance_event_id' => $event->id, 'direction' => $event->direction],
-            ]);
-        }
+        $this->notifications->sendInApp(new NotificationMessage(
+            tenantId: (int) $student->school->tenant_id,
+            schoolId: (int) $event->school_id,
+            type: 'attendance',
+            title: $event->direction === 'entry' ? 'School Entry' : 'School Exit',
+            body: "{$student->full_name} {$verb} at ".Carbon::parse($event->event_time)->format('g:i A').'.',
+            context: ['student_id' => $student->id, 'campus_attendance_event_id' => $event->id, 'direction' => $event->direction],
+        ), $recipientIds);
     }
 
     private function result(CampusAttendanceEvent $event, bool $duplicate): array

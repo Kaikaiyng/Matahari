@@ -93,6 +93,7 @@ Mobile work requires evidence beyond narrow viewport checks of the current Admin
 - Attendance/Assessment slice: Teacher assignment scope, enrolment membership, correction reason/audit, draft-result denial, and Parent/Student relationship/self scope. Daily Attendance and Assessment publication are implemented; retain these checks for regressions and future changes.
 - Quiz slice: class and direct-student targeting, recipient deduplication, server-side scoring, attempt concurrency, and historical enrolment behavior.
 - Reminder/push slice: authoritative balance recheck, recipient resolution, transactional audit/history, duplicate suppression, and durable notification behavior independent of push delivery.
+- Notification-channel slice: in-app payload/read compatibility, calling-transaction rollback, exact global/tenant/school destination resolution, inactive filtering, school-without-tenant and cross-tenant rejection, unknown-channel skipped results, and sanitized diagnostics. Any destination-schema release requires disposable MariaDB composite-foreign-key validation or an explicit **Not verified** limitation.
 - Phase F: native credential/token storage and revocation, device-token privacy, deep links, signed Android build, real-device push behavior, and platform-specific release checks.
 
 Do not claim Firebase, Capacitor, APK/iOS delivery, or native authentication passed until those dependencies exist and the relevant real-device checks have run.

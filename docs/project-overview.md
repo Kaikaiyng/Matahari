@@ -4,7 +4,7 @@
 
 **Repository baseline:** Integrated delivery on `feat/admin-application-logs`; default `master` merge remains separate
 
-**Reviewed:** 2026-08-26
+**Reviewed:** 2026-08-27
 
 ## Business Purpose
 
@@ -46,6 +46,7 @@ Do not describe the system as unlimited or use the historical cost estimate as p
 - Database guards for one current Fee Agreement per school/student/year and one scheduled charge per agreement item/month.
 - Phase A teacher/parent/student roles, reviewed nullable portal links, academic years, enrolment history, subjects, teaching assignments, scoped `/api/v1` management/teacher APIs, policies/access services, and transactional foundation audit events.
 - MIS-branded demo identities for Admin, Teacher, Parent, and Student; an independent role-filtered `app/` web shell; self-profile/enrolment endpoints; and user-scoped in-app notification storage.
+- Channel-neutral notification dispatch, an `in_app` channel that preserves existing portal behavior, and external destination configuration at exact global, tenant, or tenant-plus-school scope.
 - Assignment-scoped daily Attendance sessions/records, Teacher roster marking, correction reasons and audit, linked-child Parent history reads, and explicit Student exclusion.
 - Phone-first School App presentation with a compact header, role-specific liquid-glass bottom navigation, and profile-based sign out.
 - Official School Updates: employees with `community.publish` create immediate whole-school or multi-class text/image updates, optionally notify the resolved audience, and audit publication. Teachers, Parents, and Students read authorized Updates and can Like or report them; comments and new direct-Student targeting are unavailable.
@@ -68,6 +69,7 @@ Do not describe the system as unlimited or use the historical cost estimate as p
 - General reports, exports, statements, automatic/external reminders, and server-generated PDF documents.
 - Completion and product hardening of the mobile-first multi-role School App.
 - Production hardening for Parent Finance, push delivery, and later native Android/iOS packaging in separately approved phases. Manual in-app payment reminders and formal Teacher-assigned Quiz are implemented web slices.
+- External notification adapters such as Telegram, provider credentials, destination management UI, queues/outbox, retry/delivery history, and any Telegram user binding or login.
 - Generic audit corrections, audit export, and recovery workflows beyond read-only event review.
 - Refunds, credits, overpayments, write-offs, and approved financial correction workflows.
 - Stable production hosting, remote CD/promotion, monitoring, scheduled backups, and a verified restore process. Repository-owned CI and deployment configuration now exist but require current runner/container evidence.

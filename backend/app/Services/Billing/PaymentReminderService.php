@@ -9,9 +9,10 @@ use App\Audit\AuditModule;
 use App\Audit\AuditSubject;
 use App\Contracts\AuditLoggerContract;
 use App\Models\ClassEnrolment;
-use App\Models\PortalNotification;
 use App\Models\Student;
 use App\Models\User;
+use App\Services\Notifications\NotificationDispatcher;
+use App\Services\Notifications\NotificationMessage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -20,6 +21,7 @@ final class PaymentReminderService
     public function __construct(
         private readonly FeeRecordChargeGenerationService $feeRecords,
         private readonly AuditLoggerContract $audit,
+        private readonly NotificationDispatcher $notifications,
     ) {}
 
     /** @return array{student_id:int, academic_year:string, outstanding_amount:float, recipient_count:int} */
@@ -77,22 +79,20 @@ final class PaymentReminderService
             }
 
             $calculatedAt = now();
-            foreach ($recipients as $recipientId) {
-                PortalNotification::query()->create([
-                    'school_id' => $lockedStudent->school_id,
-                    'recipient_user_id' => $recipientId,
-                    'type' => 'payment_reminder',
-                    'title' => "Payment reminder for {$lockedStudent->full_name}",
-                    'body' => 'The current outstanding school balance is RM '.number_format((float) $outstanding, 2).'.',
-                    'context_json' => [
-                        'student_id' => $lockedStudent->id,
-                        'student_name' => $lockedStudent->full_name,
-                        'academic_year' => $academicYear,
-                        'outstanding_amount' => (float) $outstanding,
-                        'calculated_at' => $calculatedAt->toISOString(),
-                    ],
-                ]);
-            }
+            $this->notifications->sendInApp(new NotificationMessage(
+                tenantId: (int) $lockedStudent->school->tenant_id,
+                schoolId: (int) $lockedStudent->school_id,
+                type: 'payment_reminder',
+                title: "Payment reminder for {$lockedStudent->full_name}",
+                body: 'The current outstanding school balance is RM '.number_format((float) $outstanding, 2).'.',
+                context: [
+                    'student_id' => $lockedStudent->id,
+                    'student_name' => $lockedStudent->full_name,
+                    'academic_year' => $academicYear,
+                    'outstanding_amount' => (float) $outstanding,
+                    'calculated_at' => $calculatedAt->toISOString(),
+                ],
+            ), $recipients);
 
             $this->audit->record(new AuditEvent(
                 action: AuditAction::PaymentReminderSent,

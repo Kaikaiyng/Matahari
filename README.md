@@ -20,6 +20,7 @@ Implemented workflows include:
 - Shared school calendar CRUD.
 - Phase A academic foundation APIs for academic years, class enrolments, subjects, teaching assignments, and reviewed portal identity links.
 - Independent `app/` School App views for Teacher, Parent, and Student, with first-use choice for multi-persona users, role-aware liquid-glass navigation, self-service identity endpoints, personal notifications, and read-only parent finance.
+- Channel-neutral notification dispatch with the existing in-app channel plus scoped external destination configuration for future RYLAY-global, tenant, or school operations integrations.
 - Daily class Attendance: assignment-scoped Teacher roster marking, linked-child Parent history reads, Student exclusion, correction reasons, and transactional audit logging.
 - Campus Attendance: immutable entry/exit timelines, face/card/manual method records, idempotent external event IDs, device/settings preparation, Parent linked-child status, and explicit Student exclusion. Real Hikvision protocol/authentication is not verified.
 - Official **School Updates**: employees with the publishing ability post required text and optional images to the whole school or selected active classes; notifications are optional and recipient resolution is server-side.
@@ -33,6 +34,7 @@ Important boundaries:
 
 - `frontend/` is Admin-only. `app/` is the separate multi-role School App surface. Attendance, School Updates (which retain historical Community route/storage names), Assessment results, class Schedule, and formal Teacher-assigned Quiz use live scoped APIs. Practice/AI Quiz remains disabled.
 - Parent finance is read-only and has no payment interface. Parents can switch among finance-authorized linked children, review balances and full payment history, and view or browser-print/save authoritative receipt snapshots. Authorized Admin users can send recalculated in-app payment reminders; automatic reminders, external delivery, native authentication, Firebase, Capacitor, and app-store packaging remain unimplemented. See [Mobile Product Architecture and Roadmap](docs/mobile-product-roadmap.md).
+- External notification destinations are configuration-only. Telegram delivery, Bot tokens, Telegram user binding/login, destination UI, queue/outbox, retries, and delivery history are not implemented.
 
 - Payments and receipts are implemented inside Student Detail; unimplemented top-level placeholder navigation has been removed.
 - The parent directory and fee catalogue top-level pages remain display-only; parent mutations, fee catalogue management, reports, exports, settings, user management, password reset, and production deployment are incomplete or not implemented.

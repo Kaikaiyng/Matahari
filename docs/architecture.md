@@ -2,7 +2,7 @@
 
 **Status:** Current implementation reference
 
-**Repository baseline:** Role and User Abilities delivery (2026-08-23)
+**Repository baseline:** Extensible Notification Channel foundation (2026-08-27)
 
 ## Tenant Boundary
 
@@ -55,6 +55,14 @@ Effective same-school `community.publish` is sufficient to create an immediate o
 
 The App exposes public `/legal/*` routes backed by a no-session public API. Responses contain effective policy sections, tenant presentation and configured support contacts only—never report, reporter or evidence data.
 
+## Notification Channel Boundary
+
+Business services create immutable `NotificationMessage` values and send them through `NotificationDispatcher`. The dispatcher resolves registered `NotificationChannelContract` implementations; `InAppChannel` is currently the only concrete channel and retains `portal_notifications` as the user-facing read model. Existing notification APIs and App/Admin payloads are unchanged, and in-app insertion remains inside each producer's surrounding transaction.
+
+`notification_destinations` is a channel-neutral external-address registry. Global records have no tenant or school, tenant records have only `tenant_id`, and school records carry both IDs with the existing composite tenant/school foreign key. A destination contains a channel key, neutral destination type/address, routing purpose, status, and non-secret configuration; it never represents or binds a RYLAY user.
+
+No external adapter is registered, so unsupported channels are reported as skipped with sanitized diagnostics and cannot claim successful delivery. Telegram delivery, Bot tokens, Telegram user login/binding, destination CRUD/UI, queues, outbox, retries, and delivery history are **Planned, not implemented**. A future network adapter must not perform provider calls inside an originating business transaction; durable delivery requires a separately approved outbox/queue design.
+
 ## Backend Structure
 
 - `routes/api.php`: JSON API routes with manually assembled cookie, session, and native CSRF middleware.
@@ -71,6 +79,7 @@ The App exposes public `/legal/*` routes backed by a no-session public API. Resp
 - `app/Services/Billing/`: Fee Record generation/summary, payment, receipt, numbering, manual in-app payment reminders, and legacy invoice services.
 - `app/Services/Audit/` and `app/Audit/`: audit events, trusted context, sanitization, and persistence.
 - `app/Services/Operations/ApplicationLogReader.php`: bounded read-only parsing, filtering, normalization, pagination, and sanitization for Laravel application logs.
+- `app/Services/Notifications/`: channel-neutral messages/targets, dispatch coordination, and the current in-app delivery channel.
 - `app/Models/`: Eloquent entities and relationships.
 - `database/migrations/`: schema history and corrective migrations.
 - `database/seeders/`: demo school, users, roles, permissions, fees, and scenarios.
@@ -207,7 +216,7 @@ The response runs structured context through the existing audit payload sanitize
 
 No external business API, payment gateway, email provider, object storage service, analytics service, or identity provider is integrated. Laravel mail defaults to logging in the example environment.
 
-Firebase/FCM, APNs, and device registration are approved only as later push-delivery concepts. No integration, credential, device-token storage, or delivery runtime is implemented.
+Firebase/FCM, APNs, Telegram, and device registration are later delivery concepts only. A neutral external destination registry exists, but no provider adapter, credential, device-token/user-binding storage, queue/outbox, or external delivery runtime is implemented.
 
 `tools/public-demo/` can download a pinned/checksummed `cloudflared` executable and expose Vite Preview through a temporary Quick Tunnel. This is demo-only and not a production dependency.
 

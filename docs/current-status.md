@@ -1,6 +1,6 @@
 # Current Status
 
-**Snapshot date:** 2026-08-26
+**Snapshot date:** 2026-08-27
 
 **Inspected Phase A implementation commit:** `ecaa0a1f177292ae99c9338e255a1f93312971f5`
 
@@ -9,6 +9,13 @@
 **Pre-reconciliation pushed baseline:** `49e3e6662679dd32aa743c53917d8e97abbe8206` (`docs: record integrated school updates delivery`) on `feat/admin-application-logs`
 
 **Overall status:** SaaS multi-tenant foundation in final validation, with MIS as the first tenant; separate Admin and multi-role App clients, live School Updates, daily Attendance, Assessment publication, Parent Finance reads/receipt access/manual in-app reminders, class Schedule, and formal Quiz V1 remain shared tenant-aware modules. Practice/AI Quiz, native/store delivery, automated DNS/TLS and production operations remain incomplete.
+
+## 2026-08-27 Extensible Notification Channel Foundation
+
+- Attendance, Billing, School Updates, and retained Community moderation notification producers now use a channel-neutral `NotificationDispatcher`; `InAppChannel` preserves the existing `portal_notifications` payload, read state, batching, and surrounding transaction behavior.
+- `notification_destinations` stores neutral channel, destination type/address, purpose, status, and non-secret configuration at exact RYLAY-global, tenant, or tenant-plus-school scope. The existing composite tenant/school hierarchy rejects cross-tenant school destinations.
+- No external adapter is registered. Telegram delivery, Bot tokens, Telegram user binding/login, destination UI, queue/outbox, retries, and delivery history remain **Planned, not implemented**.
+- Focused notification and producer regression validation passed locally: 57 tests and 280 assertions. Targeted Pint and 152-route loading passed, as did disposable SQLite fresh/rollback/re-migrate. MariaDB composite-foreign-key compatibility is **Not verified** in this pass.
 
 ## 2026-08-26 Project-wide Documentation Reconciliation
 
