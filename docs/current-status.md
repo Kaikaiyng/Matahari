@@ -34,6 +34,13 @@
 - Local reachability was rechecked on 2026-08-26: the tenant-aware backend endpoint, Admin root, and App root each returned HTTP 200. This is a service-reachability smoke check only, not browser/manual UAT.
 - No migration was added, so a new SQLite lifecycle is not applicable to this delivery. Disposable MariaDB audience-query behavior is **Not verified**. Browser/manual UAT and real-device or hardware checks are **Not verified** for this delivery. The repository remains not production-ready.
 
+## 2026-08-29 Admin Settings Workspace
+
+- The former display-only Settings placeholder is replaced by a responsive MAW-inspired workspace using MIS/RYLAY styling. Its six real sections are School Profile, Branding, Attendance, Notifications, Users & Access, and My Account.
+- School Profile and My Account expose resolved read-only context. Branding saves through the existing tenant Branding API and immediately refreshes the Admin title and CSS brand colours. Attendance and guardian entry/exit notification preferences reuse the existing school-scoped Attendance Settings API and preserve its complete payload.
+- Users & Access summarizes the approved School Admin, Finance, and Teacher position model and links authorized users to Employees. Unsupported school editing, password/session controls, Telegram configuration, and placeholder save actions were not added.
+- Focused Admin verification passed 64 tests across Settings, tenant context, and App integration. Oxlint exited 0 with the 9 existing Calendar Fast Refresh warnings, and the production TypeScript/Vite build passed. Backend, App, browser/manual UAT, and MariaDB were **Not verified** for this frontend-only delivery.
+
 ## 2026-08-23 Role and User Abilities Consolidation
 
 - Super Admin is the protected platform-owner identity. Active employee positions are exactly School Admin, Finance, and Teacher; Finance inherits every School Admin default plus supported finance-only mutations. CEO and Tenant Owner are no longer seeded or assignable.
@@ -242,7 +249,7 @@ The confirmed earlier technology direction named Laravel 10, but this repository
 - Receipt issue/snapshot/display/browser print/void/regenerate/history with stable sequence behavior and transactional audit events.
 - School calendar CRUD.
 - Calendar Year, Month, and Week views, including a 12-month overview, upcoming-event month layout, a school-hours week timeline, and school-scoped active-staff participant multi-select.
-- Settings page for the current single-school context and signed-in account access summary.
+- Responsive Admin Settings workspace for resolved school/account context, live tenant Branding, Attendance times, guardian campus notifications, and employee-access navigation through existing permission-protected APIs.
 - Backend permission and school-scope enforcement for the dashboard and legacy monthly invoice generation.
 - Secure audit schema/logger/sanitizer/request IDs/model immutability, best-effort authentication audit, read-only Super Admin API, and Audit Trail frontend.
 - Super Admin-only sanitized Application Logs API/UI with level/search/date filters, summary counts, page pagination, bounded Laravel log parsing, and expandable safe context. Application Logs remain separate from immutable business Audit Trail records.

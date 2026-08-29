@@ -97,10 +97,13 @@ Legacy authorization remains primarily route middleware plus distributed scope c
 - `src/features/payments/`: payment allocation editor and allocation model.
 - `src/features/audit/`: read-only Audit Trail list, filters, cursor pagination, and detail view.
 - `src/features/logs/`: Super Admin-only sanitized Application Logs summary, filters, pagination, and expandable context.
+- `src/features/settings/`: responsive Admin Settings workspace. It composes existing tenant Branding and Attendance Settings APIs, keeps school/account context read-only where no mutation API exists, and links access management to Employees.
 
 The application does not use React Router, Redux, React Query, or another global data layer. Page selection is component state, so there are no deep links or browser-history routes. Data fetching uses local state/effects and the shared API wrapper.
 
 The Admin Sidebar uses MAW-style navigation behavior with MIS branding: standalone primary destinations, icon-led accordion module groups, indented text subitems, a full desktop slide-away control, and the existing mobile drawer. Group and desktop-collapse preferences are local presentation state only; they never replace backend authorization.
+
+The Settings workspace follows the same MAW-inspired information architecture while retaining MIS/RYLAY colours and controls. Branding changes update the in-memory tenant context after a successful backend save so the current Admin title and CSS variables refresh without a reload. Attendance times and guardian campus-notification switches intentionally share the authoritative Attendance Settings payload; Notifications does not introduce a second settings store or expose planned external destinations.
 
 `frontend/` and `app/` are independent React workspaces. Admin and the Community App are built and deployed separately on different domains, while each domain reverse-proxies its own `/api` path to the same Laravel backend. This same-origin browser topology preserves the existing session-cookie and CSRF model. A native workspace and store packaging do not exist yet.
 

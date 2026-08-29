@@ -27,6 +27,7 @@ Implemented workflows include:
 - Teachers, Parents, and Students can read their authorized Updates and Like or report them. New posts have no comments, direct-Student audience, user blocking, appeals, or routine approval. Older Community comments, direct-Student posts, reports, and pending cases remain historical storage only and are never physically deleted by this workflow.
 - Teaching Assignment-scoped Assessments with draft result entry, explicit complete-roster publication, and authorized Parent/Student published-result views.
 - Permission-filtered, grouped/collapsible navigation plus Super Admin-only Audit Trail and sanitized Application Logs views.
+- MAW-inspired Admin Settings workspace for read-only school/account context, live tenant Branding, Attendance times, guardian campus notifications, and employee-access navigation using existing permission-protected APIs.
 - Responsive desktop, tablet, and mobile administration UI.
 - CSRF-protected session mutations, login throttling, active-session rechecks, request IDs, and transactional audit events for implemented critical workflows.
 
@@ -37,7 +38,7 @@ Important boundaries:
 - External notification destinations are configuration-only. Telegram delivery, Bot tokens, Telegram user binding/login, destination UI, queue/outbox, retries, and delivery history are not implemented.
 
 - Payments and receipts are implemented inside Student Detail; unimplemented top-level placeholder navigation has been removed.
-- The parent directory and fee catalogue top-level pages remain display-only; parent mutations, fee catalogue management, reports, exports, settings, user management, password reset, and production deployment are incomplete or not implemented.
+- The parent directory and fee catalogue top-level pages remain display-only; parent mutations, fee catalogue management, reports, exports, school-profile editing, password reset, and production deployment are incomplete or not implemented.
 - Discounts can be stored as agreement snapshots, but charge preview/activation deliberately fails closed until approved formulas exist.
 - Generic audit correction/recovery and audit export are planned, not implemented.
 

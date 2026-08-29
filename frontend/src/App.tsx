@@ -11,7 +11,6 @@ import {
   GraduationCap,
   RefreshCw,
   Search,
-  School,
   ShieldCheck,
   UserPlus,
   Users,
@@ -37,6 +36,7 @@ import {
 import { StaffPage } from './components/StaffPage'
 import { ParentsPage } from './components/ParentsPage'
 import { LoginPage } from './components/LoginPage'
+import { SettingsPage as SettingsWorkspace } from './features/settings/SettingsPage'
 import {
   CustomSelect,
   DatePicker,
@@ -3969,146 +3969,6 @@ function StudentsPage({
 }
 
 
-function SettingsPage({
-  user,
-  dashboard,
-}: {
-  user: CurrentUser
-  dashboard: DashboardResponse | null
-}) {
-  const tenant = useTenantConfiguration()
-  return (
-    <section className="page-stack">
-      <PageHeader
-        eyebrow="Administration"
-        title="Settings"
-        description="Review the active school context and your account access."
-      />
-
-      <div className="settings-grid">
-        <DataPanel eyebrow="School" title="School Context">
-          <dl className="settings-summary">
-            <div>
-              <dt>Current school</dt>
-              <dd>{dashboard?.school.name ?? tenant.branding.organization_name}</dd>
-            </div>
-            <div>
-              <dt>School ID</dt>
-              <dd>{dashboard?.school.id ?? user.school_id ?? '—'}</dd>
-            </div>
-            <div>
-              <dt>School code</dt>
-              <dd>{dashboard?.school.code ?? '—'}</dd>
-            </div>
-            <div>
-              <dt>Mode</dt>
-              <dd><StatusBadge tone="info">Tenant-scoped</StatusBadge></dd>
-            </div>
-          </dl>
-          <p className="settings-note">Tenant {tenant.slug} may contain multiple schools; access remains limited by your membership.</p>
-        </DataPanel>
-
-        <DataPanel eyebrow="Account" title="Account & Access">
-          <dl className="settings-summary">
-            <div>
-              <dt>Name</dt>
-              <dd>{user.name}</dd>
-            </div>
-            <div>
-              <dt>Username</dt>
-              <dd>@{user.username}</dd>
-            </div>
-            <div>
-              <dt>Roles</dt>
-              <dd>{user.roles.map(formatStatus).join(', ') || 'No role assigned'}</dd>
-            </div>
-            <div>
-              <dt>Permissions</dt>
-              <dd>{user.permissions.length} granted</dd>
-            </div>
-          </dl>
-        </DataPanel>
-      </div>
-
-      <section className="settings-configuration" aria-labelledby="settings-configuration-heading">
-        <div className="settings-section-heading">
-          <div>
-            <p className="eyebrow">Configuration</p>
-            <h2 id="settings-configuration-heading">Settings Modules</h2>
-          </div>
-          <span>Display only · controls will be added later</span>
-        </div>
-
-        <div className="settings-module-grid">
-          <SettingsModule
-            icon={<CreditCard size={20} />}
-            title="Finance Settings"
-            description="Defaults used by payment and receipt workflows."
-            items={['Receipt and invoice prefixes', 'Accepted payment methods', 'Payment verification rules']}
-            priority="Next"
-          />
-          <SettingsModule
-            icon={<Users size={20} />}
-            title="Users & Access"
-            description="Manage administrative accounts and their access."
-            items={['Create and disable users', 'Assign roles', 'Review permissions']}
-            priority="Next"
-          />
-          <SettingsModule
-            icon={<School size={20} />}
-            title="School Profile"
-            description="Maintain the school identity shown across the system."
-            items={['Contact details and address', 'Logo and school name', 'Timezone and currency']}
-          />
-          <SettingsModule
-            icon={<CalendarDays size={20} />}
-            title="Academic & Calendar"
-            description="Control shared academic and scheduling defaults."
-            items={['Default academic year', 'Week start and working hours', 'School holidays']}
-          />
-          <SettingsModule
-            icon={<ShieldCheck size={20} />}
-            title="Account & Security"
-            description="Personal settings available to every admin user."
-            items={['Profile details', 'Change password', 'Active sessions']}
-            priority="Next"
-          />
-        </div>
-      </section>
-    </section>
-  )
-}
-
-function SettingsModule({
-  icon,
-  title,
-  description,
-  items,
-  priority = 'Planned',
-}: {
-  icon: ReactNode
-  title: string
-  description: string
-  items: string[]
-  priority?: 'Next' | 'Planned'
-}) {
-  return (
-    <article className="settings-module-card">
-      <header>
-        <span className="settings-module-icon" aria-hidden="true">{icon}</span>
-        <StatusBadge tone={priority === 'Next' ? 'info' : 'neutral'}>{priority}</StatusBadge>
-      </header>
-      <div>
-        <h3>{title}</h3>
-        <p>{description}</p>
-      </div>
-      <ul>
-        {items.map((item) => <li key={item}>{item}</li>)}
-      </ul>
-    </article>
-  )
-}
-
 function FeesPage() {
   return (
     <section className="page-stack">
@@ -5015,7 +4875,7 @@ function App() {
     }
 
     if (activePage === 'settings') {
-      return <SettingsPage user={user} dashboard={dashboard} />
+      return <SettingsWorkspace user={user} dashboard={dashboard} onNavigate={(page) => setActivePage(page)} />
     }
 
     return (
