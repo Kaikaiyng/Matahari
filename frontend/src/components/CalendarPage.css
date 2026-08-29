@@ -7,10 +7,10 @@
 .calendar-panel {
   min-width: 0;
   overflow: hidden;
-  border: 1px solid #ebeaf4;
-  border-radius: 18px;
+  border: 1px solid var(--admin-card-border, #dfe5ee);
+  border-radius: var(--admin-card-radius, 14px);
   background: var(--surface, #ffffff);
-  box-shadow: 0 14px 40px rgb(47 43 89 / 7%);
+  box-shadow: var(--admin-card-shadow, 0 2px 8px rgb(31 42 68 / 6%));
 }
 
 .calendar-toolbar {
@@ -312,20 +312,20 @@
 .calendar-mini-month {
   min-width: 0;
   padding: 17px;
-  border: 1px solid #e9e6f2;
-  border-radius: 13px;
+  border: 1px solid var(--admin-card-border, #dfe5ee);
+  border-radius: var(--admin-card-radius, 14px);
   background: #ffffff;
   color: #4b475b;
   font: inherit;
   text-align: left;
-  box-shadow: 0 7px 18px rgb(49 43 93 / 5%);
+  box-shadow: var(--admin-card-shadow, 0 2px 8px rgb(31 42 68 / 6%));
   cursor: pointer;
   transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
 }
 
 .calendar-mini-month:hover {
   border-color: #bdb5ec;
-  box-shadow: 0 10px 24px rgb(49 43 93 / 10%);
+  box-shadow: var(--admin-card-shadow-hover, 0 8px 22px rgb(31 42 68 / 10%));
   transform: translateY(-1px);
 }
 

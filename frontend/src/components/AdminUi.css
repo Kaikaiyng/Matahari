@@ -107,10 +107,10 @@
   align-items: center;
   gap: 16px;
   padding: 18px;
-  border: 1px solid var(--border, #e1e4ea);
-  border-radius: 12px;
+  border: 1px solid var(--admin-card-border, var(--border, #e1e4ea));
+  border-radius: var(--admin-card-radius, 14px);
   background: var(--surface, #ffffff);
-  box-shadow: 0 1px 3px rgb(22 24 29 / 6%);
+  box-shadow: var(--admin-card-shadow, 0 2px 8px rgb(31 42 68 / 6%));
 }
 
 button.stat-card {
@@ -131,7 +131,7 @@ button.stat-card {
 .stat-card.interactive:hover {
   transform: translateY(-1px);
   border-color: var(--border-strong);
-  box-shadow: 0 5px 16px rgb(22 24 29 / 10%);
+  box-shadow: var(--admin-card-shadow-hover, 0 8px 22px rgb(31 42 68 / 10%));
 }
 
 .stat-card.interactive:focus-visible {
@@ -145,7 +145,7 @@ button.stat-card {
   flex: 0 0 44px;
   display: grid;
   place-items: center;
-  border-radius: 11px;
+  border-radius: 12px;
   background: var(--brand-primary-soft);
   color: var(--brand-primary);
 }
@@ -204,10 +204,10 @@ button.stat-card {
   align-items: center;
   gap: 12px;
   padding: 14px 16px;
-  border: 1px solid var(--border, #e1e4ea);
-  border-radius: 12px;
+  border: 1px solid var(--admin-card-border, var(--border, #e1e4ea));
+  border-radius: var(--admin-card-radius, 14px);
   background: var(--surface, #ffffff);
-  box-shadow: 0 1px 3px rgb(22 24 29 / 5%);
+  box-shadow: var(--admin-card-shadow, 0 2px 8px rgb(31 42 68 / 6%));
 }
 
 .filter-toolbar input,
@@ -248,10 +248,10 @@ button.stat-card {
 .data-panel {
   min-width: 0;
   overflow: hidden;
-  border: 1px solid var(--border, #e1e4ea);
-  border-radius: 12px;
+  border: 1px solid var(--admin-card-border, var(--border, #e1e4ea));
+  border-radius: var(--admin-card-radius, 14px);
   background: var(--surface, #ffffff);
-  box-shadow: 0 1px 3px rgb(22 24 29 / 6%);
+  box-shadow: var(--admin-card-shadow, 0 2px 8px rgb(31 42 68 / 6%));
 }
 
 .data-panel-header {

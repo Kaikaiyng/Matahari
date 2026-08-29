@@ -3,10 +3,10 @@
   display: grid;
   grid-template-columns: 260px minmax(0, 1fr);
   overflow: hidden;
-  border: 1px solid #e2e5eb;
-  border-radius: 18px;
+  border: 1px solid var(--admin-card-border, #dfe5ee);
+  border-radius: var(--admin-card-radius, 14px);
   background: #fff;
-  box-shadow: 0 12px 34px rgb(24 29 43 / 7%);
+  box-shadow: var(--admin-card-shadow, 0 2px 8px rgb(31 42 68 / 6%));
 }
 
 .settings-rail {
@@ -117,9 +117,9 @@
   display: grid;
   gap: 6px;
   padding: 15px 16px;
-  border: 1px solid #e5e8ee;
+  border: 1px solid var(--admin-card-border, #dfe5ee);
   border-radius: 12px;
-  background: #fafbfc;
+  background: var(--admin-card-inset, #f7f9fc);
 }
 
 .settings-readonly-field span,

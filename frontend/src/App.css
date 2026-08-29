@@ -77,9 +77,10 @@ h2 {
 
 .metric-card,
 .panel {
-  border: 1px solid #e1e4ea;
-  border-radius: 8px;
+  border: 1px solid var(--admin-card-border, #dfe5ee);
+  border-radius: var(--admin-card-radius, 14px);
   background: #ffffff;
+  box-shadow: var(--admin-card-shadow, 0 2px 8px rgb(31 42 68 / 6%));
 }
 
 .panel {
@@ -264,21 +265,19 @@ h2 {
 
 .dashboard-page .dashboard-metrics .stat-card {
   position: relative;
-  min-height: 126px;
-  align-items: flex-start;
+  min-height: 112px;
+  flex-direction: row-reverse;
+  align-items: center;
+  justify-content: space-between;
   overflow: hidden;
   padding: 20px;
   border-color: #e2e8f2;
-  border-radius: 16px;
-  box-shadow: 0 8px 28px rgb(37 62 108 / 6%);
+  border-radius: var(--admin-card-radius, 14px);
+  box-shadow: var(--admin-card-shadow, 0 2px 8px rgb(31 42 68 / 6%));
 }
 
 .dashboard-page .dashboard-metrics .stat-card::before {
-  content: '';
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 4px;
-  background: #35a76f;
+  display: none;
 }
 
 .dashboard-page .dashboard-metrics .stat-card:nth-child(2)::before {
@@ -334,9 +333,9 @@ h2 {
   min-width: 0;
   padding: 22px;
   border: 1px solid #e1e7f0;
-  border-radius: 16px;
+  border-radius: var(--admin-card-radius, 14px);
   background: #ffffff;
-  box-shadow: 0 8px 30px rgb(37 62 108 / 7%);
+  box-shadow: var(--admin-card-shadow, 0 2px 8px rgb(31 42 68 / 6%));
 }
 
 .dashboard-section-heading {
@@ -4151,3 +4150,73 @@ th {
 .table-message { padding: 24px !important; text-align: center; color: #7a8599; }
 .error-text { color: #b42318; }
 @media (max-width: 760px) { .ability-grid { grid-template-columns: 1fr; } }
+
+/* MAW-inspired Admin card compatibility layer. Business layouts stay unchanged. */
+.class-card,
+.contact-card,
+.report-card,
+.schedule-entry-card,
+.parent-accordion-card,
+.parent-child-card,
+.attendance-overview-card,
+.attendance-class-card,
+.system-check-card,
+.ugc-header,
+.ugc-queue,
+.ugc-detail {
+  border-color: var(--admin-card-border, #dfe5ee);
+  border-radius: var(--admin-card-radius, 14px);
+  background-color: #fff;
+  box-shadow: var(--admin-card-shadow, 0 2px 8px rgb(31 42 68 / 6%));
+}
+
+.class-card.clickable:hover,
+.schedule-entry-card:hover,
+.parent-accordion-card:hover,
+.attendance-class-card:hover,
+.system-check-card:hover {
+  transform: translateY(-1px);
+  border-color: var(--border-strong, #cbd5e1);
+  box-shadow: var(--admin-card-shadow-hover, 0 8px 22px rgb(31 42 68 / 10%));
+}
+
+.class-card-icon-box,
+.parent-avatar-badge,
+.parent-child-icon,
+.employee-access-icon {
+  border-radius: 11px;
+}
+
+.rule-list div,
+.att-card-stats,
+.parent-accordion-body,
+.parent-address-row,
+.payment-balance-summary,
+.allocation-source-summary,
+.agreement-billing-summary,
+.fee-record-outstanding-panel,
+.one-time-charge-panel {
+  background: var(--admin-card-inset, #f7f9fc);
+  border-color: var(--admin-card-border, #dfe5ee);
+  border-radius: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stat-card.interactive,
+  .class-card,
+  .schedule-entry-card,
+  .parent-accordion-card,
+  .attendance-class-card,
+  .system-check-card {
+    transition: none;
+  }
+
+  .stat-card.interactive:hover,
+  .class-card.clickable:hover,
+  .schedule-entry-card:hover,
+  .parent-accordion-card:hover,
+  .attendance-class-card:hover,
+  .system-check-card:hover {
+    transform: none;
+  }
+}

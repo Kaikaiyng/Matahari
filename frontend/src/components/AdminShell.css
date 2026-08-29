@@ -1,4 +1,9 @@
 .admin-shell {
+  --admin-card-radius: 14px;
+  --admin-card-border: #dfe5ee;
+  --admin-card-shadow: 0 2px 8px rgb(31 42 68 / 6%);
+  --admin-card-shadow-hover: 0 8px 22px rgb(31 42 68 / 10%);
+  --admin-card-inset: #f7f9fc;
   min-height: 100dvh;
   background: var(--canvas, #f4f7fb);
   color: var(--text, #25272d);

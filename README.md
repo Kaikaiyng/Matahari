@@ -28,7 +28,7 @@ Implemented workflows include:
 - Teaching Assignment-scoped Assessments with draft result entry, explicit complete-roster publication, and authorized Parent/Student published-result views.
 - Permission-filtered, grouped/collapsible navigation plus Super Admin-only Audit Trail and sanitized Application Logs views.
 - MAW-inspired Admin Settings workspace for read-only school/account context, live tenant Branding, Attendance times, guardian campus notifications, and employee-access navigation using existing permission-protected APIs.
-- Responsive desktop, tablet, and mobile administration UI.
+- Responsive desktop, tablet, and mobile administration UI with a shared MAW-inspired, MIS-branded card system across the Admin workspace.
 - CSRF-protected session mutations, login throttling, active-session rechecks, request IDs, and transactional audit events for implemented critical workflows.
 
 Important boundaries:

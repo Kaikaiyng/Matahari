@@ -94,9 +94,11 @@
 .movement-timeline article {
   display: flex;
   gap: 12px;
-  border: 1px solid #e6e9ef;
-  border-radius: 14px;
+  border: 1px solid var(--admin-card-border, #dfe5ee);
+  border-radius: var(--admin-card-radius, 14px);
   padding: 14px;
+  background: #fff;
+  box-shadow: var(--admin-card-shadow, 0 2px 8px rgb(31 42 68 / 6%));
 }
 .movement-timeline article > span {
   display: grid;
@@ -127,9 +129,11 @@
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 5px 12px;
-  border: 1px solid #e8eaf0;
-  border-radius: 14px;
+  border: 1px solid var(--admin-card-border, #dfe5ee);
+  border-radius: var(--admin-card-radius, 14px);
   padding: 14px;
+  background: #fff;
+  box-shadow: var(--admin-card-shadow, 0 2px 8px rgb(31 42 68 / 6%));
 }
 .device-list article small {
   grid-column: 1/-1;

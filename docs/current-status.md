@@ -41,6 +41,12 @@
 - Users & Access summarizes the approved School Admin, Finance, and Teacher position model and links authorized users to Employees. Unsupported school editing, password/session controls, Telegram configuration, and placeholder save actions were not added.
 - Focused Admin verification passed 64 tests across Settings, tenant context, and App integration. Oxlint exited 0 with the 9 existing Calendar Fast Refresh warnings, and the production TypeScript/Vite build passed. Backend, App, browser/manual UAT, and MariaDB were **Not verified** for this frontend-only delivery.
 
+## 2026-08-29 Admin Card System
+
+- The Admin workspace now uses shared MAW-inspired card tokens with MIS/RYLAY branding: 14px primary card radius, subtle neutral borders and shadows, restrained one-pixel interactive lift, soft semantic icon/status colours, and 16px parent-owned spacing.
+- Shared statistic cards, data panels, filters, Dashboard panels, Classes, Parents, Schedule, Attendance, Calendar, Audit/Application Logs, Settings, moderation, and nested finance summaries now follow the same visual hierarchy without changing their data, permissions, or workflows. The School App is intentionally unchanged.
+- Focused Admin verification passed 67 tests across App integration, Admin Shell, and Settings. Oxlint exited 0 with the 9 existing Calendar Fast Refresh warnings, and the TypeScript/Vite production build passed. Browser-wide visual QA, backend, App, and database checks were **Not verified** for this presentation-only delivery.
+
 ## 2026-08-23 Role and User Abilities Consolidation
 
 - Super Admin is the protected platform-owner identity. Active employee positions are exactly School Admin, Finance, and Teacher; Finance inherits every School Admin default plus supported finance-only mutations. CEO and Tenant Owner are no longer seeded or assignable.
