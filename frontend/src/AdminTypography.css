@@ -1,0 +1,222 @@
+/* Final Admin typography layer. Keep this import after App.css. */
+.admin-shell,
+.session-screen,
+.session-loader,
+.login-page-container {
+  --admin-type-page-title: 28px;
+  --admin-type-section-title: 20px;
+  --admin-type-card-title: 16px;
+  --admin-type-body: 14px;
+  --admin-type-label: 13px;
+  --admin-type-supporting: 12px;
+  --admin-type-eyebrow: 11px;
+  --admin-type-metric-min: 24px;
+  --admin-type-metric-max: 30px;
+}
+
+.admin-shell,
+.session-screen,
+.session-loader,
+.login-page-container {
+  font-size: var(--admin-type-body);
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.admin-shell :is(p, li, td, input, select, textarea),
+.login-page-container :is(p, li, input, select, textarea) {
+  font-size: var(--admin-type-body);
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.admin-shell :is(button, label),
+.login-page-container :is(button, label) {
+  font-size: var(--admin-type-label);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.admin-shell small,
+.login-page-container small {
+  font-size: var(--admin-type-supporting);
+  font-weight: 400;
+  line-height: 1.45;
+}
+
+.admin-shell :is(strong, b),
+.login-page-container :is(strong, b) {
+  font-weight: 600;
+}
+
+.admin-shell h1:not(.receipt-paper *),
+.admin-shell .page-header h2,
+.session-screen h1,
+.session-loader h1,
+.login-form-header h2 {
+  font-size: var(--admin-type-page-title);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+}
+
+.login-hero-headline {
+  font-size: var(--admin-type-metric-max);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+}
+
+.admin-shell h2:not(.page-header h2, .data-panel-header h2, .dashboard-section-heading h2, .receipt-paper *),
+.admin-shell .settings-content-header h2,
+.admin-shell .modal-header h2 {
+  font-size: var(--admin-type-section-title);
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+.admin-shell :is(h3, h4):not(.receipt-paper *),
+.admin-shell .data-panel-header h2,
+.admin-shell .dashboard-section-heading h2,
+.admin-shell .admin-notif-card-title {
+  font-size: var(--admin-type-card-title);
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+.admin-shell .page-description,
+.admin-shell .settings-content-header p,
+.admin-shell .modal-header p,
+.admin-shell .dashboard-workspace-status,
+.admin-shell .ugc-header span {
+  font-size: var(--admin-type-supporting);
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.admin-shell .eyebrow,
+.admin-shell table th,
+.admin-shell .parent-section-title,
+.admin-shell .ability-group h4 {
+  font-size: var(--admin-type-eyebrow);
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.admin-shell table td {
+  font-size: var(--admin-type-body);
+  font-weight: 400;
+  line-height: 1.45;
+}
+
+.admin-shell table td strong {
+  font-weight: 600;
+}
+
+.admin-shell :is(.nav-item, .nav-group-toggle, .sidebar-logout),
+.admin-shell .settings-rail-item strong,
+.admin-shell .attendance-hub-tabs button {
+  font-size: var(--admin-type-label);
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.admin-shell .nav-subitem {
+  font-size: var(--admin-type-supporting);
+  font-weight: 500;
+}
+
+.admin-shell :is(.nav-item.active, .nav-subitem.active, .nav-group.active .nav-group-toggle) {
+  font-weight: 600;
+}
+
+.admin-shell :is(.utility-context-name, .utility-breadcrumb-separator, .utility-page-title) {
+  font-size: var(--admin-type-label);
+  line-height: 1.35;
+  letter-spacing: 0;
+}
+
+.admin-shell .utility-context-name,
+.admin-shell .utility-breadcrumb-separator {
+  font-weight: 400;
+}
+
+.admin-shell .utility-page-title {
+  font-weight: 600;
+}
+
+.admin-shell :is(.stat-card-copy > span, .metric-card > span) {
+  font-size: var(--admin-type-supporting);
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: 0.02em;
+}
+
+.admin-shell :is(.stat-card-copy > strong, .metric-card > strong) {
+  font-size: clamp(var(--admin-type-metric-min), 2vw, var(--admin-type-metric-max));
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+}
+
+.admin-shell .dashboard-financial-total {
+  font-size: var(--admin-type-metric-max);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+}
+
+.admin-shell .dashboard-financial-details strong {
+  font-size: var(--admin-type-card-title);
+  font-weight: 600;
+}
+
+.admin-shell :is(
+  .status-badge,
+  .dashboard-live-badge,
+  .dashboard-status,
+  .application-log-level,
+  .attendance-flags span,
+  .att-status-badge,
+  .ugc-tags b,
+  .ugc-tags em
+) {
+  font-size: var(--admin-type-eyebrow);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.admin-shell :is(.empty-state, .schedule-empty-state) strong {
+  font-size: var(--admin-type-card-title);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.admin-shell :is(.empty-state, .schedule-empty-state) p {
+  font-size: var(--admin-type-supporting);
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.admin-shell :is(.modal-context-summary dd, .modal-context-consequence, .system-check-card strong) {
+  font-size: var(--admin-type-body);
+  font-weight: 600;
+}
+
+.admin-shell .system-checkbox:checked::after {
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .admin-shell,
+  .session-screen,
+  .session-loader,
+  .login-page-container {
+    --admin-type-page-title: 24px;
+    --admin-type-section-title: 18px;
+  }
+}

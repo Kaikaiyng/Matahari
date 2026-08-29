@@ -87,6 +87,7 @@ import {
   type PaymentAllocationDraft,
 } from './features/payments/paymentAllocationModel'
 import './App.css'
+import './AdminTypography.css'
 import { useTenantConfiguration } from './tenant'
 
 type PageKey =
