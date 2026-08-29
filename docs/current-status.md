@@ -44,6 +44,7 @@
 ## 2026-08-29 Admin Card System
 
 - The Admin workspace now uses Dashboard as the canonical card reference, with shared MAW-inspired tokens and MIS/RYLAY branding: 14px primary card radius, subtle neutral borders and shadows, restrained one-pixel interactive lift, soft semantic icon/status colours, text-left/icon-right statistic cards, and 16px parent-owned spacing. Dashboard uses a compact unboxed heading with live status, last-refresh time, and a working refresh action above its metric cards; the former decorative School Overview hero/date card has been removed.
+- Admin typography is unified on the same Plus Jakarta Sans family used by the MAW reference across navigation, pages, forms, tables, buttons, and dialogs. JetBrains Mono is limited to technical Application Log values and context payloads; the separate School App typography is unchanged.
 - Shared statistic cards, data panels, filters, Dashboard panels, Classes, Parents, Schedule, Attendance, Calendar, Audit/Application Logs, Settings, moderation, and nested finance summaries now follow the same visual hierarchy without changing their data, permissions, or workflows. The School App is intentionally unchanged.
 - Focused Admin verification passed 67 tests across App integration, Admin Shell, and Settings. Oxlint exited 0 with the 9 existing Calendar Fast Refresh warnings, and the TypeScript/Vite production build passed. Browser-wide visual QA, backend, App, and database checks were **Not verified** for this presentation-only delivery.
 

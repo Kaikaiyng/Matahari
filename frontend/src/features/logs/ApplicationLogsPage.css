@@ -9,9 +9,9 @@
 .application-log-row.level-fatal { background: #fff1f2; }
 .application-log-row.level-error { background: #fff7ed; }
 .application-log-row.level-warn { background: #fffbeb; }
-.application-log-time { white-space: nowrap; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: #64748b; }
+.application-log-time { white-space: nowrap; font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; color: #64748b; }
 .application-log-message { max-width: 360px; font-weight: 650; }
-.application-log-row td > small { display: block; margin-top: 3px; color: #94a3b8; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.application-log-row td > small { display: block; margin-top: 3px; color: #94a3b8; font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
 .application-log-level { display: inline-flex; border: 1px solid #e2e8f0; border-radius: 999px; padding: 3px 8px; background: #f8fafc; color: #475569; font-size: 10px; font-weight: 850; letter-spacing: .04em; }
 .application-log-level.level-fatal.critical { border-color: #fecdd3; background: #ffe4e6; color: #be123c; }
 .application-log-level.level-error { border-color: #fed7aa; background: #ffedd5; color: #c2410c; }
@@ -22,7 +22,7 @@
 .application-log-expand svg.expanded { transform: rotate(180deg); }
 .application-log-context td { background: #111827; color: #d1fae5; }
 .application-log-context span { color: #94a3b8; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
-.application-log-context pre { max-height: 260px; overflow: auto; margin: 9px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; color: #a7f3d0; font-size: 12px; line-height: 1.55; }
+.application-log-context pre { max-height: 260px; overflow: auto; margin: 9px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; color: #a7f3d0; font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; line-height: 1.55; }
 .application-log-pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 4px 0; color: #64748b; font-size: 12px; }
 .application-log-pagination > div { display: flex; align-items: center; gap: 9px; }
 .application-log-pagination button { width: 32px; height: 32px; display: grid; place-items: center; border: 1px solid #dbe2ea; border-radius: 8px; background: #fff; color: #475569; cursor: pointer; }
