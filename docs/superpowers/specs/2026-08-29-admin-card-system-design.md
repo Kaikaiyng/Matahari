@@ -26,7 +26,7 @@ The change covers shared Admin surfaces and the main cards used by Dashboard, St
 
 Use shared CSS tokens and existing shared primitives (`StatCard`, `DataPanel`, toolbars) as the primary integration point. Add a targeted compatibility layer for established domain card classes whose markup should not be rewritten. Avoid a wholesale component migration and avoid unrelated layout refactors.
 
-Dashboard receives the clearest MAW-style hierarchy: compact statistic cards, clean operational panels, soft status blocks, and consistent panel framing. Other Admin pages inherit the same surface, border, radius, shadow, spacing, icon-tile, and interaction rules without changing their information architecture.
+Dashboard is the single canonical card reference: compact statistic cards place copy on the left and a soft icon tile on the right, while operational panels use clean framing and restrained depth. All other Admin pages inherit the same surface, border, radius, shadow, spacing, icon-tile placement, and interaction rules without changing their information architecture.
 
 ## Responsive and Accessibility Rules
 

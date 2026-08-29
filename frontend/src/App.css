@@ -266,9 +266,6 @@ h2 {
 .dashboard-page .dashboard-metrics .stat-card {
   position: relative;
   min-height: 112px;
-  flex-direction: row-reverse;
-  align-items: center;
-  justify-content: space-between;
   overflow: hidden;
   padding: 20px;
   border-color: #e2e8f2;
