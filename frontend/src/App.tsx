@@ -4357,10 +4357,6 @@ function DashboardPage({
   const canViewStudents = hasPermission(user, 'students.view')
   const canViewCalendar = hasPermission(user, 'calendar.view')
   const unavailableValue = apiState === 'loading' ? 'Loading...' : 'Unavailable'
-  const formattedDate = useMemo(
-    () => new Intl.DateTimeFormat('en-MY', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date()),
-    [],
-  )
   const todayShare = dashboard && dashboard.metrics.monthly_collection > 0
     ? Math.min(100, Math.round((dashboard.metrics.today_collection / dashboard.metrics.monthly_collection) * 100))
     : 0
@@ -4414,19 +4410,6 @@ function DashboardPage({
 
   return (
     <section className="page-stack dashboard-page">
-      <header className="dashboard-hero">
-        <div className="dashboard-hero-copy">
-          <p className="eyebrow">Dashboard</p>
-          <h2>School overview</h2>
-          <p>Monitor collections, student accounts, and the work that needs attention today.</p>
-        </div>
-        <div className="dashboard-date" aria-label={`Today is ${formattedDate}`}>
-          <CalendarDays size={20} aria-hidden="true" />
-          <span>Today</span>
-          <strong>{formattedDate}</strong>
-        </div>
-      </header>
-
       {apiState === 'demo' && (
         <Message tone="error">Dashboard data could not be loaded. Please reload the page to try again.</Message>
       )}

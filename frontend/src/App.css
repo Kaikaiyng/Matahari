@@ -172,95 +172,8 @@ h2 {
   gap: 16px;
 }
 
-.dashboard-hero {
-  position: relative;
-  min-width: 0;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  padding: 24px 26px;
-  border: 1px solid #ffe4e6;
-  border-radius: 16px;
-  background:
-    radial-gradient(circle at 90% 15%, var(--brand-primary-soft) 0, transparent 34%),
-    linear-gradient(135deg, #fff1f2 0%, #fff7f7 100%);
-}
-
-.dashboard-hero::after {
-  content: '';
-  position: absolute;
-  right: -54px;
-  bottom: -84px;
-  width: 190px;
-  height: 190px;
-  border: 24px solid var(--brand-primary-soft);
-  border-radius: 50%;
-  pointer-events: none;
-}
-
-.dashboard-hero-copy,
-.dashboard-date {
-  position: relative;
-  z-index: 1;
-}
-
-.dashboard-hero-copy {
-  min-width: 0;
-  max-width: 660px;
-}
-
-.dashboard-hero-copy .eyebrow,
 .dashboard-section-heading .eyebrow {
   color: var(--brand-primary);
-}
-
-.dashboard-hero-copy h2 {
-  margin: 0;
-  color: #17213a;
-  font-size: clamp(24px, 3vw, 30px);
-  letter-spacing: -0.025em;
-}
-
-.dashboard-hero-copy > p:last-child {
-  margin-top: 8px;
-  color: #65708a;
-  font-size: 14px;
-  line-height: 1.55;
-}
-
-.dashboard-date {
-  min-width: 205px;
-  display: grid;
-  grid-template-columns: 38px 1fr;
-  grid-template-rows: auto auto;
-  column-gap: 11px;
-  padding: 12px 15px;
-  border: 1px solid rgb(255 255 255 / 86%);
-  border-radius: 12px;
-  background: rgb(255 255 255 / 78%);
-  box-shadow: 0 10px 26px rgb(45 68 122 / 8%);
-  backdrop-filter: blur(6px);
-}
-
-.dashboard-date svg {
-  grid-row: 1 / 3;
-  align-self: center;
-  color: var(--brand-primary);
-}
-
-.dashboard-date span {
-  color: #7b8499;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.dashboard-date strong {
-  color: #27324b;
-  font-size: 13px;
 }
 
 .dashboard-page .dashboard-metrics .stat-card {
@@ -659,17 +572,6 @@ h2 {
 }
 
 @media screen and (max-width: 700px) {
-  .dashboard-hero {
-    align-items: stretch;
-    flex-direction: column;
-    padding: 21px;
-  }
-
-  .dashboard-date {
-    width: fit-content;
-    min-width: min(100%, 205px);
-  }
-
   .dashboard-financial-card,
   .dashboard-quick-card {
     padding: 18px;
@@ -689,10 +591,6 @@ h2 {
 }
 
 @media screen and (max-width: 520px) {
-  .dashboard-hero {
-    padding: 18px;
-  }
-
   .dashboard-financial-details {
     grid-template-columns: 1fr;
   }

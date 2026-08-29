@@ -562,7 +562,7 @@ describe('demo shell', () => {
     const utilityHeader = document.querySelector<HTMLElement>('.utility-header')
     if (!utilityHeader) throw new Error('Utility header was not rendered')
     expect(within(utilityHeader).getByText('Matahari International School')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'School overview' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'School overview' })).not.toBeInTheDocument()
     expect(screen.getByRole('region', { name: 'Dashboard metrics' })).toBeInTheDocument()
     expect(screen.getByRole('region', { name: 'Financial snapshot' })).toBeInTheDocument()
 
@@ -602,8 +602,7 @@ describe('demo shell', () => {
 
     render(<App />)
 
-    await screen.findByRole('heading', { name: 'School overview' })
-    const metrics = screen.getByRole('region', { name: 'Dashboard metrics' })
+    const metrics = await screen.findByRole('region', { name: 'Dashboard metrics' })
 
     expect(within(metrics).getAllByText('Loading...')).toHaveLength(4)
     expect(screen.queryByText('RM 5,230')).not.toBeInTheDocument()
@@ -630,7 +629,7 @@ describe('demo shell', () => {
 
     render(<App />)
 
-    await screen.findByRole('heading', { name: 'School overview' })
+    await screen.findByRole('region', { name: 'Dashboard metrics' })
     expect(await screen.findByRole('status')).toHaveTextContent('Service temporarily unavailable')
 
     const metrics = screen.getByRole('region', { name: 'Dashboard metrics' })
