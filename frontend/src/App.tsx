@@ -4347,16 +4347,22 @@ function DashboardPage({
   apiState,
   user,
   setActivePage,
+  onRefresh,
 }: {
   dashboard: DashboardResponse | null
   apiState: 'live' | 'demo' | 'loading'
   user: CurrentUser
   setActivePage: (page: PageKey) => void
+  onRefresh: () => void
 }) {
   const canViewFeeRecord = hasPermission(user, 'fee_record.view')
   const canViewStudents = hasPermission(user, 'students.view')
   const canViewCalendar = hasPermission(user, 'calendar.view')
   const unavailableValue = apiState === 'loading' ? 'Loading...' : 'Unavailable'
+  const updatedAt = useMemo(
+    () => new Intl.DateTimeFormat('en-MY', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }).format(new Date()),
+    [apiState, dashboard],
+  )
   const todayShare = dashboard && dashboard.metrics.monthly_collection > 0
     ? Math.min(100, Math.round((dashboard.metrics.today_collection / dashboard.metrics.monthly_collection) * 100))
     : 0
@@ -4410,6 +4416,18 @@ function DashboardPage({
 
   return (
     <section className="page-stack dashboard-page">
+      <header className="dashboard-heading">
+        <h1>Dashboard</h1>
+        <div className={`dashboard-workspace-status ${apiState}`}>
+          <span className="dashboard-live-label"><i aria-hidden="true" />{apiState === 'live' ? 'Live Workspace' : apiState === 'loading' ? 'Refreshing' : 'Workspace unavailable'}</span>
+          <span aria-hidden="true">·</span>
+          <span>Updated {updatedAt}</span>
+          <button type="button" aria-label="Refresh dashboard" disabled={apiState === 'loading'} onClick={onRefresh}>
+            <RefreshCw size={18} aria-hidden="true" />
+          </button>
+        </div>
+      </header>
+
       {apiState === 'demo' && (
         <Message tone="error">Dashboard data could not be loaded. Please reload the page to try again.</Message>
       )}
@@ -4866,7 +4884,7 @@ function App() {
         {user.school_id === null && (
           <Message tone="info">A school must be selected before school-scoped dashboard data can be loaded.</Message>
         )}
-        <DashboardPage dashboard={dashboard} apiState={apiState} user={user} setActivePage={setActivePage} />
+        <DashboardPage dashboard={dashboard} apiState={apiState} user={user} setActivePage={setActivePage} onRefresh={() => void loadDashboard(user)} />
       </>
     )
   }

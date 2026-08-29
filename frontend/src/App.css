@@ -172,6 +172,87 @@ h2 {
   gap: 16px;
 }
 
+.dashboard-heading {
+  min-width: 0;
+  display: grid;
+  gap: 10px;
+  padding: 4px 2px 2px;
+}
+
+.dashboard-heading h1 {
+  color: #111827;
+  font-size: clamp(30px, 3vw, 38px);
+  letter-spacing: -0.035em;
+}
+
+.dashboard-workspace-status,
+.dashboard-live-label {
+  display: flex;
+  align-items: center;
+}
+
+.dashboard-workspace-status {
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 10px;
+  color: #74809a;
+  font-size: 14px;
+}
+
+.dashboard-live-label {
+  gap: 8px;
+  color: #28784c;
+  font-weight: 700;
+}
+
+.dashboard-live-label i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #a7dfbd;
+}
+
+.dashboard-workspace-status.loading .dashboard-live-label,
+.dashboard-workspace-status.demo .dashboard-live-label {
+  color: #9b6500;
+}
+
+.dashboard-workspace-status.loading .dashboard-live-label i,
+.dashboard-workspace-status.demo .dashboard-live-label i {
+  background: #f2cd79;
+}
+
+.dashboard-workspace-status button {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #8793aa;
+  cursor: pointer;
+}
+
+.dashboard-workspace-status button:hover:not(:disabled) {
+  background: #fff;
+  color: var(--brand-primary);
+}
+
+.dashboard-workspace-status button:disabled {
+  cursor: wait;
+  opacity: .65;
+}
+
+.dashboard-workspace-status.loading button svg {
+  animation: dashboard-refresh-spin .8s linear infinite;
+}
+
+@keyframes dashboard-refresh-spin {
+  to { transform: rotate(360deg); }
+}
+
 .dashboard-section-heading .eyebrow {
   color: var(--brand-primary);
 }
@@ -4097,6 +4178,10 @@ th {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .dashboard-workspace-status.loading button svg {
+    animation: none;
+  }
+
   .stat-card.interactive,
   .class-card,
   .schedule-entry-card,

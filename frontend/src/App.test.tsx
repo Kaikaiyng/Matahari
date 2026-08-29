@@ -407,7 +407,7 @@ async function renderAuthenticatedApp() {
       <App />
     </StrictMode>,
   )
-  await screen.findByRole('heading', { name: 'Dashboard' })
+  await screen.findByRole('region', { name: 'Dashboard metrics' })
 }
 
 async function openSelectedStudentPayments(
@@ -563,6 +563,11 @@ describe('demo shell', () => {
     if (!utilityHeader) throw new Error('Utility header was not rendered')
     expect(within(utilityHeader).getByText('Matahari International School')).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'School overview' })).not.toBeInTheDocument()
+    const dashboardHeading = document.querySelector<HTMLElement>('.dashboard-heading')
+    if (!dashboardHeading) throw new Error('Dashboard heading was not rendered')
+    expect(within(dashboardHeading).getByRole('heading', { name: 'Dashboard', level: 1 })).toBeInTheDocument()
+    expect(screen.getByText('Live Workspace')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Refresh dashboard' })).toBeInTheDocument()
     expect(screen.getByRole('region', { name: 'Dashboard metrics' })).toBeInTheDocument()
     expect(screen.getByRole('region', { name: 'Financial snapshot' })).toBeInTheDocument()
 
