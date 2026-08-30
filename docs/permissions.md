@@ -49,7 +49,7 @@ School Admin and Finance may edit another same-school School Admin, Finance, or 
 | Students | `students.view` | `students.create`, `students.update`, `students.update_status` |
 | Classes | `class_enrolments.view`, `teaching_assignments.view` | matching `.manage` permissions |
 | Calendar | `calendar.view` | `calendar.create`, `calendar.update`, `calendar.delete` |
-| Finance | fee/payment/receipt `.view` permissions | record, verify, void, print, reminder, and agreement mutations |
+| Finance | `fee_items.view` plus fee/payment/receipt `.view` permissions | `fee_items.manage`, record, verify, void, print, reminder, and agreement mutations |
 | Academics | year/subject/schedule views | their manage permissions plus school-wide assessment/quiz permissions |
 | School Updates | `community.view` (read authorized Updates) | `community.publish` (official publish/edit/withdraw own while effective), `community.moderate` (manage same-school Updates and Post Reports) |
 | App | relationship self-service permissions | `app.teacher_access` |
@@ -64,5 +64,5 @@ School Admin and Finance may edit another same-school School Admin, Finance, or 
 - Resolve an active verified hostname before membership, permission, school, and resource checks.
 - Never accept a client-submitted tenant ID as authority.
 - Same-school permission does not authorize another school or tenant.
-- Material student, finance, employee-position, User Ability, and School Settings mutations audit inside the same transaction.
+- Material student, Fee Catalogue, finance, employee-position, User Ability, and School Settings mutations audit inside the same transaction.
 - Audit routes are read-only and require `audit.view`.

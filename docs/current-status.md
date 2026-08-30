@@ -12,6 +12,12 @@
 
 The root `DESIGN.md` is now the shared UI checkpoint for both product surfaces: the MAW-derived Admin Panel pattern and the Warm School Editorial App pattern remain intentionally distinct while documenting their reusable components, source files, spacing, typography, motion tokens, gesture thresholds, state ownership and hierarchy in one canonical implementation reference.
 
+## 2026-08-30 Fee Catalogue Management
+
+- `Finance → Fees` now loads the real school-scoped Fee Catalogue instead of static demo rows. Finance and Super Admin can add and edit standard items, set mandatory/optional and recurring/one-time behavior, maintain a default amount, and activate or deactivate an item; School Admin retains read-only catalogue access by default.
+- Fee Item codes are normalized on creation and remain immutable in the editor. Deactivation preserves historical records and removes the item only from future Fee Agreement selection; required `TUITION` and `MISC` foundation items remain active/mandatory/recurring. Catalogue defaults never rewrite versioned agreements or financial snapshots, and no delete route was added.
+- Backend mutations enforce `fee_items.manage`, resolved school scope, uniqueness/money validation, row locking for updates, and same-transaction Audit Trail persistence. Focused backend tests passed 5/5 with 23 assertions; focused Admin catalogue/App tests passed 58/58 and the Admin production build passed. MariaDB remains **Not verified** for this delivery.
+
 ## 2026-08-30 Class Schedule Card Spacing
 
 - The Schedule draft builder and timetable body now preserve Admin panel inset spacing instead of placing form controls and the filter toolbar directly against the DataPanel border. The nested filter surface uses the shared inset colour without a duplicate shadow; compact layouts retain 16px padding. The builder explicitly allows CustomSelect menus to escape the card boundary and stacks above the timetable panel so long option lists are not clipped.
@@ -296,7 +302,7 @@ The confirmed earlier technology direction named Laravel 10, but this repository
 
 - The seeded Super Admin currently defaults to the single seeded school. Multi-school selection remains planned and is not exposed in the frontend yet.
 - Student profile update exists only on the backend; parent records are read-only in the real Student Detail flow.
-- Fee item catalogue has a read API; the top-level page is static and management is absent.
+- Fee item catalogue has live school-scoped read/create/update/deactivate APIs and an Admin management page; physical deletion is intentionally absent.
 - Discount definitions are stored as snapshots, but approved formulas and eligibility rules do not exist. Charge preview/activation is blocked for non-zero discounts.
 - Payments and receipts work inside Student Detail; there are no independent top-level modules.
 - Legacy invoices remain separate from the implemented Fee Record ledger and have no frontend workflow.
@@ -307,7 +313,7 @@ The confirmed earlier technology direction named Laravel 10, but this repository
 - Existing guardian links remain `unreviewed` with nullable access flags, and no live parent/student user association or enrolment history is inferred. Portal activation and production backfill require a separately approved workflow.
 - The independent `app/` School App provides user-scoped notifications, Parent/Student self-service, Teacher class/campus Attendance, Parent linked-child Attendance, explicit Student Attendance exclusion, read-only guardian finance with linked-child switching and receipt viewing/browser PDF saving, School Updates, published Assessment results, recurring Schedule, and formal Quiz delivery/scoring. Admin remains in `frontend/`; both clients share the backend/database but have independent builds and intended domains. Manual in-app payment reminders are implemented; automatic/external reminders, online parent payment, Practice/AI Quiz, Firebase, Capacitor, native authentication, and native packaging remain unimplemented.
 
-- Parent CRUD, fee catalogue management, full user lifecycle/password reset, and a global school selector. Employee Position/User Ability editing is implemented but is not complete account administration.
+- Parent CRUD, full user lifecycle/password reset, and a global school selector. Employee Position/User Ability editing is implemented but is not complete account administration.
 - Reports beyond Fee Record views, exports, statements, automatic/external reminders, full parent portal operations, and server-side PDF.
 - Refund, credit, overpayment, write-off, and approved correction/recovery workflows.
 - Full academic ERP modules.
@@ -358,7 +364,7 @@ Remaining limitations:
 
 - `frontend/src/App.tsx` owns most state, API orchestration, and pages.
 - No URL routing/deep links or shared server-state layer.
-- Parent and fee catalogue top-level pages use static demo content.
+- The Parent top-level page still uses static demo content.
 - No pagination for major student and Fee Record summary queries; no formal scale tests or volume factories.
 - Most status values are unconstrained strings.
 - No project-level PHP static analysis, browser E2E suite, or performance suite. CI source now exists; current GitHub execution evidence must be checked separately.

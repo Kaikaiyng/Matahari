@@ -67,6 +67,7 @@ import { ApplicationLogsPage } from './features/logs/ApplicationLogsPage'
 import { AttendanceHubPage } from './features/attendance/AttendanceHubPage'
 import { UgcModerationPage } from './features/moderation/UgcModerationPage'
 import { PaymentAllocationEditor } from './features/payments/PaymentAllocationEditor'
+import { FeeCataloguePage } from './features/fees/FeeCataloguePage'
 import type {
   FeeAgreement,
   FeeAgreementForm,
@@ -437,12 +438,6 @@ const navGroups: NavigationGroup<PageKey>[] = [
 ]
 
 const navItems = navGroups.flatMap((group) => group.items)
-
-const feeStructures = [
-  { item: 'Tuition Fee', type: 'Mandatory Fee Item', amount: 'Configured per agreement', status: 'Configured in Fee Agreement' },
-  { item: 'Misc Fee', type: 'Mandatory Fee Item', amount: 'Configured per agreement', status: 'Configured in Fee Agreement' },
-  { item: 'Transport', type: 'Optional Fee Item', amount: 'Configured per agreement', status: 'Optional' },
-]
 
 const emptyStudentForm: StudentForm = {
   student_no: '',
@@ -3972,44 +3967,6 @@ function StudentsPage({
 }
 
 
-function FeesPage() {
-  return (
-    <section className="page-stack">
-      <PageHeader
-        eyebrow="Finance"
-        title="Fee Agreement Foundation"
-        description="Review the standard fee items used to build student agreements."
-      />
-      <DataPanel eyebrow="Fee structure" title="Fee Catalogue">
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Item</th>
-                <th>Type</th>
-                <th>Amount</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {feeStructures.map((fee) => (
-                <tr key={fee.item}>
-                  <td>{fee.item}</td>
-                  <td>{fee.type}</td>
-                  <td>{fee.amount}</td>
-                  <td>
-                    <StatusBadge tone={statusTone(fee.status)}>{fee.status}</StatusBadge>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </DataPanel>
-    </section>
-  )
-}
-
 function FeeRecordSummaryPage({
   user,
   onUnauthorized,
@@ -4848,7 +4805,7 @@ function App() {
     }
 
     if (activePage === 'fees') {
-      return <FeesPage />
+      return <FeeCataloguePage canManage={hasPermission(user, 'fee_items.manage')} schoolId={dashboard?.school.id ?? user.school_id} onUnauthorized={handleUnauthorized} />
     }
 
     if (activePage === 'fee-record') {

@@ -76,6 +76,7 @@ No external adapter is registered, so unsupported channels are reported as skipp
 - `app/Services/Foundation/`: academic foundation, teacher scope, portal-link, and minimum foundation-account transactions.
 - `app/Services/Attendance/`: teaching-assignment-scoped class Attendance, append-only campus movements, guardian notifications, time-bound abilities, and transactional audit.
 - `app/Services/FeeAgreements/`: agreement creation and superseding transactions.
+- `app/Services/FeeItems/`: school-scoped Fee Catalogue creation/update/deactivation with transactional audit.
 - `app/Services/Billing/`: Fee Record generation/summary, payment, receipt, numbering, manual in-app payment reminders, and legacy invoice services.
 - `app/Services/Audit/` and `app/Audit/`: audit events, trusted context, sanitization, and persistence.
 - `app/Services/Operations/ApplicationLogReader.php`: bounded read-only parsing, filtering, normalization, pagination, and sanitization for Laravel application logs.
@@ -166,6 +167,7 @@ Form Request `authorize()` commonly returns `true`; the route permission and lat
 ## Domain Logic Placement
 
 - Fee Agreement versioning belongs in `FeeAgreementVersioningService`.
+- Fee Catalogue mutation and audit belongs in `FeeItemService`; inactive catalogue rows are preserved and omitted only from the active Agreement picker endpoint.
 - Fee Record generation/manual charge/summary/category logic belongs under `Services/Billing`.
 - Payment allocation, verification, and void reversal belong in `PaymentRecordingService`.
 - Receipt eligibility, snapshots, voiding, and number sequencing belong in `ReceiptGenerationService` and `ReceiptNumberService`.
