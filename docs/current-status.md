@@ -14,6 +14,7 @@
 
 - The App Safety Centre now uses the established Warm School Editorial language: a private safety introduction, compact report status/empty state, grouped safety and account policies, and a featured school-support card replace the former plain mixed link list.
 - Safety Centre is the second-level App surface. Its safety, policy, account-deletion and support entries now open matching third-level surfaces; a rightward swipe moves only the third-level page and reveals the fixed Safety Centre beneath it. Direct public `/legal/*` routes remain available for external/store links.
+- The layered subpage behavior, surface anatomy, touch isolation and state-preservation rules are recorded in `DESIGN.md` as an approved reusable checkpoint, explicitly not a frozen final specification.
 - The scoped Post Report API and Admin-configured school call/WhatsApp/email/support-hours data flow are unchanged. Focused Community Safety and public-policy tests passed 10/10, App lint passed, and the App TypeScript/Vite production build passed. Broader suites and device QA were not run for this presentation/navigation change.
 
 ## 2026-08-30 MAW-style Audit and Application Logs

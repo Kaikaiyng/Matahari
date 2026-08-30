@@ -57,6 +57,40 @@
 - Multi-role users may switch roles, but each role receives its own navigation and scoped content.
 - Sign out belongs in each role's More/Profile page rather than the persistent header.
 
+## Layered Subpages — Reusable Checkpoint
+
+**Checkpoint status:** Approved for reuse as of 2026-08-30, but not the final App design specification. Refine this pattern through later real-device and user testing rather than treating current dimensions as permanently frozen.
+
+### Information hierarchy
+
+- The role destination or profile surface is level one.
+- A feature hub such as Safety Centre opens as a full-height level-two surface above level one.
+- Details selected from that hub open as level-three surfaces above level two. Policy, support and record-detail pages should not replace the level-two hub when users are expected to return to it.
+- Direct public routes may still render standalone pages for store review, external links and unauthenticated access; authenticated in-App navigation should use the layered surface.
+
+### Surface composition
+
+- Every layered page reuses the centred title bar, 38px rounded back control, matching spacer, Warm Canvas background and safe bottom clearance.
+- Use one clear introductory or identity card when context is useful, followed by section headings and grouped Paper surfaces.
+- Major surfaces use 20–24px radius, restrained borders and soft shadows. Related rows share one outer card instead of becoming separate floating cards.
+- Icons use a light MIS Crimson tint surface. Titles remain Deep Ink, descriptions remain Muted Ink, and blue browser-link styling must not appear inside App navigation cards.
+- Empty states remain compact and informative: icon, direct status title and one short explanation. Do not allocate a large blank panel for zero records.
+
+### Motion and back behavior
+
+- Opening a deeper level slides only the new surface in from the right.
+- During a rightward swipe-back, the active surface follows the finger while its immediate previous level remains mounted, fixed and visible underneath.
+- Completing or cancelling a gesture must affect only the topmost surface. Nested surfaces stop touch propagation so one gesture never closes two levels.
+- Back buttons use the same exit animation and callback as swipe-back. The removed surface is unmounted only after the exit transition completes.
+- Horizontal scrollers, form controls and marked interactive regions keep the shared swipe exclusions, and reduced-motion preferences remain respected.
+
+### State and implementation contract
+
+- The parent surface owns the active child identifier and remains mounted while the child is open, preserving its fetched data, scroll position and UI state.
+- Reuse the shared `useSwipeBack` behavior and `subpage-slide-overlay` shell. A tertiary surface receives an explicit `onBack` callback and renders at the next overlay layer.
+- Keep API authorization and tenant/school scoping unchanged. Layering is a navigation and presentation pattern, not a new data-access path.
+- Safety Centre and its policy/support details are the current reference implementation. Apply the pattern to other suitable record-detail flows only when their navigation hierarchy matches this model.
+
 ## Motion
 
 - **Approach:** Minimal and functional.
