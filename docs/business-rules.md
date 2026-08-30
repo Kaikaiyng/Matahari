@@ -128,6 +128,15 @@ Current safeguards and limitations:
 
 **Needs confirmation:** The approved policy for future charges when an agreement is replaced mid-year: cancel, credit, recalculate, or preserve them through a separate correction process.
 
+## Fee Catalogue
+
+- Fee items belong to one school and use school-unique names and codes. Codes are normalized to uppercase when created and remain immutable through the management workflow.
+- Authorized Finance/Super Admin users may create items and update their name, mandatory/optional category, recurring/one-time billing type, default amount, and active/inactive status. School Admin has catalogue view access by default but not `fee_items.manage`.
+- The default amount is a starting value for future Fee Agreement drafts. Existing versioned agreements, charges, allocations, and receipt snapshots are not recalculated when the catalogue changes.
+- Inactive items remain visible in the management catalogue and historical references, but are excluded from the active Fee Agreement item endpoint. There is no Fee Item delete API.
+- `TUITION` and `MISC` are required by every current Fee Agreement and therefore cannot be deactivated or changed away from mandatory recurring items; their name and default amount remain editable.
+- Create and update/deactivate mutations write the Audit Trail inside the same database transaction; audit failure rolls back the catalogue change.
+
 ## Discounts
 
 Verified data concepts:

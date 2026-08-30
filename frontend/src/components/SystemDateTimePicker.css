@@ -152,35 +152,133 @@
   opacity: 0.35;
 }
 .system-time-popover {
-  max-height: 300px;
-  overflow: auto;
-  padding: 7px;
+  padding: 15px;
 }
-.system-time-popover button {
-  width: 100%;
-  min-height: 40px;
-  padding: 8px 11px;
+.system-time-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border: 0;
-  border-radius: 10px;
-  background: transparent;
-  color: #344158;
-  font: inherit;
-  font-size: 0.86rem;
-  font-weight: 650;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #eee8ea;
 }
-.system-time-popover button:hover {
+.system-time-heading > div {
+  display: grid;
+  gap: 2px;
+}
+.system-time-heading span,
+.system-time-label {
+  color: #8a94a6;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.system-time-heading strong {
+  color: #172033;
+  font-size: 0.94rem;
+}
+.system-time-heading output {
+  padding: 7px 10px;
+  border-radius: 10px;
   background: #f8edf0;
   color: var(--brand-primary-dark);
+  font-size: 0.86rem;
+  font-weight: 800;
+  white-space: nowrap;
 }
-.system-time-popover button.selected {
+.system-time-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(74px, 0.8fr) 58px;
+  gap: 11px;
+  padding: 13px 0;
+}
+.system-time-group {
+  min-width: 0;
+}
+.system-time-label {
+  display: block;
+  margin-bottom: 7px;
+}
+.system-time-hour-grid,
+.system-time-minute-grid,
+.system-time-period-grid {
+  display: grid;
+  gap: 5px;
+}
+.system-time-hour-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.system-time-minute-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.system-time-period-grid {
+  grid-template-columns: 1fr;
+}
+.system-time-hour-grid button,
+.system-time-minute-grid button,
+.system-time-period-grid button {
+  width: 100%;
+  min-height: 34px;
+  padding: 6px 5px;
+  border: 1px solid #e4e7ed;
+  border-radius: 9px;
+  background: #fafbfc;
+  color: #344158;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 750;
+  transition: border-color 0.16s ease, background 0.16s ease, color 0.16s ease, transform 0.16s ease;
+}
+.system-time-hour-grid button:hover,
+.system-time-minute-grid button:hover,
+.system-time-period-grid button:hover {
+  border-color: #e4bfc8;
+  background: #f8edf0;
+  color: var(--brand-primary-dark);
+  transform: translateY(-1px);
+}
+.system-time-hour-grid button.selected,
+.system-time-minute-grid button.selected,
+.system-time-period-grid button.selected {
+  border-color: var(--brand-primary);
   background: var(--brand-primary);
   color: #fff;
+  box-shadow: 0 5px 12px color-mix(in srgb, var(--brand-primary) 20%, transparent);
 }
-.system-time-popover button svg {
-  flex: 0 0 auto;
+.system-time-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 11px;
+  border-top: 1px solid #eee8ea;
+}
+.system-time-actions button {
+  min-height: 36px;
+  padding: 7px 14px;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+.system-time-cancel {
+  border: 0;
+  background: transparent;
+  color: #748096;
+}
+.system-time-cancel:hover {
+  background: #f4f5f7;
+  color: #344158;
+}
+.system-time-confirm {
+  border: 1px solid var(--brand-primary);
+  background: var(--brand-primary);
+  color: #fff;
+  box-shadow: 0 6px 14px color-mix(in srgb, var(--brand-primary) 22%, transparent);
+}
+.system-time-confirm:hover {
+  background: var(--brand-primary-dark);
 }
 @keyframes system-picker-in {
   from {

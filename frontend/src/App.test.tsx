@@ -360,6 +360,7 @@ function installApiMock() {
     if (url.pathname.endsWith('/students/1/receipts')) return json({ data: [issuedReceipt] })
     if (url.pathname.endsWith('/receipts/21')) return json({ receipt: issuedReceipt })
     if (url.pathname.endsWith('/students/1/fee-record/outstanding')) return json({ data: [] })
+    if (url.pathname.endsWith('/fee-items/catalogue')) return json({ data: feeItems.map((item) => ({ ...item, status: 'active' })) })
     if (url.pathname.endsWith('/fee-items')) return json({ data: feeItems })
     if (url.pathname.endsWith('/classes')) return json({ data: schoolClasses })
     if (url.pathname.endsWith('/students/1')) return json({ student })
@@ -823,7 +824,8 @@ describe('demo shell', () => {
 
     await user.click(screen.getByRole('button', { name: 'Fees' }))
 
-    expect(await screen.findByRole('region', { name: 'Fee Catalogue' })).toBeInTheDocument()
+    expect(await screen.findByRole('region', { name: 'Standard Fee Items' })).toBeInTheDocument()
+    expect(screen.getByText('RM 800.00')).toBeInTheDocument()
   })
 
   it('shows the MIS demo parent directory grouped by class', async () => {

@@ -1,0 +1,37 @@
+.fee-catalogue-page .page-header-action .primary-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.fee-item-code {
+  display: block;
+  margin-top: 3px;
+  color: #8a94a6;
+  font-size: 0.7rem;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+}
+.fee-catalogue-action-heading,
+.fee-catalogue-action-cell {
+  text-align: right;
+}
+.fee-catalogue-action-cell .table-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.fee-item-form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.fee-item-form-grid .field-help {
+  display: block;
+  margin-top: 6px;
+  color: #748096;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+@media (max-width: 700px) {
+  .fee-item-form-grid {
+    grid-template-columns: 1fr;
+  }
+}

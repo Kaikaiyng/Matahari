@@ -142,7 +142,13 @@ Route::middleware([...$sessionMiddleware, 'auth', 'active', 'tenant.member', 'te
         ->middleware('permission:fee_agreements.update');
 
     Route::get('/fee-items', [FeeItemController::class, 'index'])
-        ->middleware('permission:fee_items.view');
+        ->middleware(['school.context', 'permission:fee_items.view']);
+    Route::get('/fee-items/catalogue', [FeeItemController::class, 'catalogue'])
+        ->middleware(['school.context', 'permission:fee_items.view']);
+    Route::post('/fee-items', [FeeItemController::class, 'store'])
+        ->middleware(['school.context', 'permission:fee_items.manage']);
+    Route::patch('/fee-items/{feeItem}', [FeeItemController::class, 'update'])
+        ->middleware(['school.context', 'permission:fee_items.manage']);
 
     Route::get('/fee-record/summary', [FeeRecordController::class, 'summary'])
         ->middleware('permission:fee_record.view');

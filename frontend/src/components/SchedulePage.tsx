@@ -165,7 +165,7 @@ export function SchedulePage() {
       </div>
 
       {/* Draft Builder Panel */}
-      <DataPanel eyebrow="New Entry" title="Create Schedule Draft">
+      <DataPanel eyebrow="New Entry" title="Create Schedule Draft" className="schedule-builder-panel">
         <form className="schedule-form-container" onSubmit={create}>
           {/* Row 1: Academic & Class Context */}
           <div className="schedule-form-grid three-columns">
@@ -287,6 +287,7 @@ export function SchedulePage() {
       <DataPanel
         eyebrow="Published Timetable"
         title="Weekly Schedule Entries"
+        className="schedule-list-panel"
       >
         <FilterToolbar ariaLabel="Schedule Class Filter">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', justifyContent: 'space-between', flexWrap: 'wrap' }}>

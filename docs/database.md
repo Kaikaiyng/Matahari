@@ -107,6 +107,8 @@ The diagram omits secondary actor, fee-item, legacy invoice, permission, and aud
 - Receipt items cascade with a receipt. There is no application receipt-delete route.
 - `audit_logs.entity_type/entity_id` and `related_audit_id` are logical references, not foreign keys.
 
+Fee Catalogue management preserves `fee_items` rows through the existing `status` field (`active`/`inactive`). The application exposes no Fee Item delete route; changes to catalogue defaults do not rewrite Fee Agreement item, charge, allocation, or receipt snapshots.
+
 No model uses soft deletes. Historical preservation is implemented through status, version, supersede, and void workflows, not `deleted_at`.
 
 ## Important Unique Constraints and Indexes
