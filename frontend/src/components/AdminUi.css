@@ -946,6 +946,65 @@ button.stat-card {
   flex-shrink: 0;
 }
 
+.custom-select-search {
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 1px 1px 5px;
+  padding: 0 9px;
+  border: 1px solid var(--admin-border, #dfe5ee);
+  border-radius: 9px;
+  background: var(--admin-inset, #f7f9fc);
+  color: var(--muted, #737782);
+}
+
+.custom-select-search:focus-within {
+  border-color: var(--admin-primary, var(--brand-primary));
+  box-shadow: 0 0 0 3px var(--admin-focus-ring);
+  background: #ffffff;
+}
+
+.custom-select-search input {
+  width: 100%;
+  min-width: 0;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text, #25272d);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.custom-select-search button {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted, #737782);
+}
+
+.custom-select-search button:hover {
+  background: #eef1f6;
+  color: var(--text, #25272d);
+}
+
+.custom-select-empty {
+  margin: 0;
+  padding: 14px 10px;
+  color: var(--muted, #737782);
+  font-size: 12px;
+  text-align: center;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .modal-frame,
   .custom-select-dropdown,

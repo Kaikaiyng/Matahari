@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import {
   DataPanel,
+  CustomSelect,
   FieldError,
   FilterToolbar,
   ModalFrame,
@@ -44,6 +45,35 @@ function DialogHarness({
 }
 
 describe('AdminUi', () => {
+  it('uses the MAW searchable menu treatment for longer select lists', async () => {
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    render(
+      <CustomSelect
+        ariaLabel="Event type"
+        value="school-event"
+        onChange={onChange}
+        options={[
+          { value: 'appointment', label: 'Appointment' },
+          { value: 'training', label: 'Training' },
+          { value: 'meeting', label: 'Meeting' },
+          { value: 'school-event', label: 'School event' },
+          { value: 'holiday', label: 'Holiday' },
+          { value: 'other', label: 'Other' },
+        ]}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'School event' }))
+    await user.type(screen.getByRole('searchbox', { name: 'Search Event type' }), 'train')
+
+    const menu = screen.getByRole('listbox')
+    expect(within(menu).getByRole('option', { name: 'Training' })).toBeInTheDocument()
+    expect(within(menu).queryByRole('option', { name: 'Meeting' })).not.toBeInTheDocument()
+    await user.click(within(menu).getByRole('option', { name: 'Training' }))
+    expect(onChange).toHaveBeenCalledWith('training')
+  })
+
   it('exposes an interactive metric as an accessible button', async () => {
     const user = userEvent.setup()
     const onClick = vi.fn()
