@@ -99,4 +99,26 @@ describe('Community safety', () => {
     expect(await screen.findByText('No reports submitted')).toBeInTheDocument()
     expect(screen.getByText('Reports you send will appear here with their latest status.')).toBeInTheDocument()
   })
+
+  it('opens legal content as a tertiary swipe-back page above Safety Centre', async () => {
+    vi.spyOn(portalApi, 'getCommunityReports').mockResolvedValue({ data: [] })
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({ data: {
+      slug: 'community-standards',
+      title: 'Community Standards',
+      version: '2026-08-16',
+      effective_at: '2026-08-21T00:00:00Z',
+      sections: [{ heading: 'Prohibited content', body: 'Keep school updates safe.' }],
+      developer_name: 'RYLAY',
+      organization_name: 'Matahari International School',
+      store_safety_disclosure: 'Child exploitation is prohibited.',
+      support: { email: 'support@rylay.my', child_safety_email: null, school: null },
+    } }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
+
+    render(<CommunitySafetyCentre />)
+    fireEvent.click(await screen.findByRole('link', { name: 'Community Standards' }))
+
+    expect(await screen.findByRole('region', { name: 'Community Standards Subpage' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Community Safety Centre Subpage' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Prohibited content' })).toBeInTheDocument()
+  })
 })
