@@ -156,6 +156,7 @@
 }
 
 .settings-field input,
+.settings-field textarea,
 .settings-colour-input,
 .settings-field .system-picker-trigger {
   width: 100%;
@@ -175,7 +176,14 @@
   padding: 0 14px;
 }
 
+.settings-field textarea {
+  min-height: 92px;
+  padding: 12px 14px;
+  resize: vertical;
+}
+
 .settings-field input:focus,
+.settings-field textarea:focus,
 .settings-colour-input:focus-within,
 .settings-field .system-picker-trigger:focus-visible {
   border-color: var(--brand-primary);
@@ -184,11 +192,58 @@
 }
 
 .settings-field input:disabled,
+.settings-field textarea:disabled,
 .settings-field .system-picker-trigger:disabled {
   color: #657086;
   background: #f3f5f7;
   cursor: not-allowed;
 }
+
+.settings-support-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, .8fr);
+  align-items: start;
+  gap: 16px;
+}
+
+.settings-support-preview {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid var(--admin-card-border, #dfe5ee);
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+.settings-support-preview > small {
+  color: #7b869a;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+.settings-support-preview header,
+.settings-support-preview > div {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #e2e7ee;
+  border-radius: 12px;
+  background: #fff;
+  color: var(--brand-primary);
+}
+
+.settings-support-preview header { border: 0; background: transparent; padding-inline: 4px; }
+.settings-support-preview strong,
+.settings-support-preview span,
+.settings-support-preview small { display: block; min-width: 0; }
+.settings-support-preview strong { color: #20283a; font-size: 13px; }
+.settings-support-preview p,
+.settings-support-preview div small { margin: 2px 0 0; color: #758096; font-size: 11px; overflow-wrap: anywhere; }
+.settings-support-preview footer { padding: 4px 2px 0; color: #657086; font-size: 11px; line-height: 1.45; }
 
 .settings-span-2 {
   grid-column: 1 / -1;
@@ -400,6 +455,7 @@
   }
   .settings-rail-item:hover { transform: none; }
   .settings-content { min-height: 500px; padding: 22px; }
+  .settings-support-layout { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 620px) {

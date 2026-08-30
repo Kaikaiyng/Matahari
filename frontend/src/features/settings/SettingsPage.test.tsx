@@ -43,7 +43,24 @@ const admin = {
   username: 'admin',
   school_id: 1,
   roles: ['school-admin'],
-  permissions: ['tenant.settings.manage', 'attendance.devices.manage', 'foundation_accounts.manage'],
+  permissions: ['tenant.settings.manage', 'school.settings.manage', 'attendance.devices.manage', 'foundation_accounts.manage'],
+}
+
+const schoolInformation = {
+  name: 'Matahari International School',
+  registration_number: 'MIS-2026-01',
+  group_member_line: 'A member of Matahari Education Group',
+  address: 'Johor Bahru, Johor',
+  phone: '+60 7-123 4567',
+  email: 'office@matahari.test',
+  operating_hours: 'Monday - Friday, 8:00 AM - 5:00 PM',
+}
+
+const appSupport = {
+  call_phone: '+60 12-345 6789',
+  whatsapp_phone: '+60 12-345 6789',
+  support_email: 'support@matahari.test',
+  operating_hours: 'Monday - Friday, 8:00 AM - 5:00 PM',
 }
 
 const attendance = {
@@ -56,6 +73,13 @@ const attendance = {
 describe('SettingsPage', () => {
   beforeEach(() => {
     mockedApiRequest.mockReset()
+    mockedApiRequest.mockImplementation(async (path, options) => {
+      if (path === '/v1/admin/settings/school-information') return { data: options?.method === 'PUT' ? schoolInformation : schoolInformation } as never
+      if (path === '/v1/admin/settings/app-support') return { data: appSupport } as never
+      if (path === '/v1/admin/attendance/settings') return { data: attendance } as never
+      if (path === '/v1/tenant/branding') return { data: tenant.branding } as never
+      throw new Error(`Unexpected API request: ${path}`)
+    })
     mockedTenant.mockReturnValue(tenant)
     updateBranding.mockReset()
     navigate.mockReset()
@@ -66,7 +90,7 @@ describe('SettingsPage', () => {
     render(<SettingsPage user={admin} dashboard={dashboard} onNavigate={navigate} />)
 
     expect(screen.getByRole('heading', { name: 'System Settings' })).toBeInTheDocument()
-    expect(screen.getByText('Matahari International School')).toBeInTheDocument()
+    expect(await screen.findByDisplayValue('Matahari International School')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /Users & Access/i }))
     await user.click(screen.getByRole('button', { name: 'Manage Employees' }))
@@ -75,7 +99,11 @@ describe('SettingsPage', () => {
 
   it('saves branding and refreshes tenant consumers immediately', async () => {
     const user = userEvent.setup()
-    mockedApiRequest.mockResolvedValueOnce({ data: { ...tenant.branding, organization_name: 'MIS Academy' } })
+    mockedApiRequest.mockImplementation(async (path) => {
+      if (path === '/v1/admin/settings/school-information') return { data: schoolInformation } as never
+      if (path === '/v1/tenant/branding') return { data: { ...tenant.branding, organization_name: 'MIS Academy' } } as never
+      throw new Error(`Unexpected API request: ${path}`)
+    })
     render(<SettingsPage user={admin} dashboard={dashboard} onNavigate={navigate} />)
 
     await user.click(screen.getByRole('button', { name: /Branding/i }))
@@ -90,9 +118,6 @@ describe('SettingsPage', () => {
 
   it('shares one Attendance settings payload between time and notification controls', async () => {
     const user = userEvent.setup()
-    mockedApiRequest
-      .mockResolvedValueOnce({ data: attendance })
-      .mockResolvedValueOnce({ data: { ...attendance, notify_guardians_on_exit: true } })
     render(<SettingsPage user={admin} dashboard={dashboard} onNavigate={navigate} />)
 
     await user.click(screen.getByRole('button', { name: /Notifications/i }))
@@ -106,9 +131,28 @@ describe('SettingsPage', () => {
     }))
   })
 
+  it('saves school information and previews App Support contacts', async () => {
+    const user = userEvent.setup()
+    render(<SettingsPage user={admin} dashboard={dashboard} onNavigate={navigate} />)
+
+    const registration = await screen.findByLabelText('Registration number')
+    await user.clear(registration)
+    await user.type(registration, 'MIS-NEW-01')
+    await user.click(screen.getByRole('button', { name: 'Save School Information' }))
+    await waitFor(() => expect(mockedApiRequest).toHaveBeenCalledWith('/v1/admin/settings/school-information', expect.objectContaining({ method: 'PUT' })))
+
+    await user.click(screen.getByRole('button', { name: /App Support/i }))
+    expect(await screen.findByText('Contact Support')).toBeInTheDocument()
+    expect(screen.getByText('+60 12-345 6789')).toBeInTheDocument()
+    expect(screen.getByText('support@matahari.test')).toBeInTheDocument()
+  })
+
   it('does not expose save actions without their backend abilities', async () => {
     const user = userEvent.setup()
     render(<SettingsPage user={{ ...admin, permissions: [] }} dashboard={dashboard} onNavigate={navigate} />)
+
+    expect(await screen.findByLabelText('School name')).toBeDisabled()
+    expect(screen.queryByRole('button', { name: 'Save School Information' })).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /Branding/i }))
     expect(screen.queryByRole('button', { name: 'Save Branding' })).not.toBeInTheDocument()
@@ -116,6 +160,6 @@ describe('SettingsPage', () => {
 
     await user.click(screen.getByRole('button', { name: /Notifications/i }))
     expect(screen.queryByRole('button', { name: 'Save Notifications' })).not.toBeInTheDocument()
-    expect(mockedApiRequest).not.toHaveBeenCalled()
+    expect(mockedApiRequest).not.toHaveBeenCalledWith('/v1/admin/attendance/settings')
   })
 })

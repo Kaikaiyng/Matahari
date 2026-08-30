@@ -5,7 +5,11 @@ import {
   Check,
   Clock3,
   ExternalLink,
+  Headphones,
+  Mail,
+  MessageCircle,
   Palette,
+  Phone,
   Save,
   ShieldCheck,
   UserRound,
@@ -16,7 +20,7 @@ import { PageHeader, TimePicker } from '../../components/AdminUi'
 import { useTenantConfiguration, type TenantConfiguration } from '../../tenant'
 import './SettingsPage.css'
 
-type SettingsSection = 'school' | 'branding' | 'attendance' | 'notifications' | 'users' | 'account'
+type SettingsSection = 'school' | 'support' | 'branding' | 'attendance' | 'notifications' | 'users' | 'account'
 
 type SettingsUser = {
   id: number
@@ -38,6 +42,23 @@ type AttendanceSettings = {
   notify_guardians_on_exit: boolean
 }
 
+type SchoolInformation = {
+  name: string
+  registration_number: string | null
+  group_member_line: string | null
+  address: string | null
+  phone: string | null
+  email: string | null
+  operating_hours: string | null
+}
+
+type AppSupportSettings = {
+  call_phone: string | null
+  whatsapp_phone: string | null
+  support_email: string | null
+  operating_hours: string | null
+}
+
 type SettingsPageProps = {
   user: SettingsUser
   dashboard: SettingsDashboard | null
@@ -50,7 +71,8 @@ const sections: Array<{
   description: string
   icon: typeof Building2
 }> = [
-  { id: 'school', label: 'School Profile', description: 'Resolved school and tenant context', icon: Building2 },
+  { id: 'school', label: 'School Information', description: 'Official identity and contact details', icon: Building2 },
+  { id: 'support', label: 'App Support', description: 'School App contact and help channels', icon: Headphones },
   { id: 'branding', label: 'Branding', description: 'Names, titles, logo and colours', icon: Palette },
   { id: 'attendance', label: 'Attendance', description: 'Campus time and device defaults', icon: Clock3 },
   { id: 'notifications', label: 'Notifications', description: 'In-app and guardian alerts', icon: Bell },
@@ -71,9 +93,23 @@ function normalizeAttendance(value: AttendanceSettings): AttendanceSettings {
   }
 }
 
+function nullablePayload<T extends Record<string, string | null>>(value: T): T {
+  return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, entry?.trim() || null])) as T
+}
+
 export function SettingsPage({ user, dashboard, onNavigate }: SettingsPageProps) {
   const tenant = useTenantConfiguration()
   const [activeSection, setActiveSection] = useState<SettingsSection>('school')
+  const [schoolInformation, setSchoolInformation] = useState<SchoolInformation | null>(null)
+  const [schoolLoading, setSchoolLoading] = useState(false)
+  const [schoolSaving, setSchoolSaving] = useState(false)
+  const [schoolError, setSchoolError] = useState('')
+  const [schoolSuccess, setSchoolSuccess] = useState('')
+  const [appSupport, setAppSupport] = useState<AppSupportSettings | null>(null)
+  const [supportLoading, setSupportLoading] = useState(false)
+  const [supportSaving, setSupportSaving] = useState(false)
+  const [supportError, setSupportError] = useState('')
+  const [supportSuccess, setSupportSuccess] = useState('')
   const [branding, setBranding] = useState(tenant.branding)
   const [brandingSaving, setBrandingSaving] = useState(false)
   const [brandingError, setBrandingError] = useState('')
@@ -85,10 +121,33 @@ export function SettingsPage({ user, dashboard, onNavigate }: SettingsPageProps)
   const [attendanceSuccess, setAttendanceSuccess] = useState('')
 
   const canManageBranding = user.permissions.includes('tenant.settings.manage')
+  const canManageSchoolSettings = user.permissions.includes('school.settings.manage')
   const canManageAttendance = user.permissions.includes('attendance.devices.manage')
   const canManageEmployees = user.permissions.includes('foundation_accounts.manage')
 
   useEffect(() => setBranding(tenant.branding), [tenant.branding])
+
+  useEffect(() => {
+    if (activeSection !== 'school' || schoolInformation) return
+    let current = true
+    setSchoolLoading(true)
+    apiRequest<{ data: SchoolInformation }>('/v1/admin/settings/school-information')
+      .then(({ data }) => { if (current) setSchoolInformation(data) })
+      .catch((error) => { if (current) setSchoolError(messageFrom(error, 'Unable to load School Information.')) })
+      .finally(() => { if (current) setSchoolLoading(false) })
+    return () => { current = false }
+  }, [activeSection, schoolInformation])
+
+  useEffect(() => {
+    if (activeSection !== 'support' || appSupport) return
+    let current = true
+    setSupportLoading(true)
+    apiRequest<{ data: AppSupportSettings }>('/v1/admin/settings/app-support')
+      .then(({ data }) => { if (current) setAppSupport(data) })
+      .catch((error) => { if (current) setSupportError(messageFrom(error, 'Unable to load App Support settings.')) })
+      .finally(() => { if (current) setSupportLoading(false) })
+    return () => { current = false }
+  }, [activeSection, appSupport])
 
   useEffect(() => {
     if (!canManageAttendance || attendance || !['attendance', 'notifications'].includes(activeSection)) return
@@ -113,6 +172,48 @@ export function SettingsPage({ user, dashboard, onNavigate }: SettingsPageProps)
     setBrandingSuccess('')
     setAttendanceError('')
     setAttendanceSuccess('')
+    setSchoolError('')
+    setSchoolSuccess('')
+    setSupportError('')
+    setSupportSuccess('')
+  }
+
+  const saveSchoolInformation = async () => {
+    if (!schoolInformation) return
+    setSchoolError('')
+    setSchoolSuccess('')
+    if (!schoolInformation.name.trim()) {
+      setSchoolError('School name is required.')
+      return
+    }
+    setSchoolSaving(true)
+    try {
+      const payload = nullablePayload(schoolInformation)
+      const { data } = await apiRequest<{ data: SchoolInformation }>('/v1/admin/settings/school-information', { method: 'PUT', body: payload })
+      setSchoolInformation(data)
+      setSchoolSuccess('School Information saved.')
+    } catch (error) {
+      setSchoolError(messageFrom(error, 'Unable to save School Information.'))
+    } finally {
+      setSchoolSaving(false)
+    }
+  }
+
+  const saveAppSupport = async () => {
+    if (!appSupport) return
+    setSupportError('')
+    setSupportSuccess('')
+    setSupportSaving(true)
+    try {
+      const payload = nullablePayload(appSupport)
+      const { data } = await apiRequest<{ data: AppSupportSettings }>('/v1/admin/settings/app-support', { method: 'PUT', body: payload })
+      setAppSupport(data)
+      setSupportSuccess('App Support settings saved.')
+    } catch (error) {
+      setSupportError(messageFrom(error, 'Unable to save App Support settings.'))
+    } finally {
+      setSupportSaving(false)
+    }
   }
 
   const saveBranding = async () => {
@@ -201,18 +302,11 @@ export function SettingsPage({ user, dashboard, onNavigate }: SettingsPageProps)
 
         <main className="settings-content" aria-label={currentSection.label} key={activeSection}>
           {activeSection === 'school' && (
-            <SettingsSectionHeader title="School Profile" description="The active context is resolved from this Admin domain and your membership." />
+            <SchoolInformationSection value={schoolInformation} schoolCode={dashboard?.school.code ?? 'Not available'} loading={schoolLoading} canManage={canManageSchoolSettings} saving={schoolSaving} error={schoolError} success={schoolSuccess} onChange={setSchoolInformation} onSave={() => void saveSchoolInformation()} />
           )}
-          {activeSection === 'school' && (
-            <div className="settings-detail-grid">
-              <ReadOnlyField label="Current school" value={dashboard?.school.name ?? tenant.branding.organization_name} />
-              <ReadOnlyField label="School code" value={dashboard?.school.code ?? 'Not available'} />
-              <ReadOnlyField label="School ID" value={String(dashboard?.school.id ?? user.school_id ?? 'Not selected')} />
-              <ReadOnlyField label="Tenant" value={`${tenant.name} (${tenant.slug})`} />
-              <ReadOnlyField label="Timezone" value={tenant.timezone} />
-              <ReadOnlyField label="Admin domain surface" value="Admin" />
-              <InfoNote>School identity is read-only here because RYLAY does not currently expose a school-profile update endpoint.</InfoNote>
-            </div>
+
+          {activeSection === 'support' && (
+            <AppSupportSection value={appSupport} loading={supportLoading} canManage={canManageSchoolSettings} saving={supportSaving} error={supportError} success={supportSuccess} onChange={setAppSupport} onSave={() => void saveAppSupport()} />
           )}
 
           {activeSection === 'branding' && (
@@ -290,6 +384,79 @@ function Feedback({ error, success }: { error: string; success: string }) {
   if (error) return <p className="settings-feedback error" role="alert">{error}</p>
   if (success) return <p className="settings-feedback success" role="status"><Check size={17} />{success}</p>
   return null
+}
+
+function SettingsLoading({ label }: { label: string }) {
+  return <div className="settings-panel-placeholder" aria-label={label}><span /><span /><span /></div>
+}
+
+function SchoolInformationSection({ value, schoolCode, loading, canManage, saving, error, success, onChange, onSave }: {
+  value: SchoolInformation | null
+  schoolCode: string
+  loading: boolean
+  canManage: boolean
+  saving: boolean
+  error: string
+  success: string
+  onChange: (value: SchoolInformation) => void
+  onSave: () => void
+}) {
+  const field = (key: keyof SchoolInformation, next: string) => value && onChange({ ...value, [key]: next })
+  return <>
+    <SettingsSectionHeader title="School Information" description="Official identity and contact details for this school." />
+    {loading && <SettingsLoading label="Loading School Information" />}
+    {error && !value && <Feedback error={error} success="" />}
+    {value && <div className="settings-form-grid">
+      <label className="settings-field settings-span-2">School name<input disabled={!canManage || saving} value={value.name} onChange={(event) => field('name', event.target.value)} /></label>
+      <label className="settings-field">Registration number<input disabled={!canManage || saving} value={value.registration_number ?? ''} onChange={(event) => field('registration_number', event.target.value)} /></label>
+      <label className="settings-field">Group / member line<input disabled={!canManage || saving} value={value.group_member_line ?? ''} onChange={(event) => field('group_member_line', event.target.value)} /></label>
+      <label className="settings-field settings-span-2">Address<textarea disabled={!canManage || saving} value={value.address ?? ''} onChange={(event) => field('address', event.target.value)} /></label>
+      <label className="settings-field">Phone<input disabled={!canManage || saving} value={value.phone ?? ''} onChange={(event) => field('phone', event.target.value)} /></label>
+      <label className="settings-field">Email<input type="email" disabled={!canManage || saving} value={value.email ?? ''} onChange={(event) => field('email', event.target.value)} /></label>
+      <label className="settings-field settings-span-2">Operating hours<input disabled={!canManage || saving} value={value.operating_hours ?? ''} onChange={(event) => field('operating_hours', event.target.value)} /></label>
+      <ReadOnlyField label="School code" value={schoolCode} />
+    </div>}
+    {!canManage && value && <InfoNote>You have read-only access. School Settings permission is required to make changes.</InfoNote>}
+    <Feedback error={value ? error : ''} success={success} />
+    {canManage && value && <ActionButton label="Save School Information" saving={saving} onClick={onSave} />}
+  </>
+}
+
+function AppSupportSection({ value, loading, canManage, saving, error, success, onChange, onSave }: {
+  value: AppSupportSettings | null
+  loading: boolean
+  canManage: boolean
+  saving: boolean
+  error: string
+  success: string
+  onChange: (value: AppSupportSettings) => void
+  onSave: () => void
+}) {
+  const field = (key: keyof AppSupportSettings, next: string) => value && onChange({ ...value, [key]: next })
+  return <>
+    <SettingsSectionHeader title="App Support" description="Contact channels displayed to this school's App users." />
+    {loading && <SettingsLoading label="Loading App Support settings" />}
+    {error && !value && <Feedback error={error} success="" />}
+    {value && <div className="settings-support-layout">
+      <div className="settings-form-grid">
+        <label className="settings-field settings-span-2">Call support phone number<input disabled={!canManage || saving} value={value.call_phone ?? ''} onChange={(event) => field('call_phone', event.target.value)} /></label>
+        <label className="settings-field settings-span-2">WhatsApp support number<input disabled={!canManage || saving} value={value.whatsapp_phone ?? ''} onChange={(event) => field('whatsapp_phone', event.target.value)} /></label>
+        <label className="settings-field settings-span-2">Support email address<input type="email" disabled={!canManage || saving} value={value.support_email ?? ''} onChange={(event) => field('support_email', event.target.value)} /></label>
+        <label className="settings-field settings-span-2">Support operating hours<input disabled={!canManage || saving} value={value.operating_hours ?? ''} onChange={(event) => field('operating_hours', event.target.value)} /></label>
+      </div>
+      <aside className="settings-support-preview" aria-label="School App support preview">
+        <small>School App live preview</small>
+        <header><MessageCircle size={20} /><div><strong>Contact Support</strong><p>Choose the easiest way to reach us</p></div></header>
+        {value.call_phone && <div><Phone size={17} /><span><strong>Call Support</strong><small>{value.call_phone}</small></span></div>}
+        {value.whatsapp_phone && <div><MessageCircle size={17} /><span><strong>WhatsApp Support</strong><small>Chat with us ({value.whatsapp_phone})</small></span></div>}
+        {value.support_email && <div><Mail size={17} /><span><strong>Email Support</strong><small>{value.support_email}</small></span></div>}
+        {value.operating_hours && <footer>Hours: {value.operating_hours}</footer>}
+      </aside>
+    </div>}
+    {!canManage && value && <InfoNote>You have read-only access. School Settings permission is required to make changes.</InfoNote>}
+    <Feedback error={value ? error : ''} success={success} />
+    {canManage && value && <ActionButton label="Save App Support" saving={saving} onClick={onSave} />}
+  </>
 }
 
 function BrandingSection({
