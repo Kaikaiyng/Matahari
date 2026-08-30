@@ -1,22 +1,73 @@
-# Design System — RYLAY School App (MIS tenant)
+# RYLAY UI Design System — Admin Panel and School App
 
-**Current visual baseline:** integrated feature delivery reviewed 2026-08-26
+**Current visual baseline:** approved reusable checkpoint reviewed 2026-08-30. This is not the final design specification.
 
-## Product Context
+## Shared Product Principles
+
+- Admin Panel and School App share RYLAY product identity, MIS tenant colours, clear information hierarchy, honest system states, accessible controls and restrained motion.
+- They are separate runtime and visual surfaces. Reuse interaction principles and brand meaning, but do not apply desktop Admin density directly to the phone-first App or App editorial cards directly to operational Admin tables.
+- MIS Crimson indicates active navigation and primary action. Deep Ink carries the visual centre; Muted Ink supports it. Semantic green, amber and red retain their operational meanings.
+- UI visibility never replaces backend authorization, tenant/school scope or audited business rules.
+- Never fabricate operational data, buttons, exports, health indicators or integrations merely to complete a visual reference.
+
+## Admin Panel — MAW-Derived Personal Pattern
+
+This is the owner's reusable desktop administration pattern, adapted from MAW structure and motion while retaining RYLAY workflows, MIS branding and permission enforcement. Dashboard and `frontend/src/PersonalAdminPattern.css` are the current visual references.
+
+### Shell and page layout
+
+- Use the white MIS-branded sidebar, 80px brand area and 56px top utility bar. Desktop collapse slides the entire sidebar away; mobile uses the existing drawer.
+- Sidebar groups use icon-led parent rows, indented text-only children, aligned icon columns and persisted expansion/collapse state.
+- Main content is centred at a maximum width of 1600px with 32px horizontal and 24px vertical desktop padding. Responsive layouts reduce padding before content becomes cramped.
+- Page headings are compact and unboxed: title first, then optional live status, update timestamp and a working refresh action. Do not restore decorative hero banners above operational pages.
+- Parent layouts own the 16px gap between sibling cards and panels. Child components must not add a second outer margin.
+
+### Admin typography and density
+
+- Use Plus Jakarta Sans throughout navigation, pages, controls, tables and dialogs. JetBrains Mono is reserved for technical identifiers, logs and payloads.
+- Standard scale: 24px page title, 18px section/dialog title, 15px card title, 14px body copy, 13px forms/tables/navigation, 12px supporting copy, 11px eyebrow/table heading and 24px primary metrics.
+- Visual weight belongs to the page title, important value or current task—not simultaneously to every card heading and button.
+- Tables and operational lists remain compact but readable; mobile/tablet adaptations may become labelled record cards when columns no longer scan safely.
+
+### Admin surfaces and components
+
+- Dashboard is the canonical card reference: white Paper, 12px primary radius, neutral one-pixel border, subtle shadow and at most a restrained one-pixel interactive lift.
+- Statistic cards place copy and value on the left and a soft semantic icon tile on the right. Values come from the same source used by their linked detail view.
+- Use shared statistic cards, data panels, filter toolbars, custom searchable selects, system date/time pickers and dialogs. Browser-default selects and date popovers are not part of the approved pattern.
+- Search and filters belong in one toolbar surface. Tables belong in a separate data panel with quiet uppercase headings, aligned values and explicit status pills.
+- Settings uses a left category rail and one right editing workspace. Live previews must show what the App will render, using either configured values or clearly non-persisted examples.
+- Audit Trail and Application Logs follow the compact operational pattern: summaries, filters, dense inspectable rows and inline sanitized detail. Dark monospace panels are limited to technical payloads.
+
+### Admin controls and motion
+
+- Primary actions use MIS Crimson; destructive actions require explicit destructive treatment. Disabled and read-only states must explain why when the reason is permission-related.
+- Use 200ms sidebar travel, 300ms navigation grouping, 240ms popovers, 260ms opening and 190ms closing for collapsible content, with the existing easing and reduced-motion fallbacks.
+- Expansion animation must preserve icon and label alignment. One control action must not visually toggle an unrelated permission or field.
+- Keep focus-visible treatment, keyboard access and at least 44px touch targets where Admin is used on tablet/mobile.
+
+### Admin reuse boundary
+
+- New Admin pages should compose the existing shell, Dashboard-style cards, toolbars, data panels and system controls before creating new primitives.
+- MAW is a layout, typography, surface and motion reference—not a source of RYLAY data, permissions, terminology or unsupported features.
+- This Admin pattern is a checkpoint. Exact sizes may evolve after broader page and device review, but new work should remain internally consistent with it until superseded here.
+
+## School App — Warm School Editorial Pattern
+
+### Product Context
 
 - **What this is:** A private school communication and self-service App sharing the MIS Laravel API and database with the Admin Panel.
 - **Who it serves:** Parents, students, and teachers. Elevated employees remain in the Teacher persona through explicit User Abilities.
 - **Product posture:** The Home screen should feel alive with real school moments. Academic, attendance, and finance records must feel precise and trustworthy.
 - **Memorable quality:** Parents should feel that they can see school life and understand what needs attention without learning an ERP.
 
-## Aesthetic Direction
+### Aesthetic Direction
 
 - **Direction:** Warm School Editorial.
 - **Decoration:** Intentional. Photography and school content provide personality; interface chrome stays restrained.
 - **Layout:** School Updates-first hybrid. Update pages use a generous single column; records use compact structured rows and clear totals.
 - **Avoid:** Generic blue-white ERP dashboards, decorative gradients, identical card grids, childish game styling, fake operational buttons, and public-social-network mechanics.
 
-## Typography
+### Typography
 
 - **Display and headings:** General Sans, 600–700.
 - **Body and controls:** Source Sans 3, 400–700.
@@ -24,7 +75,7 @@
 - **Fallback:** A readable sans-serif fallback is allowed while web fonts load.
 - **Scale:** 12, 14, 16, 18, 22, 28, and 36px. Mobile body copy remains at least 15px.
 
-## Color
+### Color
 
 - **MIS Crimson:** `#C92A49` for primary actions, active navigation, and school identity.
 - **Deep Ink:** `#172033` for titles and primary text.
@@ -37,7 +88,7 @@
 - **Muted Ink:** `#677085`; **Border:** `#DDD9D1`.
 - Color never carries meaning alone; every status also has a label or icon.
 
-## Spacing and Shape
+### Spacing and Shape
 
 - **Base unit:** 4px.
 - **Scale:** 4, 8, 12, 16, 20, 24, 32, and 48px.
@@ -46,7 +97,7 @@
 - **Shadow:** Soft and restrained. Use it to separate floating navigation and major paper surfaces from the warm canvas, not on every row.
 - **Touch target:** At least 44 by 44px.
 
-## Navigation
+### Navigation
 
 - Parent: Home, Children, Academics, Finance, More.
 - Student: Home, Learn, Quiz, Schedule, More.
@@ -57,18 +108,18 @@
 - Multi-role users may switch roles, but each role receives its own navigation and scoped content.
 - Sign out belongs in each role's More/Profile page rather than the persistent header.
 
-## Layered Subpages — Reusable Checkpoint
+### Layered Subpages — Reusable Checkpoint
 
 **Checkpoint status:** Approved for reuse as of 2026-08-30, but not the final App design specification. Refine this pattern through later real-device and user testing rather than treating current dimensions as permanently frozen.
 
-### Information hierarchy
+#### Information hierarchy
 
 - The role destination or profile surface is level one.
 - A feature hub such as Safety Centre opens as a full-height level-two surface above level one.
 - Details selected from that hub open as level-three surfaces above level two. Policy, support and record-detail pages should not replace the level-two hub when users are expected to return to it.
 - Direct public routes may still render standalone pages for store review, external links and unauthenticated access; authenticated in-App navigation should use the layered surface.
 
-### Surface composition
+#### Surface composition
 
 - Every layered page reuses the centred title bar, 38px rounded back control, matching spacer, Warm Canvas background and safe bottom clearance.
 - Use one clear introductory or identity card when context is useful, followed by section headings and grouped Paper surfaces.
@@ -76,7 +127,7 @@
 - Icons use a light MIS Crimson tint surface. Titles remain Deep Ink, descriptions remain Muted Ink, and blue browser-link styling must not appear inside App navigation cards.
 - Empty states remain compact and informative: icon, direct status title and one short explanation. Do not allocate a large blank panel for zero records.
 
-### Motion and back behavior
+#### Motion and back behavior
 
 - Opening a deeper level slides only the new surface in from the right.
 - During a rightward swipe-back, the active surface follows the finger while its immediate previous level remains mounted, fixed and visible underneath.
@@ -84,14 +135,14 @@
 - Back buttons use the same exit animation and callback as swipe-back. The removed surface is unmounted only after the exit transition completes.
 - Horizontal scrollers, form controls and marked interactive regions keep the shared swipe exclusions, and reduced-motion preferences remain respected.
 
-### State and implementation contract
+#### State and implementation contract
 
 - The parent surface owns the active child identifier and remains mounted while the child is open, preserving its fetched data, scroll position and UI state.
 - Reuse the shared `useSwipeBack` behavior and `subpage-slide-overlay` shell. A tertiary surface receives an explicit `onBack` callback and renders at the next overlay layer.
 - Keep API authorization and tenant/school scoping unchanged. Layering is a navigation and presentation pattern, not a new data-access path.
 - Safety Centre and its policy/support details are the current reference implementation. Apply the pattern to other suitable record-detail flows only when their navigation hierarchy matches this model.
 
-## Motion
+### Motion
 
 - **Approach:** Minimal and functional.
 - Use 120–220ms transitions for sheets, tab changes, media viewers, and reaction feedback.
@@ -99,7 +150,7 @@
 - Respect `prefers-reduced-motion`.
 - Do not use splash screens, forced tours, or scroll choreography.
 
-## Content and Trust
+### Content and Trust
 
 - School Update visibility is private and relationship-scoped by Laravel.
 - Employees with effective same-school `community.publish` may publish immediately to the whole school or multiple active classes. Parent and Student never publish from their persona.
@@ -109,7 +160,7 @@
 - Draft assessments and unpublished Quiz results never appear to Parent/Student users.
 - Preview-only content is explicitly labelled and never presented as authoritative data.
 
-## Decisions Log
+### Decisions Log
 
 | Date | Decision | Rationale |
 | --- | --- | --- |

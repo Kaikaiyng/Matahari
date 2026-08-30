@@ -25,7 +25,7 @@ The root [README](../README.md) is the human entry point. Future coding agents m
 
 ## Supporting Current References
 
-- [MIS App Design System](../DESIGN.md)
+- [RYLAY Admin and App UI Design System](../DESIGN.md)
 - [Maintenance Guide](MAINTENANCE_GUIDE.md)
 - [Deployment Foundation](deployment-foundation.md)
 - [Implementation Status](IMPLEMENTATION_STATUS.md)
