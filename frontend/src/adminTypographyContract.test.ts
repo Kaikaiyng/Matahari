@@ -70,4 +70,12 @@ describe('Admin typography contract', () => {
     expect(adminUiSource).toMatch(/240ms cubic-bezier\(0\.22, 1, 0\.36, 1\)/)
     expect(adminUiSource).toMatch(/@media \(prefers-reduced-motion: reduce\)/)
   })
+
+  it('keeps the Admin shell motion aligned with the MAW interaction pattern', () => {
+    expect(shellSource).toMatch(/\.admin-sidebar\s*{[^}]*transition:\s*transform 200ms ease-out/s)
+    expect(shellSource).toMatch(/\.admin-workspace\s*{[^}]*transition:\s*margin-left 200ms ease-out/s)
+    expect(shellSource).toMatch(/\.nav-group-chevron\s*{[^}]*transition:\s*transform 300ms ease-in-out/s)
+    expect(shellSource).toMatch(/\.nav-group-items\s*{[^}]*grid-template-rows 300ms ease-in-out/s)
+    expect(shellSource).toMatch(/\.admin-notification-popover\s*{[^}]*animation:\s*admin-notification-enter 150ms ease-out both/s)
+  })
 })

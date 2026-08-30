@@ -26,7 +26,7 @@
   color: var(--text, #25272d);
   box-shadow: 5px 0 24px rgb(15 23 42 / 4%);
   transform: translateX(0);
-  transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 200ms ease-out;
   will-change: transform;
 }
 
@@ -161,7 +161,7 @@
 
 .nav-group-title { min-width: 0; display: flex; align-items: center; gap: 12px; }
 .nav-group-icon { width: 28px; height: 28px; flex: 0 0 28px; display: grid; place-items: center; border-radius: 8px; }
-.nav-group-chevron { flex: 0 0 auto; transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1); }
+.nav-group-chevron { flex: 0 0 auto; transition: transform 300ms ease-in-out; }
 .nav-group-toggle[aria-expanded='true'] .nav-group-chevron { transform: rotate(90deg); }
 
 .nav-group-items {
@@ -169,8 +169,8 @@
   grid-template-rows: 0fr;
   opacity: 0;
   transition:
-    grid-template-rows 280ms cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 180ms ease;
+    grid-template-rows 300ms ease-in-out,
+    opacity 300ms ease-in-out;
 }
 
 .nav-group-items.expanded {
@@ -270,9 +270,9 @@
   overflow: hidden;
   white-space: nowrap;
   transition:
-    max-width 140ms ease,
-    opacity 120ms ease,
-    transform 140ms ease;
+    max-width 100ms ease,
+    opacity 100ms ease,
+    transform 100ms ease;
 }
 
 .sidebar-footer {
@@ -366,7 +366,7 @@
   overflow-x: clip;
   display: grid;
   grid-template-rows: 56px minmax(0, 1fr);
-  transition: margin-left 300ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: margin-left 200ms ease-out;
 }
 
 .admin-shell.sidebar-collapsed .admin-workspace {
@@ -528,10 +528,10 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  animation: notifSlideDown 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: admin-notification-enter 150ms ease-out both;
 }
 
-@keyframes notifSlideDown {
+@keyframes admin-notification-enter {
   from {
     opacity: 0;
     transform: translateY(-8px) scale(0.98);
@@ -1017,7 +1017,9 @@ body.nav-open {
   .nav-subitem,
   .sidebar-label,
   .admin-brand-copy,
-  .sidebar-collapse-icon {
+  .sidebar-collapse-icon,
+  .admin-notification-popover {
     transition: none;
+    animation: none;
   }
 }
