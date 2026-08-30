@@ -3531,9 +3531,39 @@ th {
   transition: background-color 0.15s ease, color 0.15s ease;
 }
 
+.parent-chevron-btn svg {
+  transition: transform 300ms ease-in-out;
+}
+
+.parent-chevron-btn svg.expanded {
+  transform: rotate(180deg);
+}
+
 .parent-accordion-header:hover .parent-chevron-btn {
   color: var(--brand-primary);
   background: var(--brand-primary-soft);
+}
+
+.parent-accordion-content {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows 190ms ease-in,
+    opacity 190ms ease-in;
+}
+
+.parent-accordion-content.expanded {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transition:
+    grid-template-rows 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.parent-accordion-content-clip {
+  min-height: 0;
+  overflow: hidden;
 }
 
 .parent-accordion-body {
@@ -4099,5 +4129,12 @@ th {
   .attendance-class-card:hover,
   .system-check-card:hover {
     transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .parent-accordion-content,
+  .parent-chevron-btn svg {
+    transition-duration: 0ms !important;
   }
 }

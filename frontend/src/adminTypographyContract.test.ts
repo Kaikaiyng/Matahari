@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest'
 
 const sourceRoot = dirname(fileURLToPath(import.meta.url))
 const appSource = readFileSync(resolve(sourceRoot, 'App.tsx'), 'utf8')
+const appStyleSource = readFileSync(resolve(sourceRoot, 'App.css'), 'utf8')
 const typographyPath = resolve(sourceRoot, 'AdminTypography.css')
 const personalPatternPath = resolve(sourceRoot, 'PersonalAdminPattern.css')
 const shellSource = readFileSync(resolve(sourceRoot, 'components/AdminShell.css'), 'utf8')
@@ -32,6 +33,10 @@ describe('Admin typography contract', () => {
     expect(pattern).toContain('.application-log-table-panel')
     expect(pattern).toMatch(/border-radius:\s*var\(--admin-radius\)/)
     expect(pattern).toMatch(/gap:\s*var\(--admin-gap\)/)
+    expect(pattern).toContain('.class-card')
+    expect(pattern).toContain('.parent-accordion-card')
+    expect(pattern).toContain('.payment-allocation-block')
+    expect(appStyleSource).toMatch(/\.parent-accordion-content\.expanded\s*{[^}]*260ms cubic-bezier\(0\.22, 1, 0\.36, 1\)/s)
   })
 
   it('defines the approved semantic scale', () => {

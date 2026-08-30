@@ -50,6 +50,12 @@
   .data-panel,
   .dashboard-financial-card,
   .dashboard-quick-card,
+  .calendar-panel,
+  .class-card,
+  .parent-accordion-card,
+  .parent-child-card,
+  .contact-card,
+  .report-card,
   .attendance-overview-card,
   .attendance-class-card,
   .schedule-entry-card,
@@ -70,6 +76,8 @@
 .admin-shell .admin-main :is(
   button.stat-card,
   .attendance-class-card,
+  .class-card.clickable,
+  .parent-accordion-card,
   .schedule-entry-card,
   .dashboard-quick-list button,
   .ugc-queue button
@@ -84,6 +92,8 @@
 .admin-shell .admin-main :is(
   button.stat-card,
   .attendance-class-card,
+  .class-card.clickable,
+  .parent-accordion-card,
   .schedule-entry-card,
   .dashboard-quick-list button,
   .ugc-queue button
@@ -94,8 +104,78 @@
 }
 
 .admin-shell .admin-main :is(.stats-grid, .summary-grid, .dashboard-grid, .dashboard-metrics,
-  .attendance-overview-grid, .attendance-class-grid, .schedule-admin-grid, .audit-summary) {
+  .attendance-overview-grid, .attendance-class-grid, .schedule-admin-grid, .audit-summary,
+  .class-card-grid, .parent-children-grid) {
   gap: var(--admin-gap);
+}
+
+.admin-shell .admin-main :is(
+  .detail-block,
+  .remarks-block,
+  .fee-agreement-section,
+  .fee-record-charge-section,
+  .payment-section,
+  .payment-form,
+  .payment-allocation-block,
+  .agreement-history,
+  .agreement-current,
+  .parent-accordion-body,
+  .parent-address-row,
+  .system-check-card
+) {
+  border-color: var(--admin-border);
+  border-radius: 10px;
+}
+
+.admin-shell .admin-main :is(
+  .detail-block,
+  .remarks-block,
+  .payment-form,
+  .payment-allocation-block,
+  .agreement-history,
+  .parent-accordion-body
+) {
+  background: var(--admin-inset);
+}
+
+.admin-shell .admin-main .system-check-card {
+  transition:
+    transform var(--admin-motion-fast) ease-out,
+    border-color var(--admin-motion-fast) ease-out,
+    background-color var(--admin-motion-fast) ease-out,
+    box-shadow var(--admin-motion-standard) ease-out;
+}
+
+.admin-shell .admin-main .system-check-card.is-checked {
+  border-color: #d9a7b3;
+  background: #fcf4f6;
+  box-shadow: 0 0 0 1px rgb(176 43 73 / 5%);
+}
+
+/* Calendar keeps the MAW neutral canvas while selected items use MIS burgundy. */
+.admin-shell .admin-main .calendar-view-switcher {
+  border-color: var(--admin-border);
+  background: var(--admin-inset);
+}
+
+.admin-shell .admin-main :is(.calendar-weekdays, .calendar-upcoming) {
+  background: var(--admin-inset);
+}
+
+.admin-shell .admin-main .calendar-weekdays span {
+  color: #6b7485;
+}
+
+.admin-shell .admin-main .calendar-upcoming {
+  border-right-color: #edf0f4;
+}
+
+.admin-shell .admin-main .calendar-day {
+  border-color: #edf0f4;
+}
+
+.admin-shell .admin-main .calendar-day.outside-month {
+  background: #fbfcfe;
 }
 
 .admin-shell .admin-main :is(.stat-card, .metric-card, .attendance-overview-card) {

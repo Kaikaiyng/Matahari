@@ -263,14 +263,19 @@ export const ParentsPage: React.FC = () => {
               className="parent-chevron-btn"
               aria-label={isExpanded ? 'Collapse parent details' : 'Expand parent details'}
             >
-              {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              <ChevronDown className={isExpanded ? 'expanded' : ''} size={16} />
             </button>
           </div>
         </div>
 
         {/* Accordion Expandable Body */}
-        {isExpanded && (
-          <div className="parent-accordion-body">
+        <div
+          className={`parent-accordion-content${isExpanded ? ' expanded' : ''}`}
+          aria-hidden={!isExpanded}
+          inert={!isExpanded ? true : undefined}
+        >
+          <div className="parent-accordion-content-clip">
+            <div className="parent-accordion-body">
             {parent.address && (
               <div className="parent-address-row">
                 <MapPin size={14} className="parent-address-icon" />
@@ -304,8 +309,9 @@ export const ParentsPage: React.FC = () => {
                 ))}
               </div>
             </div>
+            </div>
           </div>
-        )}
+        </div>
       </article>
     )
   }
