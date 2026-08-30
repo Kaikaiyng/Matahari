@@ -10,6 +10,12 @@
 
 **Overall status:** SaaS multi-tenant foundation in final validation, with MIS as the first tenant; separate Admin and multi-role App clients, live School Updates, daily Attendance, Assessment publication, Parent Finance reads/receipt access/manual in-app reminders, class Schedule, and formal Quiz V1 remain shared tenant-aware modules. Practice/AI Quiz, native/store delivery, automated DNS/TLS and production operations remain incomplete.
 
+## 2026-08-30 MAW-style Audit and Application Logs
+
+- The Super Admin Audit Trail now follows the approved MAW operational workspace with four real global summary values, broad action/record/actor/IP search, category/entity/actor/date filters, a compact append-only table, and inline sanitized actor, route, before/after and metadata inspection. Existing strict filters, cursor pagination, immutable storage and backend `audit.view` enforcement remain authoritative.
+- Application Logs now uses the same compact MAW hierarchy with a truthful log-reader/source strip, level-count tabs, search/date filters, dense paginated rows, refresh and a dark inline sanitized context inspector. Unsupported archive, download, export, auto-refresh and server-health capabilities were not fabricated.
+- The School App is unchanged. Focused Audit API and Admin Audit/Application Log tests plus the Admin production build passed; broader browser QA, full suites and MariaDB were not run for this presentation/read-only-query delivery.
+
 ## 2026-08-27 Extensible Notification Channel Foundation
 
 - Attendance, Billing, School Updates, and retained Community moderation notification producers now use a channel-neutral `NotificationDispatcher`; `InAppChannel` preserves the existing `portal_notifications` payload, read state, batching, and surrounding transaction behavior.

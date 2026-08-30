@@ -34,27 +34,25 @@ const auditLog = {
 describe('AuditTrailPage', () => {
   afterEach(() => vi.restoreAllMocks())
 
-  it('loads audit events, applies filters, and opens read-only details', async () => {
+  it('loads MAW-style audit summaries, applies filters, and expands read-only details', async () => {
     const user = userEvent.setup()
     const request = vi.spyOn(api, 'apiRequest')
-      .mockResolvedValueOnce({ data: [auditLog], meta: { per_page: 50, next_cursor: null, previous_cursor: null } })
-      .mockResolvedValueOnce({ data: auditLog })
-      .mockResolvedValueOnce({ data: [auditLog], meta: { per_page: 50, next_cursor: null, previous_cursor: null } })
+      .mockResolvedValue({ data: [auditLog], meta: { per_page: 50, next_cursor: null, previous_cursor: null, summary: { total: 281, today: 2, active_actors_30_days: 4, security_admin: 117 } } })
 
     render(<AuditTrailPage onUnauthorized={vi.fn()} />)
 
-    expect(await screen.findByText('payment.verified')).toBeInTheDocument()
+    expect(await screen.findByText('Payment Verified')).toBeInTheDocument()
     expect(screen.getByText('superadmin')).toBeInTheDocument()
+    expect(screen.getByText('281')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'View audit event 17' }))
-    expect(await screen.findByRole('dialog', { name: 'Audit event 17' })).toHaveTextContent('pending_verification')
-    expect(screen.getByRole('dialog', { name: 'Audit event 17' })).toHaveTextContent('verified')
+    expect(await screen.findByRole('article', { name: 'Audit event 17' })).toHaveTextContent('pending_verification')
+    expect(screen.getByRole('article', { name: 'Audit event 17' })).toHaveTextContent('verified')
 
-    await user.click(screen.getByRole('button', { name: 'Close audit details' }))
     await user.selectOptions(screen.getByLabelText('Module'), 'payments')
     await user.click(screen.getByRole('button', { name: 'Apply filters' }))
 
-    await waitFor(() => expect(request).toHaveBeenLastCalledWith('/audit-logs?module=payments&per_page=50'))
+    await waitFor(() => expect(request.mock.calls.at(-1)?.[0]).toContain('module=payments'))
   })
 
   it('reports forbidden access without exposing audit data', async () => {

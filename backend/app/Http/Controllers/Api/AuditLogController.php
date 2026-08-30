@@ -14,7 +14,37 @@ class AuditLogController extends Controller
     public function index(IndexAuditLogRequest $request): JsonResponse
     {
         $data = $request->validated();
+        $summaryQuery = AuditLog::query();
+        $summary = [
+            'total' => (clone $summaryQuery)->count(),
+            'today' => (clone $summaryQuery)->whereDate('created_at', now()->toDateString())->count(),
+            'active_actors_30_days' => (clone $summaryQuery)
+                ->where('created_at', '>=', now()->subDays(30))
+                ->whereNotNull('actor_username')
+                ->distinct()
+                ->count('actor_username'),
+            'security_admin' => (clone $summaryQuery)
+                ->whereIn('module', ['authentication', 'users', 'reports', 'batch', 'tenancy'])
+                ->count(),
+        ];
+
         $query = AuditLog::query()
+            ->when($data['search'] ?? null, function ($query, $value) {
+                $query->where(function ($searchQuery) use ($value) {
+                    $pattern = '%'.$value.'%';
+                    $searchQuery
+                        ->where('action', 'like', $pattern)
+                        ->orWhere('module', 'like', $pattern)
+                        ->orWhere('entity_type', 'like', $pattern)
+                        ->orWhere('actor_username', 'like', $pattern)
+                        ->orWhere('ip_address', 'like', $pattern)
+                        ->orWhere('request_id', 'like', $pattern);
+
+                    if (ctype_digit((string) $value)) {
+                        $searchQuery->orWhere('entity_id', (int) $value);
+                    }
+                });
+            })
             ->when($data['action'] ?? null, fn ($query, $value) => $query->where('action', $value))
             ->when($data['module'] ?? null, fn ($query, $value) => $query->where('module', $value))
             ->when($data['entity_type'] ?? null, fn ($query, $value) => $query->where('entity_type', $value))
@@ -43,6 +73,7 @@ class AuditLogController extends Controller
                 'per_page' => $perPage,
                 'next_cursor' => $paginator->nextCursor()?->encode(),
                 'previous_cursor' => $paginator->previousCursor()?->encode(),
+                'summary' => $summary,
             ],
         ]);
     }

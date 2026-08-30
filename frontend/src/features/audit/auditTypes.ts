@@ -31,7 +31,15 @@ export type AuditLogListResponse = {
     per_page: number
     next_cursor: string | null
     previous_cursor: string | null
+    summary: AuditSummary
   }
+}
+
+export type AuditSummary = {
+  total: number
+  today: number
+  active_actors_30_days: number
+  security_admin: number
 }
 
 export type AuditLogDetailResponse = {

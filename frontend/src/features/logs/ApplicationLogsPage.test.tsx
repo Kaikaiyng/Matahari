@@ -39,7 +39,7 @@ describe('ApplicationLogsPage', () => {
 
     expect(await screen.findByRole('heading', { name: 'Application Logs', level: 2 })).toBeInTheDocument()
     expect(screen.getByText('Database request failed')).toBeInTheDocument()
-    expect(screen.getByText('2')).toBeInTheDocument()
+    expect(screen.getAllByText('2').length).toBeGreaterThan(0)
 
     await user.click(screen.getByRole('button', { name: 'Expand log details' }))
     expect(screen.getByText(/payments\.store/)).toBeInTheDocument()

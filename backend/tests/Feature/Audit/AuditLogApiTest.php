@@ -37,11 +37,36 @@ class AuditLogApiTest extends TestCase
             ->getJson('/api/audit-logs')
             ->assertOk()
             ->assertJsonPath('data.0.id', $log->id)
-            ->assertJsonPath('data.0.action', 'student.created');
+            ->assertJsonPath('data.0.action', 'student.created')
+            ->assertJsonPath('meta.summary.total', 1)
+            ->assertJsonPath('meta.summary.today', 1)
+            ->assertJsonPath('meta.summary.active_actors_30_days', 0)
+            ->assertJsonPath('meta.summary.security_admin', 0);
         $this->actingAs($superAdmin)
             ->getJson("/api/audit-logs/{$log->id}")
             ->assertOk()
             ->assertJsonPath('data.id', $log->id);
+    }
+
+    public function test_list_searches_audit_identifiers_without_exposing_mutation_access(): void
+    {
+        $this->seed();
+        $matching = $this->createLog(AuditAction::PaymentRecorded);
+        $this->createLog(AuditAction::StudentCreated);
+        $superAdmin = User::query()->where('username', 'superadmin')->firstOrFail();
+
+        $this->actingAs($superAdmin)
+            ->getJson('/api/audit-logs?search='.urlencode((string) $matching->entity_id))
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $matching->id)
+            ->assertJsonPath('meta.summary.total', 2);
+
+        $this->actingAs($superAdmin)
+            ->getJson('/api/audit-logs?search='.urlencode('payment.recorded'))
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $matching->id);
     }
 
     public function test_list_uses_strict_filters_cursor_pagination_and_page_cap(): void

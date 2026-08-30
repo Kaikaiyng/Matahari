@@ -199,8 +199,8 @@ Implemented:
 - Required transactional events for student create/update/status, agreement create/supersede, Fee Record activation/manual charges, payment record/verify/void, receipt issue/void, and manual payment-reminder send.
 - Required transactional events for daily attendance submission and correction.
 - Best-effort login success/failure/logout events with a dedicated redacted security-log fallback if audit storage fails.
-- `GET /api/audit-logs` and `GET /api/audit-logs/{auditLog}` with validated filters, stable cursor pagination, output re-sanitization, and `audit.view` backend enforcement.
-- A permission-visible, read-only Audit Trail UI for Super Admin.
+- `GET /api/audit-logs` and `GET /api/audit-logs/{auditLog}` with validated strict filters, broad identifier search, global read-only summary metadata, stable cursor pagination, output re-sanitization, and `audit.view` backend enforcement.
+- A permission-visible, read-only Audit Trail UI for Super Admin using the MAW operational-page structure: compact summaries and filters, dense rows, and an inline sanitized before/after/metadata inspector.
 - `audit.view` and `audit.correct_generic` permissions seeded only to Super Admin; correction is not implemented.
 
 Planned, not implemented:
@@ -215,7 +215,7 @@ Model guards do not prevent query-builder/raw SQL/DBA mutation. Production least
 
 `GET /api/application-logs` is a read-only Admin-surface endpoint protected by `logs.view`, which is assigned only to Super Admin by the migration and demo seeder. `ApplicationLogReader` reads only `laravel*.log` files from the configured log directory, parses single-line Laravel events, normalizes levels to `INFO`, `WARN`, `ERROR`, or `FATAL`, caps the in-memory result set, and applies validated filters and pagination.
 
-The response runs structured context through the existing audit payload sanitizer and redacts credential-like assignments from message text. Multiline stack-trace continuation lines, security-channel files, raw request bodies, headers, cookies, credentials, and tokens are not returned. The viewer is operational diagnostics; business actor/change history remains authoritative only in Audit Trail.
+The response runs structured context through the existing audit payload sanitizer and redacts credential-like assignments from message text. Multiline stack-trace continuation lines, security-channel files, raw request bodies, headers, cookies, credentials, and tokens are not returned. The MAW-style viewer presents only truthful response metadata, level counts, source/environment values and an inline dark context inspector. Unsupported archive, download, export, auto-refresh and server-health operations are not shown. The viewer is operational diagnostics; business actor/change history remains authoritative only in Audit Trail.
 
 ## External Services
 
