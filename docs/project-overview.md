@@ -12,6 +12,8 @@ The product is the owner's configurable school-software SaaS named **RYLAY**, us
 
 All tenants share the same Admin/App code and backend release. Tenant variation is configuration-only through host-resolved `branding` and `features`; per-tenant code forks are not an approved customization mechanism.
 
+The Admin workspace uses the owner's MAW-derived personal UI pattern as its default presentation contract. RYLAY retains its own school workflows, API data, permission enforcement, tenant branding, and burgundy selection/action colour; the reference supplies only layout, typography, surface, control, and motion behavior. The multi-role School App remains a separate visual and runtime surface.
+
 ## Intended Users
 
 Platform administration uses the protected `users.is_platform_owner` Super Admin identity. School employees have exactly one position: `school-admin`, `finance`, or `teacher`. Finance inherits all School Admin defaults plus supported finance mutations. Teacher starts with assigned scope and may receive explicit same-school User Ability grants or denials. Parent and Student remain relationship/App identities; an employee may additionally be Parent.

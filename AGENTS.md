@@ -54,6 +54,8 @@ RYLAY is a multi-tenant school administration, finance, and community SaaS using
 ## System UI Layout & Design Rules
 
 - Use a consistent 16px gap between sibling cards and panels. The parent layout owns that gap; child cards must not add a second outer margin that doubles the spacing.
+- The owner-approved Admin UI pattern is the latest local MAW AdminPanel design translated through `frontend/src/PersonalAdminPattern.css`, the shared Admin components, and Matahari/MIS brand tokens. Dashboard is the canonical surface reference. New Admin pages must reuse the same typography, density, cards, controls, tables, dialogs, sidebar motion, and reduced-motion behavior; do not copy MAW automotive business logic or add its Tailwind/MUI dependencies.
+- Keep semantic success, warning, danger, and information colours semantic. Burgundy is reserved for RYLAY/MIS branding, primary actions, selection, focus, and active navigation.
 
 ## Development Constraints
 
