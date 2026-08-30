@@ -1,4 +1,4 @@
-import { CalendarDays, Check, ChevronLeft, ChevronRight, Clock3, X } from 'lucide-react'
+import { CalendarDays, ChevronLeft, ChevronRight, Clock3, X } from 'lucide-react'
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import type { AriaAttributes, RefObject } from 'react'
 import { createPortal } from 'react-dom'
@@ -119,15 +119,93 @@ export function DatePicker({ value, onChange, min, max, placeholder = 'Select da
   </>
 }
 
-const standardTimes = Array.from({ length: 96 }, (_, index) => `${String(Math.floor(index / 4)).padStart(2, '0')}:${String((index % 4) * 15).padStart(2, '0')}`)
 const displayTime = (value: string) => { if (!value) return ''; const [hours, minutes] = value.split(':').map(Number); return new Date(2000, 0, 1, hours, minutes).toLocaleTimeString('en-MY', { hour: 'numeric', minute: '2-digit' }) }
+
+type TimePeriod = 'AM' | 'PM'
+type TimeParts = { hour: number; minute: string; period: TimePeriod }
+
+const hourOptions = Array.from({ length: 12 }, (_, index) => index + 1)
+const standardMinuteOptions = ['00', '15', '30', '45']
+
+function timeParts(value: string): TimeParts {
+  const matched = /^(\d{1,2}):(\d{2})/.exec(value)
+  if (matched) {
+    const hour24 = Math.min(23, Math.max(0, Number(matched[1])))
+    const minute = String(Math.min(59, Math.max(0, Number(matched[2])))).padStart(2, '0')
+    return { hour: hour24 % 12 || 12, minute, period: hour24 >= 12 ? 'PM' : 'AM' }
+  }
+
+  const now = new Date()
+  const roundedMinute = Math.min(45, Math.floor(now.getMinutes() / 15) * 15)
+  return {
+    hour: now.getHours() % 12 || 12,
+    minute: String(roundedMinute).padStart(2, '0'),
+    period: now.getHours() >= 12 ? 'PM' : 'AM',
+  }
+}
+
+function timeValue({ hour, minute, period }: TimeParts) {
+  const hour24 = period === 'AM' ? hour % 12 : (hour % 12) + 12
+  return `${String(hour24).padStart(2, '0')}:${minute}`
+}
 
 export function TimePicker({ value, onChange, placeholder = 'Select time', disabled = false, ariaLabel, className = '', 'aria-invalid': ariaInvalid, 'aria-describedby': ariaDescribedBy }: { value: string; onChange: (value: string) => void; placeholder?: string; disabled?: boolean; ariaLabel?: string; className?: string; 'aria-invalid'?: AriaAttributes['aria-invalid']; 'aria-describedby'?: string }) {
   const [open, setOpen] = useState(false)
+  const initialParts = timeParts(value)
+  const [draftHour, setDraftHour] = useState(initialParts.hour)
+  const [draftMinute, setDraftMinute] = useState(initialParts.minute)
+  const [draftPeriod, setDraftPeriod] = useState<TimePeriod>(initialParts.period)
   const anchorRef = useRef<HTMLButtonElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const close = useCallback(() => setOpen(false), [])
   const position = useFloatingPicker(open, anchorRef, panelRef, close)
-  const options = useMemo(() => value && !standardTimes.includes(value.slice(0, 5)) ? [...standardTimes, value.slice(0, 5)].sort() : standardTimes, [value])
-  return <><button ref={anchorRef} type="button" className={`system-picker-trigger ${open ? 'open' : ''} ${className}`.trim()} disabled={disabled} aria-label={ariaLabel ?? placeholder} aria-haspopup="listbox" aria-expanded={open} aria-invalid={ariaInvalid} aria-describedby={ariaDescribedBy} onClick={() => setOpen((current) => !current)}><span className={value ? '' : 'placeholder'}>{value ? displayTime(value) : placeholder}</span><Clock3 size={18}/></button>{open && createPortal(<div ref={panelRef} className="system-time-popover" role="listbox" style={{ top: position.top, left: position.left, width: position.width }}>{options.map((option) => <button type="button" role="option" aria-selected={option === value.slice(0, 5)} className={option === value.slice(0, 5) ? 'selected' : ''} key={option} onClick={() => { onChange(option); close() }}><span>{displayTime(option)}</span>{option === value.slice(0, 5) && <Check size={16}/>}</button>)}</div>, document.body)}</>
+  const titleId = useId()
+  const draft = { hour: draftHour, minute: draftMinute, period: draftPeriod }
+  const minuteOptions = standardMinuteOptions.includes(draftMinute)
+    ? standardMinuteOptions
+    : [...standardMinuteOptions, draftMinute].sort()
+
+  useEffect(() => {
+    if (!open) return
+    const next = timeParts(value)
+    setDraftHour(next.hour)
+    setDraftMinute(next.minute)
+    setDraftPeriod(next.period)
+  }, [open, value])
+
+  const toggle = () => setOpen((current) => !current)
+  const chooseButton = (selected: boolean) => selected ? 'selected' : ''
+
+  return <>
+    <button ref={anchorRef} type="button" className={`system-picker-trigger ${open ? 'open' : ''} ${className}`.trim()} disabled={disabled} aria-label={ariaLabel ?? placeholder} aria-haspopup="dialog" aria-expanded={open} aria-invalid={ariaInvalid} aria-describedby={ariaDescribedBy} onClick={toggle}>
+      <span className={value ? '' : 'placeholder'}>{value ? displayTime(value) : placeholder}</span><Clock3 size={18}/>
+    </button>
+    {open && createPortal(
+      <div ref={panelRef} className="system-time-popover" role="dialog" aria-modal="false" aria-labelledby={titleId} style={{ top: position.top, left: position.left, width: Math.min(360, position.width) }}>
+        <div className="system-time-heading">
+          <div><span>Time</span><strong id={titleId}>Select time</strong></div>
+          <output aria-live="polite">{displayTime(timeValue(draft))}</output>
+        </div>
+        <div className="system-time-columns">
+          <div className="system-time-group" role="group" aria-label="Hour">
+            <span className="system-time-label">Hour</span>
+            <div className="system-time-hour-grid">{hourOptions.map((hour) => <button type="button" key={hour} aria-label={`${hour} o'clock`} aria-pressed={draftHour === hour} className={chooseButton(draftHour === hour)} onClick={() => setDraftHour(hour)}>{hour}</button>)}</div>
+          </div>
+          <div className="system-time-group" role="group" aria-label="Minute">
+            <span className="system-time-label">Minute</span>
+            <div className="system-time-minute-grid">{minuteOptions.map((minute) => <button type="button" key={minute} aria-label={`${minute} minutes`} aria-pressed={draftMinute === minute} className={chooseButton(draftMinute === minute)} onClick={() => setDraftMinute(minute)}>{minute}</button>)}</div>
+          </div>
+          <div className="system-time-group" role="group" aria-label="Period">
+            <span className="system-time-label">Period</span>
+            <div className="system-time-period-grid">{(['AM', 'PM'] as const).map((period) => <button type="button" key={period} aria-pressed={draftPeriod === period} className={chooseButton(draftPeriod === period)} onClick={() => setDraftPeriod(period)}>{period}</button>)}</div>
+          </div>
+        </div>
+        <div className="system-time-actions">
+          <button type="button" className="system-time-cancel" onClick={close}>Cancel</button>
+          <button type="button" className="system-time-confirm" onClick={() => { onChange(timeValue(draft)); close() }}>Done</button>
+        </div>
+      </div>,
+      document.body,
+    )}
+  </>
 }

@@ -12,6 +12,12 @@
 
 The root `DESIGN.md` is now the shared UI checkpoint for both product surfaces: the MAW-derived Admin Panel pattern and the Warm School Editorial App pattern remain intentionally distinct while documenting their reusable components, source files, spacing, typography, motion tokens, gesture thresholds, state ownership and hierarchy in one canonical implementation reference.
 
+## 2026-08-30 Class Schedule Card Spacing
+
+- The Schedule draft builder and timetable body now preserve Admin panel inset spacing instead of placing form controls and the filter toolbar directly against the DataPanel border. The nested filter surface uses the shared inset colour without a duplicate shadow; compact layouts retain 16px padding. The builder explicitly allows CustomSelect menus to escape the card boundary and stacks above the timetable panel so long option lists are not clipped.
+- Schedule time fields now use the shared system-styled compact hour, minute and AM/PM picker instead of a scrolling 96-option day list. The picker opens on the current value, previews changes before confirmation, preserves existing non-quarter-hour values, and continues to submit the existing 24-hour `HH:mm` API value.
+- The focused Admin UI and time-picker contracts passed 9/9, Admin lint completed with the existing Calendar Fast Refresh and Dashboard dependency warnings, and the TypeScript/Vite production build passed.
+
 ## 2026-08-30 School App Safety Centre Refresh
 
 - The App Safety Centre now uses the established Warm School Editorial language: a private safety introduction, compact report status/empty state, grouped safety and account policies, and a featured school-support card replace the former plain mixed link list.

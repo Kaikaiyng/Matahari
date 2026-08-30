@@ -3123,6 +3123,34 @@ th {
   width: 100%;
 }
 
+.schedule-builder-panel {
+  position: relative;
+  z-index: 2;
+  overflow: visible;
+}
+
+.schedule-list-panel {
+  position: relative;
+  z-index: 1;
+}
+
+.schedule-builder-panel .data-panel-body {
+  padding: 20px;
+}
+
+.schedule-list-panel .data-panel-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px 20px 20px;
+}
+
+.schedule-list-panel .filter-toolbar {
+  border-color: var(--admin-border, #e5e7eb);
+  background: var(--admin-inset, #f8fafc);
+  box-shadow: none;
+}
+
 .schedule-form-grid {
   display: grid;
   gap: 14px;
@@ -3358,6 +3386,13 @@ th {
   .schedule-form-grid.three-columns,
   .schedule-form-grid.timing-row {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .schedule-builder-panel .data-panel-body,
+  .schedule-list-panel .data-panel-body {
+    padding: 16px;
   }
 }
 

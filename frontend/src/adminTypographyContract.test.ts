@@ -13,6 +13,7 @@ const personalPatternPath = resolve(sourceRoot, 'PersonalAdminPattern.css')
 const shellSource = readFileSync(resolve(sourceRoot, 'components/AdminShell.css'), 'utf8')
 const indexSource = readFileSync(resolve(sourceRoot, 'index.css'), 'utf8')
 const adminUiSource = readFileSync(resolve(sourceRoot, 'components/AdminUi.css'), 'utf8')
+const scheduleSource = readFileSync(resolve(sourceRoot, 'components/SchedulePage.tsx'), 'utf8')
 
 describe('Admin typography contract', () => {
   it('loads the Admin typography layer after the legacy application styles', () => {
@@ -98,5 +99,15 @@ describe('Admin typography contract', () => {
     expect(shellSource).toMatch(/\.nav-group-chevron\s*{[^}]*transition:\s*transform 300ms ease-in-out/s)
     expect(shellSource).toMatch(/\.nav-group-items\s*{[^}]*grid-template-rows 300ms ease-in-out/s)
     expect(shellSource).toMatch(/\.admin-notification-popover\s*{[^}]*animation:\s*admin-notification-enter 150ms ease-out both/s)
+  })
+
+  it('keeps Class Schedule form and filters inset from their panel borders', () => {
+    expect(scheduleSource).toContain('className="schedule-builder-panel"')
+    expect(scheduleSource).toContain('className="schedule-list-panel"')
+    expect(appStyleSource).toMatch(/\.schedule-builder-panel \.data-panel-body\s*{[^}]*padding:\s*20px/s)
+    expect(appStyleSource).toMatch(/\.schedule-builder-panel\s*{[^}]*overflow:\s*visible/s)
+    expect(appStyleSource).toMatch(/\.schedule-builder-panel\s*{[^}]*z-index:\s*2/s)
+    expect(appStyleSource).toMatch(/\.schedule-list-panel \.data-panel-body\s*{[^}]*padding:\s*16px 20px 20px/s)
+    expect(appStyleSource).toMatch(/\.schedule-list-panel \.filter-toolbar\s*{[^}]*box-shadow:\s*none/s)
   })
 })
