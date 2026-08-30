@@ -28,6 +28,10 @@ class PublicCommunityPolicyController extends Controller
             $policy = null;
         }
         $tenant = $context?->tenant;
+        $activeSchools = $tenant?->schools()->where('status', 'active')->with('supportSettings')->limit(2)->get();
+        $schoolSupport = $activeSchools?->count() === 1
+            ? $activeSchools->first()?->supportSettings?->only(['call_phone', 'whatsapp_phone', 'support_email', 'operating_hours'])
+            : null;
 
         $fallbacks = [
             'terms' => [
@@ -70,6 +74,7 @@ class PublicCommunityPolicyController extends Controller
             'support' => [
                 'email' => config('community_safety.support_email'),
                 'child_safety_email' => config('community_safety.child_safety_contact_email'),
+                'school' => $schoolSupport,
             ],
         ]]);
     }

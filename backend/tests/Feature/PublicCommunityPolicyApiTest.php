@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\School;
+use App\Models\SchoolSupportSetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -36,5 +38,43 @@ class PublicCommunityPolicyApiTest extends TestCase
     public function test_unknown_public_policy_is_not_exposed(): void
     {
         $this->getJson('http://127.0.0.1/api/v1/public/community-policies/internal-case')->assertNotFound();
+    }
+
+    public function test_single_school_tenant_exposes_local_support_without_replacing_platform_safety_contacts(): void
+    {
+        $school = School::query()->where('code', 'MIS')->firstOrFail();
+        SchoolSupportSetting::query()->create([
+            'school_id' => $school->id,
+            'call_phone' => '+60 12-345 6789',
+            'whatsapp_phone' => '+60 12-345 6789',
+            'support_email' => 'school-support@matahari.test',
+            'operating_hours' => 'Monday - Friday, 8:00 AM - 5:00 PM',
+        ]);
+
+        $this->getJson('http://127.0.0.1/api/v1/public/community-policies/support')
+            ->assertOk()
+            ->assertJsonPath('data.support.email', 'support@example.test')
+            ->assertJsonPath('data.support.child_safety_email', 'safety@example.test')
+            ->assertJsonPath('data.support.school.call_phone', '+60 12-345 6789')
+            ->assertJsonPath('data.support.school.support_email', 'school-support@matahari.test');
+    }
+
+    public function test_multi_school_tenant_does_not_guess_a_public_school_support_contact(): void
+    {
+        $school = School::query()->where('code', 'MIS')->firstOrFail();
+        $second = School::query()->create([
+            'tenant_id' => $school->tenant_id,
+            'code' => 'MIS2',
+            'name' => 'Matahari Second Campus',
+            'receipt_prefix' => 'MIS2',
+            'status' => 'active',
+        ]);
+        SchoolSupportSetting::query()->create(['school_id' => $school->id, 'support_email' => 'first@matahari.test']);
+        SchoolSupportSetting::query()->create(['school_id' => $second->id, 'support_email' => 'second@matahari.test']);
+
+        $this->getJson('http://127.0.0.1/api/v1/public/community-policies/support')
+            ->assertOk()
+            ->assertJsonPath('data.support.school', null)
+            ->assertJsonMissing(['first@matahari.test', 'second@matahari.test']);
     }
 }
