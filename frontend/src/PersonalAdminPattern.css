@@ -149,7 +149,7 @@
 .admin-shell .admin-main .system-check-card.is-checked {
   border-color: #d9a7b3;
   background: #fcf4f6;
-  box-shadow: 0 0 0 1px rgb(176 43 73 / 5%);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--brand-primary) 5%, transparent);
 }
 
 /* Calendar keeps the MAW neutral canvas while selected items use MIS burgundy. */
@@ -292,7 +292,7 @@
 .modal-frame :is(.primary-action, .primary-button) {
   border-radius: 9px;
   background: var(--admin-primary);
-  box-shadow: 0 7px 18px rgb(176 43 73 / 16%);
+  box-shadow: 0 7px 18px color-mix(in srgb, var(--brand-primary) 16%, transparent);
   transition:
     transform var(--admin-motion-fast) ease-out,
     background-color var(--admin-motion-fast) ease-out,
@@ -303,7 +303,7 @@
 .modal-frame :is(.primary-action, .primary-button):hover:not(:disabled) {
   transform: translateY(-1px);
   background: var(--admin-primary-hover);
-  box-shadow: 0 9px 22px rgb(176 43 73 / 22%);
+  box-shadow: 0 9px 22px color-mix(in srgb, var(--brand-primary) 22%, transparent);
 }
 
 .admin-shell .admin-main :is(.secondary-action, .secondary-button, .table-action) {
@@ -339,7 +339,7 @@
 .admin-shell .admin-main :is(.attendance-hub-tabs, .fee-record-view-switch) button.active {
   background: var(--admin-primary);
   color: #ffffff;
-  box-shadow: 0 5px 14px rgb(176 43 73 / 18%);
+  box-shadow: 0 5px 14px color-mix(in srgb, var(--brand-primary) 18%, transparent);
 }
 
 .admin-shell .admin-main .settings-workspace {
@@ -354,7 +354,7 @@
 .admin-shell .admin-main .settings-rail-item.active {
   background: var(--admin-primary);
   color: #ffffff;
-  box-shadow: 0 7px 18px rgb(176 43 73 / 18%);
+  box-shadow: 0 7px 18px color-mix(in srgb, var(--brand-primary) 18%, transparent);
 }
 
 .modal-backdrop {
