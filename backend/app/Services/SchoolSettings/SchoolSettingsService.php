@@ -31,7 +31,7 @@ final class SchoolSettingsService
     }
 
     /** @param array<string, mixed> $data
-     *  @return array<string, mixed>
+     * @return array<string, mixed>
      */
     public function updateSchoolInformation(int $schoolId, array $data, AuditContext $context): array
     {
@@ -65,7 +65,7 @@ final class SchoolSettingsService
     }
 
     /** @param array<string, mixed> $data
-     *  @return array<string, mixed>
+     * @return array<string, mixed>
      */
     public function updateAppSupport(int $schoolId, int $userId, array $data, AuditContext $context): array
     {

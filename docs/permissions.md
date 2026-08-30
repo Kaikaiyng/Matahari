@@ -2,7 +2,7 @@
 
 **Status:** Current role, persona, and per-user authorization contract
 
-**Reviewed:** 2026-08-23
+**Reviewed:** 2026-08-30
 
 Backend authorization is authoritative. Navigation visibility, disabled controls, and App persona selection are usability controls only.
 
@@ -51,8 +51,9 @@ School Admin and Finance may edit another same-school School Admin, Finance, or 
 | Academics | year/subject/schedule views | their manage permissions plus school-wide assessment/quiz permissions |
 | School Updates | `community.view` (read authorized Updates) | `community.publish` (official publish/edit/withdraw own while effective), `community.moderate` (manage same-school Updates and Post Reports) |
 | App | relationship self-service permissions | `app.teacher_access` |
+| School Settings | authenticated current-school read | `school.settings.manage` |
 
-`audit.view`, `logs.view`, tenant configuration, platform Community intervention, domain activation, and cross-tenant operations remain platform-only unless a later reviewed policy explicitly changes them.
+`school.settings.manage` is a school-scoped default for Super Admin, School Admin, and Finance. `audit.view`, `logs.view`, tenant configuration, platform Community intervention, domain activation, and cross-tenant operations remain platform-only unless a later reviewed policy explicitly changes them.
 
 `community.view` is required for the Updates feed. The effective same-school `community.publish` ability is the backend publishing authority; it permits whole-school and any active same-school class audience and does not add a second position or Teaching Assignment check. The current Admin ability editor grants it only through employee access management, and it never follows from the Teacher, Parent, or Student persona itself. An author must retain that ability to edit or withdraw their own Update; `community.moderate` independently permits same-school management. Parent and Student active access is read, Like, and Post Report; it does not include publish, edit, withdraw, hide, or report decisions. Moderators decide reports and are not offered reporting on Updates. `community.interact` and historical block/restriction/appeal permissions do not enable active social or School Update workflows.
 
@@ -61,5 +62,5 @@ School Admin and Finance may edit another same-school School Admin, Finance, or 
 - Resolve an active verified hostname before membership, permission, school, and resource checks.
 - Never accept a client-submitted tenant ID as authority.
 - Same-school permission does not authorize another school or tenant.
-- Material student, finance, employee-position, and User Ability mutations audit inside the same transaction.
+- Material student, finance, employee-position, User Ability, and School Settings mutations audit inside the same transaction.
 - Audit routes are read-only and require `audit.view`.

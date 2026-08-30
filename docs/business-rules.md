@@ -25,6 +25,13 @@ This document separates policy from implementation. A confirmed intended rule is
 - Every position, User Ability, or Teacher App Access update requires a reason and its Audit Trail record in the same transaction.
 - App personas are exactly Teacher, Parent, and Student. Elevated employees remain Teacher in the App; there is no Staff persona.
 
+## School Information and App Support
+
+- School Information and App Support belong to the resolved current school, not tenant Branding, and a request cannot select another school through its payload.
+- Super Admin, School Admin, and Finance receive `school.settings.manage`; Teacher does not receive it by default.
+- Each update is audited inside the same database transaction. Audit persistence failure rolls back the settings mutation.
+- Platform support and child-safety contacts remain global configuration. Public local-school Support is returned only when the host-resolved tenant has exactly one active school; multi-school tenants do not guess a school before authentication.
+
 ## Student Lifecycle
 
 Verified stored/API status values are:

@@ -304,6 +304,7 @@ Use fictional data in a local or approved test environment:
 10. Exercise Attendance Overview/Class Register/Devices/Settings with assigned versus school-wide abilities; verify Parent linked-child reads, Student exclusion, immutable campus movements, and duplicate external-event rejection. Real Hikvision protocol/authentication remains **Not verified** without confirmed hardware.
 11. Exercise School Updates whole-school and multi-class publishing, optional notifications, authorized reads/Likes/Post Reports, manager decisions, image validation, and direct API denial for Parent/Student publishing. Confirm comments and new direct-Student audiences are unavailable.
 12. Check desktop, tablet, mobile, keyboard focus, swipe-back behavior, forced policy acceptance, and native browser print preview.
+13. Exercise School Information and App Support as School Admin/Finance versus Teacher; confirm same-school persistence, Audit Trail entries, App call/WhatsApp/email actions, global child-safety separation, and no guessed local contact for a multi-school public tenant.
 
 For a real HTTP CSRF smoke test, use a disposable local database and an exact temporary port, start `artisan serve` in a hidden child process, preserve cookies in one client session, and stop only that recorded process ID afterward. Laravel feature tests disable CSRF middleware during normal test execution, so route/middleware feature tests do not replace this HTTP check.
 

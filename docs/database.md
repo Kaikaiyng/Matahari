@@ -2,7 +2,7 @@
 
 **Status:** Current schema reference
 
-**Repository baseline:** Extensible Notification Channel foundation (2026-08-27)
+**Repository baseline:** School Information and App Support settings (2026-08-30)
 
 ## Engines and Configuration
 
@@ -30,7 +30,7 @@ The role/Attendance delivery adds `user_permission_overrides`, campus Attendance
 | Area | Tables |
 | --- | --- |
 | Laravel infrastructure | `migrations`, `sessions`, `cache`, `cache_locks`, `jobs`, `job_batches`, `failed_jobs` |
-| Tenant, school and access | `tenants`, `tenant_brandings`, `tenant_domains`, `tenant_features`, `tenant_user_memberships`, `tenant_membership_schools`, `tenant_membership_roles`, `schools`, `users`, `roles`, `permissions`, `user_roles`, `role_permissions`, `user_permission_overrides`, `audit_logs` |
+| Tenant, school and access | `tenants`, `tenant_brandings`, `tenant_domains`, `tenant_features`, `tenant_user_memberships`, `tenant_membership_schools`, `tenant_membership_roles`, `schools`, `school_support_settings`, `users`, `roles`, `permissions`, `user_roles`, `role_permissions`, `user_permission_overrides`, `audit_logs` |
 | Students and contacts | `classes`, `students`, `parents`, `student_parent_links` |
 | Legacy fee setup | `fee_items`, `discount_items`, `student_fee_assignments`, `student_discount_assignments` |
 | Fee Agreements | `fee_agreements`, `fee_agreement_items`, `fee_agreement_discounts`, `fee_agreement_discount_items` |
@@ -48,11 +48,16 @@ The role/Attendance delivery adds `user_permission_overrides`, campus Attendance
 
 `user_permission_overrides` is unique by `(school_id, user_id, permission_id)` and stores `allowed`, the required reason, updating actor, and timestamps. `false` denies a position default; `true` grants an additional school ability. Rows are stored only when the desired result differs from the position template. Cross-school rows do not contribute to effective permissions.
 
+### School information and App Support
+
+`schools` retains the institutional name/address/phone/email and adds nullable `registration_number`, `group_member_line`, and `operating_hours`. `school_support_settings` has exactly one optional row per school and stores nullable call phone, WhatsApp phone, support email, support hours, last updating user, and timestamps. No invented backfill is created. School deletion cascades the support row; deletion of the updating user sets `updated_by` null.
+
 ## Main Relationships
 
 ```mermaid
 erDiagram
     SCHOOLS ||--o{ USERS : owns
+    SCHOOLS ||--o| SCHOOL_SUPPORT_SETTINGS : configures
     SCHOOLS ||--o{ STUDENTS : owns
     CLASSES ||--o{ STUDENTS : groups
     STUDENTS ||--o{ STUDENT_PARENT_LINKS : has
@@ -109,6 +114,7 @@ No model uses soft deletes. Historical preservation is implemented through statu
 Verified uniqueness includes:
 
 - `(schools.tenant_id, schools.code)`; `users.username`; role and permission slugs.
+- `school_support_settings.school_id` for at most one App Support configuration per school.
 - `(schools.tenant_id, schools.id)` and `(tenant_user_memberships.tenant_id, tenant_user_memberships.id)` as referenced keys for same-tenant composite foreign keys.
 - `(tenant_domains.tenant_id, tenant_domains.primary_surface)` for at most one primary Admin/App/API domain per tenant; non-primary rows produce `NULL` and do not collide.
 - Role/user and role/permission pivot pairs.

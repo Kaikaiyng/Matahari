@@ -16,6 +16,13 @@
 - Application Logs now uses the same compact MAW hierarchy with a truthful log-reader/source strip, level-count tabs, search/date filters, dense paginated rows, refresh and a dark inline sanitized context inspector. Unsupported archive, download, export, auto-refresh and server-health capabilities were not fabricated.
 - The School App is unchanged. Focused Audit API and Admin Audit/Application Log tests plus the Admin production build passed; broader browser QA, full suites and MariaDB were not run for this presentation/read-only-query delivery.
 
+## 2026-08-30 School Information and App Support Settings
+
+- Admin Settings now provides real School Information and App Support sections using the approved MAW-derived RYLAY pattern. School name, registration number, group/member line, address, phone, email and operating hours are editable separately from App call, WhatsApp, email and support-hours contacts.
+- Values are scoped to the backend-resolved current school. `school.settings.manage` is assigned to Super Admin, School Admin and Finance; successful mutations write same-transaction Audit Trail events and roll back if audit persistence fails.
+- The public App policy/support response retains global RYLAY and child-safety contacts. A tenant with exactly one active school additionally exposes that school's configured contact actions; a multi-school tenant receives no guessed school contact before authentication.
+- Focused backend School Settings passed 4 tests/23 assertions, public support passed 4 tests/19 assertions, Admin Settings passed 5 tests, and App public-policy support passed 3 tests. Pint, API route loading, Admin/App production builds, and a disposable SQLite fresh migration → latest rollback → re-migration lifecycle passed. Full suites, browser/manual UAT and disposable MariaDB remain **Not verified** for this delivery.
+
 ## 2026-08-27 Extensible Notification Channel Foundation
 
 - Attendance, Billing, School Updates, and retained Community moderation notification producers now use a channel-neutral `NotificationDispatcher`; `InAppChannel` preserves the existing `portal_notifications` payload, read state, batching, and surrounding transaction behavior.
@@ -40,11 +47,11 @@
 - Local reachability was rechecked on 2026-08-26: the tenant-aware backend endpoint, Admin root, and App root each returned HTTP 200. This is a service-reachability smoke check only, not browser/manual UAT.
 - No migration was added, so a new SQLite lifecycle is not applicable to this delivery. Disposable MariaDB audience-query behavior is **Not verified**. Browser/manual UAT and real-device or hardware checks are **Not verified** for this delivery. The repository remains not production-ready.
 
-## 2026-08-29 Admin Settings Workspace
+## 2026-08-29 Admin Settings Workspace (superseded by 2026-08-30 settings delivery)
 
-- The former display-only Settings placeholder is replaced by a responsive MAW-inspired workspace using MIS/RYLAY styling. Its six real sections are School Profile, Branding, Attendance, Notifications, Users & Access, and My Account.
-- School Profile and My Account expose resolved read-only context. Branding saves through the existing tenant Branding API and immediately refreshes the Admin title and CSS brand colours. Attendance and guardian entry/exit notification preferences reuse the existing school-scoped Attendance Settings API and preserve its complete payload.
-- Users & Access summarizes the approved School Admin, Finance, and Teacher position model and links authorized users to Employees. Unsupported school editing, password/session controls, Telegram configuration, and placeholder save actions were not added.
+- The former display-only Settings placeholder introduced the responsive MAW-inspired workspace. The current seven-section workspace is School Information, App Support, Branding, Attendance, Notifications, Users & Access, and My Account.
+- Branding, Attendance and guardian notification behavior remains unchanged. The former read-only School Profile limitation was removed by the 2026-08-30 school-scoped settings API.
+- Users & Access summarizes the approved School Admin, Finance, and Teacher position model and links authorized users to Employees. Password/session controls, Telegram configuration, and placeholder save actions remain absent.
 - Focused Admin verification passed 64 tests across Settings, tenant context, and App integration. Oxlint exited 0 with the 9 existing Calendar Fast Refresh warnings, and the production TypeScript/Vite build passed. Backend, App, browser/manual UAT, and MariaDB were **Not verified** for this frontend-only delivery.
 
 ## 2026-08-30 Owner Admin UI Pattern

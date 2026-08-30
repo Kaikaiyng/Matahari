@@ -49,6 +49,7 @@ Do not describe the system as unlimited or use the historical cost estimate as p
 - Phase A teacher/parent/student roles, reviewed nullable portal links, academic years, enrolment history, subjects, teaching assignments, scoped `/api/v1` management/teacher APIs, policies/access services, and transactional foundation audit events.
 - MIS-branded demo identities for Admin, Teacher, Parent, and Student; an independent role-filtered `app/` web shell; self-profile/enrolment endpoints; and user-scoped in-app notification storage.
 - Channel-neutral notification dispatch, an `in_app` channel that preserves existing portal behavior, and external destination configuration at exact global, tenant, or tenant-plus-school scope.
+- Audited school-scoped School Information and App Support settings, with safe call/WhatsApp/email actions on the public App Support surface when a tenant has exactly one active school.
 - Assignment-scoped daily Attendance sessions/records, Teacher roster marking, correction reasons and audit, linked-child Parent history reads, and explicit Student exclusion.
 - Phone-first School App presentation with a compact header, role-specific liquid-glass bottom navigation, and profile-based sign out.
 - Official School Updates: employees with `community.publish` create immediate whole-school or multi-class text/image updates, optionally notify the resolved audience, and audit publication. Teachers, Parents, and Students read authorized Updates and can Like or report them; comments and new direct-Student targeting are unavailable.

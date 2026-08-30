@@ -143,13 +143,13 @@ git commit -m "feat: add school and app support settings ui"
 
 **Files:**
 - Modify: `backend/app/Http/Controllers/Api/V1/PublicCommunityPolicyController.php`
-- Modify: `backend/tests/Feature/CommunitySafetyTest.php`
+- Modify: `backend/tests/Feature/PublicCommunityPolicyApiTest.php`
 - Modify: `app/src/features/community-safety/PublicPolicyPage.tsx`
 - Modify: `app/src/features/community-safety/CommunitySafety.css`
 - Modify: `app/src/features/community-safety/PublicPolicyPage.test.tsx`
 
 **Interfaces:**
-- Extends public policy `support` with nullable `call_phone`, `whatsapp_phone`, `email`, and `operating_hours` for the host-resolved school.
+- Extends public policy `support.school` with nullable `call_phone`, `whatsapp_phone`, `support_email`, and `operating_hours` only for a host-resolved tenant with exactly one active school.
 - Keeps `child_safety_email` sourced from global safety configuration.
 
 - [ ] **Step 1: Add failing backend and App tests**
@@ -162,7 +162,7 @@ Run:
 
 ```powershell
 cd backend
-..\tools\php\php-local.cmd vendor\bin\phpunit tests/Feature/CommunitySafetyTest.php
+..\tools\php\php-local.cmd vendor\bin\phpunit tests/Feature/PublicCommunityPolicyApiTest.php
 cd ..\app
 npm.cmd test -- src/features/community-safety/PublicPolicyPage.test.tsx
 ```
@@ -171,7 +171,7 @@ Expected: response and contact-action assertions fail.
 
 - [ ] **Step 3: Implement safe public output and App actions**
 
-Resolve the effective school from tenant/host context without accepting a client school ID. Return school support fields alongside the global child-safety contact. Render only configured actions, sanitize the WhatsApp URL to digits, and retain the existing emergency disclaimer and App visual system.
+Resolve a public school only when the host-selected tenant has exactly one active school; return `support.school: null` for a multi-school tenant rather than guessing. Return local support fields nested alongside unchanged global platform/child-safety contacts. Render only configured actions, sanitize the WhatsApp URL to digits, and retain the existing emergency disclaimer and App visual system.
 
 - [ ] **Step 4: Run focused backend and App tests**
 
@@ -182,7 +182,7 @@ Expected: both focused suites pass.
 - [ ] **Step 5: Commit**
 
 ```powershell
-git add backend/app/Http/Controllers/Api/V1/PublicCommunityPolicyController.php backend/tests/Feature/CommunitySafetyTest.php app/src/features/community-safety/PublicPolicyPage.tsx app/src/features/community-safety/CommunitySafety.css app/src/features/community-safety/PublicPolicyPage.test.tsx
+git add backend/app/Http/Controllers/Api/V1/PublicCommunityPolicyController.php backend/tests/Feature/PublicCommunityPolicyApiTest.php app/src/features/community-safety/PublicPolicyPage.tsx app/src/features/community-safety/CommunitySafety.css app/src/features/community-safety/PublicPolicyPage.test.tsx
 git commit -m "feat: expose school app support contacts"
 ```
 
@@ -211,7 +211,7 @@ Run:
 
 ```powershell
 cd backend
-..\tools\php\php-local.cmd vendor\bin\phpunit tests/Feature/SchoolSettingsTest.php tests/Feature/CommunitySafetyTest.php
+..\tools\php\php-local.cmd vendor\bin\phpunit tests/Feature/SchoolSettingsTest.php tests/Feature/PublicCommunityPolicyApiTest.php
 ..\tools\php\php-local.cmd vendor\bin\pint --test
 ..\tools\php\php-local.cmd artisan route:list --path=api --except-vendor
 cd ..\frontend

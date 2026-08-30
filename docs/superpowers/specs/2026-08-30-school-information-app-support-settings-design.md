@@ -54,7 +54,7 @@ School-scoped Admin endpoints are added under the existing authenticated Admin A
 
 The PUT routes require `school.settings.manage`. Requests use trimmed, length-limited strings, email validation, and nullable optional fields. Responses return only the resolved current school's values.
 
-The public host-resolved policy/support response exposes the effective school's App Support fields without authentication because the login and legal Support surfaces must remain reachable before login. It does not expose internal identifiers, audit metadata, or configuration from another school. Platform child-safety contacts remain global safety configuration and are not replaced by school support details.
+The public host-resolved policy/support response exposes local App Support fields without authentication only when the resolved tenant has exactly one active school. A tenant domain alone cannot safely choose among multiple schools, so a multi-school tenant omits local school contacts before authentication instead of guessing. The response does not expose internal identifiers, audit metadata, or configuration from another school. Platform support and child-safety contacts remain global safety configuration and are not replaced by school support details.
 
 ## Admin Experience
 
