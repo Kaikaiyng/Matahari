@@ -8,14 +8,30 @@ import { describe, expect, it } from 'vitest'
 const sourceRoot = dirname(fileURLToPath(import.meta.url))
 const appSource = readFileSync(resolve(sourceRoot, 'App.tsx'), 'utf8')
 const typographyPath = resolve(sourceRoot, 'AdminTypography.css')
+const personalPatternPath = resolve(sourceRoot, 'PersonalAdminPattern.css')
 const shellSource = readFileSync(resolve(sourceRoot, 'components/AdminShell.css'), 'utf8')
 const indexSource = readFileSync(resolve(sourceRoot, 'index.css'), 'utf8')
 const adminUiSource = readFileSync(resolve(sourceRoot, 'components/AdminUi.css'), 'utf8')
 
 describe('Admin typography contract', () => {
   it('loads the Admin typography layer after the legacy application styles', () => {
-    expect(appSource.indexOf("import './AdminTypography.css'"))
+    expect(existsSync(personalPatternPath), 'PersonalAdminPattern.css must exist').toBe(true)
+    expect(appSource.indexOf("import './PersonalAdminPattern.css'"))
       .toBeGreaterThan(appSource.indexOf("import './App.css'"))
+    expect(appSource.indexOf("import './AdminTypography.css'"))
+      .toBeGreaterThan(appSource.indexOf("import './PersonalAdminPattern.css'"))
+  })
+
+  it('applies the personal MAW card and form treatment across Admin modules', () => {
+    if (!existsSync(personalPatternPath)) return
+    const pattern = readFileSync(personalPatternPath, 'utf8')
+    expect(pattern).toContain('.admin-shell .admin-main')
+    expect(pattern).toContain('.attendance-overview-card')
+    expect(pattern).toContain('.settings-workspace')
+    expect(pattern).toContain('.audit-table-panel')
+    expect(pattern).toContain('.application-log-table-panel')
+    expect(pattern).toMatch(/border-radius:\s*var\(--admin-radius\)/)
+    expect(pattern).toMatch(/gap:\s*var\(--admin-gap\)/)
   })
 
   it('defines the approved semantic scale', () => {
