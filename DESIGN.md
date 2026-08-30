@@ -88,3 +88,4 @@
 | 2026-08-13 | Calm phone-first record surfaces | More spacing, fewer nested borders, and grouped rows make academic, attendance, finance, Quiz, and profile pages easier to scan on 360â€“430px screens. |
 | 2026-08-21 | Fixed-underlay swipe-back | Revealing a stationary previous page beneath the moving secondary page makes back navigation feel continuous without disturbing horizontal content controls. |
 | 2026-08-24 | Official School Updates replace social posting | Authorized employees publish immediately to whole-school or selected-class audiences; Likes and Post Reports remain, while comments and open social mechanics are removed. |
+| 2026-08-30 | Safety Centre uses a grouped private hub | Report status, safety standards, legal/account policies, and configured school support remain distinct while sharing the App's Warm School Editorial surfaces and swipe-back behavior. |

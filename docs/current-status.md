@@ -1,6 +1,6 @@
 # Current Status
 
-**Snapshot date:** 2026-08-27
+**Snapshot date:** 2026-08-30
 
 **Inspected Phase A implementation commit:** `ecaa0a1f177292ae99c9338e255a1f93312971f5`
 
@@ -9,6 +9,12 @@
 **Pre-reconciliation pushed baseline:** `49e3e6662679dd32aa743c53917d8e97abbe8206` (`docs: record integrated school updates delivery`) on `feat/admin-application-logs`
 
 **Overall status:** SaaS multi-tenant foundation in final validation, with MIS as the first tenant; separate Admin and multi-role App clients, live School Updates, daily Attendance, Assessment publication, Parent Finance reads/receipt access/manual in-app reminders, class Schedule, and formal Quiz V1 remain shared tenant-aware modules. Practice/AI Quiz, native/store delivery, automated DNS/TLS and production operations remain incomplete.
+
+## 2026-08-30 School App Safety Centre Refresh
+
+- The App Safety Centre now uses the established Warm School Editorial language: a private safety introduction, compact report status/empty state, grouped safety and account policies, and a featured school-support card replace the former plain mixed link list.
+- The existing fixed-underlay swipe-back interaction, scoped Post Report API, public legal routes, and Admin-configured school call/WhatsApp/email/support-hours data flow are unchanged.
+- Focused Community Safety tests passed 6/6, App lint passed, and the App TypeScript/Vite production build passed. Broader suites and device QA were not run for this presentation-only change.
 
 ## 2026-08-30 MAW-style Audit and Application Logs
 

@@ -81,8 +81,22 @@ describe('Community safety', () => {
     render(<CommunitySafetyCentre />)
     expect(await screen.findByText('Only you and moderators can see this.')).toBeInTheDocument()
     expect(screen.getByText('My Post Reports')).toBeInTheDocument()
+    expect(screen.getByText('Safety standards')).toBeInTheDocument()
+    expect(screen.getByText('Policies & account')).toBeInTheDocument()
+    expect(screen.getByText('School support')).toBeInTheDocument()
+    expect(screen.getByText('Call, WhatsApp or email your school support team.')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Account Deletion' })).toHaveAttribute('href', '/legal/account-deletion')
+    expect(screen.getByRole('link', { name: 'Contact Support' })).toHaveAttribute('href', '/legal/support')
     expect(screen.queryByText('Blocked Users')).not.toBeInTheDocument()
     expect(screen.queryByText('My Appeals')).not.toBeInTheDocument()
+  })
+
+  it('shows a calm private empty state when no reports have been submitted', async () => {
+    vi.spyOn(portalApi, 'getCommunityReports').mockResolvedValue({ data: [] })
+
+    render(<CommunitySafetyCentre />)
+
+    expect(await screen.findByText('No reports submitted')).toBeInTheDocument()
+    expect(screen.getByText('Reports you send will appear here with their latest status.')).toBeInTheDocument()
   })
 })
