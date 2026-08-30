@@ -1,5 +1,5 @@
 /* oxlint-disable react/only-export-components -- colocated context hook is the public tenant API */
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { apiRequest } from './api'
 
 export type TenantConfiguration = {
@@ -27,7 +27,14 @@ export const fallbackTenant: TenantConfiguration = {
   features: {},
 }
 
-const TenantConfigurationContext = createContext(fallbackTenant)
+export type TenantConfigurationContextValue = TenantConfiguration & {
+  updateBranding: (branding: TenantConfiguration['branding']) => void
+}
+
+const TenantConfigurationContext = createContext<TenantConfigurationContextValue>({
+  ...fallbackTenant,
+  updateBranding: () => undefined,
+})
 
 export function useTenantConfiguration() { return useContext(TenantConfigurationContext) }
 
@@ -45,7 +52,19 @@ export function TenantConfigurationProvider({ children }: { children: ReactNode 
     }).catch(() => setError(true))
   }, [])
 
+  const updateBranding = useCallback((branding: TenantConfiguration['branding']) => {
+    setTenant((current) => current ? { ...current, branding } : current)
+    document.documentElement.style.setProperty('--brand-primary', branding.primary_color)
+    document.documentElement.style.setProperty('--tenant-accent', branding.accent_color)
+    document.title = `${branding.organization_name} · ${branding.admin_title}`
+  }, [])
+
+  const value = useMemo<TenantConfigurationContextValue | null>(
+    () => tenant ? { ...tenant, updateBranding } : null,
+    [tenant, updateBranding],
+  )
+
   if (error) return <main className="session-loader"><h1>Workspace unavailable</h1><p>This domain is not assigned to an active Admin tenant.</p></main>
   if (!tenant) return <main className="session-loader"><p>Loading workspace…</p></main>
-  return <TenantConfigurationContext.Provider value={tenant}>{children}</TenantConfigurationContext.Provider>
+  return <TenantConfigurationContext.Provider value={value!}>{children}</TenantConfigurationContext.Provider>
 }

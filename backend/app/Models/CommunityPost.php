@@ -8,6 +8,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CommunityPost extends Model
 {
+    public const POST_TYPE_UPDATE = 'update';
+
+    public const AUTHOR_WITHDRAWN_REASON = 'Withdrawn by author.';
+
     public const STATUS_PENDING_REVIEW = 'pending_review';
 
     public const STATUS_PUBLISHED = 'published';
@@ -15,6 +19,8 @@ class CommunityPost extends Model
     public const STATUS_REJECTED = 'rejected';
 
     public const STATUS_HIDDEN = 'hidden';
+
+    public const STATUS_DELETED = 'deleted';
 
     protected $fillable = ['tenant_id', 'school_id', 'author_user_id', 'calendar_event_id', 'post_type', 'body', 'comments_enabled', 'status', 'published_at', 'hidden_at', 'hidden_by_user_id', 'moderation_reason', 'reviewed_at', 'reviewed_by_user_id', 'moderation_reason_code'];
 

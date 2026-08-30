@@ -127,7 +127,38 @@ class DemoPortalApiTest extends TestCase
         $this->assertNull($other->fresh()->read_at);
     }
 
-    public function test_staff_api_uses_foundation_permission_and_creates_teacher_only(): void
+    public function test_notifications_use_the_resolved_school_context_for_a_multi_school_member(): void
+    {
+        $parent = User::query()->where('username', 'rachel.wong')->firstOrFail();
+        $otherSchool = School::query()->create([
+            'tenant_id' => $parent->school->tenant_id,
+            'name' => 'Second Campus',
+            'code' => 'MIS2',
+            'receipt_prefix' => 'MIS2',
+            'invoice_prefix' => 'MIS2-INV',
+            'email' => 'second-campus@example.test',
+            'phone' => '+60 3-0000 0002',
+            'address' => 'Second campus',
+            'status' => 'active',
+        ]);
+        $membership = $parent->tenantMembership($parent->school->tenant_id);
+        $membership->schools()->attach($otherSchool->id, ['tenant_id' => $otherSchool->tenant_id]);
+        $notification = PortalNotification::query()->create([
+            'school_id' => $otherSchool->id,
+            'recipient_user_id' => $parent->id,
+            'type' => 'school_update',
+            'title' => 'Second campus update',
+            'body' => 'Visible in the selected school context.',
+            'context_json' => ['post_id' => 123, 'audience_type' => 'school', 'class_ids' => []],
+        ]);
+
+        $this->actingAs($parent)
+            ->getJson("http://127.0.0.1/api/v1/portal/notifications?school_id={$otherSchool->id}")
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $notification->id);
+    }
+
+    public function test_employee_api_creates_an_explicit_position(): void
     {
         $admin = User::query()->where('username', 'admin')->firstOrFail();
 
@@ -141,6 +172,7 @@ class DemoPortalApiTest extends TestCase
                 'name' => 'Demo Teacher',
                 'username' => 'demo.teacher',
                 'password' => 'demo-password-2026',
+                'position' => 'teacher',
             ])
             ->assertCreated()
             ->assertJsonPath('data.roles.0', 'teacher');

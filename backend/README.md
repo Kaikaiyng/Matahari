@@ -1,6 +1,6 @@
 # RYLAY Backend
 
-The backend is the shared Laravel 13 JSON API for the MIS Admin Panel and Community App. It owns authentication, authorization, school scope, academic foundations, portal relationship scope, daily Attendance, audit integration, financial validation, Fee Record charges, payment allocation, and receipt integrity.
+The backend is the shared Laravel 13 JSON API for the RYLAY Admin Panel and School App. It owns authentication, authorization, school scope, academic foundations, portal relationship scope, School Updates, daily Attendance, audit integration, financial validation, Fee Record charges, payment allocation, and receipt integrity.
 
 ## Requirements
 
@@ -58,7 +58,7 @@ For an existing local database:
 ..\tools\php\php-local.cmd artisan migrate --force
 ```
 
-The current disposable demo schema has 43 non-SQLite-internal tables, including Laravel infrastructure. The full domain grouping and MariaDB lifecycle requirements are documented in [Database](../docs/database.md).
+The schema evolves through additive migrations; regenerate the disposable schema inventory instead of relying on an older table count. The full domain grouping and MariaDB lifecycle requirements are documented in [Database](../docs/database.md).
 
 ## Start the API
 
@@ -89,13 +89,17 @@ The default API base is `http://127.0.0.1:8000/api`.
 - Fee Record Summary and Category Monthly ledger APIs
 - Legacy dashboard and monthly invoice-generation endpoints retained from the initial scaffold
 - Academic years, subjects, class enrolment history, teaching assignments, and foundation account/portal-link management
-- Parent and Student self-service identity/finance/attendance reads
+- Parent and Student self-service identity, published academic, Schedule, Quiz, and notification reads; Parent linked-child finance and Attendance reads; Student Attendance exclusion
 - User-scoped portal notifications
-- Teacher assignment-scoped daily Attendance marking and correction audit
+- Teacher assignment/school-scoped daily Attendance marking and correction audit
+- Admin Attendance overview/class register, immutable campus entry/exit events, device mapping, school settings, and time-bound Attendance abilities
+- Employee Position/User Ability overrides with same-school guards and transactional audit
+- Immediate whole-school/multi-class School Updates, image delivery, Likes, optional audience notifications, Post Reports, and manager decisions
+- Super Admin-only sanitized Application Logs plus read-only Audit Trail access
 
 ## API Inventory
 
-The application currently exposes 74 non-vendor API routes. Generate the authoritative list with:
+Generate the authoritative non-vendor API route list from the current checkout with:
 
 ```powershell
 ..\tools\php\php-local.cmd artisan route:list --path=api --except-vendor
@@ -113,10 +117,14 @@ Main route groups:
 | Payments | student history/create, verify, and void |
 | Receipts | student history, create from payment, show, print, and void |
 | Academic foundation | academic years, subjects, enrolments, teaching assignments, staff/foundation accounts, and portal links |
-| Portal self-service | Parent/Student identity, finance/attendance reads, and notifications |
-| Teacher scope | assigned classes/students and daily Attendance read/write |
+| Portal self-service | Parent/Student identity and academics; Parent finance/Attendance; Student Attendance exclusion; notifications |
+| Teacher scope | assigned classes/students plus ability-controlled daily/campus Attendance reads and writes |
+| Admin Attendance | overview, class register, campus records, devices, settings, and time-bound abilities |
+| Employee access | Position, explicit permission overrides, Teacher App access, and audited reasoned changes |
+| School Updates | scoped feed and single-post reads, authorized publishing/audience preview, Likes, post reports, and manager report decisions |
+| Operations | immutable Audit Trail reads and sanitized Application Logs |
 
-See [System Architecture](../docs/SYSTEM_ARCHITECTURE.md) for the complete endpoint table and finance data flow. See [Maintenance Guide](../docs/MAINTENANCE_GUIDE.md) for where route, validation, controller, service, model, and frontend request responsibilities belong.
+See canonical [Architecture](../docs/architecture.md) and [Database](../docs/database.md) for current boundaries; the detailed System Architecture file is a dated historical snapshot. See [Maintenance Guide](../docs/MAINTENANCE_GUIDE.md) for where route, validation, controller, service, model, and frontend request responsibilities belong.
 
 ## Authentication and Authorization
 
@@ -145,21 +153,14 @@ See [System Architecture](../docs/SYSTEM_ARCHITECTURE.md) for the complete endpo
 
 `phpunit.xml` forces SQLite `:memory:` so the automated suite does not modify the active local development/demo database.
 
-Last verified on merged `master` on 2026-08-13:
-
-```text
-255 tests discovered
-247 passed
-8 opt-in MariaDB tests skipped
-1,314 assertions
-```
+Use [Current Status](../docs/current-status.md) and [Testing and Release](../docs/testing-and-release.md) for the newest dated test evidence and explicit database limitations.
 
 ## Deferred Backend Scope
 
-- Statements and reminders
+- Statements and automatic/external reminders; manual in-app payment reminders are implemented
 - General reports and exports
 - PDF generation
-- Community Feed persistence/media, Assessment publication, and Quiz APIs
+- Video attachments for School Updates and native push delivery
 - Production-ready Parent Finance and guardian activation workflow
 - Remaining production dashboard/invoice reporting beyond the implemented Fee Record outstanding total
-- Deployment and hosting automation
+- Verified production deployment, hosting operations, monitoring, backup/restore, and remote promotion; repository CI/container/deployment foundations exist but are not production evidence

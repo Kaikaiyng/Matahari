@@ -1,4 +1,4 @@
-.login-page-container{min-height:100vh;display:flex;background:#0f172a;color:#0f172a;font-family:var(--font-sans,'Segoe UI',sans-serif)}
+.login-page-container{min-height:100vh;display:flex;background:#0f172a;color:#0f172a;font-family:inherit}
 .login-hero-pane{flex:1.08;min-width:0;padding:48px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden;color:#fff;background:linear-gradient(145deg,#11182f 0%,#1b1c48 55%,#322f79 100%)}
 .login-hero-pane::before{content:"";position:absolute;top:-180px;right:-120px;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.55),rgba(255,255,255,.05) 38%,transparent 68%);pointer-events:none}
 .login-brand-header,.login-hero-content,.login-persona-section{position:relative;z-index:1}

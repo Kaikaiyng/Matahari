@@ -68,13 +68,11 @@ class DatabaseSeeder extends Seeder
 
         $roles = collect([
             'super-admin' => 'Super Admin',
-            'ceo' => 'CEO',
             'school-admin' => 'School Admin',
             'finance' => 'Finance',
             'teacher' => 'Teacher',
             'parent' => 'Parent',
             'student' => 'Student',
-            'tenant-owner' => 'Tenant Owner',
         ])->mapWithKeys(fn (string $name, string $slug) => [
             $slug => Role::query()->updateOrCreate(['slug' => $slug], ['name' => $name]),
         ]);
@@ -176,6 +174,7 @@ class DatabaseSeeder extends Seeder
             'calendar.delete' => 'Delete calendar events',
             'audit.view' => 'View global audit logs',
             'audit.correct_generic' => 'Correct approved low-risk fields from audit history',
+            'logs.view' => 'View sanitized application logs',
             'academic_years.view' => 'View academic years',
             'academic_years.manage' => 'Manage academic years',
             'class_enrolments.view' => 'View class enrolments',
@@ -185,8 +184,18 @@ class DatabaseSeeder extends Seeder
             'teaching_assignments.view' => 'View teaching assignments',
             'teaching_assignments.manage' => 'Manage teaching assignments',
             'teaching_scope.view' => 'View own teaching scope',
+            'attendance.view_assigned' => 'View assigned class Attendance',
+            'attendance.view_school' => 'View school-wide Attendance',
+            'attendance.manage_assigned' => 'Manage assigned class Attendance',
+            'attendance.manage_school' => 'Manage school-wide Attendance',
+            'attendance.devices.manage' => 'Manage Attendance devices and settings',
+            'attendance.abilities.manage' => 'Manage time-bound Attendance abilities',
             'portal_links.manage' => 'Manage portal identity and guardian access links',
             'foundation_accounts.manage' => 'Manage teacher, parent, and student role assignments',
+            'employees.view' => 'View school employees',
+            'employees.manage' => 'Create and manage school employees',
+            'employees.abilities.manage' => 'Manage employee positions and user abilities',
+            'app.teacher_access' => 'Use the Community App with the Teacher persona',
             'parent.self_service' => 'Access parent self-service',
             'student.self_service' => 'Access student academic self-service',
             'community.view' => 'View authorized community posts',
@@ -203,16 +212,12 @@ class DatabaseSeeder extends Seeder
             'quizzes.manage_school' => 'Manage all formal quizzes in the school',
             'quizzes.attempt' => 'Attempt assigned formal quizzes',
             'tenant.settings.manage' => 'Manage current tenant settings',
+            'school.settings.manage' => 'Manage school information and App Support settings',
         ])->mapWithKeys(fn (string $name, string $slug) => [
             $slug => Permission::query()->updateOrCreate(['slug' => $slug], ['name' => $name]),
         ]);
 
         $roles['super-admin']->permissions()->sync($permissions->pluck('id')->all());
-        $roles['tenant-owner']->permissions()->sync($permissions->except(['audit.view', 'audit.correct_generic', 'community.moderate_platform'])->pluck('id')->all());
-        $roles['ceo']->permissions()->sync($permissions->only([
-            'fee_record.view',
-            'calendar.view',
-        ])->pluck('id')->all());
         $roles['school-admin']->permissions()->sync($permissions->only([
             'students.view',
             'students.create',
@@ -248,9 +253,11 @@ class DatabaseSeeder extends Seeder
             'teaching_assignments.manage',
             'portal_links.manage',
             'foundation_accounts.manage',
+            'employees.view',
+            'employees.manage',
+            'employees.abilities.manage',
             'community.view',
             'community.publish',
-            'community.interact',
             'community.moderate',
             'assessments.manage',
             'assessments.manage_school',
@@ -260,49 +267,44 @@ class DatabaseSeeder extends Seeder
             'quizzes.manage',
             'quizzes.manage_school',
             'quizzes.attempt',
+            'attendance.view_school',
+            'attendance.manage_school',
+            'attendance.devices.manage',
+            'attendance.abilities.manage',
+            'school.settings.manage',
         ])->pluck('id')->all());
-        $roles['finance']->permissions()->sync($permissions->only([
-            'students.view',
-            'parents.view',
-            'fee_items.view',
-            'fee_agreements.view',
-            'fee_record.view',
-            'payments.view',
-            'payment_reminders.send',
+        $financeOnly = $permissions->only([
+            'fee_items.manage',
             'payments.verify',
             'payments.void',
-            'receipts.view',
-            'receipts.create',
             'receipts.void',
-            'receipts.print',
-            'calendar.view',
-            'calendar.create',
-            'calendar.update',
-            'calendar.delete',
-        ])->pluck('id')->all());
+        ])->pluck('id');
+        $roles['finance']->permissions()->sync(
+            $roles['school-admin']->permissions()->pluck('permissions.id')->merge($financeOnly)->unique()->all(),
+        );
 
         $roles['teacher']->permissions()->sync($permissions->only([
             'academic_years.view',
             'subjects.view',
             'teaching_scope.view',
+            'attendance.view_assigned',
+            'attendance.manage_assigned',
             'community.view',
             'community.publish',
-            'community.interact',
             'assessments.manage',
             'schedule.view',
             'quizzes.manage',
+            'app.teacher_access',
         ])->pluck('id')->all());
         $roles['parent']->permissions()->sync($permissions->only([
             'parent.self_service',
             'community.view',
-            'community.interact',
             'assessments.view_published',
             'schedule.view',
         ])->pluck('id')->all());
         $roles['student']->permissions()->sync($permissions->only([
             'student.self_service',
             'community.view',
-            'community.interact',
             'assessments.view_published',
             'schedule.view',
             'quizzes.attempt',

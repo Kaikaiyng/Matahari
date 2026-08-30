@@ -1,10 +1,10 @@
 # RYLAY Project Workflow Catalog
 
-Status: Evidence-backed current-state catalog
+Status: Historical workflow snapshot; not a current role, route, or feature reference
 
-Last reviewed: 2026-08-13
+Snapshot reviewed: 2026-08-13; classified as historical on 2026-08-26
 
-This catalog is the source checklist for the editable FigJam workflow board and the final Notion documentation. It distinguishes runtime behavior from approved-but-unimplemented design and historical/deferred scope.
+This catalog preserves the source checklist used for the dated FigJam workflow board and Notion documentation. Its CEO/Staff model, 74-route inventory, responsive sidebar, and preview-module claims were superseded. Use [Project Overview](project-overview.md), [Permissions](permissions.md), [Architecture](architecture.md), [Database](database.md), and [Current Status](current-status.md) for current behavior.
 
 Published FigJam board: [RYLAY Complete Project Workflow Atlas](https://www.figma.com/board/sGDlrRbsbHsuT5laZEzKa8?utm_source=other&utm_content=edit_in_figjam&oai_id=v1%2FwOVdpwOgFVs6eNhbOHdwC1cOfCUWewcVQHceqgjBVtixXsxAsX2TAY&request_id=5a0a7805-91cc-4e9d-8bc8-d191c5b72bb5)
 
@@ -12,7 +12,7 @@ The board contains 15 numbered diagrams (`00` through `14`) and 15 matching Merm
 
 The detailed Admin finance walkthrough below originated from the 2026-07-22 catalog. This 2026-08-13 supplement records the later academic/portal/App boundary; the FigJam board and Mermaid diagrams remain a 2026-07-14 snapshot. For exact current routes and schema, use [Architecture](architecture.md), [Database](database.md), and generated framework output.
 
-## 2026-08-13 Current Workflow Supplement
+## 2026-08-13 Workflow Supplement (historical snapshot)
 
 - `frontend/` is the Admin/Finance client. `app/` is a separately built and deployed mobile-first Community App for Parent, Student, Teacher, and authorized Staff roles.
 - Both clients use one Laravel API, one authoritative database, session/CSRF authentication, the same RBAC identities, and the same finance source of truth.

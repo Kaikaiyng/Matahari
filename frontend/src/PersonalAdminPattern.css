@@ -1,0 +1,404 @@
+/*
+ * Owner-approved Admin UI pattern.
+ * Source direction: latest MAW AdminPanel, translated to RYLAY's existing
+ * React/CSS architecture and MIS burgundy brand. Business semantics stay local.
+ */
+
+.admin-shell {
+  --admin-card-radius: var(--admin-radius);
+  --admin-card-border: var(--admin-border);
+  --admin-card-shadow: var(--admin-shadow);
+  --admin-card-shadow-hover: var(--admin-shadow-hover);
+  --admin-card-inset: var(--admin-inset);
+  background:
+    radial-gradient(circle at 82% 0%, rgb(255 255 255 / 78%), transparent 30%),
+    var(--canvas, #f4f7fb);
+}
+
+.admin-shell .admin-main {
+  color: #1f2940;
+}
+
+.admin-shell .admin-main :is(.page-stack, .dashboard-page, .attendance-hub, .ugc-workspace) {
+  gap: var(--admin-gap);
+}
+
+/* MAW uses a clean page heading, then lets the content cards carry the surface. */
+.admin-shell .admin-main :is(.page-header, .dashboard-heading) {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.admin-shell .admin-main :is(.page-header, .dashboard-heading) h1,
+.admin-shell .admin-main :is(.page-header, .dashboard-heading) h2 {
+  color: #111827;
+  letter-spacing: -0.025em;
+}
+
+.admin-shell .admin-main :is(.page-description, .dashboard-workspace-status) {
+  color: #74809a;
+}
+
+/* One surface language across Dashboard, operational pages and system tools. */
+.admin-shell .admin-main :is(
+  .stat-card,
+  .metric-card,
+  .panel,
+  .data-panel,
+  .dashboard-financial-card,
+  .dashboard-quick-card,
+  .calendar-panel,
+  .class-card,
+  .parent-accordion-card,
+  .parent-child-card,
+  .contact-card,
+  .report-card,
+  .attendance-overview-card,
+  .attendance-class-card,
+  .schedule-entry-card,
+  .settings-workspace,
+  .audit-filter-panel,
+  .audit-table-panel,
+  .application-log-filter-panel,
+  .application-log-table-panel,
+  .ugc-queue,
+  .ugc-detail
+) {
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  background: var(--admin-surface);
+  box-shadow: var(--admin-shadow);
+}
+
+.admin-shell .admin-main :is(
+  button.stat-card,
+  .attendance-class-card,
+  .class-card.clickable,
+  .parent-accordion-card,
+  .schedule-entry-card,
+  .dashboard-quick-list button,
+  .ugc-queue button
+) {
+  transition:
+    transform var(--admin-motion-fast) ease-out,
+    border-color var(--admin-motion-fast) ease-out,
+    background-color var(--admin-motion-fast) ease-out,
+    box-shadow var(--admin-motion-standard) ease-out;
+}
+
+.admin-shell .admin-main :is(
+  button.stat-card,
+  .attendance-class-card,
+  .class-card.clickable,
+  .parent-accordion-card,
+  .schedule-entry-card,
+  .dashboard-quick-list button,
+  .ugc-queue button
+):hover {
+  transform: translateY(-1px);
+  border-color: #cfd7e3;
+  box-shadow: var(--admin-shadow-hover);
+}
+
+.admin-shell .admin-main :is(.stats-grid, .summary-grid, .dashboard-grid, .dashboard-metrics,
+  .attendance-overview-grid, .attendance-class-grid, .schedule-admin-grid, .audit-summary,
+  .class-card-grid, .parent-children-grid) {
+  gap: var(--admin-gap);
+}
+
+.admin-shell .admin-main :is(
+  .detail-block,
+  .remarks-block,
+  .fee-agreement-section,
+  .fee-record-charge-section,
+  .payment-section,
+  .payment-form,
+  .payment-allocation-block,
+  .agreement-history,
+  .agreement-current,
+  .parent-accordion-body,
+  .parent-address-row,
+  .system-check-card
+) {
+  border-color: var(--admin-border);
+  border-radius: 10px;
+}
+
+.admin-shell .admin-main :is(
+  .detail-block,
+  .remarks-block,
+  .payment-form,
+  .payment-allocation-block,
+  .agreement-history,
+  .parent-accordion-body
+) {
+  background: var(--admin-inset);
+}
+
+.admin-shell .admin-main .system-check-card {
+  transition:
+    transform var(--admin-motion-fast) ease-out,
+    border-color var(--admin-motion-fast) ease-out,
+    background-color var(--admin-motion-fast) ease-out,
+    box-shadow var(--admin-motion-standard) ease-out;
+}
+
+.admin-shell .admin-main .system-check-card.is-checked {
+  border-color: #d9a7b3;
+  background: #fcf4f6;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--brand-primary) 5%, transparent);
+}
+
+/* Calendar keeps the MAW neutral canvas while selected items use MIS burgundy. */
+.admin-shell .admin-main .calendar-view-switcher {
+  border-color: var(--admin-border);
+  background: var(--admin-inset);
+}
+
+.admin-shell .admin-main :is(.calendar-weekdays, .calendar-upcoming) {
+  background: var(--admin-inset);
+}
+
+.admin-shell .admin-main .calendar-weekdays span {
+  color: #6b7485;
+}
+
+.admin-shell .admin-main .calendar-upcoming {
+  border-right-color: #edf0f4;
+}
+
+.admin-shell .admin-main .calendar-day {
+  border-color: #edf0f4;
+}
+
+.admin-shell .admin-main .calendar-day.outside-month {
+  background: #fbfcfe;
+}
+
+.admin-shell .admin-main :is(.stat-card, .metric-card, .attendance-overview-card) {
+  min-height: 104px;
+  padding: 16px 18px;
+}
+
+.admin-shell .admin-main .stat-card-icon {
+  width: 44px;
+  height: 44px;
+  flex-basis: 44px;
+  border-radius: 12px;
+}
+
+.admin-shell .admin-main :is(.data-panel-header, .panel-header) {
+  min-height: 64px;
+  padding: 15px 18px;
+  border-color: #edf0f4;
+}
+
+.admin-shell .admin-main :is(.data-panel-header, .panel-header) h2,
+.admin-shell .admin-main :is(.data-panel-header, .panel-header) h3 {
+  color: #1f2940;
+}
+
+/* Dense MAW table rhythm with a quiet header and stronger row readability. */
+.admin-shell .admin-main .table-wrap {
+  scrollbar-color: #cbd5e1 transparent;
+  scrollbar-width: thin;
+}
+
+.admin-shell .admin-main table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.admin-shell .admin-main thead {
+  background: #f8fafc;
+}
+
+.admin-shell .admin-main th {
+  height: 42px;
+  padding: 10px 14px;
+  border-bottom: 1px solid #e8edf3;
+  color: #6b7485;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .035em;
+  text-transform: uppercase;
+}
+
+.admin-shell .admin-main td {
+  padding: 12px 14px;
+  border-bottom-color: #edf0f4;
+  color: #293449;
+}
+
+.admin-shell .admin-main tbody tr {
+  transition: background-color var(--admin-motion-fast) ease-out;
+}
+
+.admin-shell .admin-main tbody tr:hover:not(.table-state-row):not(.history-state-row) {
+  background: #fafbfc;
+}
+
+/* Forms, filters and system controls share one sizing and focus contract. */
+.admin-shell .admin-main :is(.filter-toolbar, .audit-filter-panel, .application-log-filter-panel) {
+  gap: 10px;
+  padding: 10px;
+}
+
+.admin-shell .admin-main :is(.form-field, .schedule-form-field, .attendance-form label,
+  .settings-field, .employee-access-field) {
+  color: #3c465a;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.admin-shell .admin-main :is(.form-field, .schedule-form-field, .attendance-form label,
+  .settings-field, .employee-access-field) > :is(input, textarea),
+.modal-frame :is(.form-field, .schedule-form-field, .attendance-form label,
+  .settings-field, .employee-access-field) > :is(input, textarea) {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid #d7dee9;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #1f2940;
+  font: inherit;
+  transition:
+    border-color var(--admin-motion-fast) ease-out,
+    box-shadow var(--admin-motion-fast) ease-out,
+    background-color var(--admin-motion-fast) ease-out;
+}
+
+.admin-shell .admin-main :is(.form-field, .schedule-form-field, .attendance-form label,
+  .settings-field, .employee-access-field) > textarea,
+.modal-frame :is(.form-field, .schedule-form-field, .attendance-form label,
+  .settings-field, .employee-access-field) > textarea {
+  min-height: 88px;
+  resize: vertical;
+}
+
+.admin-shell .admin-main :is(.form-field, .schedule-form-field, .attendance-form label,
+  .settings-field, .employee-access-field) > :is(input, textarea):focus,
+.modal-frame :is(.form-field, .schedule-form-field, .attendance-form label,
+  .settings-field, .employee-access-field) > :is(input, textarea):focus {
+  outline: 0;
+  border-color: var(--admin-primary);
+  box-shadow: 0 0 0 3px var(--admin-focus-ring);
+}
+
+.admin-shell .admin-main :is(.primary-action, .primary-button),
+.modal-frame :is(.primary-action, .primary-button) {
+  border-radius: 9px;
+  background: var(--admin-primary);
+  box-shadow: 0 7px 18px color-mix(in srgb, var(--brand-primary) 16%, transparent);
+  transition:
+    transform var(--admin-motion-fast) ease-out,
+    background-color var(--admin-motion-fast) ease-out,
+    box-shadow var(--admin-motion-standard) ease-out;
+}
+
+.admin-shell .admin-main :is(.primary-action, .primary-button):hover:not(:disabled),
+.modal-frame :is(.primary-action, .primary-button):hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: var(--admin-primary-hover);
+  box-shadow: 0 9px 22px color-mix(in srgb, var(--brand-primary) 22%, transparent);
+}
+
+.admin-shell .admin-main :is(.secondary-action, .secondary-button, .table-action) {
+  border: 1px solid #dfe5ee;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #475569;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 3%);
+}
+
+.admin-shell .admin-main :is(.secondary-action, .secondary-button, .table-action):hover:not(:disabled) {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+  color: #1f2940;
+}
+
+/* Tabs and rails use brand only for the selected item, like MAW. */
+.admin-shell .admin-main :is(.attendance-hub-tabs, .fee-record-view-switch) {
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  background: #ffffff;
+  box-shadow: var(--admin-shadow);
+}
+
+.admin-shell .admin-main :is(.attendance-hub-tabs, .fee-record-view-switch) button {
+  border-radius: 9px;
+  transition:
+    color var(--admin-motion-fast) ease-out,
+    background-color var(--admin-motion-fast) ease-out,
+    box-shadow var(--admin-motion-fast) ease-out;
+}
+
+.admin-shell .admin-main :is(.attendance-hub-tabs, .fee-record-view-switch) button.active {
+  background: var(--admin-primary);
+  color: #ffffff;
+  box-shadow: 0 5px 14px color-mix(in srgb, var(--brand-primary) 18%, transparent);
+}
+
+.admin-shell .admin-main .settings-workspace {
+  overflow: hidden;
+}
+
+.admin-shell .admin-main .settings-rail {
+  border-right-color: #edf0f4;
+  background: #fbfcfe;
+}
+
+.admin-shell .admin-main .settings-rail-item.active {
+  background: var(--admin-primary);
+  color: #ffffff;
+  box-shadow: 0 7px 18px color-mix(in srgb, var(--brand-primary) 18%, transparent);
+}
+
+.modal-backdrop {
+  background: rgb(12 18 30 / 54%);
+}
+
+.modal-frame {
+  border-radius: var(--admin-radius);
+  border-color: rgb(255 255 255 / 36%);
+  box-shadow: 0 24px 70px rgb(15 23 42 / 27%);
+}
+
+.modal-header,
+.modal-footer {
+  padding: 16px 20px;
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+@media (max-width: 680px) {
+  .admin-shell .admin-main :is(.stat-card, .metric-card, .attendance-overview-card) {
+    min-height: 96px;
+    padding: 14px 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-shell .admin-main *,
+  .modal-frame * {
+    scroll-behavior: auto !important;
+  }
+
+  .admin-shell .admin-main :is(
+    button.stat-card,
+    .attendance-class-card,
+    .schedule-entry-card,
+    .dashboard-quick-list button,
+    .ugc-queue button,
+    tbody tr,
+    .primary-action,
+    .primary-button
+  ) {
+    transition-duration: 0ms !important;
+  }
+}

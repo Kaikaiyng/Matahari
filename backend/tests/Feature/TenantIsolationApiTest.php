@@ -109,7 +109,7 @@ class TenantIsolationApiTest extends TestCase
         $tenantId = $created->json('data.id');
         $domainId = $created->json('data.domains.0.id');
         $this->assertDatabaseHas('audit_logs', ['action' => 'tenant.created', 'entity_id' => $tenantId]);
-        $this->assertDatabaseHas('tenant_user_memberships', ['tenant_id' => $tenantId, 'access_all_schools' => true, 'status' => 'active']);
+        $this->assertDatabaseHas('tenant_user_memberships', ['tenant_id' => $tenantId, 'access_all_schools' => false, 'status' => 'active']);
 
         $this->getJson('http://bravo.admin.example.test/api/tenant-context')->assertNotFound();
         $this->actingAs($owner)->postJson("http://{$currentDomain->hostname}/api/v1/platform/tenants/{$tenantId}/domains/{$domainId}/activate")
@@ -150,7 +150,7 @@ class TenantIsolationApiTest extends TestCase
         $this->assertDatabaseMissing('schools', ['code' => 'BRV']);
     }
 
-    public function test_tenant_owner_updates_only_the_active_tenant_and_disabled_features_are_enforced(): void
+    public function test_legacy_tenant_owner_cannot_manage_tenant_configuration(): void
     {
         [$tenant, $domain, $school] = $this->tenantFixture('alpha', 'alpha.admin.example.test', 'admin');
         TenantFeature::query()->create(['tenant_id' => $tenant->id, 'feature_key' => 'community', 'enabled' => true]);
@@ -164,9 +164,8 @@ class TenantIsolationApiTest extends TestCase
         $membership->roles()->attach($role);
 
         $this->actingAs($owner)->putJson("http://{$domain->hostname}/api/v1/tenant/features/community", ['enabled' => false])
-            ->assertOk()->assertJsonPath('data.enabled', false);
-        $this->assertDatabaseHas('audit_logs', ['action' => 'tenant.feature_updated', 'entity_id' => $tenant->id]);
-        $this->actingAs($owner)->getJson("http://{$domain->hostname}/api/v1/community/posts")->assertNotFound();
+            ->assertForbidden();
+        $this->assertDatabaseHas('tenant_features', ['tenant_id' => $tenant->id, 'feature_key' => 'community', 'enabled' => true]);
     }
 
     public function test_existing_school_upgrade_preserves_identity_data_without_guessing_domains(): void
@@ -178,7 +177,11 @@ class TenantIsolationApiTest extends TestCase
         $migration = require database_path('migrations/2026_08_14_000001_create_tenant_foundation.php');
         $hardening = require database_path('migrations/2026_08_15_000001_harden_tenant_foundation.php');
         $moderation = require database_path('migrations/2026_08_16_000002_create_community_moderation_foundation.php');
+        $notificationDestinations = require database_path('migrations/2026_08_27_000001_create_notification_destinations_table.php');
+        $schoolSettings = require database_path('migrations/2026_08_30_000001_add_school_information_and_support_settings.php');
 
+        $schoolSettings->down();
+        $notificationDestinations->down();
         $moderation->down();
         $hardening->down();
         $migration->down();

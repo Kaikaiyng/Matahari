@@ -13,6 +13,7 @@ export class ApiError extends Error {
 }
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? '/api'
+export const AUTH_EXPIRED_EVENT = 'rylay-auth-expired'
 
 let csrfBootstrap: Promise<void> | null = null
 
@@ -55,6 +56,10 @@ async function performRequest<T>(path: string, options: RequestOptions, retryAft
   }
 
   const response = await fetch(`${apiBaseUrl}${path}`, init)
+
+  if (response.status === 401 && typeof window !== 'undefined') {
+    window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT))
+  }
 
   if (response.status === 419 && !isSafeMethod(method) && retryAfterCsrfFailure) {
     await ensureCsrfCookie(true)

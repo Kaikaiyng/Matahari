@@ -7,6 +7,8 @@ use Monolog\Processor\PsrLogMessageProcessor;
 
 return [
 
+    'application_log_viewer_path' => env('APPLICATION_LOG_VIEWER_PATH', storage_path('logs')),
+
     /*
     |--------------------------------------------------------------------------
     | Default Log Channel

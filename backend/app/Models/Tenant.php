@@ -34,4 +34,9 @@ class Tenant extends Model
     {
         return $this->hasMany(TenantUserMembership::class);
     }
+
+    public function notificationDestinations(): HasMany
+    {
+        return $this->hasMany(NotificationDestination::class);
+    }
 }

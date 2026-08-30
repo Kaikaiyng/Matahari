@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { RefObject } from 'react'
-import { FieldError, fieldErrorProps } from '../../components/AdminUi'
+import { CustomSelect, DatePicker, FieldError, fieldErrorProps } from '../../components/AdminUi'
 import { AgreementReviewPanel } from './AgreementReviewPanel'
 import { FeeItemRow } from './FeeItemRow'
 import type {
@@ -35,7 +35,7 @@ export function FeeAgreementEditor({
   errors: ValidationErrors | undefined
   currentAgreement: FeeAgreement | null
   onChange: (form: FeeAgreementForm) => void
-  paymentPlanRef?: RefObject<HTMLSelectElement | null>
+  paymentPlanRef?: RefObject<HTMLButtonElement | null>
 }) {
   const [expandedFeeItemId, setExpandedFeeItemId] = useState<number | null>(null)
   const [optionalPickerOpen, setOptionalPickerOpen] = useState(false)
@@ -193,26 +193,21 @@ export function FeeAgreementEditor({
 
             <label className="form-field">
               Payment Plan
-              <select
-                ref={paymentPlanRef}
+              <CustomSelect
+                triggerRef={paymentPlanRef}
+                ariaLabel="Payment Plan"
                 value={form.payment_plan}
-                onChange={(event) => update('payment_plan', event.target.value as PaymentPlan)}
-              >
-                {paymentPlans.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+                onChange={(value) => update('payment_plan', value as PaymentPlan)}
+                options={paymentPlans}
+              />
             </label>
 
             <label className="form-field">
               Effective From
-              <input
-                aria-label="Effective From"
-                type="date"
+              <DatePicker
+                ariaLabel="Effective From"
                 value={form.effective_from}
-                onChange={(event) => update('effective_from', event.target.value)}
+                onChange={(value) => update('effective_from', value)}
                 {...fieldErrorProps(
                   'fee-agreement-effective-from-error',
                   errors?.effective_from?.[0],
@@ -226,10 +221,10 @@ export function FeeAgreementEditor({
 
             <label className="form-field">
               Effective To
-              <input
-                type="date"
+              <DatePicker
+                ariaLabel="Effective To"
                 value={form.effective_to}
-                onChange={(event) => update('effective_to', event.target.value)}
+                onChange={(value) => update('effective_to', value)}
               />
             </label>
 
@@ -386,29 +381,26 @@ export function FeeAgreementEditor({
 
                   <label className="form-field">
                     Discount Type
-                    <select
+                    <CustomSelect
+                      ariaLabel="Discount Type"
                       value={form.discount.discount_type}
-                      onChange={(event) =>
-                        updateDiscount('discount_type', event.target.value as DiscountType)
+                      onChange={(value) =>
+                        updateDiscount('discount_type', value as DiscountType)
                       }
-                    >
-                      <option value="fixed_amount">Fixed amount</option>
-                      <option value="percentage">Percentage</option>
-                    </select>
+                      options={[{ value: 'fixed_amount', label: 'Fixed amount' }, { value: 'percentage', label: 'Percentage' }]}
+                    />
                   </label>
 
                   <label className="form-field">
                     Scope
-                    <select
+                    <CustomSelect
+                      ariaLabel="Discount Scope"
                       value={form.discount.scope}
-                      onChange={(event) =>
-                        updateDiscount('scope', event.target.value as DiscountScope)
+                      onChange={(value) =>
+                        updateDiscount('scope', value as DiscountScope)
                       }
-                    >
-                      <option value="total_payable">Total payable</option>
-                      <option value="tuition_only">Tuition only</option>
-                      <option value="selected_fee_items">Selected fee items</option>
-                    </select>
+                      options={[{ value: 'total_payable', label: 'Total payable' }, { value: 'tuition_only', label: 'Tuition only' }, { value: 'selected_fee_items', label: 'Selected fee items' }]}
+                    />
                   </label>
 
                   <label className="form-field">

@@ -1,39 +1,58 @@
 import { useEffect, useState } from 'react'
-import { ShieldCheck } from 'lucide-react'
-import { portalApi, type CommunityAppeal, type CommunityBlockedUser, type CommunityOwnContent, type CommunityReportSummary } from '../../api/portalApi'
+import { createPortal } from 'react-dom'
+import {
+  ChevronLeft,
+  ChevronRight,
+  FileText,
+  Flag,
+  Headphones,
+  LockKeyhole,
+  ShieldCheck,
+  UserRoundX,
+} from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
+import { portalApi, type CommunityReportSummary } from '../../api/portalApi'
+import { useSwipeBack } from '../../components/useSwipeBack'
+import { SafetyPolicySubpage } from './SafetyPolicySubpage'
 import './CommunitySafety.css'
 
-const label = (value: string) => { const words = value.replaceAll('_', ' '); return words.charAt(0).toUpperCase() + words.slice(1) }
+const label = (value: string) => value.replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase())
+type SafetyLink = { slug: string; title: string; description: string; icon: LucideIcon }
 
-export function CommunitySafetyCentre() {
+const safetyLinks: SafetyLink[] = [
+  { slug: 'community-standards', title: 'Community Standards', description: 'How we keep school updates respectful and safe.', icon: ShieldCheck },
+  { slug: 'child-safety', title: 'Child Safety Standards', description: 'Our safeguards for children and young people.', icon: Flag },
+]
+
+const policyLinks: SafetyLink[] = [
+  { slug: 'terms', title: 'Terms of Use', description: 'The rules for using the School App.', icon: FileText },
+  { slug: 'privacy', title: 'Privacy Policy', description: 'How your information is handled and protected.', icon: LockKeyhole },
+  { slug: 'account-deletion', title: 'Account Deletion', description: 'Request removal of your School App account.', icon: UserRoundX },
+]
+
+function SafetyLinkList({ links, onOpen }: { links: SafetyLink[]; onOpen: (slug: string) => void }) {
+  return <div className="about-policy-list-card safety-centre-link-list">{links.map(({ slug, title, description, icon: Icon }) => <a className="about-policy-item safety-centre-link" href={`/legal/${slug}`} key={slug} aria-label={title} onClick={(event) => { event.preventDefault(); onOpen(slug) }}><span className="safety-centre-link-icon"><Icon size={20} /></span><span className="about-item-text"><strong>{title}</strong><small>{description}</small></span><ChevronRight size={18} className="about-item-arrow" /></a>)}</div>
+}
+
+export function CommunitySafetyCentreTrigger() {
+  const [open, setOpen] = useState(false)
+  return <>{<button type="button" className="settings-about-trigger" onClick={() => setOpen(true)} aria-label="Open Community Safety centre"><ShieldCheck /><span><small>Community</small><strong>Safety, policies and support</strong></span><ChevronRight /></button>}{open && <CommunitySafetyCentre onBack={() => setOpen(false)} />}</>
+}
+
+export function CommunitySafetyCentre({ onBack }: { onBack?: () => void }) {
   const [reports, setReports] = useState<CommunityReportSummary[]>([])
-  const [blocked, setBlocked] = useState<CommunityBlockedUser[]>([])
-  const [content, setContent] = useState<CommunityOwnContent[]>([])
-  const [appeals, setAppeals] = useState<CommunityAppeal[]>([])
   const [error, setError] = useState('')
-
-  useEffect(() => {
-    Promise.all([portalApi.getCommunityReports(), portalApi.getBlockedCommunityUsers(), portalApi.getMyCommunityContent(), portalApi.getCommunityAppeals()])
-      .then(([reportResponse, blockResponse, contentResponse, appealResponse]) => { setReports(reportResponse.data); setBlocked(blockResponse.data); setContent(contentResponse.data); setAppeals(appealResponse.data) })
-      .catch(() => setError('Unable to load all Community safety records.'))
-  }, [])
-
-  const unblock = async (userId: number) => { try { await portalApi.unblockCommunityUser(userId); setBlocked((items) => items.filter((item) => item.user.id !== userId)) } catch { setError('Unable to unblock this user.') } }
-  const appeal = async (item: CommunityOwnContent) => {
-    if (!item.report_id) return
-    const statement = window.prompt('Explain why this moderation decision should be reviewed again.')?.trim()
-    if (!statement) return
-    try { const response = await portalApi.submitCommunityAppeal(item.report_id, statement); setAppeals((items) => [response.data, ...items]) } catch { setError('Unable to submit this appeal.') }
-  }
-
-  return <div className="record-page community-safety-centre">
-    <header className="record-page-title"><p>Community</p><h1>Safety centre</h1><span>Report concerns, manage blocks, and follow private moderation cases.</span></header>
-    <div className="safety-privacy"><ShieldCheck /><span><strong>Your safety activity is private</strong><small>Only you and moderators can see this.</small></span></div>
-    {error && <p className="form-error">{error}</p>}
-    <section><h2>My reports</h2>{reports.length ? reports.map((item) => <article key={item.id}><strong>{label(item.reason_code)}</strong><span>{label(item.status)}</span><small>{item.target_type} report #{item.id}</small></article>) : <p>No reports submitted.</p>}</section>
-    <section><h2>Blocked users</h2>{blocked.length ? blocked.map((item) => <article key={item.id}><strong>{item.user.name}</strong><button type="button" aria-label={`Unblock ${item.user.name}`} onClick={() => void unblock(item.user.id)}>Unblock</button></article>) : <p>No blocked users.</p>}</section>
-    <section><h2>My content under review</h2>{content.length ? content.map((item) => <article key={`${item.type}-${item.id}`}><strong>{item.body}</strong><span>{label(item.status)}</span>{item.report_id && ['rejected', 'hidden'].includes(item.status) && <button type="button" onClick={() => void appeal(item)}>Appeal decision</button>}</article>) : <p>No content under review.</p>}</section>
-    <section><h2>My appeals</h2>{appeals.length ? appeals.map((item) => <article key={item.id}><strong>Appeal #{item.id}</strong><span>{label(item.status)}</span>{item.decision_reason && <small>{item.decision_reason}</small>}</article>) : <p>No appeals submitted.</p>}</section>
-    <p className="safety-emergency">This reporting tool is not an emergency service. If someone is in immediate danger, contact local emergency services and a trusted school safeguarding contact.</p>
-  </div>
+  const [activePolicySlug, setActivePolicySlug] = useState<string | null>(null)
+  const returnToPrevious = () => onBack ? onBack() : window.history.back()
+  const { isExiting, requestBack, surfaceStyle, gestureHandlers } = useSwipeBack(returnToPrevious)
+  useEffect(() => { portalApi.getCommunityReports().then(({ data }) => setReports(data)).catch(() => setError('Unable to load your post reports.')) }, [])
+  return createPortal(<div className={`subpage-slide-overlay ${isExiting ? 'subpage-slide-out' : ''}`} role="region" aria-label="Community Safety Centre Subpage" {...gestureHandlers} style={{ position: 'fixed', inset: 0, zIndex: 99990, background: '#f6f3ee', overflowY: 'auto', ...surfaceStyle }}><div className="subpage-container safety-centre-page">
+    <header className="subpage-header"><button type="button" className="subpage-back-btn" onClick={requestBack} aria-label="Back to previous page"><ChevronLeft size={20} /></button><h1 className="subpage-nav-title">Safety Centre</h1><div className="subpage-header-spacer" /></header>
+    <section className="safety-centre-intro" aria-label="Privacy notice"><span className="safety-centre-intro-icon"><ShieldCheck size={23} /></span><span><small>PRIVATE &amp; SECURE</small><strong>Only you and moderators can see this.</strong><p>Review your reports, school safety standards and support options in one place.</p></span></section>
+    {error && <p className="form-error safety-centre-error">{error}</p>}
+    <section className="subpage-content-group"><div className="subpage-section-heading"><b>My Post Reports</b><small>{reports.length} report{reports.length === 1 ? '' : 's'}</small></div><div className={`safety-report-card ${reports.length ? 'has-reports' : ''}`}>{reports.length ? reports.map((report) => <article className="safety-report-row" key={report.id}><span className="safety-report-icon"><Flag size={18} /></span><span className="safety-report-copy"><strong>{label(report.reason_code)}</strong><small>Update report #{report.id}</small></span><span className="safety-report-status">{label(report.status)}</span></article>) : <div className="safety-report-empty"><span className="safety-report-empty-icon"><ShieldCheck size={22} /></span><span><strong>No reports submitted</strong><small>Reports you send will appear here with their latest status.</small></span></div>}</div></section>
+    <section className="subpage-content-group"><div className="subpage-section-heading"><b>Safety standards</b></div><SafetyLinkList links={safetyLinks} onOpen={setActivePolicySlug} /></section>
+    <section className="subpage-content-group"><div className="subpage-section-heading"><b>Policies &amp; account</b></div><SafetyLinkList links={policyLinks} onOpen={setActivePolicySlug} /></section>
+    <section className="subpage-content-group"><div className="subpage-section-heading"><b>School support</b></div><a className="safety-support-card" href="/legal/support" aria-label="Contact Support" onClick={(event) => { event.preventDefault(); setActivePolicySlug('support') }}><span className="safety-support-icon"><Headphones size={22} /></span><span className="safety-support-copy"><small>NEED HELP?</small><strong>Contact Support</strong><p>Call, WhatsApp or email your school support team.</p></span><ChevronRight size={19} className="about-item-arrow" /></a></section>
+  </div>{activePolicySlug && <SafetyPolicySubpage slug={activePolicySlug} onBack={() => setActivePolicySlug(null)} />}</div>, document.body)
 }

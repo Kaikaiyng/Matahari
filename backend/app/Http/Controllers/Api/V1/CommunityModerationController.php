@@ -4,13 +4,11 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Audit\AuditContextFactory;
 use App\Http\Controllers\Controller;
-use App\Models\CommunityAppeal;
 use App\Models\CommunityReport;
-use App\Models\CommunityUserRestriction;
 use App\Models\School;
-use App\Models\User;
 use App\Services\Community\CommunityModerationService;
 use App\Support\SchoolContext;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -20,12 +18,9 @@ class CommunityModerationController extends Controller
     public function index(Request $request): JsonResponse
     {
         [$tenantId, $schoolId] = $this->scope($request);
-        $reports = CommunityReport::query()->where('tenant_id', $tenantId)->where('school_id', $schoolId)
-            ->where(fn ($query) => $query
-                ->whereIn('status', [CommunityReport::STATUS_SUBMITTED, CommunityReport::STATUS_REVIEWING])
-                ->orWhereHas('appeals', fn ($appeals) => $appeals->where('status', CommunityAppeal::STATUS_SUBMITTED)))
-            ->withExists(['appeals as has_pending_appeal' => fn ($appeals) => $appeals->where('status', CommunityAppeal::STATUS_SUBMITTED)])
-            ->orderByRaw("CASE WHEN priority = 'severe' THEN 0 ELSE 1 END")->orderBy('due_at')->limit(100)->get();
+        $reports = $this->activePostReports($tenantId, $schoolId)
+            ->with($this->reportRelations())
+            ->orderBy('due_at')->limit(100)->get();
 
         return response()->json(['data' => $reports->map(fn (CommunityReport $report) => $this->response($report))]);
     }
@@ -33,53 +28,23 @@ class CommunityModerationController extends Controller
     public function show(Request $request, CommunityReport $communityReport): JsonResponse
     {
         [$tenantId, $schoolId] = $this->scope($request);
-        abort_unless((int) $communityReport->tenant_id === $tenantId && (int) $communityReport->school_id === $schoolId, 403);
-
-        return response()->json(['data' => $this->response($communityReport->load(['actions.actor:id,name', 'appeals.sourceAction', 'reportedUser:id,name']))]);
-    }
-
-    public function decide(Request $request, CommunityReport $communityReport, CommunityModerationService $service, AuditContextFactory $contexts): JsonResponse
-    {
-        $data = $request->validate([
-            'decision' => ['required', Rule::in(['no_violation', 'approve', 'reject', 'hide', 'warn', 'escalate'])],
-            'reason_code' => ['required', Rule::in(array_merge((array) config('community_safety.reason_codes', []), ['no_violation']))],
-            'reason' => ['required', 'string', 'max:2000'],
-        ]);
-        [$tenantId, $schoolId] = $this->scope($request);
-        $report = $service->reviewReport($communityReport, $request->user(), $tenantId, $schoolId, $data['decision'], $data['reason_code'], $data['reason'], $contexts->fromRequest($request));
+        $report = $this->activePostReports($tenantId, $schoolId)->with($this->reportRelations())->whereKey($communityReport->id)->firstOrFail();
 
         return response()->json(['data' => $this->response($report)]);
     }
 
-    public function restrict(Request $request, User $user, CommunityModerationService $service, AuditContextFactory $contexts): JsonResponse
+    public function decide(Request $request, CommunityReport $communityReport, CommunityModerationService $service, AuditContextFactory $contexts): JsonResponse
     {
+        [$tenantId, $schoolId] = $this->scope($request);
+        $report = $this->activePostReports($tenantId, $schoolId)->whereKey($communityReport->id)->firstOrFail();
         $data = $request->validate([
-            'scope' => ['required', Rule::in(['comment', 'publish', 'media', 'all'])],
-            'reason_code' => ['required', Rule::in((array) config('community_safety.reason_codes', []))],
+            'decision' => ['required', Rule::in(['no_action', 'remove_content'])],
+            'reason_code' => ['required', Rule::in(['incorrect', 'outdated', 'inappropriate', 'other'])],
             'reason' => ['required', 'string', 'max:2000'],
-            'ends_at' => ['nullable', 'date', 'after:now'],
         ]);
-        [$tenantId, $schoolId] = $this->scope($request);
-        $restriction = $service->applyRestriction($user, $request->user(), $tenantId, $schoolId, $data['scope'], $data['reason_code'], $data['reason'], $data['ends_at'] ?? null, $contexts->fromRequest($request));
+        $report = $service->reviewReport($report, $request->user(), $tenantId, $schoolId, $data['decision'], $data['reason_code'], $data['reason'], $contexts->fromRequest($request));
 
-        return response()->json(['data' => $this->restrictionResponse($restriction)], 201);
-    }
-
-    public function revokeRestriction(Request $request, CommunityUserRestriction $communityUserRestriction, CommunityModerationService $service, AuditContextFactory $contexts): JsonResponse
-    {
-        [$tenantId, $schoolId] = $this->scope($request);
-        $restriction = $service->revokeRestriction($communityUserRestriction, $request->user(), $tenantId, $schoolId, $contexts->fromRequest($request));
-
-        return response()->json(['data' => $this->restrictionResponse($restriction)]);
-    }
-
-    public function decideAppeal(Request $request, CommunityAppeal $communityAppeal, CommunityModerationService $service, AuditContextFactory $contexts): JsonResponse
-    {
-        $data = $request->validate(['decision' => ['required', Rule::in(['upheld', 'overturned'])], 'reason' => ['required', 'string', 'max:2000']]);
-        [$tenantId, $schoolId] = $this->scope($request);
-        $appeal = $service->decideAppeal($communityAppeal, $request->user(), $tenantId, $schoolId, $data['decision'], $data['reason'], $contexts->fromRequest($request));
-
-        return response()->json(['data' => ['id' => $appeal->id, 'status' => $appeal->status, 'decision' => $appeal->decision, 'reviewed_at' => $appeal->reviewed_at?->toIso8601String()]]);
+        return response()->json(['data' => $this->response($report)]);
     }
 
     /** @return array{int, int} */
@@ -90,28 +55,50 @@ class CommunityModerationController extends Controller
         return [(int) School::query()->whereKey($schoolId)->value('tenant_id'), $schoolId];
     }
 
-    /** @return array<string, mixed> */
-    private function response(CommunityReport $report): array
+    /** @return Builder<CommunityReport> */
+    private function activePostReports(int $tenantId, int $schoolId): Builder
     {
-        return [
-            'id' => $report->id, 'source' => $report->source, 'target_type' => $report->target_type,
-            'reason_code' => $report->reason_code, 'priority' => $report->priority, 'status' => $report->status,
-            'has_pending_appeal' => (bool) $report->getAttribute('has_pending_appeal'),
-            'due_at' => $report->due_at?->toIso8601String(), 'overdue' => $report->due_at?->isPast() && $report->status !== CommunityReport::STATUS_RESOLVED,
-            'target_snapshot' => $report->target_snapshot, 'resolution_code' => $report->resolution_code,
-            'actions' => $report->relationLoaded('actions') ? $report->actions : [],
-            'appeals' => $report->relationLoaded('appeals') ? $report->appeals->map(fn (CommunityAppeal $appeal) => [
-                'id' => $appeal->id, 'status' => $appeal->status, 'statement' => $appeal->statement,
-                'source_moderator_user_id' => $appeal->sourceAction?->actor_user_id,
-                'decision' => $appeal->decision, 'decision_reason' => $appeal->decision_reason,
-                'created_at' => $appeal->created_at?->toIso8601String(),
-            ]) : [],
-        ];
+        return CommunityReport::query()->where('tenant_id', $tenantId)->where('school_id', $schoolId)
+            ->where('source', 'user_report')->where('target_type', 'post')
+            ->whereIn('status', [CommunityReport::STATUS_SUBMITTED, CommunityReport::STATUS_REVIEWING]);
+    }
+
+    /** @return array<int, string> */
+    private function reportRelations(): array
+    {
+        return ['reporter:id,name', 'post.author:id,name', 'post.audiences.schoolClass:id,name', 'actions.actor:id,name'];
     }
 
     /** @return array<string, mixed> */
-    private function restrictionResponse(CommunityUserRestriction $restriction): array
+    private function response(CommunityReport $report): array
     {
-        return ['id' => $restriction->id, 'user_id' => $restriction->user_id, 'scope' => $restriction->scope, 'status' => $restriction->status, 'ends_at' => $restriction->ends_at?->toIso8601String()];
+        $post = $report->post;
+        $targetSnapshot = $report->target_snapshot ?? [];
+        if (isset($targetSnapshot['post']) && is_array($targetSnapshot['post'])) {
+            $targetSnapshot['post']['media'] = $targetSnapshot['post']['media'] ?? [];
+        }
+
+        return [
+            'id' => $report->id, 'source' => $report->source, 'target_type' => $report->target_type,
+            'reason_code' => $report->reason_code, 'priority' => $report->priority, 'status' => $report->status,
+            'details' => $report->details, 'created_at' => $report->created_at?->toIso8601String(),
+            'due_at' => $report->due_at?->toIso8601String(),
+            'overdue' => $report->due_at?->isPast() && $report->status !== CommunityReport::STATUS_RESOLVED,
+            'target_snapshot' => $targetSnapshot, 'resolution_code' => $report->resolution_code,
+            'reporter' => $report->reporter ? ['id' => $report->reporter->id, 'name' => $report->reporter->name] : null,
+            'post' => $post ? [
+                'author' => $post->author ? ['id' => $post->author->id, 'name' => $post->author->name] : null,
+                'audience' => [
+                    'school' => $post->audiences->contains('audience_type', 'school'),
+                    'classes' => $post->audiences->where('audience_type', 'class')->map(fn ($audience) => $audience->schoolClass ? ['id' => $audience->schoolClass->id, 'name' => $audience->schoolClass->name] : null)->filter()->values(),
+                ],
+            ] : null,
+            'actions' => $report->actions->map(fn ($action) => [
+                'id' => $action->id, 'action' => $action->action, 'reason_code' => $action->reason_code,
+                'reason' => $action->reason,
+                'actor' => $action->actor ? ['id' => $action->actor->id, 'name' => $action->actor->name] : null,
+                'created_at' => $action->created_at?->toIso8601String(),
+            ])->values(),
+        ];
     }
 }

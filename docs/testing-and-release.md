@@ -2,7 +2,7 @@
 
 **Status:** Repository command and release reference
 
-**Repository baseline:** SaaS feature branch based on `master` at `0ad0558` (2026-08-14)
+**Repository baseline:** Integrated delivery on `feat/admin-application-logs`; use [Current Status](current-status.md) for the exact latest commit and dated evidence
 
 Tenant-sensitive changes must additionally cover known/unknown/pending/inactive hosts, wrong-tenant login, membership roles, membership school restrictions, surface mismatch, tenant suspension, feature enforcement, platform-versus-tenant administration and transactional audit rollback. Production smoke tests must use the real Admin/App hostnames; sending a tenant ID in a request is not a substitute.
 
@@ -82,17 +82,18 @@ npm.cmd run build
 - `build` runs `tsc -b` and then Vite production build, so it is also the configured TypeScript check.
 - No browser E2E command is configured.
 
-The commands above validate only the Admin UI. Run the same install/test/lint/build lifecycle separately from `app/` for the multi-role Community App. A future native packaging workspace must add its own platform validation before a store release can be called complete.
+The commands above validate only the Admin UI. Run the same install/test/lint/build lifecycle separately from `app/` for the multi-role School App. A future native packaging workspace must add its own platform validation before a store release can be called complete.
 
 ## Future Mobile Validation Gates
 
 Mobile work requires evidence beyond narrow viewport checks of the current Admin UI:
 
-- Phase B: role-aware Parent/Student/Teacher/Staff shell, loading/empty/error behavior, session/CSRF preservation, direct API denial, accessibility, responsive browser QA, and staging topology.
+- Phase B: role-aware Parent/Student/Teacher shell, loading/empty/error behavior, session/CSRF preservation, direct API denial, accessibility, responsive browser QA, and staging topology.
 - Phase C: Admin-versus-Parent finance parity, guardian relationship/capability enforcement, cross-school/IDOR denial, and reuse of authoritative receipt output.
-- Attendance/Assessment slice: Teacher assignment scope, enrolment membership, correction reason/audit, draft-result denial, and Parent/Student relationship/self scope. Daily Attendance is implemented; Assessment publication remains planned.
+- Attendance/Assessment slice: Teacher assignment scope, enrolment membership, correction reason/audit, draft-result denial, and Parent/Student relationship/self scope. Daily Attendance and Assessment publication are implemented; retain these checks for regressions and future changes.
 - Quiz slice: class and direct-student targeting, recipient deduplication, server-side scoring, attempt concurrency, and historical enrolment behavior.
 - Reminder/push slice: authoritative balance recheck, recipient resolution, transactional audit/history, duplicate suppression, and durable notification behavior independent of push delivery.
+- Notification-channel slice: in-app payload/read compatibility, calling-transaction rollback, exact global/tenant/school destination resolution, inactive filtering, school-without-tenant and cross-tenant rejection, unknown-channel skipped results, and sanitized diagnostics. Any destination-schema release requires disposable MariaDB composite-foreign-key validation or an explicit **Not verified** limitation.
 - Phase F: native credential/token storage and revocation, device-token privacy, deep links, signed Android build, real-device push behavior, and platform-specific release checks.
 
 Do not claim Firebase, Capacitor, APK/iOS delivery, or native authentication passed until those dependencies exist and the relevant real-device checks have run.
@@ -293,14 +294,17 @@ Use fictional data in a local or approved test environment:
 
 1. Request `/api/csrf-cookie`; confirm login without a valid CSRF header returns 419, then login with the cookie/header pair. Exercise session restore, logout, invalid credentials, throttling, and an already-authenticated user deactivated in the database.
 2. Exercise each seeded role and direct API denial, not only button visibility.
-3. Search/create/view/status-change a student in the UI as authorized; smoke-test profile update through the protected API because a complete profile-edit UI is not implemented. Verify denial for Finance/CEO.
+3. Search/create/view/status-change a student in the UI as authorized; smoke-test profile update through the protected API because a complete profile-edit UI is not implemented. Verify denial for Finance and another employee explicitly denied the required User Ability.
 4. Create and supersede a Fee Agreement; inspect version history. Confirm a replacement across existing charge history returns 409 without changing either version.
 5. Preview/activate charges and add a manual charge; confirm totals and Audit Trail events. Confirm non-zero discounts and `requires_preview_confirmation` prevent activation.
 6. Record cash and non-cash payments; verify pending payment; test partial allocation and over-allocation rejection.
 7. Issue, print, void, and regenerate a receipt; confirm numbers are not reused and issued receipt blocks payment void.
 8. Test calendar view/create/update/delete by role and school.
-9. Confirm navigation exposes only permission-backed entries and Audit Trail appears only to Super Admin. A global account without a selected school must not silently use school `1`.
-10. Check desktop, tablet, mobile, keyboard focus, and native browser print preview.
+9. Confirm Admin navigation exposes only permission-backed entries; Audit Trail and sanitized Application Logs remain read-only and limited to Super Admin. A global account without a selected school must not silently use school `1`.
+10. Exercise Attendance Overview/Class Register/Devices/Settings with assigned versus school-wide abilities; verify Parent linked-child reads, Student exclusion, immutable campus movements, and duplicate external-event rejection. Real Hikvision protocol/authentication remains **Not verified** without confirmed hardware.
+11. Exercise School Updates whole-school and multi-class publishing, optional notifications, authorized reads/Likes/Post Reports, manager decisions, image validation, and direct API denial for Parent/Student publishing. Confirm comments and new direct-Student audiences are unavailable.
+12. Check desktop, tablet, mobile, keyboard focus, swipe-back behavior, forced policy acceptance, and native browser print preview.
+13. Exercise School Information and App Support as School Admin/Finance versus Teacher; confirm same-school persistence, Audit Trail entries, App call/WhatsApp/email actions, global child-safety separation, and no guessed local contact for a multi-school public tenant.
 
 For a real HTTP CSRF smoke test, use a disposable local database and an exact temporary port, start `artisan serve` in a hidden child process, preserve cookies in one client session, and stop only that recorded process ID afterward. Laravel feature tests disable CSRF middleware during normal test execution, so route/middleware feature tests do not replace this HTTP check.
 

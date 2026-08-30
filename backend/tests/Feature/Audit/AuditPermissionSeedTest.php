@@ -14,7 +14,7 @@ class AuditPermissionSeedTest extends TestCase
     {
         $this->seed();
 
-        foreach (['super-admin', 'ceo', 'school-admin', 'finance'] as $roleSlug) {
+        foreach (['super-admin', 'school-admin', 'finance'] as $roleSlug) {
             $permissions = Role::query()
                 ->where('slug', $roleSlug)
                 ->firstOrFail()
@@ -25,10 +25,30 @@ class AuditPermissionSeedTest extends TestCase
             if ($roleSlug === 'super-admin') {
                 $this->assertContains('audit.view', $permissions);
                 $this->assertContains('audit.correct_generic', $permissions);
+                $this->assertContains('logs.view', $permissions);
             } else {
                 $this->assertNotContains('audit.view', $permissions);
                 $this->assertNotContains('audit.correct_generic', $permissions);
+                $this->assertNotContains('logs.view', $permissions);
             }
+        }
+    }
+
+    public function test_community_interact_definition_remains_but_is_not_assigned_to_active_roles(): void
+    {
+        $this->seed();
+
+        $this->assertDatabaseHas('permissions', ['slug' => 'community.interact']);
+
+        foreach (['school-admin', 'finance', 'teacher', 'parent', 'student'] as $roleSlug) {
+            $permissions = Role::query()
+                ->where('slug', $roleSlug)
+                ->firstOrFail()
+                ->permissions()
+                ->pluck('slug');
+
+            $this->assertTrue($permissions->contains('community.view'));
+            $this->assertFalse($permissions->contains('community.interact'));
         }
     }
 }

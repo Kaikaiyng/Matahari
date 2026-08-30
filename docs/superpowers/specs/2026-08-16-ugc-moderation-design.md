@@ -104,9 +104,28 @@ An appeal must be decided by a different eligible School Admin or by RYLAY Super
 
 All users must accept the current Terms and Community Standards version before their first Community publication or comment after that version becomes effective.
 
-Student users receive an in-app online-safety notice before freeform interaction. Student commenting is disabled by default until an active, reviewed same-school Guardian link or School Admin performs an explicit adult authorization. That authorization can be revoked without removing read access to approved Community content.
+Student users receive an in-app online-safety notice modal/banner before freeform interaction ("Do not share phone numbers, addresses, social media handles, private photos, or passwords. Be respectful to schoolmates."). Student commenting is disabled by default until an active, reviewed same-school Guardian link or School Admin performs an explicit adult authorization. That authorization can be revoked without removing read access to approved Community content.
 
-Freeform personal-information exchange remains subject to the server safety checks. The App must not encourage minors to falsify age or bypass adult authorization.
+Parents maintain granular controls (`can_post_community`, `can_upload_media`) over linked student social capabilities.
+
+Freeform personal-information exchange is strictly prohibited and intercepted by server-side safety pattern filters (phone numbers, email addresses, URLs, and social handles like WhatsApp, Telegram, WeChat, IG, TikTok, LINE). No 1-on-1 private messaging or unmonitored direct user discovery is provided.
+
+## Account Deletion Policy & Workflow
+
+RYLAY operates on an **institution-provisioned SaaS account creation model** where Super Admin / School Admin provision verified accounts for staff, parents, and students (no public self-registration).
+
+To fulfill Apple App Store Guideline 5.1.1(v) and Google Play account deletion mandates:
+1. **In-App Request**: App Profile / Settings includes a "Request Account Deletion" option.
+2. **Public Web URL**: A globally accessible, no-login HTTPS web page (`https://rylay.my/account-deletion`) allows users or guardians to submit deletion requests.
+3. **Data Anonymization vs Retention Boundaries**: Upon processing a deletion request, user credentials, authentication tokens, PII (phone, email, real names), and non-essential Community posts/media are permanently purged or anonymized. Academic and financial history (fee agreements, payment receipts, attendance logs) are legally preserved in compliance with education and financial audit regulations, fully decoupled from personal identifiers.
+
+## Apple 2026 Social Media Age Rating Mapping
+
+To align with Apple 2026 App Store Connect Age Rating requirements for apps containing Social / UGC features:
+- **User Generated Content / Social Features**: Declared with strict moderation safeguards.
+- **Unrestricted Web Access**: NO (App has no open browser/URL bar or external link rendering).
+- **Direct Messaging / Private Chat**: NO (No 1-on-1 private chat or unmonitored messaging).
+- **Declared Guardrails**: Institution-provisioned accounts only, closed school scope, mandatory server-side pre-moderation/quarantine for unmoderated users, mandatory parent controls, 4-hour severe moderation SLA, and 100% human oversight.
 
 ## Public Policies and Support
 
@@ -116,6 +135,7 @@ The product provides globally reachable, no-login HTTPS pages for:
 - Privacy Policy;
 - Community Standards;
 - Child Safety Standards;
+- Account Deletion Requests (`https://rylay.my/account-deletion`);
 - Support and Appeals.
 
 Community Standards define prohibited content and behavior, reporting, blocking, enforcement, appeal, and response expectations. Child Safety Standards explicitly prohibit CSAE, CSAM, grooming, sextortion, trafficking, and sexual exploitation, and describe the escalation commitment.

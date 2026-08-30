@@ -17,6 +17,10 @@ const currentUser = {
     'calendar.delete',
     'students.view',
     'students.create',
+    'attendance.view_school',
+    'attendance.manage_school',
+    'attendance.devices.manage',
+    'attendance.abilities.manage',
     'parents.view',
     'fee_items.view',
     'fee_agreements.view',
@@ -41,7 +45,7 @@ const superAdminUser = {
   ...currentUser,
   school_id: null,
   roles: ['super-admin'],
-  permissions: [...currentUser.permissions, 'audit.view'],
+  permissions: [...currentUser.permissions, 'audit.view', 'logs.view'],
 }
 
 const schoolAdminDialogUser = {
@@ -58,6 +62,30 @@ const schoolAdminDialogUser = {
     'payments.create',
     'receipts.view',
   ],
+}
+
+const employeeAbilityAccess = {
+  position: 'teacher',
+  positions: [
+    { value: 'school-admin', label: 'School Admin' },
+    { value: 'finance', label: 'Finance' },
+    { value: 'teacher', label: 'Teacher' },
+  ],
+  groups: {
+    Community: [
+      { slug: 'community.view', label: 'View posts' },
+      { slug: 'community.publish', label: 'Publish posts' },
+      { slug: 'community.moderate', label: 'Manage posts' },
+    ],
+  },
+  dependencies: {
+    'community.publish': 'community.view',
+    'community.moderate': 'community.view',
+  },
+  position_defaults: { 'school-admin': [], finance: [], teacher: ['community.view'] },
+  default_permissions: ['community.view'],
+  permissions: ['community.view'],
+  teacher_app_access: true,
 }
 
 const financeDialogUser = {
@@ -301,6 +329,12 @@ function installApiMock() {
     if (url.pathname.endsWith('/audit-logs')) {
       return json({ data: [], meta: { per_page: 50, next_cursor: null, previous_cursor: null } })
     }
+    if (url.pathname.endsWith('/application-logs')) {
+      return json({
+        data: [],
+        meta: { page: 1, per_page: 50, total: 0, total_pages: 1, level_counts: { FATAL: 0, ERROR: 0, WARN: 0, INFO: 0 }, truncated: false },
+      })
+    }
     if (
       url.pathname.endsWith('/students/1/fee-agreements') &&
       init?.method === 'POST'
@@ -373,7 +407,7 @@ async function renderAuthenticatedApp() {
       <App />
     </StrictMode>,
   )
-  await screen.findByRole('heading', { name: 'Dashboard' })
+  await screen.findByRole('region', { name: 'Dashboard metrics' })
 }
 
 async function openSelectedStudentPayments(
@@ -528,7 +562,12 @@ describe('demo shell', () => {
     const utilityHeader = document.querySelector<HTMLElement>('.utility-header')
     if (!utilityHeader) throw new Error('Utility header was not rendered')
     expect(within(utilityHeader).getByText('Matahari International School')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'School overview' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'School overview' })).not.toBeInTheDocument()
+    const dashboardHeading = document.querySelector<HTMLElement>('.dashboard-heading')
+    if (!dashboardHeading) throw new Error('Dashboard heading was not rendered')
+    expect(within(dashboardHeading).getByRole('heading', { name: 'Dashboard', level: 1 })).toBeInTheDocument()
+    expect(screen.getByText('Live Workspace')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Refresh dashboard' })).toBeInTheDocument()
     expect(screen.getByRole('region', { name: 'Dashboard metrics' })).toBeInTheDocument()
     expect(screen.getByRole('region', { name: 'Financial snapshot' })).toBeInTheDocument()
 
@@ -568,8 +607,7 @@ describe('demo shell', () => {
 
     render(<App />)
 
-    await screen.findByRole('heading', { name: 'School overview' })
-    const metrics = screen.getByRole('region', { name: 'Dashboard metrics' })
+    const metrics = await screen.findByRole('region', { name: 'Dashboard metrics' })
 
     expect(within(metrics).getAllByText('Loading...')).toHaveLength(4)
     expect(screen.queryByText('RM 5,230')).not.toBeInTheDocument()
@@ -596,7 +634,7 @@ describe('demo shell', () => {
 
     render(<App />)
 
-    await screen.findByRole('heading', { name: 'School overview' })
+    await screen.findByRole('region', { name: 'Dashboard metrics' })
     expect(await screen.findByRole('status')).toHaveTextContent('Service temporarily unavailable')
 
     const metrics = screen.getByRole('region', { name: 'Dashboard metrics' })
@@ -616,7 +654,6 @@ describe('demo shell', () => {
     expect(screen.queryByText('View Fee Record')).not.toBeInTheDocument()
 
     await user.click(within(metrics).getByRole('button', { name: 'Open Fee Record' }))
-
     expect(await screen.findByRole('heading', { name: 'Admin Fee Record' })).toBeInTheDocument()
   })
 
@@ -624,27 +661,72 @@ describe('demo shell', () => {
     await renderAuthenticatedApp()
 
     const navigation = screen.getByRole('navigation', { name: 'Main navigation' })
-    expect(within(navigation).getAllByRole('button').map((button) => button.textContent)).toEqual([
+    expect(Array.from(navigation.querySelectorAll('.nav-item, .nav-subitem')).map((button) => button.textContent)).toEqual([
       'Dashboard',
       'Calendar',
+      'Attendance',
       'Students',
       'Classes',
       'Parents',
       'Fees',
       'Fee Record',
     ])
-    expect(within(navigation).getByText('Overview')).toBeInTheDocument()
     expect(within(navigation).getByText('People')).toBeInTheDocument()
     expect(within(navigation).getByText('Finance')).toBeInTheDocument()
     expect(within(navigation).queryByText('Management')).not.toBeInTheDocument()
     expect(within(navigation).queryByRole('button', { name: 'Audit Trail' })).not.toBeInTheDocument()
   })
 
-  it('shows Community Safety only with a moderation permission', async () => {
+  it('shows Post Reports only with the school post-report permission', async () => {
+    const user = userEvent.setup()
     installApiUser({ ...currentUser, permissions: [...currentUser.permissions, 'community.moderate'] })
     await renderAuthenticatedApp()
 
-    expect(within(screen.getByRole('navigation', { name: 'Main navigation' })).getByRole('button', { name: 'Community Safety' })).toBeInTheDocument()
+    const navigation = screen.getByRole('navigation', { name: 'Main navigation' })
+    await user.click(within(navigation).getByRole('button', { name: 'Administration navigation group' }))
+    expect(within(navigation).getByRole('button', { name: 'Post Reports' })).toBeInTheDocument()
+  })
+
+  it('does not expose Post Reports to a platform-only moderator', async () => {
+    installApiUser({ ...currentUser, permissions: [...currentUser.permissions, 'community.moderate_platform'] })
+    await renderAuthenticatedApp()
+
+    const navigation = screen.getByRole('navigation', { name: 'Main navigation' })
+    expect(within(navigation).queryByRole('button', { name: 'Administration navigation group' })).not.toBeInTheDocument()
+    expect(within(navigation).queryByRole('button', { name: 'Post Reports' })).not.toBeInTheDocument()
+  })
+
+  it('presents Community abilities as official School Updates', async () => {
+    const user = userEvent.setup()
+    installApiUser({
+      ...currentUser,
+      permissions: [...currentUser.permissions, 'foundation_accounts.manage', 'employees.abilities.manage'],
+    })
+    const fetchMock = vi.mocked(globalThis.fetch)
+    const installedImplementation = fetchMock.getMockImplementation()
+    if (!installedImplementation) throw new Error('API mock is not installed')
+
+    fetchMock.mockImplementation((input, init) => {
+      const url = new URL(String(input), window.location.origin)
+      if (url.pathname.endsWith('/staff')) {
+        return json({ data: [{ id: 2, staff_no: 'MIS-E002', name: 'Ava Tan', username: 'ava.tan', role: 'Teacher', roles: ['teacher'], status: 'active', assigned_classes: [] }] })
+      }
+      if (url.pathname.endsWith('/staff/2/access') && init?.method !== 'PUT') {
+        return json({ data: employeeAbilityAccess })
+      }
+      return installedImplementation(input, init)
+    })
+
+    await renderAuthenticatedApp()
+    const peopleNavigation = screen.getByRole('button', { name: 'People navigation group' })
+    if (peopleNavigation.getAttribute('aria-expanded') === 'false') await user.click(peopleNavigation)
+    await user.click(await screen.findByRole('button', { name: 'Employees' }))
+    await user.click(await screen.findByRole('button', { name: /Edit/ }))
+
+    expect(await screen.findByText('Official School Updates')).toBeInTheDocument()
+    expect(screen.getByText('Publish posts')).toBeInTheDocument()
+    expect(screen.getByText('Manage posts')).toBeInTheDocument()
+    expect(screen.queryByText('Interact with posts')).not.toBeInTheDocument()
   })
 
   it('rejects a parent-only account from the Admin Panel', async () => {
@@ -709,6 +791,19 @@ describe('demo shell', () => {
 
     expect(await screen.findByRole('heading', { name: 'Audit Trail', level: 2 })).toBeInTheDocument()
     expect(screen.getByText('No audit events found')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Application Logs' }))
+    expect(await screen.findByRole('heading', { name: 'Application Logs', level: 2 })).toBeInTheDocument()
+    expect(screen.getByText('No log entries found')).toBeInTheDocument()
+  })
+
+  it('opens Attendance as a dedicated Admin module', async () => {
+    const user = userEvent.setup()
+    await renderAuthenticatedApp()
+
+    await user.click(screen.getByRole('button', { name: 'Attendance' }))
+
+    expect(await screen.findByRole('heading', { name: 'Attendance', level: 2 })).toBeInTheDocument()
   })
 
   it('uses a dedicated filter toolbar and data panel on Students', async () => {
@@ -1043,6 +1138,9 @@ describe('demo shell', () => {
     await openSelectedStudentPayments(user)
     await user.click(screen.getByRole('button', { name: 'Send payment reminder' }))
 
+    expect(screen.getByRole('heading', { name: 'Send Payment Reminder' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Confirm & Send' }))
+
     expect(await screen.findByText('Payment reminder sent to 1 parent account.')).toBeInTheDocument()
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringMatching(/\/students\/1\/payment-reminders$/),
@@ -1191,9 +1289,9 @@ describe('demo shell', () => {
     await openSelectedStudentPayments(user)
     await user.click(await screen.findByRole('button', { name: 'Verify' }))
     const dialog = screen.getByRole('dialog', { name: 'Verify Payment' })
-    const receivedDate = within(dialog).getByLabelText('Received Date')
-    await user.clear(receivedDate)
-    await user.type(receivedDate, '2026-07-18')
+    await user.click(within(dialog).getByRole('button', { name: 'Received Date' }))
+    await user.click(screen.getByRole('button', { name: 'Previous month' }))
+    await user.click(screen.getByRole('button', { name: '18 July 2026' }))
     await user.type(within(dialog).getByLabelText('Bank Account'), 'Maybank')
     await user.click(within(dialog).getByRole('button', { name: 'Verify Payment' }))
 
@@ -1601,7 +1699,7 @@ describe('demo shell', () => {
     expect(
       within(dialog).getByRole('region', { name: 'Student context' }),
     ).toHaveTextContent('Alyssa Tan')
-    await waitFor(() => expect(within(dialog).getByLabelText('Payment Plan')).toHaveFocus())
+    await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Monthly' })).toHaveFocus())
   })
 
   it('asks before closing a dirty agreement but closes a clean agreement immediately', async () => {
@@ -1655,7 +1753,7 @@ describe('demo shell', () => {
     const dialog = screen.getByRole('dialog', { name: 'Supersede Fee Agreement' })
     expect(within(dialog).queryByLabelText('Academic Year')).not.toBeInTheDocument()
     expect(within(dialog).getByLabelText('Payment Plan')).toHaveValue('monthly')
-    expect(within(dialog).getByLabelText('Effective From')).toHaveValue('2026-01-02')
+    expect(within(dialog).getByRole('button', { name: 'Effective From' })).toHaveTextContent('02 Jan 2026')
     expect(within(dialog).getByText('Creating a new version from v1')).toBeInTheDocument()
     expect(within(dialog).getByRole('complementary', { name: 'Changes from v1' })).toBeInTheDocument()
     expect(within(dialog).getByRole('complementary', { name: 'Changes from v1' })).toHaveTextContent(

@@ -3,51 +3,96 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { moderationApi, type ModerationCase } from './moderationApi'
 import { UgcModerationPage } from './UgcModerationPage'
 
-const severeCase: ModerationCase = { id: 9, source: 'user_report', target_type: 'post', reason_code: 'child_safety', priority: 'severe', status: 'submitted', due_at: '2020-01-01T00:00:00Z', overdue: true, target_snapshot: { target_type: 'post', reported_user_id: 44, post: { id: 3, body: 'Evidence text', status: 'hidden', author_user_id: 44, media: [{ id: 8, type: 'image', name: 'evidence.jpg', mime_type: 'image/jpeg', size_bytes: 10, status: 'quarantined' }] }, comment: null }, actions: [], appeals: [] }
+const postReport: ModerationCase = {
+  id: 9,
+  source: 'user_report',
+  target_type: 'post',
+  reason_code: 'inappropriate',
+  priority: 'normal',
+  status: 'submitted',
+  details: 'Please review this update.',
+  created_at: '2026-08-24T00:00:00Z',
+  due_at: '2026-08-25T00:00:00Z',
+  overdue: false,
+  reporter: { id: 12, name: 'Rachel Wong' },
+  post: { author: { id: 44, name: 'Alex Tan' }, audience: { school: false, classes: [{ id: 7, name: 'Year 4' }] } },
+  target_snapshot: {
+    target_type: 'post',
+    reported_user_id: 44,
+    post: {
+      id: 3,
+      body: 'Evidence text',
+      status: 'published',
+      author_user_id: 44,
+      media: [{ id: 8, type: 'image', name: 'evidence.jpg', mime_type: 'image/jpeg', size_bytes: 10, status: 'ready' }],
+    },
+  },
+  actions: [{ id: 2, action: 'submitted', reason_code: 'inappropriate', reason: null, actor: { id: 12, name: 'Rachel Wong' }, created_at: '2026-08-24T00:00:00Z' }],
+}
 
-describe('UGC moderation workspace', () => {
+describe('Post Reports workspace', () => {
   beforeEach(() => vi.restoreAllMocks())
 
-  it('shows the school queue, evidence and reason-gated actions without reporter identity', async () => {
-    vi.spyOn(moderationApi, 'getSchoolQueue').mockResolvedValue({ data: [severeCase, { ...severeCase, id: 10, priority: 'normal', overdue: false }] })
-    vi.spyOn(moderationApi, 'getSchoolCase').mockResolvedValue({ data: severeCase })
-    const decide = vi.spyOn(moderationApi, 'decideSchoolCase').mockResolvedValue({ data: { ...severeCase, status: 'resolved' } })
+  it('shows post-only reports with preserved evidence and a decision reason gate', async () => {
+    vi.spyOn(moderationApi, 'getSchoolQueue').mockResolvedValue({ data: [postReport] })
+    vi.spyOn(moderationApi, 'getSchoolCase').mockResolvedValue({ data: postReport })
+    const decide = vi.spyOn(moderationApi, 'decideSchoolCase').mockResolvedValue({ data: { ...postReport, status: 'resolved' } })
 
-    render(<UgcModerationPage permissions={['community.moderate']} currentUserId={1} />)
-    const queue = await screen.findByRole('region', { name: 'Moderation queue' })
-    expect(within(queue).getAllByRole('button')[0]).toHaveTextContent('Severe')
-    expect(within(queue).getAllByRole('button')[0]).toHaveTextContent('Overdue')
-    fireEvent.click(within(queue).getAllByRole('button')[0])
+    render(<UgcModerationPage />)
+    expect(await screen.findByRole('heading', { name: 'Post Reports' })).toBeInTheDocument()
+    const queue = screen.getByRole('region', { name: 'Post reports queue' })
+    expect(within(queue).getByRole('button', { name: /Post report #9/i })).toBeInTheDocument()
+    fireEvent.click(within(queue).getByRole('button', { name: /Post report #9/i }))
+
     expect(await screen.findByText('Evidence text')).toBeInTheDocument()
     expect(screen.getByText('evidence.jpg')).toBeInTheDocument()
-    expect(screen.queryByText(/reporter/i)).not.toBeInTheDocument()
+    expect(screen.getByText('Reporter: Rachel Wong')).toBeInTheDocument()
+    expect(screen.getByText('Post author: Alex Tan')).toBeInTheDocument()
+    expect(screen.getByText('Audience: Year 4')).toBeInTheDocument()
+    expect(screen.getByText('Submitted')).toBeInTheDocument()
 
-    fireEvent.change(screen.getByLabelText('Decision'), { target: { value: 'hide' } })
+    fireEvent.change(screen.getByLabelText('Decision'), { target: { value: 'remove_content' } })
+    fireEvent.change(screen.getByLabelText('Reason category'), { target: { value: 'inappropriate' } })
     expect(screen.getByRole('button', { name: 'Apply decision' })).toBeDisabled()
-    fireEvent.change(screen.getByLabelText('Reason category'), { target: { value: 'child_safety' } })
-    fireEvent.change(screen.getByLabelText('Decision reason'), { target: { value: 'Confirmed policy violation.' } })
+    fireEvent.change(screen.getByLabelText('Decision reason'), { target: { value: 'Removed after report review.' } })
     fireEvent.click(screen.getByRole('button', { name: 'Apply decision' }))
-    await waitFor(() => expect(decide).toHaveBeenCalledWith(9, 'hide', 'child_safety', 'Confirmed policy violation.'))
+    await waitFor(() => expect(decide).toHaveBeenCalledWith(9, 'remove_content', 'inappropriate', 'Removed after report review.'))
   })
 
-  it('prevents the original moderator from deciding an appeal', async () => {
-    const appealed = { ...severeCase, status: 'resolved', appeals: [{ id: 7, status: 'submitted', statement: 'Please review again.', source_moderator_user_id: 1, decision: null, decision_reason: null, created_at: '2026-08-16T00:00:00Z' }] }
-    vi.spyOn(moderationApi, 'getSchoolQueue').mockResolvedValue({ data: [appealed] })
-    vi.spyOn(moderationApi, 'getSchoolCase').mockResolvedValue({ data: appealed })
+  it('has no user restriction, appeal, or platform intervention controls', async () => {
+    vi.spyOn(moderationApi, 'getSchoolQueue').mockResolvedValue({ data: [postReport] })
+    vi.spyOn(moderationApi, 'getSchoolCase').mockResolvedValue({ data: postReport })
 
-    render(<UgcModerationPage permissions={['community.moderate']} currentUserId={1} />)
-    fireEvent.click((await screen.findByRole('region', { name: 'Moderation queue' })).querySelector('button')!)
-    expect(await screen.findByText('A different moderator must decide this appeal.')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Uphold appeal' })).not.toBeInTheDocument()
+    render(<UgcModerationPage />)
+    fireEvent.click(await screen.findByRole('button', { name: /Post report #9/i }))
+    await screen.findByText('Evidence text')
+
+    expect(screen.queryByText('Community restriction')).not.toBeInTheDocument()
+    expect(screen.queryByText(/Appeal #/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Platform safety|Escalate to platform|Open cases by tenant/)).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Apply restriction' })).not.toBeInTheDocument()
   })
 
-  it('uses platform aggregate mode and opens only explicit severe cases', async () => {
-    vi.spyOn(moderationApi, 'getPlatformSummary').mockResolvedValue({ data: { open: 4, severe_open: 1, overdue: 1, by_tenant: [{ tenant_id: 2, total: 4 }], severe_cases: [{ id: 9, tenant_id: 2, school_id: 5, priority: 'severe', reason_code: 'child_safety', status: 'submitted', due_at: '2020-01-01T00:00:00Z', overdue: true }] } })
-    vi.spyOn(moderationApi, 'getPlatformCase').mockResolvedValue({ data: { ...severeCase, tenant_id: 2, school_id: 5 } })
+  it('renders a backend-accepted partial post snapshot without media', async () => {
+    const partialSnapshot = {
+      ...postReport,
+      target_snapshot: {
+        target_type: 'post',
+        reported_user_id: 44,
+        post: { id: 3, body: 'Partial preserved evidence', status: 'published', author_user_id: 44 },
+      },
+    } as unknown as ModerationCase
+    vi.spyOn(moderationApi, 'getSchoolQueue').mockResolvedValue({ data: [partialSnapshot] })
+    vi.spyOn(moderationApi, 'getSchoolCase').mockResolvedValue({ data: partialSnapshot })
 
-    render(<UgcModerationPage permissions={['community.moderate_platform']} currentUserId={99} />)
-    expect(await screen.findByText('4 open cases')).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: /case #9/i }))
-    expect(await screen.findByText('Tenant 2 · School 5')).toBeInTheDocument()
+    render(<UgcModerationPage />)
+    fireEvent.click(await screen.findByRole('button', { name: /Post report #9/i }))
+
+    expect(await screen.findByText('Partial preserved evidence')).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Post report #9 detail' })).toBeInTheDocument()
+  })
+
+  it('keeps the client API limited to school report list, detail, and decision calls', () => {
+    expect(Object.keys(moderationApi).sort()).toEqual(['decideSchoolCase', 'getSchoolCase', 'getSchoolQueue'])
   })
 })

@@ -1,28 +1,49 @@
-import React, { useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useState, useCallback, useMemo } from 'react'
+import { createPortal } from 'react-dom'
+import {
+  ChevronLeft,
+  CheckCheck,
+  CreditCard,
+  GraduationCap,
+  CalendarCheck,
+  ShieldAlert,
+  Bell,
+  Sparkles,
+  ArrowUpRight,
+} from 'lucide-react'
 import { portalApi, type PortalNotification } from '../api/portalApi'
+import '../features/community-safety/CommunitySafety.css'
 import './NotificationCentre.css'
+import { useSwipeBack } from './useSwipeBack'
 
 export interface NotificationCentreProps {
   onClose: () => void
   onUnreadCountChange?: (count: number) => void
+  onNavigate?: (tab: string, target?: { schoolUpdatePostId: number }) => void
 }
+
+type NotificationCategory = 'all' | 'unread' | 'updates' | 'finance' | 'academic' | 'attendance' | 'general'
 
 export const NotificationCentre: React.FC<NotificationCentreProps> = ({
   onClose,
   onUnreadCountChange,
+  onNavigate,
 }) => {
   const [notifications, setNotifications] = useState<PortalNotification[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [markingAll, setMarkingAll] = useState(false)
+  const [activeFilter, setActiveFilter] = useState<NotificationCategory>('all')
+
+  const { isExiting, requestBack: handleBack, surfaceStyle, gestureHandlers } = useSwipeBack(onClose)
 
   const load = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
-      const resp = await portalApi.getNotifications()
-      setNotifications(resp.data)
-      onUnreadCountChange?.(resp.meta.unread_count)
+      const res = await portalApi.getNotifications()
+      setNotifications(res.data ?? [])
+      onUnreadCountChange?.(res.meta?.unread_count ?? 0)
     } catch {
       setError('Unable to load notifications.')
     } finally {
@@ -36,14 +57,14 @@ export const NotificationCentre: React.FC<NotificationCentreProps> = ({
 
   const handleMarkRead = async (id: number) => {
     try {
-      const resp = await portalApi.markNotificationRead(id)
+      await portalApi.markNotificationRead(id)
       setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? resp.data : n)),
+        prev.map((n) => (n.id === id ? { ...n, read_at: new Date().toISOString() } : n))
       )
-      const unread = notifications.filter((n) => n.id !== id && !n.read_at).length
-      onUnreadCountChange?.(unread)
+      const newUnread = notifications.filter((n) => n.id !== id && !n.read_at).length
+      onUnreadCountChange?.(newUnread)
     } catch {
-      // silent — notification remains unread
+      // silent
     }
   }
 
@@ -60,56 +81,190 @@ export const NotificationCentre: React.FC<NotificationCentreProps> = ({
     }
   }
 
-  const unreadCount = notifications.filter((n) => !n.read_at).length
+  const unreadCount = useMemo(
+    () => notifications.filter((n) => !n.read_at).length,
+    [notifications]
+  )
+
+  const filteredNotifications = useMemo(() => {
+    return notifications.filter((n) => {
+      if (activeFilter === 'unread') return !n.read_at
+      if (activeFilter === 'updates') return n.type === 'school_update'
+      if (activeFilter === 'finance') return n.type === 'finance' || n.type === 'payment_reminder'
+      if (activeFilter === 'academic') return n.type === 'academic' || n.type === 'quiz' || n.type === 'assessment'
+      if (activeFilter === 'attendance') return n.type === 'attendance'
+      if (activeFilter === 'general') return n.type === 'general' || n.type === 'system' || n.type === 'community_moderation'
+      return true
+    })
+  }, [notifications, activeFilter])
 
   const formatTime = (iso: string | null) => {
     if (!iso) return ''
     const d = new Date(iso)
-    const now = new Date()
-    const diffMs = now.getTime() - d.getTime()
-    const diffMins = Math.floor(diffMs / 60000)
-    if (diffMins < 1) return 'Just now'
-    if (diffMins < 60) return `${diffMins}m ago`
-    const diffHrs = Math.floor(diffMins / 60)
-    if (diffHrs < 24) return `${diffHrs}h ago`
-    const diffDays = Math.floor(diffHrs / 24)
-    return `${diffDays}d ago`
+    const diff = (Date.now() - d.getTime()) / 1000
+    if (diff < 60) return 'Just now'
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`
+    if (diff < 172800) return 'Yesterday'
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
   }
 
-  const typeIcon: Record<string, string> = {
-    payment_reminder: '💳',
-    general: '📢',
-    academic: '📚',
-    alert: '⚠️',
+  const getNotificationConfig = (type: string) => {
+    switch (type) {
+      case 'school_update':
+        return { icon: <Bell size={18} />, badgeClass: 'nc-badge-general', label: 'Updates', targetTab: 'home' }
+      case 'finance':
+      case 'payment_reminder':
+        return {
+          icon: <CreditCard size={18} />,
+          badgeClass: 'nc-badge-finance',
+          label: 'Finance',
+          targetTab: 'finance',
+        }
+      case 'academic':
+      case 'quiz':
+      case 'assessment':
+        return {
+          icon: <GraduationCap size={18} />,
+          badgeClass: 'nc-badge-academic',
+          label: 'Academics',
+          targetTab: 'academics',
+        }
+      case 'attendance':
+        return {
+          icon: <CalendarCheck size={18} />,
+          badgeClass: 'nc-badge-attendance',
+          label: 'Attendance',
+          targetTab: 'attendance',
+        }
+      case 'community_moderation':
+      case 'safety':
+        return {
+          icon: <ShieldAlert size={18} />,
+          badgeClass: 'nc-badge-safety',
+          label: 'Safety',
+          targetTab: 'home',
+        }
+      default:
+        return {
+          icon: <Bell size={18} />,
+          badgeClass: 'nc-badge-general',
+          label: 'General',
+          targetTab: undefined,
+        }
+    }
   }
 
-  return (
-    <div className="nc-overlay" onClick={onClose}>
-      <div className="nc-panel" onClick={(e) => e.stopPropagation()}>
-        <div className="nc-header">
-          <div className="nc-title">
+  const handleActionClick = (n: PortalNotification) => {
+    if (!n.read_at) {
+      void handleMarkRead(n.id)
+    }
+    const config = getNotificationConfig(n.type)
+    if (config.targetTab && onNavigate) {
+      const rawPostId = n.context_json?.post_id
+      const postId = typeof rawPostId === 'number' ? rawPostId : Number(rawPostId)
+      const target = n.type === 'school_update' && Number.isInteger(postId) && postId > 0
+        ? { schoolUpdatePostId: postId }
+        : undefined
+      handleBack()
+      onNavigate(config.targetTab, target)
+    }
+  }
+
+  return createPortal(
+    <div
+      className={`subpage-slide-overlay ${isExiting ? 'subpage-slide-out' : ''}`}
+      role="region"
+      aria-label="Notification Centre Subpage"
+      {...gestureHandlers}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 99990,
+        background: '#f6f3ee',
+        overflowY: 'auto',
+        ...surfaceStyle,
+      }}
+    >
+      <div className="subpage-container">
+        <header className="subpage-header">
+          <button
+            type="button"
+            className="subpage-back-btn"
+            onClick={handleBack}
+            aria-label="Close notifications"
+          >
+            <ChevronLeft size={20} />
+          </button>
+
+          <h1 className="subpage-nav-title">
             Notifications
-            {unreadCount > 0 && (
-              <span className="nc-badge">{unreadCount}</span>
-            )}
-          </div>
-          <div className="nc-header-actions">
-            {unreadCount > 0 && (
-              <button
-                className="nc-mark-all-btn"
-                onClick={() => void handleMarkAllRead()}
-                disabled={markingAll}
-              >
-                {markingAll ? 'Marking…' : 'Mark all read'}
-              </button>
-            )}
-            <button className="nc-close-btn" onClick={onClose} aria-label="Close notifications">
-              ✕
+            {unreadCount > 0 && <span className="nc-header-count">{unreadCount}</span>}
+          </h1>
+
+          {unreadCount > 0 ? (
+            <button
+              type="button"
+              className="nc-mark-all-btn"
+              onClick={() => void handleMarkAllRead()}
+              disabled={markingAll}
+            >
+              <CheckCheck size={14} />
+              <span>{markingAll ? 'Marking…' : 'Mark read'}</span>
             </button>
-          </div>
+          ) : (
+            <div style={{ width: '38px', flexShrink: 0 }} />
+          )}
+        </header>
+
+        {/* Filter Pills */}
+        <div className="nc-filter-bar" data-horizontal-scroll="true">
+          <button
+            type="button"
+            className={`nc-filter-chip ${activeFilter === 'all' ? 'active' : ''}`}
+            onClick={() => setActiveFilter('all')}
+          >
+            All <span className="nc-chip-count">{notifications.length}</span>
+          </button>
+          <button
+            type="button"
+            className={`nc-filter-chip ${activeFilter === 'unread' ? 'active' : ''}`}
+            onClick={() => setActiveFilter('unread')}
+          >
+            Unread {unreadCount > 0 && <span className="nc-chip-badge">{unreadCount}</span>}
+          </button>
+          <button type="button" className={`nc-filter-chip ${activeFilter === 'updates' ? 'active' : ''}`} onClick={() => setActiveFilter('updates')}>Updates</button>
+          <button
+            type="button"
+            className={`nc-filter-chip ${activeFilter === 'finance' ? 'active' : ''}`}
+            onClick={() => setActiveFilter('finance')}
+          >
+            Finance
+          </button>
+          <button
+            type="button"
+            className={`nc-filter-chip ${activeFilter === 'academic' ? 'active' : ''}`}
+            onClick={() => setActiveFilter('academic')}
+          >
+            Academics
+          </button>
+          <button
+            type="button"
+            className={`nc-filter-chip ${activeFilter === 'attendance' ? 'active' : ''}`}
+            onClick={() => setActiveFilter('attendance')}
+          >
+            Attendance
+          </button>
+          <button
+            type="button"
+            className={`nc-filter-chip ${activeFilter === 'general' ? 'active' : ''}`}
+            onClick={() => setActiveFilter('general')}
+          >
+            General
+          </button>
         </div>
 
-        <div className="nc-body">
+        <section className="subpage-content-group">
           {loading && (
             <div className="nc-state">
               <div className="nc-spinner" />
@@ -125,39 +280,59 @@ export const NotificationCentre: React.FC<NotificationCentreProps> = ({
             </div>
           )}
 
-          {!loading && !error && notifications.length === 0 && (
-            <div className="nc-state nc-empty">
-              <span className="nc-empty-icon">🔔</span>
-              <p>No notifications yet</p>
-              <small>You'll see payment reminders and updates here.</small>
+          {!loading && !error && filteredNotifications.length === 0 && (
+            <div className="nc-empty-card">
+              <div className="nc-empty-glow">
+                {activeFilter === 'unread' ? <Sparkles size={32} /> : <Bell size={32} />}
+              </div>
+              <h2>{activeFilter === 'unread' ? 'All caught up!' : 'No notifications'}</h2>
+              <p>
+                {activeFilter === 'unread'
+                  ? "You've read all your recent notifications."
+                  : 'Important school announcements, fee updates, and academic progress will appear here.'}
+              </p>
             </div>
           )}
 
-          {!loading && !error && notifications.length > 0 && (
-            <ul className="nc-list">
-              {notifications.map((n) => (
-                <li
-                  key={n.id}
-                  className={`nc-item ${!n.read_at ? 'nc-item-unread' : ''}`}
-                  onClick={() => {
-                    if (!n.read_at) void handleMarkRead(n.id)
-                  }}
-                >
-                  <div className="nc-item-icon">
-                    {typeIcon[n.type] ?? '📢'}
-                  </div>
-                  <div className="nc-item-content">
-                    <div className="nc-item-title">{n.title}</div>
-                    <div className="nc-item-body">{n.body}</div>
-                    <div className="nc-item-time">{formatTime(n.created_at)}</div>
-                  </div>
-                  {!n.read_at && <div className="nc-unread-dot" />}
-                </li>
-              ))}
-            </ul>
+          {!loading && !error && filteredNotifications.length > 0 && (
+            <div className="nc-card-list">
+              {filteredNotifications.map((n) => {
+                const config = getNotificationConfig(n.type)
+                const isUnread = !n.read_at
+                return (
+                  <article
+                    key={n.id}
+                    className={`nc-notification-card ${isUnread ? 'is-unread' : ''}`}
+                    onClick={() => handleActionClick(n)}
+                  >
+                    <div className="nc-card-header">
+                      <span className={`nc-type-badge ${config.badgeClass}`}>
+                        {config.icon}
+                        <span>{config.label}</span>
+                      </span>
+                      <time className="nc-time-tag">{formatTime(n.created_at)}</time>
+                      {isUnread && <span className="nc-unread-indicator" title="Unread" />}
+                    </div>
+
+                    <h3 className="nc-card-title">{n.title}</h3>
+                    <p className="nc-card-body">{n.body}</p>
+
+                    {config.targetTab && (
+                      <footer className="nc-card-footer">
+                        <span className="nc-action-link">
+                          <span>View in {config.label}</span>
+                          <ArrowUpRight size={14} />
+                        </span>
+                      </footer>
+                    )}
+                  </article>
+                )
+              })}
+            </div>
           )}
-        </div>
+        </section>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

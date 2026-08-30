@@ -2,16 +2,13 @@
 
 namespace Tests\Feature;
 
-use App\Models\CommunityPolicyAcceptance;
-use App\Models\CommunityPolicyVersion;
 use App\Models\CommunityPost;
+use App\Models\CommunityPostAudience;
+use App\Models\CommunityReport;
 use App\Models\School;
 use App\Models\SchoolClass;
-use App\Models\TenantUserMembership;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class CommunityModerationQueueApiTest extends TestCase
@@ -24,141 +21,121 @@ class CommunityModerationQueueApiTest extends TestCase
         $this->seed();
     }
 
-    public function test_school_queue_approves_pending_submission_and_releases_media(): void
+    public function test_school_post_reports_queue_contains_only_active_user_reported_posts_and_removes_content(): void
     {
-        Storage::fake('local');
-        $teacher = $this->user('teacher.lim');
-        $this->acceptPolicies($teacher);
-        $class = SchoolClass::query()->where('name', 'MB1')->firstOrFail();
-        $postId = $this->actingAs($teacher)->withHeader('Accept', 'application/json')->post('http://127.0.0.1/api/v1/community/posts', [
-            'body' => 'Pending class update',
-            'audiences' => [['type' => 'class', 'class_id' => $class->id]],
-            'media' => [UploadedFile::fake()->create('lesson.pdf', 10, 'application/pdf')],
-        ])->assertCreated()->json('data.id');
+        $post = $this->publishedPost(classAudience: true);
+        $case = CommunityReport::query()->create([
+            'tenant_id' => $post->tenant_id, 'school_id' => $post->school_id, 'reporter_user_id' => $this->user('rachel.wong')->id,
+            'source' => 'user_report', 'target_type' => 'post', 'community_post_id' => $post->id,
+            'reported_user_id' => $post->author_user_id, 'reason_code' => 'inappropriate', 'priority' => 'normal',
+            'status' => CommunityReport::STATUS_SUBMITTED, 'details' => 'Please review this update.', 'target_snapshot' => ['post' => ['id' => $post->id]], 'due_at' => now()->addDay(),
+        ]);
+        $historical = CommunityReport::query()->create([
+            'tenant_id' => $post->tenant_id, 'school_id' => $post->school_id, 'reporter_user_id' => $post->author_user_id,
+            'source' => 'submission', 'target_type' => 'post', 'community_post_id' => $post->id,
+            'reported_user_id' => $post->author_user_id, 'reason_code' => 'other', 'priority' => 'normal',
+            'status' => CommunityReport::STATUS_SUBMITTED, 'target_snapshot' => [], 'due_at' => now()->addDay(),
+        ]);
 
-        $queue = $this->actingAs($this->user('admin'))->getJson('http://localhost/api/v1/admin/community-moderation/reports')
-            ->assertOk()->assertJsonPath('data.0.source', 'submission');
-        $reportId = $queue->json('data.0.id');
-
-        $this->actingAs($this->user('admin'))->postJson("http://localhost/api/v1/admin/community-moderation/reports/{$reportId}/decision", [
-            'decision' => 'approve', 'reason_code' => 'no_violation', 'reason' => 'Safe school update.',
+        $this->actingAs($this->user('admin'))->getJson('http://localhost/api/v1/admin/community-moderation/reports')
+            ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $case->id)
+            ->assertJsonPath('data.0.target_snapshot.post.media', [])
+            ->assertJsonPath('data.0.reporter.name', $this->user('rachel.wong')->name)
+            ->assertJsonPath('data.0.post.author.name', $this->user('admin')->name)
+            ->assertJsonPath('data.0.post.audience.school', false)
+            ->assertJsonPath('data.0.details', 'Please review this update.')
+            ->assertJsonPath('data.0.post.audience.classes.0.name', SchoolClass::query()->where('school_id', $post->school_id)->firstOrFail()->name);
+        $this->actingAs($this->user('admin'))->postJson("http://localhost/api/v1/admin/community-moderation/reports/{$case->id}/decision", [
+            'decision' => 'remove_content', 'reason_code' => 'inappropriate', 'reason' => 'Removed after report review.',
         ])->assertOk()->assertJsonPath('data.status', 'resolved');
 
-        $this->assertDatabaseHas('community_posts', ['id' => $postId, 'status' => 'published']);
-        $this->assertDatabaseHas('community_post_media', ['community_post_id' => $postId, 'status' => 'ready']);
-        $this->assertDatabaseHas('portal_notifications', ['recipient_user_id' => $teacher->id, 'type' => 'community_moderation']);
+        $this->assertDatabaseHas('community_posts', ['id' => $post->id, 'status' => CommunityPost::STATUS_HIDDEN]);
+        $this->assertDatabaseHas('community_reports', ['id' => $case->id, 'resolution_code' => 'remove_content']);
+        $this->assertDatabaseHas('community_reports', ['id' => $historical->id, 'source' => 'submission']);
     }
 
-    public function test_decision_requires_reason_and_school_admin_cannot_open_other_school_case(): void
+    public function test_retired_restriction_and_appeal_routes_are_not_found(): void
     {
-        $reportId = $this->pendingSubmissionReportId();
         $admin = $this->user('admin');
-
-        $this->actingAs($admin)->postJson("http://localhost/api/v1/admin/community-moderation/reports/{$reportId}/decision", [
-            'decision' => 'reject',
-        ])->assertUnprocessable()->assertJsonValidationErrors(['reason_code', 'reason']);
-        $this->actingAs($admin)->postJson("http://localhost/api/v1/admin/community-moderation/reports/{$reportId}/decision", [
-            'decision' => 'warn', 'reason_code' => 'other', 'reason' => 'A warning alone cannot resolve pending content.',
-        ])->assertUnprocessable()->assertJsonValidationErrors('decision');
-
-        $this->assertDatabaseHas('community_reports', ['id' => $reportId, 'status' => 'submitted']);
-    }
-
-    public function test_community_restriction_blocks_only_selected_community_scope(): void
-    {
         $parent = $this->user('rachel.wong');
-        $post = $this->publishedPost();
-        $restriction = $this->actingAs($this->user('admin'))->postJson("http://localhost/api/v1/admin/community-moderation/users/{$parent->id}/restrictions", [
-            'scope' => 'comment', 'reason_code' => 'bullying_harassment', 'reason' => 'Cooling-off period.',
-            'ends_at' => now()->addDay()->toIso8601String(),
-        ])->assertCreated()->json('data');
+        $historical = CommunityReport::query()->create([
+            'tenant_id' => $admin->school->tenant_id, 'school_id' => $admin->school_id, 'reporter_user_id' => $admin->id,
+            'source' => 'submission', 'target_type' => 'post', 'reported_user_id' => $admin->id, 'reason_code' => 'other',
+            'priority' => 'normal', 'status' => CommunityReport::STATUS_SUBMITTED, 'target_snapshot' => [], 'due_at' => now()->addDay(),
+        ]);
 
-        $this->acceptPolicies($parent);
-        $this->actingAs($parent)->postJson("http://127.0.0.1/api/v1/community/posts/{$post->id}/comments", ['body' => 'Comment'])
-            ->assertUnprocessable()->assertJsonValidationErrors('community_restriction');
-        $this->actingAs($parent)->getJson('http://127.0.0.1/api/v1/portal/parent/me')->assertOk();
-
-        $this->actingAs($this->user('admin'))->deleteJson("http://localhost/api/v1/admin/community-moderation/restrictions/{$restriction['id']}")
-            ->assertOk();
-        $this->actingAs($parent)->postJson("http://127.0.0.1/api/v1/community/posts/{$post->id}/comments", ['body' => 'Comment'])
-            ->assertCreated();
+        $this->actingAs($admin)->postJson("http://localhost/api/v1/admin/community-moderation/users/{$parent->id}/restrictions", [])->assertNotFound();
+        $this->actingAs($admin)->deleteJson('/api/v1/admin/community-moderation/restrictions/1')->assertNotFound();
+        $this->actingAs($admin)->postJson('/api/v1/admin/community-moderation/appeals/1/decision', [])->assertNotFound();
+        $this->actingAs($admin)->postJson("http://localhost/api/v1/admin/community-moderation/reports/{$historical->id}/decision", [])->assertNotFound();
+        $this->assertDatabaseHas('community_reports', ['id' => $historical->id, 'source' => 'submission']);
     }
 
-    public function test_school_admin_cannot_restrict_user_scoped_only_to_another_school_in_same_tenant(): void
+    public function test_no_action_records_the_decision_without_restoring_hidden_content(): void
     {
-        $admin = $this->user('admin');
+        $post = $this->publishedPost();
+        $case = CommunityReport::query()->create([
+            'tenant_id' => $post->tenant_id, 'school_id' => $post->school_id, 'reporter_user_id' => $this->user('rachel.wong')->id,
+            'source' => 'user_report', 'target_type' => 'post', 'community_post_id' => $post->id,
+            'reported_user_id' => $post->author_user_id, 'reason_code' => 'outdated', 'priority' => 'normal',
+            'status' => CommunityReport::STATUS_SUBMITTED, 'target_snapshot' => [], 'due_at' => now()->addDay(),
+        ]);
+        $post->update(['status' => CommunityPost::STATUS_HIDDEN, 'hidden_at' => now(), 'hidden_by_user_id' => $this->user('admin')->id]);
+
+        $this->actingAs($this->user('admin'))->postJson("http://localhost/api/v1/admin/community-moderation/reports/{$case->id}/decision", [
+            'decision' => 'no_action', 'reason_code' => 'outdated', 'reason' => 'No further action on this report.',
+        ])->assertOk()->assertJsonPath('data.resolution_code', 'no_action');
+
+        $this->assertDatabaseHas('community_posts', ['id' => $post->id, 'status' => CommunityPost::STATUS_HIDDEN]);
+    }
+
+    public function test_post_report_detail_is_limited_to_school_moderators_and_same_school_reports(): void
+    {
+        $post = $this->publishedPost();
+        $report = CommunityReport::query()->create([
+            'tenant_id' => $post->tenant_id, 'school_id' => $post->school_id, 'reporter_user_id' => $this->user('rachel.wong')->id,
+            'source' => 'user_report', 'target_type' => 'post', 'community_post_id' => $post->id,
+            'reported_user_id' => $post->author_user_id, 'reason_code' => 'other', 'priority' => 'normal',
+            'status' => CommunityReport::STATUS_SUBMITTED, 'target_snapshot' => ['post' => ['id' => $post->id]], 'due_at' => now()->addDay(),
+        ]);
+        $report->actions()->create([
+            'tenant_id' => $post->tenant_id, 'school_id' => $post->school_id, 'actor_user_id' => $this->user('admin')->id,
+            'action' => 'submitted', 'reason_code' => 'other', 'reason' => 'Preserved for review.',
+        ]);
         $otherSchool = School::query()->create([
-            'tenant_id' => $admin->school->tenant_id, 'code' => 'MIS2', 'name' => 'Second Campus',
-            'receipt_prefix' => 'M2', 'status' => 'active',
+            'tenant_id' => $post->tenant_id, 'code' => 'OTHER', 'name' => 'Other School',
+            'receipt_prefix' => 'OTH', 'invoice_prefix' => 'OTH-INV', 'status' => 'active',
         ]);
-        $otherUser = User::factory()->create(['school_id' => $otherSchool->id, 'status' => 'active']);
-        $membership = TenantUserMembership::query()->create([
-            'tenant_id' => $otherSchool->tenant_id, 'user_id' => $otherUser->id,
-            'default_school_id' => $otherSchool->id, 'access_all_schools' => false, 'status' => 'active',
+        $otherReport = CommunityReport::query()->create([
+            'tenant_id' => $post->tenant_id, 'school_id' => $otherSchool->id, 'reporter_user_id' => $this->user('rachel.wong')->id,
+            'source' => 'user_report', 'target_type' => 'post', 'reported_user_id' => $post->author_user_id,
+            'reason_code' => 'other', 'priority' => 'normal', 'status' => CommunityReport::STATUS_SUBMITTED,
+            'target_snapshot' => ['post' => ['id' => 999]], 'due_at' => now()->addDay(),
         ]);
-        $membership->schools()->attach($otherSchool->id, ['tenant_id' => $otherSchool->tenant_id]);
 
-        $this->actingAs($admin)->postJson("http://localhost/api/v1/admin/community-moderation/users/{$otherUser->id}/restrictions", [
-            'scope' => 'comment', 'reason_code' => 'spam', 'reason' => 'Must not cross school scope.',
-        ])->assertForbidden();
-
-        $this->assertDatabaseCount('community_user_restrictions', 0);
+        $this->actingAs($this->user('admin'))->getJson("http://localhost/api/v1/admin/community-moderation/reports/{$report->id}")
+            ->assertOk()->assertJsonPath('data.actions.0.actor.name', $this->user('admin')->name)
+            ->assertJsonPath('data.actions.0.reason', 'Preserved for review.');
+        $this->actingAs($this->user('rachel.wong'))->getJson("http://localhost/api/v1/admin/community-moderation/reports/{$report->id}")->assertForbidden();
+        $this->actingAs($this->user('admin'))->getJson("http://localhost/api/v1/admin/community-moderation/reports/{$otherReport->id}")->assertNotFound();
     }
 
-    public function test_platform_summary_and_severe_detail_require_platform_permission_and_log_access(): void
-    {
-        $post = $this->publishedPost();
-        $this->actingAs($this->user('rachel.wong'))->postJson('http://127.0.0.1/api/v1/community/reports', [
-            'target_type' => 'post', 'target_id' => $post->id, 'reason_code' => 'child_safety',
-        ])->assertCreated();
-        $reportId = (int) $this->app['db']->table('community_reports')->value('id');
-
-        $super = $this->user('superadmin');
-        $this->actingAs($super)->getJson('http://localhost/api/v1/platform/community-moderation/summary')
-            ->assertOk()->assertJsonPath('data.severe_open', 1)
-            ->assertJsonPath('data.severe_cases.0.id', $reportId)
-            ->assertJsonPath('data.severe_cases.0.tenant_id', $post->tenant_id);
-        $this->actingAs($super)->getJson("http://localhost/api/v1/platform/community-moderation/reports/{$reportId}")
-            ->assertOk()->assertJsonPath('data.id', $reportId);
-        $this->assertDatabaseHas('audit_logs', ['action' => 'community.platform_case_viewed', 'entity_id' => $reportId]);
-        $this->actingAs($super)->postJson("http://localhost/api/v1/platform/community-moderation/reports/{$reportId}/decision", [
-            'decision' => 'no_violation', 'reason_code' => 'no_violation', 'reason' => 'Platform review found no violation.',
-        ])->assertOk()->assertJsonPath('data.status', 'resolved');
-
-        $this->actingAs($this->user('admin'))->getJson('http://localhost/api/v1/platform/community-moderation/summary')->assertForbidden();
-    }
-
-    private function pendingSubmissionReportId(): int
-    {
-        $teacher = $this->user('teacher.lim');
-        $this->acceptPolicies($teacher);
-        $class = SchoolClass::query()->where('name', 'MB1')->firstOrFail();
-        $this->actingAs($teacher)->postJson('http://127.0.0.1/api/v1/community/posts', [
-            'body' => 'Pending update', 'audiences' => [['type' => 'class', 'class_id' => $class->id]],
-        ])->assertCreated();
-
-        return (int) $this->app['db']->table('community_reports')->where('source', 'submission')->value('id');
-    }
-
-    private function publishedPost(): CommunityPost
+    private function publishedPost(bool $classAudience = false): CommunityPost
     {
         $admin = $this->user('admin');
-        $this->acceptPolicies($admin);
-        $id = $this->actingAs($admin)->postJson('http://127.0.0.1/api/v1/community/posts', [
-            'body' => 'School notice', 'audiences' => [['type' => 'school']],
-        ])->assertCreated()->json('data.id');
-
-        return CommunityPost::query()->findOrFail($id);
-    }
-
-    private function acceptPolicies(User $user): void
-    {
-        foreach (CommunityPolicyVersion::query()->whereIn('policy_type', ['terms', 'community_standards'])->get() as $policy) {
-            CommunityPolicyAcceptance::query()->firstOrCreate([
-                'tenant_id' => $user->school->tenant_id, 'school_id' => $user->school_id,
-                'user_id' => $user->id, 'community_policy_version_id' => $policy->id,
-            ], ['accepted_at' => now()]);
+        $post = CommunityPost::query()->create([
+            'tenant_id' => $admin->school->tenant_id, 'school_id' => $admin->school_id, 'author_user_id' => $admin->id,
+            'post_type' => 'update', 'body' => 'Reported update', 'comments_enabled' => false,
+            'status' => CommunityPost::STATUS_PUBLISHED, 'published_at' => now(),
+        ]);
+        if ($classAudience) {
+            $schoolClass = SchoolClass::query()->where('school_id', $admin->school_id)->firstOrFail();
+            CommunityPostAudience::query()->create(['school_id' => $admin->school_id, 'community_post_id' => $post->id, 'audience_type' => 'class', 'class_id' => $schoolClass->id, 'audience_key' => "class:{$schoolClass->id}"]);
+        } else {
+            CommunityPostAudience::query()->create(['school_id' => $admin->school_id, 'community_post_id' => $post->id, 'audience_type' => 'school', 'audience_key' => 'school']);
         }
+
+        return $post;
     }
 
     private function user(string $username): User

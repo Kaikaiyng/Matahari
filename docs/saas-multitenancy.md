@@ -64,7 +64,7 @@ Global `user_roles` are retained for compatibility and migration history. During
 
 `users.is_platform_owner` is an explicit platform-control capability. It is not inferred from `super-admin`, email, username or tenant ownership. Platform owners may administer tenants, but ordinary business APIs still require an explicit tenant/school context.
 
-`tenant-owner` is a tenant-scoped role with `tenant.settings.manage`. It may manage its current tenant only. It is distinct from the platform owner.
+Tenant and platform configuration is controlled by the explicit Super Admin platform owner. Historical `tenant-owner` rows may remain for upgrade history, but the role is no longer seeded or assignable.
 
 ## Tenant Configuration
 
@@ -97,7 +97,7 @@ Platform owner under `/api/v1/platform`:
 - add schools;
 - create/update user membership scope and roles.
 
-Current tenant owner under `/api/v1/tenant`:
+Compatibility tenant-configuration routes under `/api/v1/tenant` also require the protected platform-owner capability. They can:
 
 - update branding;
 - add pending domains;
@@ -105,7 +105,7 @@ Current tenant owner under `/api/v1/tenant`:
 - add schools;
 - create/update memberships.
 
-The platform owner alone activates domains and changes tenant status.
+The platform owner alone uses these platform/tenant configuration APIs; a school employee position never receives tenant-control authority. Domain activation and tenant status changes remain available only under `/api/v1/platform`.
 
 ## Audit and Transaction Rules
 

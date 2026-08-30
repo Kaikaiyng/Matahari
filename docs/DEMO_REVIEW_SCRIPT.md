@@ -2,7 +2,7 @@
 
 Status: Current demo sequence
 
-Last updated: 2026-08-13
+Last updated: 2026-08-26
 
 ## 1. Demo Goal
 
@@ -20,9 +20,9 @@ Login
   -> Review Fee Record summaries
 ```
 
-Do not present the system as a finished school ERP. Reports, Export, PDF generation, production-ready Parent Finance, Statements, Reminders, Community publishing persistence, Assessments, Quiz, native packaging, and production deployment are not part of this demo.
+Do not present the system as a finished school ERP. General reports/exports, server PDF generation, production-hardened Parent Finance, Statements, automatic/external reminders, Practice/AI Quiz, native packaging, and production deployment are not part of this demo.
 
-The separate Community App may also be demonstrated at `http://127.0.0.1:5174` with seeded Parent, Student, Teacher, and Staff personas. Its daily Attendance path is connected to Laravel; Feed publishing, Schedule, Assessment, and Quiz surfaces remain labelled previews.
+The separate School App may also be demonstrated at `http://127.0.0.1:5174` with seeded Parent, Student, and Teacher personas. School Updates, daily Attendance, Schedule, published Assessments, formal Quiz, Parent Finance, and notifications use live scoped Laravel APIs. Student Attendance is intentionally excluded; Practice/AI Quiz remains unavailable.
 
 ## 2. Devices
 
@@ -54,7 +54,7 @@ not affiliated with or endorsed by any school, and printed receipts are not vali
 1. Open the login page.
 2. Confirm labels, inputs, error placement, and Login button are readable.
 3. Log in with a seeded local School Admin account.
-4. On iPad portrait/mobile, open the menu drawer.
+4. On desktop, collapse and restore the full sidebar; on iPad portrait/mobile, open the menu drawer.
 5. Confirm the current page is visually identified.
 6. Select Students and confirm the drawer closes.
 7. Confirm Logout remains accessible.
@@ -70,14 +70,16 @@ Expected:
 
 ## 5. Student List and Detail
 
-Before returning to the Admin finance flow, optionally demonstrate the Community App:
+Before returning to the Admin finance flow, optionally demonstrate the School App:
 
-1. Sign in with a seeded persona and confirm the role-specific liquid-glass bottom navigation.
-2. Check Parent Children/Academics/Finance, Student Learn/Quiz/Schedule, Teacher Classes/Create/Attendance, and Staff Review/More boundaries.
-3. For Teacher Attendance, use only an assigned class; corrections require a reason.
-4. Confirm Parent/Student Attendance reads only the linked child/self record.
-5. Confirm Sign out is in More/Profile.
-6. State clearly that Feed publishing/media, Assessment results, Schedule, formal Quiz, and Practice generation are previews.
+1. Sign in with a seeded Parent, Student, or Teacher persona and confirm the role-specific liquid-glass bottom navigation.
+2. Check Parent Children/Academics/Finance, Student Learn/Quiz/Schedule, and Teacher Classes/Create/Attendance boundaries.
+3. For Teacher Attendance, use only assigned scope unless the employee has an explicit school-wide User Ability; corrections require a reason.
+4. Confirm Parent Attendance shows only linked children and that Student receives no Attendance page/data.
+5. Open a secondary page, drag from the left edge, and confirm the fixed previous page remains visible beneath the moving page before returning.
+6. Confirm Sign out is in More/Profile.
+7. Create a School Update only with an employee who has `community.publish`; choose whole school or multiple classes, optionally notify recipients, and confirm Parent/Student cannot publish.
+8. Confirm published Assessment results, Schedule, formal Quiz, and Parent Finance are live scoped data; only Practice/AI Quiz remains planned.
 
 1. Search or filter the Student List and switch the fee period between all-year and a month.
 2. Confirm Student Name, Student ID, Class, Status, and Open remain visible on narrow screens.
@@ -89,7 +91,16 @@ Explain that financial sections are kept separate so admin staff do not face one
 
 Before or after Student Detail, open Classes, select a class, verify the active roster, open a student, and return to the same roster.
 
-## 5A. Calendar
+## 5A. Attendance, Employees, and System Operations
+
+1. Open Attendance and confirm Overview includes campus totals plus the complete campus-record table instead of a duplicate Campus Records tab.
+2. Open a student movement timeline, then Class Register; compare assigned versus school-wide view/manage abilities.
+3. Review Devices and Settings without claiming live Hikvision compatibility. Face/card/manual mapping is prepared, but real protocol/authentication remains unverified.
+4. Open Employees, edit another same-school employee, and review Position and User Abilities. Do not save outside disposable demo data; every saved access change requires a reason and appears in Audit Trail.
+5. As Super Admin, open Audit Trail and Application Logs. Explain that Audit Trail is immutable business/security history, while Application Logs is a sanitized read-only operational viewer.
+6. Open Post Reports and demonstrate report decisions without describing School Updates as a general social network; current posts support Likes and reports, not comments.
+
+## 5B. Calendar
 
 1. Open Calendar below Dashboard.
 2. Use Today and month navigation.
@@ -208,6 +219,9 @@ Record confirmed changes in `docs/DECISIONS.md` or a new dated decision record w
 - All named flows open and remain readable
 - No page-level horizontal overflow at the four target sizes
 - Drawer and compact navigation work
+- Desktop sidebar collapse/restore and grouped expansion animate without icon misalignment
+- Attendance, employee ability, Post Report, Audit Trail, and Application Logs boundaries are explained accurately
+- Parent, Student, and Teacher App roles remain distinct; Student Attendance and Staff persona are absent
 - Financial statuses and destructive actions remain clear
 - Jan-Dec ledger scrolls inside its container
 - Desktop layout remains intact after narrow-screen testing

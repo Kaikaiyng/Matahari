@@ -19,6 +19,10 @@ enum AuditSubject: string
     case Guardian = 'guardian';
     case StudentParentLink = 'student_parent_link';
     case AttendanceSession = 'attendance_session';
+    case UserAttendanceAbility = 'user_attendance_ability';
+    case CampusAttendanceEvent = 'campus_attendance_event';
+    case AttendanceDevice = 'attendance_device';
+    case AttendanceSetting = 'attendance_setting';
     case CommunityPost = 'community_post';
     case CommunityComment = 'community_comment';
     case CommunityPolicyAcceptance = 'community_policy_acceptance';
@@ -35,4 +39,6 @@ enum AuditSubject: string
     case QuizAttempt = 'quiz_attempt';
     case Tenant = 'tenant';
     case TenantDomain = 'tenant_domain';
+    case School = 'school';
+    case SchoolSupportSetting = 'school_support_setting';
 }

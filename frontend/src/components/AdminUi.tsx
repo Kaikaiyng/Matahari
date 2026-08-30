@@ -1,11 +1,12 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
-import type { ReactNode, RefObject } from 'react'
+import type { AriaAttributes, ReactNode, RefObject } from 'react'
 import { createPortal } from 'react-dom'
-import { AlertTriangle, CheckCircle2, Info, X } from 'lucide-react'
+import { AlertTriangle, Check, CheckCircle2, ChevronDown, Info, Search, X } from 'lucide-react'
 import { productBrand } from '../branding'
 import { useTenantConfiguration } from '../tenant'
 import { BrandMark } from './BrandMark'
 import './AdminUi.css'
+export { DatePicker, TimePicker } from './SystemDateTimePicker'
 
 export type UiTone = 'neutral' | 'positive' | 'warning' | 'danger' | 'info'
 
@@ -397,5 +398,169 @@ export function SessionLoader() {
         <p role="status">Verifying your secure admin access...</p>
       </section>
     </main>
+  )
+}
+
+export type CustomSelectOption<T extends string | number = string> = {
+  value: T
+  label: string
+  disabled?: boolean
+  meta?: string
+}
+
+export type CustomSelectProps<T extends string | number = string> = {
+  value: T
+  onChange: (value: T) => void
+  options: Array<CustomSelectOption<T>>
+  placeholder?: string
+  ariaLabel?: string
+  id?: string
+  className?: string
+  disabled?: boolean
+  size?: 'compact' | 'standard'
+  triggerRef?: RefObject<HTMLButtonElement | null>
+  'aria-invalid'?: AriaAttributes['aria-invalid']
+  'aria-describedby'?: string
+}
+
+export function CustomSelect<T extends string | number = string>({
+  value,
+  onChange,
+  options,
+  placeholder,
+  ariaLabel,
+  id,
+  className = '',
+  disabled = false,
+  size = 'standard',
+  triggerRef,
+  'aria-invalid': ariaInvalid,
+  'aria-describedby': ariaDescribedBy,
+}: CustomSelectProps<T>) {
+  const [isOpen, setIsOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const containerRef = useRef<HTMLDivElement>(null)
+  const selectedOption = options.find((opt) => opt.value === value)
+  const isSearchable = options.length > 5
+  const normalizedQuery = query.trim().toLocaleLowerCase()
+  const visibleOptions = normalizedQuery
+    ? options.filter((option) =>
+        `${option.label} ${option.meta ?? ''}`.toLocaleLowerCase().includes(normalizedQuery),
+      )
+    : options
+
+  const closeMenu = () => {
+    setIsOpen(false)
+    setQuery('')
+  }
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        closeMenu()
+      }
+    }
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isOpen) {
+        closeMenu()
+      }
+    }
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      document.addEventListener('keydown', handleKeyDown)
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside)
+        document.removeEventListener('keydown', handleKeyDown)
+      }
+    }
+  }, [isOpen])
+
+  return (
+    <div
+      ref={containerRef}
+      className={`custom-select-container ${size} ${disabled ? 'disabled' : ''} ${className}`}
+    >
+      <select
+        id={id}
+        aria-label={ariaLabel}
+        aria-invalid={ariaInvalid}
+        aria-describedby={ariaDescribedBy}
+        className="custom-select-native-peer"
+        value={value}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.value as T)}
+        tabIndex={-1}
+      >
+        {options.map((opt) => (
+          <option key={String(opt.value)} value={opt.value} disabled={opt.disabled}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+
+      <button
+        ref={triggerRef}
+        type="button"
+        aria-invalid={ariaInvalid}
+        aria-describedby={ariaDescribedBy}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        disabled={disabled}
+        className={`custom-select-trigger ${isOpen ? 'is-open' : ''}`}
+        onClick={() => {
+          if (isOpen) closeMenu()
+          else setIsOpen(true)
+        }}
+      >
+        <span className="custom-select-label">
+          {selectedOption ? selectedOption.label : placeholder || 'Select option'}
+        </span>
+        <ChevronDown size={15} className={`custom-select-arrow ${isOpen ? 'is-open' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <div className="custom-select-dropdown" role="listbox" tabIndex={-1}>
+          {isSearchable && (
+            <label className="custom-select-search">
+              <Search size={14} aria-hidden="true" />
+              <input
+                type="search"
+                aria-label={`Search ${ariaLabel ?? placeholder ?? 'options'}`}
+                placeholder="Search options..."
+                value={query}
+                autoFocus
+                onChange={(event) => setQuery(event.target.value)}
+              />
+              {query && (
+                <button type="button" aria-label="Clear search" onClick={() => setQuery('')}>
+                  <X size={13} />
+                </button>
+              )}
+            </label>
+          )}
+          {visibleOptions.map((opt) => {
+            const isSelected = opt.value === value
+            return (
+              <button
+                key={String(opt.value)}
+                type="button"
+                role="option"
+                aria-selected={isSelected}
+                disabled={opt.disabled}
+                className={`custom-select-option ${isSelected ? 'is-selected' : ''}`}
+                onClick={() => {
+                  onChange(opt.value)
+                  closeMenu()
+                }}
+              >
+                <span className="custom-select-option-label">{opt.label}</span>
+                {isSelected && <Check size={14} className="custom-select-check" />}
+              </button>
+            )
+          })}
+          {!visibleOptions.length && <p className="custom-select-empty">No matching options</p>}
+        </div>
+      )}
+    </div>
   )
 }

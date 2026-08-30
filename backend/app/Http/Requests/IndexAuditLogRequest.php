@@ -29,6 +29,7 @@ class IndexAuditLogRequest extends FormRequest
             'school_id' => ['nullable', 'integer', 'min:1'],
             'request_id' => ['nullable', 'uuid'],
             'actor_username' => ['nullable', 'string', 'max:50'],
+            'search' => ['nullable', 'string', 'max:120'],
             'date_from' => ['nullable', 'date'],
             'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
             'per_page' => ['nullable', 'integer', 'between:1,100'],

@@ -20,7 +20,7 @@ class DemoScenarioSeederTest extends TestCase
     {
         $this->seed();
 
-        foreach (['super-admin', 'ceo', 'school-admin', 'finance'] as $roleSlug) {
+        foreach (['super-admin', 'school-admin', 'finance'] as $roleSlug) {
             $this->assertTrue(
                 Role::query()->where('slug', $roleSlug)->firstOrFail()
                     ->permissions()->where('slug', 'fee_record.view')->exists(),

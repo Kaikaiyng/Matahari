@@ -1,6 +1,8 @@
 # MIS App Product Specification
 
-**Status:** Approved direction; Community, daily Attendance, Assessment publication, Parent Finance reads, student Schedule, and formal Quiz V1 are live; Practice/AI Quiz remains deferred
+> **Historical product-direction record (reviewed 2026-08-14).** The Community publishing, media, comment, and moderation sections below are superseded by the active School Updates workflow documented in [Business Rules](business-rules.md), [Permissions](permissions.md), and [Current Status](current-status.md). They are retained as design history rather than current behavior.
+
+**Historical status as of 2026-08-14:** Approved direction; Community, daily Attendance, Assessment publication, Parent Finance reads, student Schedule, and formal Quiz V1 were recorded as live; Practice/AI Quiz remained deferred
 
 **Approved:** 2026-08-12; implementation status reviewed 2026-08-14
 

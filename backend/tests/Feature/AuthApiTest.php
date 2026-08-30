@@ -49,6 +49,21 @@ class AuthApiTest extends TestCase
                 ->etc());
     }
 
+    public function test_platform_owner_identity_and_effective_permissions_are_returned_to_the_admin_client(): void
+    {
+        $this->seed();
+
+        $this->postJson('/api/login', [
+            'username' => 'superadmin',
+            'password' => 'password',
+        ])
+            ->assertOk()
+            ->assertJsonPath('user.is_platform_owner', true)
+            ->assertJson(fn ($json) => $json
+                ->whereContains('user.permissions', 'school.settings.manage')
+                ->etc());
+    }
+
     public function test_logout_clears_authenticated_session(): void
     {
         $this->seed();
@@ -204,7 +219,7 @@ class AuthApiTest extends TestCase
             ->assertJsonPath('data.0.student_no', 'MIS-2026-001');
     }
 
-    public function test_finance_still_cannot_create_fee_agreement_after_login(): void
+    public function test_finance_can_create_fee_agreement_after_login_as_advanced_admin(): void
     {
         $this->seed();
 
@@ -226,7 +241,7 @@ class AuthApiTest extends TestCase
                 ['fee_item_id' => $tuition->id, 'amount' => 800],
                 ['fee_item_id' => $misc->id, 'amount' => 90],
             ],
-        ])->assertForbidden();
+        ])->assertCreated();
     }
 
     public function test_login_preflight_allows_react_dev_server_credentials(): void

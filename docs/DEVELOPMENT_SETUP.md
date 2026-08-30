@@ -2,13 +2,13 @@
 
 Status: Current local-development guide
 
-Last verified for the current Admin and Community App web stacks: 2026-08-14
+Last verified for the current Admin and School App web stacks: 2026-08-26
 
-The repository has separate tenant-aware `frontend/` (Admin) and `app/` (Parent/Student/Teacher/Staff Community App) web workspaces. Local seed domains are `localhost` for Admin and `127.0.0.1` for App; both proxy `/api` to the shared backend. There is still no native toolchain. See [SaaS Multi-Tenancy](saas-multitenancy.md) and [Mobile Product Architecture and Roadmap](mobile-product-roadmap.md).
+The repository has separate tenant-aware `frontend/` (Admin) and `app/` (Parent/Student/Teacher School App) web workspaces. Local seed domains are `localhost` for Admin and `127.0.0.1` for App; both proxy `/api` to the shared backend. There is no Staff App persona and still no native toolchain. See [SaaS Multi-Tenancy](saas-multitenancy.md) and [Mobile Product Architecture and Roadmap](mobile-product-roadmap.md).
 
 ## 1. Local Stack
 
-- Admin and Community App: separate React 19, TypeScript 6, Vite 8, Node.js, and `npm.cmd` workspaces
+- Admin and School App: separate React 19, TypeScript 6, Vite 8, Node.js, and `npm.cmd` workspaces
 - Backend: Laravel 13 on PHP 8.4
 - Local database: SQLite for the repeatable demo; MariaDB remains available for development environments
 - Test database: SQLite `:memory:` through `backend/phpunit.xml`
@@ -56,7 +56,7 @@ npm.cmd run lint
 npm.cmd run build
 ```
 
-## 3. Community App Setup
+## 3. School App Setup
 
 In a second terminal:
 
@@ -137,7 +137,7 @@ Fresh MariaDB schema creation has one known migration-order caveat. Read [Databa
 
 ## 7. Seeded Local Accounts
 
-The seeder creates local `.test` users for Super Admin, School Admin, and Finance roles. Their development password is defined in `backend/database/seeders/DatabaseSeeder.php`.
+The seeder creates fictional local `.test` identities covering Super Admin, School Admin, Finance, Teacher, Parent, and Student use. Active employee positions are School Admin, Finance, and Teacher; Super Admin is the protected platform owner. Their development password is defined in `backend/database/seeders/DatabaseSeeder.php`.
 
 Seeded credentials are local-only. Do not reuse them in any deployed environment.
 
@@ -210,15 +210,14 @@ Use `npm.cmd` rather than `npm`.
 
 ## 11. Verified Baseline
 
-As of merged `master` on 2026-08-13:
+Latest integrated feature-branch evidence as of 2026-08-26:
 
-- Admin tests: 169 passed across 15 files; build passed; lint exited 0 with 9 known Fast Refresh organization warnings
-- Community App tests: 16 passed across 3 files; lint and build passed
-- Backend after the data-foundation slice: 260 tests discovered, 250 passed, 10 MariaDB-only inspections skipped under SQLite, and 1,339 assertions
-- API inventory: 74 non-vendor routes
-- Disposable schema after the Community App data-foundation migrations: 61 non-SQLite-internal tables
-- Disposable MariaDB 11.4 lifecycle and dedicated Community/Assessment/Quiz FK/index inspection: passed in GitHub qualification run `31661265923` (59 MariaDB assertions)
-- Deployment contract tests: 18 passed
+- Admin: 187 Vitest tests passed; build passed; lint exited 0 with 9 existing Fast Refresh warnings
+- School App: 56 Vitest tests passed; lint and build passed
+- Backend: 395 tests discovered, 383 passed, 12 MariaDB-gated tests skipped, and 2,145 assertions; Pint passed
+- API inventory: 152 non-vendor routes
+- The three 2026-08-23 Attendance/User Ability migrations passed a disposable SQLite fresh migration, targeted rollback, and re-migration in their delivery check
+- School Updates added no migration; its MariaDB audience-query behavior remains **Not verified**
 
 ## Audit MariaDB Integration Test
 

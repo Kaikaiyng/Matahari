@@ -14,7 +14,7 @@ class CheckStoreReadiness extends Command
     public function handle(): int
     {
         $failures = [];
-        foreach (['terms', 'privacy', 'community_standards', 'child_safety', 'support'] as $name) {
+        foreach (['terms', 'privacy', 'community_standards', 'child_safety', 'support', 'account_deletion'] as $name) {
             $url = config("community_safety.public_urls.{$name}");
             if (! is_string($url) || filter_var($url, FILTER_VALIDATE_URL) === false || parse_url($url, PHP_URL_SCHEME) !== 'https') {
                 $failures[] = strtoupper((string) $name).' public URL is missing or is not HTTPS';

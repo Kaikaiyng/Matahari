@@ -41,6 +41,8 @@ return [
         '/\bhttps?:\/\/[^\s]+/iu',
         '/\b[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}\b/iu',
         '/(?<!\d)(?:\+?\d[\d\s().-]{7,}\d)(?!\d)/u',
+        '/\b(?:whatsapp|wa\.me|telegram|t\.me|wechat|weixin|ig|instagram|tiktok|snapchat|discord|line|viber)[:\s@]+[a-z0-9_.-]+/iu',
+        '/\b(?:add|pm|dm|follow|text)\s+me\s+(?:on|at)\s+[a-z0-9_.-]+/iu',
     ],
     'public_urls' => [
         'terms' => env('COMMUNITY_TERMS_URL'),
@@ -48,6 +50,7 @@ return [
         'community_standards' => env('COMMUNITY_STANDARDS_URL'),
         'child_safety' => env('COMMUNITY_CHILD_SAFETY_URL'),
         'support' => env('COMMUNITY_SUPPORT_URL'),
+        'account_deletion' => env('COMMUNITY_ACCOUNT_DELETION_URL'),
     ],
     'support_email' => env('COMMUNITY_SUPPORT_EMAIL'),
     'child_safety_contact_email' => env('CHILD_SAFETY_CONTACT_EMAIL'),

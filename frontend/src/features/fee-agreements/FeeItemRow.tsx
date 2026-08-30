@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { FieldError, fieldErrorProps } from '../../components/AdminUi'
+import { CustomSelect, FieldError, fieldErrorProps } from '../../components/AdminUi'
 import { feeItemSummary, monthShortLabels } from './feeAgreementEditorModel'
 import type {
   BillingFrequency,
@@ -224,38 +224,28 @@ export function FeeItemRow({
           <div className="fee-item-settings-grid">
             <label className="form-field">
               Charge Type
-              <select
-                aria-label={`${item.name} Charge Type`}
+              <CustomSelect
+                ariaLabel={`${item.name} Charge Type`}
                 value={item.classification}
-                onChange={(event) =>
-                  updateClassification(event.target.value as FeeAgreementItemClassification)
+                onChange={(value) =>
+                  updateClassification(value as FeeAgreementItemClassification)
                 }
-              >
-                {chargeTypes.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+                options={chargeTypes}
+              />
               <small>How this fee is collected and presented.</small>
             </label>
 
             <label className="form-field">
               Billing Pattern
-              <select
-                aria-label={`${item.name} Billing Pattern`}
+              <CustomSelect
+                ariaLabel={`${item.name} Billing Pattern`}
                 value={item.billing_frequency}
-                onChange={(event) =>
-                  updateBillingPattern(event.target.value as BillingFrequency)
+                onChange={(value) =>
+                  updateBillingPattern(value as BillingFrequency)
                 }
+                options={billingPatterns}
                 {...fieldErrorProps(billingMonthErrorId, monthError)}
-              >
-                {billingPatterns.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+              />
               <small>Choose when this fee normally appears.</small>
             </label>
           </div>

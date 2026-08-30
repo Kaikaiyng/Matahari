@@ -3,7 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
-use App\Support\TenantContext;
+use App\Services\Authorization\UserPermissionResolver;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -86,6 +86,16 @@ class User extends Authenticatable
         return $this->hasMany(TeachingAssignment::class, 'teacher_user_id');
     }
 
+    public function attendanceAbilities(): HasMany
+    {
+        return $this->hasMany(UserAttendanceAbility::class);
+    }
+
+    public function permissionOverrides(): HasMany
+    {
+        return $this->hasMany(UserPermissionOverride::class);
+    }
+
     public function guardianProfile(): HasOne
     {
         return $this->hasOne(Guardian::class);
@@ -106,22 +116,9 @@ class User extends Authenticatable
         return $this->hasMany(CalendarEvent::class, 'updated_by');
     }
 
-    public function hasPermissionTo(string $permissionSlug): bool
+    public function hasPermissionTo(string $permissionSlug, ?int $schoolId = null): bool
     {
-        if (app()->bound(TenantContext::class)) {
-            $tenantId = app(TenantContext::class)->tenantId();
-            if (! $this->is_platform_owner) {
-                return $this->tenantMemberships()
-                    ->where('tenant_id', $tenantId)
-                    ->where('status', 'active')
-                    ->whereHas('roles.permissions', fn ($query) => $query->where('slug', $permissionSlug))
-                    ->exists();
-            }
-        }
-
-        return $this->roles()
-            ->whereHas('permissions', fn ($query) => $query->where('slug', $permissionSlug))
-            ->exists();
+        return app(UserPermissionResolver::class)->has($this, $permissionSlug, $schoolId);
     }
 
     /**

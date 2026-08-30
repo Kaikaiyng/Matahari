@@ -16,7 +16,7 @@ RYLAY is a multi-tenant school administration, finance, and community SaaS using
 
 - `backend/`: Laravel application, API routes, domain services, migrations, seeders, and PHPUnit tests.
 - `frontend/`: Admin-only React application, shared components, feature editors, Vitest tests, and Vite configuration.
-- `app/`: Parent/Student/Teacher/Staff Community App, role-aware navigation, portal views, Vitest tests, and independent Vite configuration.
+- `app/`: Parent/Student/Teacher School App, role-aware navigation, portal views, Vitest tests, and independent Vite configuration. Elevated employees remain in the Teacher persona through explicit abilities; there is no Staff persona.
 - `docs/`: canonical current documentation plus historical plans and decision records.
 - `tools/php/`: Windows PHP launchers and local SQLite demo helpers.
 - `tools/public-demo/`: temporary demo tunnel tooling; it is not production deployment infrastructure.
@@ -54,13 +54,15 @@ RYLAY is a multi-tenant school administration, finance, and community SaaS using
 ## System UI Layout & Design Rules
 
 - Use a consistent 16px gap between sibling cards and panels. The parent layout owns that gap; child cards must not add a second outer margin that doubles the spacing.
+- The owner-approved Admin UI pattern is the latest local MAW AdminPanel design translated through `frontend/src/PersonalAdminPattern.css`, the shared Admin components, and Matahari/MIS brand tokens. Dashboard is the canonical surface reference. New Admin pages must reuse the same typography, density, cards, controls, tables, dialogs, sidebar motion, and reduced-motion behavior; do not copy MAW automotive business logic or add its Tailwind/MUI dependencies.
+- Keep semantic success, warning, danger, and information colours semantic. Burgundy is reserved for RYLAY/MIS branding, primary actions, selection, focus, and active navigation.
 
 ## Development Constraints
 
 - Make the smallest complete change and avoid unrelated refactoring.
 - Follow existing controller/request/service/model boundaries. Financial mutations belong in transactions and should use row locks where concurrent updates matter.
 - Do not add a package without a concrete justification and lockfile update.
-- Keep `frontend/` (Admin), `app/` (multi-role Community App), and Laravel scaffold assets in `backend/` as separate runtime/build boundaries.
+- Keep `frontend/` (Admin), `app/` (multi-role School App), and Laravel scaffold assets in `backend/` as separate runtime/build boundaries.
 - Update relevant canonical documentation in the same change when behavior, permissions, schema, commands, or status changes.
 
 ## Testing Requirements

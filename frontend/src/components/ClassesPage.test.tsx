@@ -56,6 +56,61 @@ function installSuccessApi() {
 afterEach(() => vi.restoreAllMocks())
 
 describe('ClassesPage', () => {
+  it('opens the standalone Attendance overview and enters a daily sheet directly', async () => {
+    const user = userEvent.setup()
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
+      const url = new URL(String(input), window.location.origin)
+      if (url.pathname.endsWith('/classes')) return json({ data: classes })
+      if (url.pathname.endsWith('/students')) return json({ data: students })
+      if (url.pathname.endsWith('/attendance/overview')) {
+        return json({
+          data: {
+            attendance_date: '2026-08-23',
+            academic_year: { id: 1, name: '2026' },
+            totals: { attendance_rate: 86, total_enrolled: 7, recorded_count: 6, present: 4, late: 1, absent: 1, excused: 0 },
+            classes: [
+              { class_id: 2, class_name: 'MA1', level_group: 'primary', enrolled_count: 1, is_submitted: false, submitted_at: null, counts: { present: 0, late: 0, absent: 0, excused: 0 } },
+            ],
+          },
+        })
+      }
+      if (url.pathname.endsWith('/attendance/daily')) {
+        return json({
+          data: {
+            class: { id: 2, name: 'MA1', level_group: 'primary' },
+            academic_year_id: 1,
+            attendance_date: '2026-08-23',
+            is_submitted: false,
+            submitted_at: null,
+            students: [
+              { student_id: 21, student_no: 'MIS-021', full_name: 'Amina Lee', status: 'unmarked', public_note: null },
+            ],
+          },
+        })
+      }
+      return json({}, 404)
+    })
+
+    render(
+      <ClassesPage
+        mode="attendance"
+        permissions={['attendance.view_school', 'attendance.manage_school']}
+        onOpenStudent={vi.fn()}
+        onUnauthorized={vi.fn()}
+      />,
+    )
+
+    expect(await screen.findByRole('heading', { name: 'Attendance' })).toBeInTheDocument()
+    expect(screen.getByText('86%')).toBeInTheDocument()
+    expect(screen.getByText('1 class pending')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'View MA1' }))
+
+    expect(await screen.findByText('ATTENDANCE RATE')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Student Roster/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Back to Attendance' })).toBeInTheDocument()
+  })
+
   it('does not request data without students.view', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch')
 
@@ -111,6 +166,27 @@ describe('ClassesPage', () => {
     expect(onOpenStudent).toHaveBeenCalledWith(21, classes[1])
   })
 
+  it('keeps Classes roster-focused and deep-links to the selected class register', async () => {
+    const user = userEvent.setup()
+    const onOpenAttendance = vi.fn()
+    installSuccessApi()
+
+    render(
+      <ClassesPage
+        permissions={['students.view']}
+        onOpenStudent={vi.fn()}
+        onOpenAttendance={onOpenAttendance}
+        onUnauthorized={vi.fn()}
+      />,
+    )
+
+    await user.click(await screen.findByRole('button', { name: 'View MA1' }))
+
+    expect(screen.queryByRole('button', { name: 'Daily Attendance' })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Open Class Register' }))
+    expect(onOpenAttendance).toHaveBeenCalledWith(2)
+  })
+
   it('restores initialClassId and shows a zero-student message', async () => {
     installSuccessApi()
 
@@ -160,6 +236,66 @@ describe('ClassesPage', () => {
     )
 
     expect(await screen.findByText('No classes are configured.')).toBeInTheDocument()
+  })
+
+  it('opens the standalone class register and allows recording attendance', async () => {
+    document.cookie = 'XSRF-TOKEN=test-token; path=/'
+    const user = userEvent.setup()
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
+      const url = new URL(String(input), window.location.origin)
+      const method = (init?.method || 'GET').toUpperCase()
+      if (url.pathname.endsWith('/csrf-cookie')) return Promise.resolve(new Response(null, { status: 204 }))
+      if (url.pathname.endsWith('/classes')) return json({ data: classes })
+      if (url.pathname.endsWith('/students')) return json({ data: students })
+      if (url.pathname.endsWith('/attendance/overview')) {
+        return json({
+          data: {
+            attendance_date: '2026-08-17',
+            academic_year: { id: 1, name: '2026' },
+            totals: { attendance_rate: 100, total_enrolled: 1, recorded_count: 1, present: 1, late: 0, absent: 0, excused: 0 },
+            classes: [
+              { class_id: 2, class_name: 'MA1', level_group: 'primary', enrolled_count: 1, is_submitted: false, submitted_at: null, counts: { present: 0, late: 0, absent: 0, excused: 0 } },
+            ],
+          },
+        })
+      }
+      if (url.pathname.endsWith('/attendance/daily') && method === 'POST') {
+        return json({ data: { status: 'submitted' } })
+      }
+      if (url.pathname.endsWith('/attendance/daily') && method === 'GET') {
+        return json({
+          data: {
+            class: { id: 2, name: 'MA1', level_group: 'primary' },
+            academic_year_id: 1,
+            attendance_date: '2026-08-17',
+            is_submitted: false,
+            submitted_at: null,
+            students: [
+              { student_id: 21, student_no: 'MIS-021', full_name: 'Amina Lee', status: 'present', public_note: null },
+            ],
+          },
+        })
+      }
+      return json({}, 404)
+    })
+
+    render(
+      <ClassesPage
+        mode="attendance"
+        initialClassId={2}
+        permissions={['attendance.view_school', 'attendance.manage_school']}
+        onOpenStudent={vi.fn()}
+        onUnauthorized={vi.fn()}
+      />,
+    )
+
+    expect(await screen.findByRole('heading', { name: 'MA1' })).toBeInTheDocument()
+    expect(await screen.findByText('ATTENDANCE RATE')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Mark All Present' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Submit Attendance' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Submit Attendance' }))
+    expect(await screen.findByText('Daily attendance submitted successfully.')).toBeInTheDocument()
   })
 
   it('hands a 401 to the application session handler', async () => {

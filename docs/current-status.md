@@ -1,20 +1,110 @@
 # Current Status
 
-**Snapshot date:** 2026-08-15
+**Snapshot date:** 2026-08-30
 
 **Inspected Phase A implementation commit:** `ecaa0a1f177292ae99c9338e255a1f93312971f5`
 
 **Default branch:** `master`
 
-**Current merged delivery:** `ddd7e193179129be35f7a2b1c408eb809734f8d4` (`Merge project-wide documentation update`)
+**Pre-reconciliation pushed baseline:** `49e3e6662679dd32aa743c53917d8e97abbe8206` (`docs: record integrated school updates delivery`) on `feat/admin-application-logs`
 
-**Overall status:** SaaS multi-tenant foundation in final validation, with MIS as the first tenant; separate Admin and multi-role App clients, live Community, daily Attendance, Assessment publication, Parent Finance reads/receipt access/manual in-app reminders, class Schedule, and formal Quiz V1 remain shared tenant-aware modules. Practice/AI Quiz, native/store delivery, automated DNS/TLS and production operations remain incomplete.
+**Overall status:** SaaS multi-tenant foundation in final validation, with MIS as the first tenant; separate Admin and multi-role App clients, live School Updates, daily Attendance, Assessment publication, Parent Finance reads/receipt access/manual in-app reminders, class Schedule, and formal Quiz V1 remain shared tenant-aware modules. Practice/AI Quiz, native/store delivery, automated DNS/TLS and production operations remain incomplete.
 
-## 2026-08-16 Strict UGC Moderation Foundation
+The root `DESIGN.md` is now the shared UI checkpoint for both product surfaces: the MAW-derived Admin Panel pattern and the Warm School Editorial App pattern remain intentionally distinct while documenting their reusable components, source files, spacing, typography, motion tokens, gesture thresholds, state ownership and hierarchy in one canonical implementation reference.
 
-- Community now has versioned policy acceptance, deterministic filtering, pending review/quarantined media, separate content/user reporting, Community-only blocking, scoped restrictions, private status, appeals and adult authorization for Student freeform interaction.
+## 2026-08-30 School App Safety Centre Refresh
+
+- The App Safety Centre now uses the established Warm School Editorial language: a private safety introduction, compact report status/empty state, grouped safety and account policies, and a featured school-support card replace the former plain mixed link list.
+- Safety Centre is the second-level App surface. Its safety, policy, account-deletion and support entries now open matching third-level surfaces; a rightward swipe moves only the third-level page and reveals the fixed Safety Centre beneath it. Direct public `/legal/*` routes remain available for external/store links.
+- The layered subpage behavior, surface anatomy, touch isolation and state-preservation rules are recorded in `DESIGN.md` as an approved reusable checkpoint, explicitly not a frozen final specification.
+- The scoped Post Report API and Admin-configured school call/WhatsApp/email/support-hours data flow are unchanged. Focused Community Safety and public-policy tests passed 10/10, App lint passed, and the App TypeScript/Vite production build passed. Broader suites and device QA were not run for this presentation/navigation change.
+
+## 2026-08-30 MAW-style Audit and Application Logs
+
+- The Super Admin Audit Trail now follows the approved MAW operational workspace with four real global summary values, broad action/record/actor/IP search, category/entity/actor/date filters, a compact append-only table, and inline sanitized actor, route, before/after and metadata inspection. Existing strict filters, cursor pagination, immutable storage and backend `audit.view` enforcement remain authoritative.
+- Application Logs now uses the same compact MAW hierarchy with a truthful log-reader/source strip, level-count tabs, search/date filters, dense paginated rows, refresh and a dark inline sanitized context inspector. Unsupported archive, download, export, auto-refresh and server-health capabilities were not fabricated.
+- The School App is unchanged. Focused Audit API and Admin Audit/Application Log tests plus the Admin production build passed; broader browser QA, full suites and MariaDB were not run for this presentation/read-only-query delivery.
+
+## 2026-08-30 School Information and App Support Settings
+
+- Admin Settings now provides real School Information and App Support sections using the approved MAW-derived RYLAY pattern. School name, registration number, group/member line, address, phone, email and operating hours are editable separately from App call, WhatsApp, email and support-hours contacts.
+- Values are scoped to the backend-resolved current school. `school.settings.manage` is assigned to Super Admin, School Admin and Finance; successful mutations write same-transaction Audit Trail events and roll back if audit persistence fails.
+- The authenticated Admin payload now exposes the protected platform-owner identity explicitly, and Admin Settings honors that backend-equivalent bypass even if a development-session permission snapshot predates a newly added permission.
+- The App Support live preview now reproduces the MAW modal composition with MIS tokens, including persistent Call, WhatsApp, Email, and Hours examples before configuration. Saved values continue through the real school-scoped API and all four fields are consumed by the App Support surface.
+- The public App policy/support response retains global RYLAY and child-safety contacts. A tenant with exactly one active school additionally exposes that school's configured contact actions; a multi-school tenant receives no guessed school contact before authentication.
+- Focused backend School Settings passed 4 tests/23 assertions, public support passed 4 tests/19 assertions, Admin Settings passed 7 tests, and App public-policy support passed 3 tests. Pint, API route loading, Admin/App production builds, and a disposable SQLite fresh migration → latest rollback → re-migration lifecycle passed. Full suites and disposable MariaDB remain **Not verified** for this delivery.
+
+## 2026-08-27 Extensible Notification Channel Foundation
+
+- Attendance, Billing, School Updates, and retained Community moderation notification producers now use a channel-neutral `NotificationDispatcher`; `InAppChannel` preserves the existing `portal_notifications` payload, read state, batching, and surrounding transaction behavior.
+- `notification_destinations` stores neutral channel, destination type/address, purpose, status, and non-secret configuration at exact RYLAY-global, tenant, or tenant-plus-school scope. The existing composite tenant/school hierarchy rejects cross-tenant school destinations.
+- No external adapter is registered. Telegram delivery, Bot tokens, Telegram user binding/login, destination UI, queue/outbox, retries, and delivery history remain **Planned, not implemented**.
+- Focused notification and producer regression validation passed locally: 57 tests and 280 assertions. Targeted Pint and 152-route loading passed, as did disposable SQLite fresh/rollback/re-migrate. MariaDB composite-foreign-key compatibility is **Not verified** in this pass.
+
+## 2026-08-26 Project-wide Documentation Reconciliation
+
+- Root, package, canonical, contributor, operator, demo, UAT, design, store-review, and agent instruction documents were reconciled with the integrated Attendance, User Abilities, Application Logs, swipe navigation, policy gate, and School Updates behavior.
+- Current documents now use the Parent/Student/Teacher School App model, explicit Student Attendance exclusion, employee publishing abilities, immediate whole-school/multi-class Updates, Likes/Post Reports without comments, and the current Admin sidebar/Attendance/operations boundaries.
+- The detailed 2026-08-13/14 System Architecture, Database Design, Project Workflow Catalog, mobile product specification, dated plans/specifications, and Workflow Atlas are preserved as historical snapshots and no longer presented as current route/schema/role evidence.
+- Documentation validation checked all 113 tracked Markdown files: relative links outside code blocks resolved, fenced code blocks were balanced, diff whitespace passed, and changed lines contained no secret-like values. Application test suites were not rerun for this documentation-only reconciliation; the latest code evidence remains below.
+
+## 2026-08-26 School Updates Delivery (integrated and pushed feature branch)
+
+- The active App feature is **School Updates/Updates**, replacing the former social Community workflow. Effective `community.view` reads the resolved feed; effective same-school `community.publish` creates immediate official text updates with optional JPEG/PNG/WebP images for the whole school or any active same-school class, without a second position or Teaching Assignment rule. `community.moderate` manages same-school Updates and Post Reports but does not alone make a manager a class-notification recipient.
+- Teacher, Parent, and Student audiences read authorized Updates and can Like or report them. Parent and Student personas cannot publish. Active workflows have no comments, new direct-Student audience, user blocking, appeals, or routine approval.
+- Historical Community posts, comments, reports, pending/rejected rows, blocks, restrictions, and appeals remain retained storage. Blocking, freeform contribution, restrictions, and appeals are historical-only behavior; restrictions do not block active Update publication/media. The feed suppresses comments, preserves direct-Student visibility only for its stored recipient, lets managers discover pending/rejected rows for an explicit audited publish transition, and preserves records through logical withdrawal or report resolution rather than physical deletion.
+- Final-review regressions passed in the focused backend Community/ability/audit run: 52 tests and 307 assertions. Final full backend PHPUnit passed: 395 discovered, 383 passed, 12 existing MariaDB-gated skips, and 2,145 assertions. Pint passed and `route:list --path=api --except-vendor` loaded 152 routes. Admin passed 187/187 Vitest tests; lint exited 0 with 9 existing Calendar Fast Refresh warnings; TypeScript/Vite build passed. App passed 56/56 Vitest tests with clean lint and TypeScript/Vite build.
+- The School Updates delivery was fast-forward integrated through `b71e482e8eaa249958285d8e2adc821d763cf462` and pushed to `origin/feat/admin-application-logs`. It has **not** been merged into the default `master` branch and is not a production deployment.
+- Local reachability was rechecked on 2026-08-26: the tenant-aware backend endpoint, Admin root, and App root each returned HTTP 200. This is a service-reachability smoke check only, not browser/manual UAT.
+- No migration was added, so a new SQLite lifecycle is not applicable to this delivery. Disposable MariaDB audience-query behavior is **Not verified**. Browser/manual UAT and real-device or hardware checks are **Not verified** for this delivery. The repository remains not production-ready.
+
+## 2026-08-29 Admin Settings Workspace (superseded by 2026-08-30 settings delivery)
+
+- The former display-only Settings placeholder introduced the responsive MAW-inspired workspace. The current seven-section workspace is School Information, App Support, Branding, Attendance, Notifications, Users & Access, and My Account.
+- Branding, Attendance and guardian notification behavior remains unchanged. The former read-only School Profile limitation was removed by the 2026-08-30 school-scoped settings API.
+- Users & Access summarizes the approved School Admin, Finance, and Teacher position model and links authorized users to Employees. Password/session controls, Telegram configuration, and placeholder save actions remain absent.
+- Focused Admin verification passed 64 tests across Settings, tenant context, and App integration. Oxlint exited 0 with the 9 existing Calendar Fast Refresh warnings, and the production TypeScript/Vite build passed. Backend, App, browser/manual UAT, and MariaDB were **Not verified** for this frontend-only delivery.
+
+## 2026-08-30 Owner Admin UI Pattern
+
+- The Admin workspace now uses Dashboard as the canonical card reference and the latest local MAW AdminPanel as the owner's permanent personal Admin pattern. Shared MIS/RYLAY tokens provide a 12px primary card radius, subtle neutral borders and shadows, restrained one-pixel interactive lift, soft semantic icon/status colours, text-left/icon-right statistic cards, and 16px parent-owned spacing. Dashboard keeps its compact unboxed heading with live status, last-refresh time, and working refresh action; the former decorative School Overview hero/date card remains removed.
+- Admin typography is unified on the same Plus Jakarta Sans family and source dimensions used by the MAW reference across navigation, pages, forms, tables, buttons, and dialogs. The scale standardises 24px page titles, 18px section/dialog titles, 15px card titles, 14px body copy, 13px form values/table cells/labels/navigation, 12px supporting copy, 11px eyebrows/table headings, and 24px key metrics. The utility bar is 56px, the brand row is 80px, and the centred content container is capped at 1600px with 32px by 24px desktop padding. JetBrains Mono is limited to technical Application Log values and context payloads, and the separate School App typography is unchanged.
+- Shared statistic cards, data panels, filters, searchable custom selects, date/time pickers, dialogs, Classes, Parents, Employees, Schedule, Attendance, Calendar, Finance, Audit/Application Logs, Settings, and moderation now follow the same visual hierarchy without changing their API data, permissions, or workflows. Sidebar motion, navigation groups, notification popovers, custom selectors, and expandable Parent cards use the approved MAW timing pattern with reduced-motion fallbacks. The School App is intentionally unchanged.
+- The full Admin Vitest run passed 199 tests across 20 files. Oxlint exited 0 with the 11 existing Calendar Fast Refresh and App dependency warnings, and the TypeScript/Vite production build passed. Browser-wide visual QA, backend, App, and database checks were **Not verified** for this presentation-only delivery.
+
+## 2026-08-23 Role and User Abilities Consolidation
+
+- Super Admin is the protected platform-owner identity. Active employee positions are exactly School Admin, Finance, and Teacher; Finance inherits every School Admin default plus supported finance-only mutations. CEO and Tenant Owner are no longer seeded or assignable.
+- Employees now has one Position & User Abilities editor with grouped system-styled checkboxes. Explicit school grants/denials are backend-authoritative, and Manage/View dependencies update immediately without a request per checkbox.
+- School Admin and Finance may edit another same-school employee but not themselves, a platform owner, or a cross-school user. Every position, ability, and Teacher App Access change requires a reason and same-transaction Audit Trail records.
+- The App exposes only Teacher, Parent, and Student. `app.teacher_access` admits an elevated employee as Teacher; effective permissions control school-wide tools. Multi-persona users choose on first entry and the last local choice is remembered.
+- Final local qualification for the combined 2026-08-23 delivery passed: backend PHPUnit discovered 376 tests (364 passed, 12 MariaDB-gated skips) with 2,089 assertions; Pint passed and 162 API routes loaded. A disposable SQLite database passed fresh migration, rollback of the three 2026-08-23 migrations, and re-migration. Admin passed 184/184 tests, lint (with 9 existing Fast Refresh warnings), TypeScript, and production build. App passed 36/36 tests with clean lint, TypeScript, and production build. MariaDB remains **Not verified** in this local pass.
+
+## 2026-08-23 Admin Attendance Workspace
+
+- Admin date, time, and select fields now use shared MIS-styled controls instead of visible browser-native popups, covering student/payment forms, Attendance, Calendar, Schedule, audit/log filters, Classes, fee agreements, and moderation workflows.
+- Calendar participant selection is school-scoped and limited to active employee roles (Super Admin, School Admin, Finance, and Teacher); Parent and Student accounts are excluded.
+- Admin Attendance is a dedicated Hub with Overview, Class Register, Devices, and Settings. Overview combines campus statistics with the complete campus-record table and per-student timeline, avoiding a duplicate Campus Records section. Classes remains roster-first and deep-links into the selected class register. User Abilities is managed contextually from each employee's Edit dialog in Employees.
+- Campus Attendance now preserves immutable entry/exit timelines, supports face/card/manual methods, idempotent external event IDs, Hikvision-ready device mapping, school arrival/dismissal defaults, and default guardian entry/exit notifications. Hardware protocol/authentication remains **Not verified** without an actual Hikvision model and integration environment.
+- Dedicated assigned/school view/manage permissions and audited time-bound user abilities replace reuse of Student permissions. Parents see linked-child campus status and class Attendance; Students no longer receive Attendance data.
+- The final combined verification evidence is recorded in the Role and User Abilities section above. MariaDB compatibility and real Hikvision hardware ingestion are **Not verified** in this local pass.
+
+## 2026-08-20 Returned Workspace Integration (historical social-workflow record)
+
+- Reviewed and selectively integrated the returned Admin/App UI, attendance/gate, Community safety, notification, and store-readiness work. Runtime dependencies, `.env` files, databases, logs, tunnel state, uploaded Community media, generated releases, and duplicate changelogs were excluded.
+- Admin attendance now uses only `/api/v1/admin/attendance/*` with resolved school context. Current `class_enrolments` is authoritative, `unmarked` is display-only, and an absent row is no longer inferred merely because a session exists.
+- Campus gate movements no longer create class decisions. Entry and exit are preserved independently; registered device setup and external event replay protection by source/event ID are implemented. Vendor webhook signature authentication remains **Planned, not implemented** pending confirmed Hikvision hardware/protocol details.
+- Non-moderator post edits return to pending review. Post edits/deletes and audit entries are transactional, and deletion is logical so moderation evidence and private media references remain preserved.
+- Local qualification passed: backend 362 discovered (350 passed, 12 existing MariaDB-gated skips), 2,028 assertions, Pint and 147 API routes; Admin 178/178 with build and the 9 existing Calendar Fast Refresh warnings; App 29/29 with clean lint/build; deployment contracts 19/19. MariaDB-specific row-lock/concurrency behavior remains **Not verified** because no disposable MariaDB run was performed.
+
+## 2026-08-16 Strict UGC Moderation & Store-Safety Enhancement (historical social-workflow record)
+
+- Community features include a fail-closed first-login App gate for versioned Terms and Community Standards acceptance, multi-layer inappropriate content pre-filtering (profanity, hate, grooming, violence), automated contact/handle leakage pattern interception (WhatsApp, Telegram, WeChat, IG, TikTok, LINE, phone regex variants), pending review/quarantined media, separate content/user reporting, Community-only blocking, scoped restrictions, private status, appeals, and adult authorization for Student freeform interaction.
+- Student users receive a pre-social composition safety banner ("Do not share phone numbers, addresses, social handles, or private photos. Be respectful."). Parents retain granular permission controls (`can_post_community`, `can_upload_media`) over linked student social capabilities. Zero 1-on-1 private messaging or unmonitored direct discovery is provided.
+- Account deletion policy is explicitly defined: accounts are institution-provisioned by School/Super Admin. To meet Apple Guideline 5.1.1(v) and Google Play requirements, users can request account deletion in-app or via public HTTPS URL (`https://rylay.my/account-deletion`). Personal identity data (PII) and credentials are purged/anonymized, while legal academic/financial audit history is preserved in anonymized form.
+- Apple 2026 Social Media Age Rating declarations explicitly reflect the closed school scope, zero open web access, zero 1-on-1 private chat, institution-provisioned accounts, server-side pre-moderation/quarantine, and mandatory parent controls.
 - School moderation is permission-filtered and school-scoped. Severe/escalated cases use a platform-owner workspace; explicit platform case access is audited. Review mutations require reasons and transactional audit history.
-- The App has a Safety Centre and public Terms, Privacy, Community Standards, Child Safety and Support routes. `app:store-readiness` fails closed on missing HTTPS URLs, monitored contacts or effective policies.
+- The App has a Safety Centre and public Terms, Privacy, Community Standards, Child Safety, Support, and Account Deletion Request routes. `app:store-readiness` verifies all six public HTTPS URLs, monitored contacts, and effective policies.
 - Apple/Google approval is **Not verified and cannot be guaranteed by code**. Native packaging, reviewer accounts, real contacts, legal reporting procedure, moderator staffing, declarations, screenshots and store review remain external blockers.
 - Final local qualification for this branch: Backend 351 discovered (339 passed, 12 existing MariaDB-gated skips), 1,814 assertions, Pint and 140 API routes; Admin 177/177 with build and only the 9 existing Calendar Fast Refresh warnings; App 29/29 with clean lint/build; deployment contracts 19/19.
 - Disposable SQLite fresh/UGC rollback/re-migrate passed. XAMPP MariaDB 10.4.32 passed fresh/UGC rollback/re-migrate and all 47 Community tests with 357 assertions; the exact disposable `rylay_audit_test` database was then removed. Production MariaDB, contacts, legal operations and store submission remain **Not verified**.
@@ -87,20 +177,20 @@ The reset command never runs automatically and must not be adapted to a database
 - Local HTTP checks passed for Admin `http://localhost:5173`, App `http://127.0.0.1:5174`, and both clients' proxied `/api/deployment-info` endpoint.
 - No migration or database schema changed in this split. MariaDB lifecycle was therefore not rerun; the earlier Phase A MariaDB evidence remains the applicable schema result.
 
-## 2026-08-12 Community App Direction
+## 2026-08-12 Community App Direction (historical social-workflow record; superseded by School Updates)
 
 The App is approved as a private school-community product: a relationship-scoped Feed with Teacher/Staff publishing, reactions and controlled comments; daily Attendance on a general session schema; published Assessment results; formal Teacher-assigned Quiz plus separate Student Practice Quiz; and read-only Parent Finance without a payment interface.
 
-Merged delivery `816ea1d` redesigns the Admin staff login and all App role surfaces. Daily Attendance is connected end to end: assigned Teachers load current rosters, submit `present`, `late`, `absent`, or `excused`, and must provide a reason for corrections; authorized Parents and the linked Student can read the resulting record. Attendance writes and their audit events share one transaction. Community persistence/media, Assessment results, formal Quiz, Practice Quiz generation, and Schedule remain clearly labelled UI previews rather than implemented backend modules. See [MIS App Product Specification](mobile-app-product-spec.md) and the root [Design System](../DESIGN.md).
+Merged delivery `816ea1d` redesigned the Admin staff login and App role surfaces. Daily class Attendance remains connected end to end: assigned Teachers load current rosters, submit `present`, `late`, `absent`, or `excused`, and must provide a reason for corrections; authorized Parents can read the result while Student self-service intentionally omits Attendance. Attendance writes and their audit events share one transaction. See [MIS App Product Specification](mobile-app-product-spec.md) and the root [Design System](../DESIGN.md).
 
-## 2026-08-13 Community App Data Foundation
+## 2026-08-13 Community App Data Foundation (historical social-workflow record; superseded by School Updates)
 
 - The App/database comparison found that identity/RBAC, guardian/student links, enrolments, teaching assignments, notifications, read-only Parent Finance, Attendance, and Calendar already reuse the authoritative backend data.
 - Eighteen additive tables now establish storage for Community content, academic terms/Assessments/results, and formal/Practice Quiz. The approved class targets, direct student targets, materialized Quiz recipients, shared `multiple_choice`/`true_false` option storage, result publication state, revision links, attempts, and answers are represented.
 - The migration does not seed or infer posts, terms, dates, results, audiences, recipients, or Quiz attempts and does not alter current student, guardian, finance, payment, receipt, or role rows.
 - This is schema only. Community media/publishing, result publication, Quiz generation/delivery/scoring, authorization services, mutation audits, and APIs remain unimplemented; the App screens remain previews until those slices are connected.
 
-## 2026-08-13 Community Workflow
+## 2026-08-13 Community Workflow (historical social-workflow record; superseded by School Updates)
 
 - Community publishing and reading are connected to the shared Laravel API and database. School/Super Admin may publish school-wide; Teachers may publish only to classes covered by current Teaching Assignments; Parent and Student feeds resolve linked current enrolments.
 - Private photos, short videos, and PDFs are stored outside the public web root and downloaded only after the containing post audience is authorized. Appreciations, controlled comments, owner/author comment removal, Staff post hiding with reasons, and mutation audit events are implemented.
@@ -139,8 +229,8 @@ Merged delivery `816ea1d` redesigns the Admin staff login and all App role surfa
 
 ## 2026-08-13 Role and Client Boundary Checkpoint
 
-- Admin Panel access is limited to Super Admin, School Admin, Finance, and CEO. Teacher-only, Parent-only, and Student-only accounts are rejected by the Admin client; backend route permissions remain authoritative.
-- The Community App admits Parent, Student, Teacher, and derived Staff personas. Finance-only and CEO-only accounts do not receive App personas. Multi-role App users may switch only among personas derived from their stored roles.
+- This checkpoint's earlier CEO and Staff-persona model was superseded by the 2026-08-23 consolidation. Current Admin employee positions are School Admin, Finance, and Teacher under protected Super Admin ownership; the App exposes only Teacher, Parent, and Student.
+- School Admin or Finance enters the App as Teacher only with effective `app.teacher_access`. Multi-persona users choose from valid stored identities on first entry and retain the last local choice.
 - Teacher Classes loads current teaching assignments and each assignment's scoped roster count from the same protected APIs used by Attendance. It does not expose unrelated classes or students.
 - Parent Finance no longer embeds a demo balance or hard-codes `2026`. The parent summary includes the child's explicitly stored current enrolment academic year, and finance queries stop when no current year exists.
 - Formal Quiz, Schedule, Assessment results, Community moderation, and notifications use live scoped APIs. Practice/AI Quiz and native/store features remain explicitly unavailable. Parent receipt rows open authoritative snapshots and support browser printing/save-as-PDF.
@@ -151,7 +241,7 @@ Later school-specific branding requires explicit approval and a controlled updat
 ## 2026-08-13 Mobile App Visual Refinement
 
 - The App shell now uses a compact MIS Community header and a role-aware floating liquid-glass navigation capsule. The active destination shows icon and label; inactive destinations retain icons with accessible names.
-- Parent, Student, Teacher, and authorized Staff receive distinct five-item navigation sets. Sign out moved from the persistent header into each role's More/Profile page.
+- At this historical visual checkpoint, Parent, Student, Teacher, and an authorized Staff persona received distinct navigation. The Staff persona was removed by the 2026-08-23 consolidation; current App personas are Parent, Student, and Teacher. Sign out remains in More/Profile.
 - Feed and record surfaces use calmer phone-first spacing, fewer nested borders, stronger content hierarchy, and at least 44px interactive targets. Community publishing, reading, interaction, and moderation are connected to scoped APIs.
 - Automated browser checks covered 39 representative role/page/viewport combinations at 360x800, 390x844, and 430x932. No horizontal overflow or undersized visible interactive target remained after correction.
 - The browser helper's packaged Windows server lacked its Playwright dependency; validation used a cached Playwright runner with installed Chrome and did not add a project dependency.
@@ -177,8 +267,8 @@ The confirmed earlier technology direction named Laravel 10, but this repository
 ## Implemented Features
 
 - Phase A academic foundation: additive academic-year, class-enrolment, subject, teaching-assignment, and nullable parent/student portal-link schema; `/api/v1` school context; scoped admin/teacher APIs; teacher assignment access; and transactional audit events.
-- Teacher, parent, and student role definitions coexist with the existing many-to-many RBAC. Existing Admin/Finance assignments are preserved, and foundation role management changes only those three new roles.
-- School Admin/Super Admin can create minimum active foundation accounts with teacher/parent/student roles and can later change only those foundation roles. Full account lifecycle and password recovery remain incomplete.
+- Super Admin is the protected platform owner; active employee positions are School Admin, Finance, and Teacher. Parent and Student remain relationship/App identities, and historical CEO/Tenant Owner rows are not seeded or assignable.
+- Same-school employee Position, explicit User Abilities, and Teacher App Access are editable with protected-target guards, required reasons, and transactional audit. Full account lifecycle and password recovery remain incomplete.
 
 - Session username authentication, CSRF-protected mutations, username-plus-IP login throttling, logout, `/me`, active-user request checks, roles, and permissions.
 - Permission-filtered navigation backed by authoritative route permissions.
@@ -190,9 +280,10 @@ The confirmed earlier technology direction named Laravel 10, but this repository
 - Receipt issue/snapshot/display/browser print/void/regenerate/history with stable sequence behavior and transactional audit events.
 - School calendar CRUD.
 - Calendar Year, Month, and Week views, including a 12-month overview, upcoming-event month layout, a school-hours week timeline, and school-scoped active-staff participant multi-select.
-- Settings page for the current single-school context and signed-in account access summary.
+- Responsive Admin Settings workspace for resolved school/account context, live tenant Branding, Attendance times, guardian campus notifications, and employee-access navigation through existing permission-protected APIs.
 - Backend permission and school-scope enforcement for the dashboard and legacy monthly invoice generation.
 - Secure audit schema/logger/sanitizer/request IDs/model immutability, best-effort authentication audit, read-only Super Admin API, and Audit Trail frontend.
+- Super Admin-only sanitized Application Logs API/UI with level/search/date filters, summary counts, page pagination, bounded Laravel log parsing, and expandable safe context. Application Logs remain separate from immutable business Audit Trail records.
 - Responsive admin UI and temporary local/public demo tooling.
 
 ## Partially Implemented
@@ -203,14 +294,14 @@ The confirmed earlier technology direction named Laravel 10, but this repository
 - Discount definitions are stored as snapshots, but approved formulas and eligibility rules do not exist. Charge preview/activation is blocked for non-zero discounts.
 - Payments and receipts work inside Student Detail; there are no independent top-level modules.
 - Legacy invoices remain separate from the implemented Fee Record ledger and have no frontend workflow.
-- Audit covers implemented critical authentication, student, agreement, Fee Record, payment, receipt, and manual payment-reminder actions. Generic correction, recovery, and export are not implemented.
+- Audit covers implemented critical authentication, student, agreement, Fee Record, payment, receipt, manual payment-reminder, Attendance, employee-access, School Update, and Post Report actions. Generic correction, recovery, and export are not implemented.
 
 ## Known Incomplete Features
 
 - Existing guardian links remain `unreviewed` with nullable access flags, and no live parent/student user association or enrolment history is inferred. Portal activation and production backfill require a separately approved workflow.
-- The independent `app/` workspace now provides user-scoped notifications, Parent/Student self-service, Teacher daily Attendance, read-only guardian finance with linked-child switching and receipt viewing/browser PDF saving, scoped Community, published Assessment results, recurring Schedule, and formal Quiz delivery/scoring. Admin remains in `frontend/`; both clients share the backend/database but have independent builds and intended domains. Manual in-app payment reminders are implemented; automatic/external reminders, online parent payment, Practice/AI Quiz, Firebase, Capacitor, native authentication, and native packaging remain unimplemented.
+- The independent `app/` School App provides user-scoped notifications, Parent/Student self-service, Teacher class/campus Attendance, Parent linked-child Attendance, explicit Student Attendance exclusion, read-only guardian finance with linked-child switching and receipt viewing/browser PDF saving, School Updates, published Assessment results, recurring Schedule, and formal Quiz delivery/scoring. Admin remains in `frontend/`; both clients share the backend/database but have independent builds and intended domains. Manual in-app payment reminders are implemented; automatic/external reminders, online parent payment, Practice/AI Quiz, Firebase, Capacitor, native authentication, and native packaging remain unimplemented.
 
-- Parent CRUD, fee catalogue management, user/role management, password reset, and a global school selector.
+- Parent CRUD, fee catalogue management, full user lifecycle/password reset, and a global school selector. Employee Position/User Ability editing is implemented but is not complete account administration.
 - Reports beyond Fee Record views, exports, statements, automatic/external reminders, full parent portal operations, and server-side PDF.
 - Refund, credit, overpayment, write-off, and approved correction/recovery workflows.
 - Full academic ERP modules.
@@ -225,7 +316,7 @@ Remaining concerns are operational or planned-scope limitations:
 1. Seeded demo accounts use a known development password and must never be deployed unchanged.
 2. HTTPS termination, secure-cookie flags, proxy trust, CORS, shared session/rate-limit storage, and multi-instance behavior require environment-specific verification.
 3. Audit append-only protection exists at the Eloquent model layer; raw SQL or privileged database users require least-privilege grants and database operations controls.
-4. No production secret-management, CI, monitoring, alerting, backup, restore, or incident-response implementation is present.
+4. Repository CI/deployment foundations exist, but production secret management, deployed monitoring/alerting, backup/restore, and incident-response operations are not verified.
 5. Guardian data is returned with Student Detail under `students.view`; the intended independent role of `parents.view` is **Needs confirmation**.
 
 No item above is evidence of production readiness. They must be addressed in a real deployment plan.
@@ -345,12 +436,26 @@ Dependency security refresh on 2026-08-07:
 
 Sidebar reference refresh on 2026-08-07:
 
-- The authenticated desktop shell now uses a white reference-style sidebar with a 256-pixel expanded state, an 80-pixel collapsed state, a light-blue active item, and a compact footer. The collapse preference is stored locally under the brand-neutral `admin-sidebar-collapsed` key.
+- The authenticated desktop shell uses a white 256-pixel MIS-branded sidebar. The earlier 80-pixel compact rail was superseded on 2026-08-21 by MAW-style full slide-away behavior with a persistent edge toggle. The collapse preference remains stored locally under the brand-neutral `admin-sidebar-collapsed` key.
 - Existing page keys, navigation items, permission filtering, page-selection callbacks, and logout behavior remain unchanged. Logout moved from the utility header to the sidebar footer so there is one clear control.
 - Mobile retains the existing drawer, backdrop, focus, Escape, scroll-lock, and close-on-navigation behavior. A 390-by-844 browser check confirmed that labels remain visible in the drawer even when the desktop preference is collapsed.
 - A follow-up contrast fix narrowed sidebar brand-copy selectors so the shared white school mark is no longer overridden by muted text color.
 - `npm.cmd test -- --run`: 15 files and 160 tests passed; `npm.cmd run lint` and `npm.cmd run build` exited 0, with 77 production modules transformed.
 - In-app browser checks covered expanded desktop, collapsed desktop, collapse persistence after reload, and the mobile drawer. Backend and database suites were not rerun because this change is limited to the frontend shell and presentation token.
+
+Admin operations reference refresh on 2026-08-21:
+
+- Sidebar navigation now follows the MAW structure with standalone Dashboard/Calendar entries, icon-led accordion module headings, indented text-only subitems, persisted expansion state, full desktop slide-away behavior, and the existing accessible mobile drawer. MIS logo, red brand styling, menu permissions, and page destinations remain authoritative for this product.
+- A new System group contains permission-filtered Audit Trail, Application Logs, and Settings entries.
+- `GET /api/application-logs` is read-only, requires the new Super Admin-only `logs.view` permission, and returns only bounded, parsed, sanitized Laravel log summaries. Raw files, multiline stack traces, security logs, and secret-bearing context are not exposed.
+- Focused evidence: 3 backend tests with 38 assertions and 62 Admin frontend integration/component tests passed. Frontend lint completed with 9 pre-existing Fast Refresh warnings, and the production build passed. MariaDB behavior is **Not verified** for this change.
+
+Community App gesture refinement on 2026-08-21:
+
+- Existing App secondary pages now share a reusable MAW-style right-swipe return gesture with direction locking, fast-flick and proportional thresholds, follow-finger movement, rebound, interactive-target exclusion, and duplicate-return protection. This covers Notifications, post editing, receipts, Student quiz attempts, Teacher class/assessment/quiz pages, and the nested safety/policy pages.
+- Parent, Student, and Teacher route-like secondary pages keep their previous primary page mounted as a fixed lower layer. Dragging the secondary layer therefore reveals the unchanged previous page and preserves the prior bottom-capsule selection, matching the MAW stacked-page model.
+- The horizontally scrollable Notification category pills are excluded from page-return recognition, so scrolling them in either direction cannot close Notifications. Leftward gestures never trigger back.
+- The existing RYLAY liquid-glass bottom navigation capsule and its animation are unchanged. Seven focused gesture/safety tests, App lint, and the App production build passed.
 
 ## Deployment Status
 
@@ -369,7 +474,7 @@ The repository must not be described as production-ready.
 ## Immediate Recommended Priorities
 
 1. Plan controlled academic-year, enrolment, portal-link, and guardian-access production-data gates without inferred backfill.
-2. Run real-device and school UAT for the independent Community App, then separately approve native authentication and store packaging before adding any native dependency.
+2. Run real-device and school UAT for the independent School App, then separately approve native authentication and store packaging before adding any native dependency.
 3. Confirm discount formulas/eligibility and the approved correction/reconciliation policy before enabling discounted or retroactive billing.
 4. Define refund, credit, overpayment, write-off, and audit-driven correction/recovery workflows.
 5. Run and stabilize CI on `master`, then verify remote staging/production operations, least-privilege database grants, monitoring, backups, and restore/reconciliation.
@@ -378,7 +483,6 @@ The repository must not be described as production-ready.
 ## Needs Confirmation
 
 - Approved maximum operating scale and performance targets.
-- CEO/management print/report permissions.
 - Student status transition approvals/reasons.
 - Discount formulas, stacking, eligibility, proration, and reassessment.
 - Approved treatment of charge history when an agreement must change mid-year.

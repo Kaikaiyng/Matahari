@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { LucideIcon } from 'lucide-react'
-import { ChevronLeft, Info, Menu, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Info, Menu, X } from 'lucide-react'
 import { IconlyBell, IconlyLogout } from './icons/IconlyIcons'
 import { BrandMark } from './BrandMark'
+import { AdminNotificationPopover } from './AdminNotificationPopover'
 import './AdminShell.css'
 
 const SIDEBAR_COLLAPSED_KEY = 'admin-sidebar-collapsed'
+const SIDEBAR_GROUPS_KEY = 'admin-sidebar-groups'
 const TABLET_NAV_QUERY = '(max-width: 1180px)'
 
 export type NavigationItem<PageKey extends string> = {
@@ -19,6 +21,8 @@ export type NavigationItem<PageKey extends string> = {
 
 export type NavigationGroup<PageKey extends string> = {
   label: string
+  icon: LucideIcon
+  standalone?: boolean
   items: NavigationItem<PageKey>[]
 }
 
@@ -56,9 +60,21 @@ export function AdminShell<PageKey extends string>({
       return false
     }
   })
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() => {
+    try {
+      const stored = JSON.parse(window.localStorage.getItem(SIDEBAR_GROUPS_KEY) ?? '{}') as Record<string, boolean>
+      return Object.keys(stored).length > 0
+        ? stored
+        : Object.fromEntries(navGroups.filter((group) => group.items.length > 1).map((group) => [group.label, true]))
+    } catch {
+      return Object.fromEntries(navGroups.filter((group) => group.items.length > 1).map((group) => [group.label, true]))
+    }
+  })
   const [isNarrowViewport, setIsNarrowViewport] = useState(() =>
     window.matchMedia(TABLET_NAV_QUERY).matches,
   )
+  const [isNotifOpen, setIsNotifOpen] = useState(false)
+  const [unreadNotifCount, setUnreadNotifCount] = useState(2)
   const menuRef = useRef<HTMLButtonElement>(null)
   const closeRef = useRef<HTMLButtonElement>(null)
   const shouldRestoreFocusRef = useRef(false)
@@ -78,6 +94,18 @@ export function AdminShell<PageKey extends string>({
         // The visual state can still change when storage is unavailable.
       }
 
+      return next
+    })
+  }
+
+  const toggleGroup = (label: string) => {
+    setExpandedGroups((current) => {
+      const next = { ...current, [label]: !current[label] }
+      try {
+        window.localStorage.setItem(SIDEBAR_GROUPS_KEY, JSON.stringify(next))
+      } catch {
+        // Navigation remains usable when storage is unavailable.
+      }
       return next
     })
   }
@@ -173,33 +201,66 @@ export function AdminShell<PageKey extends string>({
           aria-expanded={!isCollapsed}
           onClick={toggleCollapsed}
         >
-          <ChevronLeft
-            className={`sidebar-collapse-icon${isCollapsed ? ' reversed' : ''}`}
-            size={16}
-          />
+          {isCollapsed
+            ? <ChevronRight className="sidebar-collapse-icon" size={16} />
+            : <ChevronLeft className="sidebar-collapse-icon" size={16} />}
         </button>
 
         <nav aria-label="Main navigation">
-          {navGroups.map((group) => (
-            <section className="nav-group" aria-label={group.label} key={group.label}>
-              <h2 className="nav-group-title">{group.label}</h2>
-              {group.items.map(({ key, label, icon: Icon }) => (
+          {navGroups.map((group) => {
+            const hasActiveItem = group.items.some((item) => item.key === activePage)
+            const isExpanded = hasActiveItem || expandedGroups[group.label] === true
+
+            if (group.standalone) {
+              const item = group.items[0]
+              if (!item) return null
+              const Icon = group.icon
+
+              return (
                 <button
-                  key={key}
-                  aria-current={key === activePage ? 'page' : undefined}
-                  aria-label={label}
-                  title={isCollapsed ? label : undefined}
-                  className={key === activePage ? 'nav-item active' : 'nav-item'}
-                  onClick={() => selectPage(key)}
+                  key={group.label}
+                  aria-current={item.key === activePage ? 'page' : undefined}
+                  aria-label={item.label}
+                  className={item.key === activePage ? 'nav-item nav-single active' : 'nav-item nav-single'}
+                  onClick={() => selectPage(item.key)}
                 >
-                  <span className="nav-item-icon-box">
-                    <Icon size={18} />
-                  </span>
-                  <span className="sidebar-label">{label}</span>
+                  <span className="nav-item-icon-box"><Icon size={18} /></span>
+                  <span className="sidebar-label">{item.label}</span>
                 </button>
-              ))}
-            </section>
-          ))}
+              )
+            }
+
+            const GroupIcon = group.icon
+            return (
+              <section className={`nav-group${hasActiveItem ? ' active' : ''}`} aria-label={group.label} key={group.label}>
+                <button type="button" className="nav-group-toggle" aria-label={`${group.label} navigation group`} aria-expanded={isExpanded} onClick={() => toggleGroup(group.label)}>
+                  <span className="nav-group-title">
+                    <span className="nav-group-icon"><GroupIcon size={18} /></span>
+                    <span>{group.label}</span>
+                  </span>
+                  <ChevronRight className="nav-group-chevron" size={15} />
+                </button>
+                <div className={`nav-group-items${isExpanded ? ' expanded' : ''}`} aria-hidden={!isExpanded}>
+                  <div className="nav-group-items-clip">
+                    <div className="nav-group-items-list">
+                      {group.items.map(({ key, label }) => (
+                        <button
+                          key={key}
+                          aria-current={key === activePage ? 'page' : undefined}
+                          aria-label={label}
+                          className={key === activePage ? 'nav-subitem active' : 'nav-subitem'}
+                          tabIndex={isExpanded ? 0 : -1}
+                          onClick={() => selectPage(key)}
+                        >
+                          <span>{label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </section>
+            )
+          })}
         </nav>
 
         <footer className="sidebar-footer">
@@ -252,10 +313,24 @@ export function AdminShell<PageKey extends string>({
                 Service temporarily unavailable
               </span>
             )}
-            <button type="button" className="header-notification-button" aria-label="Notifications">
-              <IconlyBell size={20} />
-              <span className="notification-dot" aria-hidden="true" />
-            </button>
+            <div className="header-notification-wrapper">
+              <button
+                type="button"
+                className={`header-notification-button ${isNotifOpen ? 'active' : ''}`}
+                aria-label="Notifications"
+                aria-expanded={isNotifOpen}
+                onClick={() => setIsNotifOpen((prev) => !prev)}
+              >
+                <IconlyBell size={20} />
+                {unreadNotifCount > 0 && <span className="notification-dot" aria-hidden="true" />}
+              </button>
+
+              <AdminNotificationPopover
+                isOpen={isNotifOpen}
+                onClose={() => setIsNotifOpen(false)}
+                onUnreadCountChange={setUnreadNotifCount}
+              />
+            </div>
             <div className="user-profile">
               <span className="user-avatar">{initial}</span>
               <span className="user-name">{user.name}</span>

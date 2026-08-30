@@ -1,6 +1,6 @@
 # Mobile Product Architecture and Roadmap
 
-**Status:** Approved community-first App direction; split client, visual redesign, and daily Attendance implemented; community persistence, assessment, and Quiz remain planned
+**Status:** The split App client, School Updates, daily Attendance, Assessment publication, Parent Finance reads, Schedule, and formal Quiz are implemented; native packaging, push delivery, and Practice/AI Quiz remain planned
 
 **Reviewed:** 2026-08-14
 
@@ -21,7 +21,7 @@ The `frontend/` application is the responsive Admin/Finance interface. The separ
 ```mermaid
 flowchart TB
     Admin["React Admin / Finance / Teacher Web"]
-    MobileWeb["Parent / Student / Teacher / Staff Community Web"]
+    MobileWeb["Parent / Student / Teacher School Updates Web"]
     Native["Later: Capacitor Android / iOS package"]
     API["One Laravel API"]
     DB["One MariaDB database"]
@@ -43,10 +43,10 @@ The mobile experience is developed and validated first as a mobile-first web app
 | Phase | Status | Scope |
 | --- | --- | --- |
 | A — Backend Foundation | Implemented and merged | School context, foundation roles, explicit portal links, academic years, enrolments, subjects, teaching assignments, minimum management APIs, policies/access services, audit, constraints, and tests |
-| B — Mobile Web Shell | Implemented | Independent `app/`, session login, role-aware Parent/Student/Teacher/Staff shell, separate build/domain, and community-first redesign |
-| C — Community and Parent Records | Approved for implementation | Relationship-scoped Feed, Teacher/Staff publishing, reactions, controlled comments, children, published academics, and read-only Finance |
-| D — Attendance and Assessments | Attendance implemented; Assessments planned | General attendance sessions with initial daily marking, scoped history and audit are present; academic terms, assessments, publication, and results remain planned |
-| E — Teacher and Quiz | Approved direction | Teacher classes, formal quiz authoring, class/direct-student targets, materialized recipients, attempts, server-side scoring, separate Practice Quiz, and result visibility |
+| B — Mobile Web Shell | Implemented | Independent `app/`, session login, role-aware Parent/Student/Teacher shell, separate build/domain, and School Updates-first presentation |
+| C — School Updates and Parent Records | Implemented | Relationship-scoped official Updates, employee publishing to whole-school or selected classes, Likes/Post Reports, children, published academics, and read-only Finance; comments and new direct-Student targeting are retired active workflows |
+| D — Attendance and Assessments | Implemented | General Attendance sessions with daily marking, scoped history and audit; academic terms, assessments, publication, and authorized Parent/Student result reads |
+| E — Teacher and Quiz | Formal Quiz implemented; Practice/AI Quiz planned | Teacher classes, formal quiz authoring, class/direct-student targets, materialized recipients, attempts, server-side scoring, and result visibility |
 | F — Push and Native Packaging | Approved, not implemented | Device registration, FCM, Capacitor Android/APK, followed later by iOS/TestFlight evaluation |
 
 No later phase is implicitly authorized by completion of an earlier phase. Each phase requires its own reviewed implementation scope and release evidence.
@@ -96,7 +96,7 @@ The notification row is the durable product record. Push is only a delivery chan
 
 ## Quiz Boundary
 
-Quiz is not part of Phase A. Future Quiz V1 supports `multiple_choice` and `true_false`, which may share option storage and scoring.
+Formal Quiz V1 is implemented beyond Phase A and supports `multiple_choice` and `true_false` through shared option storage and server-side scoring. Practice/AI Quiz remains planned.
 
 Each quiz assignment represents one release/configuration and supports both class targets and direct student targets. Eligibility is materialized in `quiz_assignment_recipients` so overlapping class/direct targeting cannot create duplicate notifications, attempts, or results. Class targeting supports multiple classes; direct targeting supports one or many authorized students.
 
@@ -133,4 +133,4 @@ Chat, homework upload, automatic term-total formulas, class ranking, full transc
 
 These questions do not reopen the fixed decisions of one backend/database/RBAC system, authoritative finance reuse, explicit portal linking, class plus direct-student quiz targets, or manual-first payment reminders.
 
-The detailed approved role flows, Feed rules, attendance model, assessment boundary, Quiz separation, Finance boundary, and delivery order are recorded in [MIS App Product Specification](mobile-app-product-spec.md). Visual decisions are authoritative in the root [Design System](../DESIGN.md).
+The detailed approved role flows, School Updates rules, attendance model, assessment boundary, Quiz separation, Finance boundary, and delivery order are recorded in [MIS App Product Specification](mobile-app-product-spec.md). Visual decisions are authoritative in the root [Design System](../DESIGN.md).

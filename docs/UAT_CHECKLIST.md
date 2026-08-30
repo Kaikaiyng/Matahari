@@ -1,10 +1,10 @@
-# MIS Admin and Community App User Acceptance Checklist
+# MIS Admin and School App User Acceptance Checklist
 
 Status: Current implemented-scope UAT
 
-Last updated: 2026-08-13
+Last updated: 2026-08-26
 
-The current build passes this checklist when a school administrator can complete the implemented student-to-receipt flow accurately and the four Community App roles remain correctly scoped on phone-sized screens. This checklist does not claim acceptance for preview/deferred modules or production readiness.
+The current build passes this checklist when authorized employees can complete the implemented Admin/finance/Attendance/School Updates flows accurately and the three School App personas remain correctly scoped on phone-sized screens. This checklist does not claim production readiness, real Hikvision compatibility, native delivery, or acceptance for deferred modules.
 
 ## 1. Test Preparation
 
@@ -29,8 +29,8 @@ The current build passes this checklist when a school administrator can complete
 ## 3. Responsive Navigation
 
 - [ ] Desktop shows the full sidebar.
-- [ ] iPad landscape shows a readable compact navigation rail.
-- [ ] iPad portrait/mobile show a menu button and drawer.
+- [ ] Desktop sidebar icons align, groups expand/collapse smoothly, and the full sidebar slides completely away and restores from the persistent edge toggle.
+- [ ] At 1180px and below, navigation becomes a readable off-canvas drawer rather than a compact rail.
 - [ ] Drawer closes after navigation, Escape, close control, or backdrop.
 - [ ] Background content does not scroll while the drawer is open.
 - [ ] Current page remains identifiable.
@@ -38,9 +38,9 @@ The current build passes this checklist when a school administrator can complete
 
 ## 4. Student Management
 
-Before Admin student-management checks, validate the separate Community App:
+Before Admin student-management checks, validate the separate School App:
 
-- [ ] Parent, Student, Teacher, and Staff each receive the documented five-item navigation set.
+- [ ] Parent, Student, and Teacher each receive the documented navigation set; there is no Staff persona.
 - [ ] The active destination shows icon and label; inactive destinations remain accessible by name.
 - [ ] Floating navigation respects the device safe area and never covers the final page action.
 - [ ] Visible controls are at least 44 by 44px and pages do not overflow at 360, 390, or 430px widths.
@@ -48,9 +48,11 @@ Before Admin student-management checks, validate the separate Community App:
 - [ ] Parent sees only explicitly linked children; Student sees only self; Teacher sees only currently assigned classes/students.
 - [ ] Cross-school portal links and academic identifiers are rejected by Laravel.
 - [ ] Teacher daily Attendance accepts `present`, `late`, `absent`, or `excused`; a correction requires a reason and audit record.
-- [ ] Parent/Student Attendance history reflects live scoped data.
+- [ ] Parent Attendance history reflects only linked children; Student receives no Attendance data or navigation.
 - [ ] Parent Finance is read-only and offers no payment control.
-- [ ] Feed publishing/media, Assessment, Schedule, and Quiz previews are not represented as persisted production features.
+- [ ] School Updates, published Assessment results, Schedule, and formal Quiz use live scoped APIs; Practice/AI Quiz remains unavailable.
+- [ ] Edge swipe-back begins only from the left edge, reveals the fixed previous page beneath the moving page, and does not hijack horizontal notification-category scrolling.
+- [ ] First-use policy acceptance appears as a blocking overlay above Home, keeps the policy titles stable while content loads, and prevents all other interaction until every required policy is read/accepted and recorded.
 
 - [ ] Student List loads, searches, and filters by status.
 - [ ] Student Name, Student ID, Class, Status, and Open remain visible on narrow screens.
@@ -171,6 +173,25 @@ Before Admin student-management checks, validate the separate Community App:
 - [ ] Desktop/tablet show the seven-column month view; mobile shows readable date/event rows.
 - [ ] Calendar loading, empty, validation, permission, and service-error states are explicit.
 
+## 13B. Attendance, Employee Access, and Operational Logs
+
+- [ ] Attendance Overview combines campus totals and the full campus-record table; there is no duplicate Campus Records tab.
+- [ ] Class Register respects assigned versus school-wide view/manage abilities and requires correction reasons with audit history.
+- [ ] Campus entry/exit events remain immutable timeline records, preserve face/card/manual method and device/source metadata, and reject a duplicate source/external event ID.
+- [ ] Parent sees only linked-child campus/class Attendance; Student receives no Attendance response.
+- [ ] Devices and school arrival/dismissal settings require the dedicated ability; real Hikvision protocol/authentication is recorded as not verified.
+- [ ] Employees exposes Position and User Abilities in the per-user Edit dialog; dependency checkboxes react immediately and saving happens only on Done.
+- [ ] Employee access changes reject self, platform-owner, and cross-school targets; a reason and transactional Audit Trail entries are required.
+- [ ] Audit Trail and sanitized Application Logs are read-only and Super Admin-only; Application Logs support level/search/date filters and bounded pagination without exposing secrets.
+
+## 13C. School Updates and Post Reports
+
+- [ ] Only an employee with effective same-school `community.publish` can publish immediately.
+- [ ] Composer supports required text, optional JPEG/PNG/WebP images, whole-school or multi-class audience, audience preview, and optional deduplicated notifications.
+- [ ] Parent and Student can read authorized Updates and Like/report eligible posts but cannot publish, edit, withdraw, hide, or decide reports.
+- [ ] Comments, new direct-Student targeting, blocking, restrictions, appeals, and routine approval are absent from the active workflow.
+- [ ] Author withdrawal and manager withdrawal preserve the record and required audit/reason rules; Post Report decisions preserve action history.
+
 ## 14. Desktop and Device Regression
 
 Run the full flow at:
@@ -202,10 +223,11 @@ At every size:
 - Statements and reminders
 - General reports and exports
 - PDF generation
-- Production-ready Parent Finance and complete portal workflows beyond the implemented self-service/Attendance slice
+- Production-ready Parent Finance beyond implemented read-only records, receipts, and manual in-app reminders
 - Remaining production dashboard/invoice reporting beyond the implemented Fee Record outstanding total
 - Verified production deployment, hosting, domains, edge TLS, monitoring, and backup/restore operations
-- Cross-school CEO reporting and full production multi-school operations
+- Full production multi-school operations and management reporting
+- Practice/AI Quiz, automatic/external reminders, push notifications, native packages, and app-store delivery
 
 ## 17. MVP Pass Criteria
 

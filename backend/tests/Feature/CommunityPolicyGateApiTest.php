@@ -4,8 +4,9 @@ namespace Tests\Feature;
 
 use App\Models\CommunityPolicyAcceptance;
 use App\Models\CommunityPolicyVersion;
+use App\Models\CommunityPost;
+use App\Models\CommunityPostAudience;
 use App\Models\SchoolClass;
-use App\Models\StudentCommunityAuthorization;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -36,7 +37,7 @@ class CommunityPolicyGateApiTest extends TestCase
         $this->assertDatabaseCount('community_posts', 0);
     }
 
-    public function test_non_moderator_text_and_media_remain_pending_and_quarantined(): void
+    public function test_non_moderator_school_updates_publish_immediately_with_ready_images(): void
     {
         Storage::fake('local');
         $teacher = User::query()->where('username', 'teacher.lim')->firstOrFail();
@@ -46,12 +47,12 @@ class CommunityPolicyGateApiTest extends TestCase
         $response = $this->actingAs($teacher)->withHeader('Accept', 'application/json')->post('http://127.0.0.1/api/v1/community/posts', [
             'body' => 'Class update',
             'audiences' => [['type' => 'class', 'class_id' => $class->id]],
-            'media' => [UploadedFile::fake()->create('class.pdf', 20, 'application/pdf')],
-        ])->assertCreated()->assertJsonPath('data.status', 'pending_review');
+            'media' => [UploadedFile::fake()->create('class.png', 20, 'image/png')],
+        ])->assertCreated()->assertJsonPath('data.status', 'published');
 
         $postId = $response->json('data.id');
-        $this->assertDatabaseHas('community_posts', ['id' => $postId, 'status' => 'pending_review', 'published_at' => null]);
-        $this->assertDatabaseHas('community_post_media', ['community_post_id' => $postId, 'status' => 'quarantined']);
+        $this->assertDatabaseHas('community_posts', ['id' => $postId, 'status' => 'published']);
+        $this->assertDatabaseHas('community_post_media', ['community_post_id' => $postId, 'status' => 'ready']);
     }
 
     public function test_moderator_with_current_acceptance_can_publish_directly(): void
@@ -67,7 +68,7 @@ class CommunityPolicyGateApiTest extends TestCase
         $this->assertDatabaseHas('community_posts', ['status' => 'published']);
     }
 
-    public function test_student_freeform_comment_requires_active_adult_authorization(): void
+    public function test_student_comment_route_is_retired_even_when_policies_are_accepted(): void
     {
         $student = User::query()->where('username', 'alyssa.tan')->firstOrFail();
         $this->acceptRequiredPolicies($student);
@@ -75,35 +76,9 @@ class CommunityPolicyGateApiTest extends TestCase
 
         $this->actingAs($student)->postJson("http://127.0.0.1/api/v1/community/posts/{$postId}/comments", [
             'body' => 'Thank you',
-        ])->assertUnprocessable()->assertJsonValidationErrors('community_policy');
+        ])->assertNotFound();
 
         $this->assertDatabaseCount('community_comments', 0);
-    }
-
-    public function test_reviewed_guardian_authorization_allows_student_pending_comment_and_revocation_denies_it(): void
-    {
-        $student = User::query()->where('username', 'alyssa.tan')->firstOrFail();
-        $guardian = User::query()->where('username', 'rachel.wong')->firstOrFail();
-        $this->acceptRequiredPolicies($student);
-        $postId = $this->publishedSchoolPost();
-        $authorization = StudentCommunityAuthorization::query()->create([
-            'tenant_id' => $student->school->tenant_id,
-            'school_id' => $student->school_id,
-            'student_user_id' => $student->id,
-            'authorized_by_user_id' => $guardian->id,
-            'capability' => StudentCommunityAuthorization::CAPABILITY_FREEFORM_INTERACTION,
-            'effective_at' => now(),
-        ]);
-
-        $this->actingAs($student)->postJson("http://127.0.0.1/api/v1/community/posts/{$postId}/comments", [
-            'body' => 'Thank you',
-        ])->assertCreated()->assertJsonPath('data.status', 'pending_review');
-
-        $authorization->update(['revoked_at' => now(), 'revoked_by_user_id' => $guardian->id]);
-
-        $this->actingAs($student)->postJson("http://127.0.0.1/api/v1/community/posts/{$postId}/comments", [
-            'body' => 'Another comment',
-        ])->assertUnprocessable()->assertJsonValidationErrors('community_policy');
     }
 
     public function test_prohibited_text_creates_no_content_or_media(): void
@@ -116,7 +91,7 @@ class CommunityPolicyGateApiTest extends TestCase
         $this->actingAs($teacher)->withHeader('Accept', 'application/json')->post('http://127.0.0.1/api/v1/community/posts', [
             'body' => "b\u{200B}ully another student",
             'audiences' => [['type' => 'class', 'class_id' => $class->id]],
-            'media' => [UploadedFile::fake()->create('unsafe.pdf', 20, 'application/pdf')],
+            'media' => [UploadedFile::fake()->create('unsafe.png', 20, 'image/png')],
         ])->assertUnprocessable()->assertJsonValidationErrors('body');
 
         $this->assertDatabaseCount('community_posts', 0);
@@ -140,11 +115,23 @@ class CommunityPolicyGateApiTest extends TestCase
     private function publishedSchoolPost(): int
     {
         $admin = User::query()->where('username', 'admin')->firstOrFail();
-        $this->acceptRequiredPolicies($admin);
+        $post = CommunityPost::query()->create([
+            'tenant_id' => $admin->school->tenant_id,
+            'school_id' => $admin->school_id,
+            'author_user_id' => $admin->id,
+            'post_type' => 'post',
+            'body' => 'Historical discussion post',
+            'comments_enabled' => true,
+            'status' => CommunityPost::STATUS_PUBLISHED,
+            'published_at' => now(),
+        ]);
+        CommunityPostAudience::query()->create([
+            'school_id' => $admin->school_id,
+            'community_post_id' => $post->id,
+            'audience_type' => 'school',
+            'audience_key' => 'school',
+        ]);
 
-        return (int) $this->actingAs($admin)->postJson('http://127.0.0.1/api/v1/community/posts', [
-            'body' => 'School notice',
-            'audiences' => [['type' => 'school']],
-        ])->assertCreated()->json('data.id');
+        return $post->id;
     }
 }

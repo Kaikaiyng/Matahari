@@ -1,159 +1,68 @@
 # Permissions
 
-**Status:** Seeded role matrix and verified enforcement map
+**Status:** Current role, persona, and per-user authorization contract
 
-**Repository baseline:** SaaS feature branch based on `master` at `0ad0558` (2026-08-14)
+**Reviewed:** 2026-08-30
 
-## Labels
+Backend authorization is authoritative. Navigation visibility, disabled controls, and App persona selection are usability controls only.
 
-- **Allowed:** The seeded role has the required permission and a backend endpoint exists.
-- **Denied:** The seeded role does not have the required backend permission.
-- **Limited:** A narrower related operation exists, or the capability is available only in part of the UI.
-- **Not implemented:** No usable backend operation exists, even if a permission slug or placeholder appears.
-- **Needs confirmation:** Approved access policy is not established.
+`/api/me` exposes `is_platform_owner` separately from the effective permission list. Admin permission helpers must treat it as the platform-wide bypass, so a newly introduced permission cannot temporarily make an already signed-in Super Admin appear read-only while the client permission snapshot is stale.
 
-Super Admin receives all seeded permissions. Stored role slugs also include `tenant-owner`, `teacher`, `parent`, and `student`; a user may hold multiple roles. Existing Finance and CEO grants remain unchanged.
+## Identities and Positions
 
-Tenant requests use roles from the active `tenant_user_memberships` record, not a cross-tenant union of global roles. `tenant-owner` receives `tenant.settings.manage` for branding, pending domains, features, schools and memberships in the current tenant. Only an explicit platform owner may list/create/suspend tenants or activate domains. `super-admin` is not assignable as a tenant membership role through these APIs.
+- **Super Admin** is the protected global `users.is_platform_owner` identity. It has full platform, tenant, and school access and cannot be assigned or edited by a school employee.
+- A school employee has exactly one position: **School Admin**, **Finance**, or **Teacher**.
+- **Finance** is the advanced Admin template: every School Admin default plus complete supported finance mutations, including payment verification/void and receipt void.
+- **Teacher** defaults to assigned teaching scope. An authorized Admin may grant or deny individual school abilities, allowing principal or temporary coordinator access without creating another position.
+- Parent and Student are relationship/App identities, not employee positions. An employee may also be Parent. Student and employee identity must not be combined.
+- Historical `ceo` and `tenant-owner` rows may remain in upgraded databases for referential history, but they are not seeded, assignable, or used as active authorization templates.
 
-## Role Matrix
+## App Personas
 
-| Operation | Super Admin | School Admin | Finance | CEO | Backend permission/enforcement |
-| --- | --- | --- | --- | --- | --- |
-| View students | Allowed | Allowed | Allowed | Denied | `students.view` route middleware |
-| Create students | Allowed | Allowed | Denied | Denied | `students.create` route middleware |
-| Update student profile | Allowed | Allowed | Denied | Denied | `students.update`; backend API exists, frontend incomplete |
-| Change student status | Allowed | Allowed | Denied | Denied | `students.update_status` route middleware |
-| View classes/rosters | Allowed | Allowed | Allowed | Denied | Reuses `students.view`; read-only module |
-| View guardian data in Student Detail | Allowed | Allowed | Allowed | Denied | Returned by student detail under `students.view`; `parents.view` is not used by a route |
-| View independent parent directory | Not implemented | Not implemented | Not implemented | Not implemented | No parent list/detail API; top-level frontend is static |
-| Create/update parents | Not implemented | Not implemented | Not implemented | Not implemented | Slugs exist for Super/School Admin only, but no API |
-| View fee catalogue | Allowed | Allowed | Allowed | Denied | `fee_items.view`; read-only API |
-| Manage fee catalogue | Not implemented | Not implemented | Not implemented | Not implemented | `fee_items.manage` is seeded only to Super Admin; no mutation API/UI |
-| View Fee Agreement history | Allowed | Allowed | Allowed | Denied | `fee_agreements.view` route middleware |
-| Create Fee Agreements | Allowed | Allowed | Denied | Denied | `fee_agreements.create` route middleware |
-| Supersede Fee Agreements | Allowed | Allowed | Denied | Denied | `fee_agreements.update` route middleware |
-| View Fee Record/summary | Allowed | Allowed | Allowed | Allowed | `fee_record.view` route middleware |
-| Activate Fee Record charges | Allowed | Allowed | Denied | Denied | `fee_record.generate` route middleware |
-| Create manual charges | Allowed | Allowed | Denied | Denied | `fee_record.manage` route middleware |
-| View payments | Allowed | Allowed | Allowed | Denied | `payments.view` route middleware |
-| Record payments | Allowed | Allowed | Denied | Denied | `payments.create` route middleware |
-| Verify payments | Allowed | Denied | Allowed | Denied | `payments.verify` route middleware |
-| Void payments | Allowed | Denied | Allowed | Denied | `payments.void` route middleware |
-| Send manual in-app payment reminders | Allowed | Allowed | Allowed | Denied | `payment_reminders.send`; backend rechecks student school, current enrolment, current outstanding, and eligible guardian accounts |
-| View receipts | Allowed | Allowed | Allowed | Denied | `receipts.view` route middleware |
-| Issue receipts | Allowed | Allowed | Allowed | Denied | `receipts.create` route middleware |
-| Void receipts | Allowed | Denied | Allowed | Denied | `receipts.void` route middleware |
-| Print receipts | Allowed | Allowed | Allowed | Denied | `receipts.print` route middleware |
-| View Fee Record reports | Allowed | Allowed | Allowed | Allowed | Limited to implemented summary/category views via `fee_record.view` |
-| View general reports | Not implemented | Not implemented | Not implemented | Not implemented | Top-level Reports page is a placeholder |
-| Export reports | Not implemented | Not implemented | Not implemented | Not implemented | No route/service/UI |
-| Calendar view | Allowed | Allowed | Allowed | Allowed | `calendar.view` route middleware |
-| Calendar create/update/delete | Allowed | Allowed | Allowed | Denied | Separate `calendar.*` route middleware |
-| Manage users/roles | Not implemented | Not implemented | Not implemented | Not implemented | No user-management route/service/UI |
-| Reset passwords | Not implemented | Not implemented | Not implemented | Not implemented | No password-reset route; reset storage was removed |
-| View audit records | Allowed | Denied | Denied | Denied | `audit.view` on read-only list/detail routes; permission-filtered Audit Trail UI |
-| Perform generic audit correction | Not implemented | Not implemented | Not implemented | Not implemented | Super Admin has `audit.correct_generic`, but no correction workflow exists |
-| Change system settings | Not implemented | Not implemented | Not implemented | Not implemented | Settings page is a placeholder |
+The App exposes exactly **Teacher**, **Parent**, and **Student** personas. There is no Staff persona.
 
-Phase A permission defaults:
+- Teacher is available to the Teacher position or an employee with effective `app.teacher_access`.
+- Elevated Teachers still appear as Teacher; school-wide tools are controlled by effective backend abilities.
+- Parent and Student are derived from their stored identities/relationships.
+- When more than one persona is valid, the first App entry requires a choice and the last choice is stored on that device.
+- Finance or School Admin without Teacher App Access and without a Parent identity cannot enter the App.
 
-- Super Admin: all Phase A permissions.
-- School Admin: academic year, subject, enrolment, teaching-assignment, portal-link, and foundation-role management.
-- Teacher: academic-year/subject read plus `teaching_scope.view`.
-- Parent: `parent.self_service`; portal reads additionally require an active same-school guardian-child link and the relevant reviewed pivot capability. Parent Finance remains read-only and is not approval of a payment workflow.
-- Student: `student.self_service` only; no student-finance permission.
-- Finance and CEO: no new Phase A permissions.
+## User Abilities
 
-Foundation role management synchronizes only `teacher`, `parent`, and `student`; it preserves existing roles such as Finance or School Admin.
+`user_permission_overrides` stores school-scoped explicit grants and denials. Effective permissions are resolved in this order:
 
-`foundation_accounts.manage` also permits creation of a same-school active account with one or more foundation roles. It does not permit assigning existing administrative/finance roles, changing school ownership, deactivating accounts, or resetting passwords.
+1. Platform owner bypass.
+2. Active hostname-selected tenant membership role defaults.
+3. Same-school explicit grant/deny override.
+4. Active historical time-window Attendance grant compatibility.
 
-## Community App Current Access
+The Admin Employees editor groups grantable abilities under Students, Classes, Attendance, Calendar, Finance, School Updates, Academics, Employees, and App. Manage abilities imply their View dependency. Clearing View also clears dependent Manage selections.
 
-| Role/surface | Current backend permission | Additional resource scope |
+School Admin and Finance may edit another same-school School Admin, Finance, or Teacher when they have `employees.abilities.manage`. They cannot edit themselves, a platform owner, a different-school user, platform-only permissions, or grant Super Admin. Every position, ability, or Teacher App Access change requires a non-empty reason and writes Audit Trail records in the same database transaction. Audit failure rolls back the access change.
+
+## Key Enforcement Slugs
+
+| Area | View/default scope | Manage/elevated scope |
 | --- | --- | --- |
-| Parent self-service | `parent.self_service` | Explicit same-school user link plus active reviewed guardian-child capability per child |
-| Student self-service | `student.self_service` | Explicit same-school student user link; self only; no Student Finance |
-| Teacher classes/Attendance | `teaching_scope.view` | Current same-school teaching assignment and current class enrolment |
-| Community read | `community.view` | Same-school school audience, Teaching Assignment class scope, linked-child current enrolment, or Student self current enrolment |
-| Community publish | `community.publish` | Teacher: current assigned classes only; School/Super Admin: school, class, or direct-student audience |
-| Community interaction | `community.interact` | Only posts visible to the authenticated user; comments must be enabled |
-| Community moderation | `community.moderate` | School/Super Admin only; hiding requires a reason and preserves history |
-| Community platform moderation | `community.moderate_platform` plus platform-owner gate | Cross-tenant aggregate; explicit detail/intervention only for severe or escalated cases; detail access is audited |
-| Assessment management | `assessments.manage` | Teacher: current assigned class/year/subject combinations; School/Super Admin: same-school resources |
-| Schedule management | `schedule.manage` | School/Super Admin only; same-school year/class/subject/Teaching Assignment validation |
-| Schedule viewing | `schedule.view` | Student current enrolment; Guardian active reviewed academic link; Teacher permission is reserved for assigned-scope UI |
-| Formal Quiz management | `quizzes.manage` | Teacher owns Quiz and targets only current assigned academic-year/class/subject scope |
-| School Quiz management | `quizzes.manage_school` | School/Super Admin same-school override; broad Admin UI remains future |
-| Formal Quiz attempt | `quizzes.attempt` | Student self only and only when present in materialized assignment recipients |
-| School-wide assessment management | `assessments.manage_school` | School/Super Admin bypass Teacher assignment scope but never school scope |
-| Published assessment result | `assessments.view_published` plus portal role permission | Parent requires active reviewed academic guardian capability; Student resolves self only |
-| Portal notifications | Authenticated portal user | Recipient user and school must both match |
+| Employees | `employees.view` | `employees.manage`, `employees.abilities.manage` |
+| Attendance | `attendance.view_assigned`, `attendance.view_school` | `attendance.manage_assigned`, `attendance.manage_school`, `attendance.devices.manage` |
+| Students | `students.view` | `students.create`, `students.update`, `students.update_status` |
+| Classes | `class_enrolments.view`, `teaching_assignments.view` | matching `.manage` permissions |
+| Calendar | `calendar.view` | `calendar.create`, `calendar.update`, `calendar.delete` |
+| Finance | fee/payment/receipt `.view` permissions | record, verify, void, print, reminder, and agreement mutations |
+| Academics | year/subject/schedule views | their manage permissions plus school-wide assessment/quiz permissions |
+| School Updates | `community.view` (read authorized Updates) | `community.publish` (official publish/edit/withdraw own while effective), `community.moderate` (manage same-school Updates and Post Reports) |
+| App | relationship self-service permissions | `app.teacher_access` |
+| School Settings | authenticated current-school read | `school.settings.manage` |
 
-Client entry-point checkpoint:
+`school.settings.manage` is a school-scoped default for Super Admin, School Admin, and Finance. `audit.view`, `logs.view`, tenant configuration, platform Community intervention, domain activation, and cross-tenant operations remain platform-only unless a later reviewed policy explicitly changes them.
 
-- Admin Panel admits only `super-admin`, `school-admin`, `finance`, and `ceo` roles. A Teacher-only, Parent-only, or Student-only account is directed to the Community App instead of receiving an unusable Admin dashboard.
-- Community App admits Parent, Student, Teacher, and the derived Staff persona. Staff currently maps only from `super-admin` or `school-admin`; it does not give Finance or CEO a community-publishing identity.
-- Multi-role users retain the backend permission union. The Community App role switch lists only personas actually derived from the user's stored roles.
-- These client gates are usability boundaries. Backend permission middleware and resource scope remain authoritative.
+`community.view` is required for the Updates feed. The effective same-school `community.publish` ability is the backend publishing authority; it permits whole-school and any active same-school class audience and does not add a second position or Teaching Assignment check. The current Admin ability editor grants it only through employee access management, and it never follows from the Teacher, Parent, or Student persona itself. An author must retain that ability to edit or withdraw their own Update; `community.moderate` independently permits same-school management. Parent and Student active access is read, Like, and Post Report; it does not include publish, edit, withdraw, hide, or report decisions. Moderators decide reports and are not offered reporting on Updates. `community.interact` and historical block/restriction/appeal permissions do not enable active social or School Update workflows.
 
-The current Attendance slice deliberately reuses `teaching_scope.view`; dedicated future Attendance/Community/Assessment/Quiz permissions must be introduced only with their backend modules and tests.
+## Scope Rules
 
-All authenticated Community viewers may use their own policy/report/block/content-status/appeal endpoints, but backend visibility and ownership checks remain mandatory. Admin `Community Safety` navigation requires `community.moderate` or `community.moderate_platform`; this UI check is not authorization. School moderation begins from resolved tenant/school scope and never accepts a tenant ID.
-
-## CEO Intended Versus Implemented Access
-
-Confirmed intended context describes CEO or print-only management access. Current code grants CEO only:
-
-- `fee_record.view`
-- `calendar.view`
-
-It does not grant receipt view/print, student view, payment view, or a general report/export permission. The current CEO role is therefore read-only but not a receipt-print role.
-
-**Needs confirmation:** Whether the approved CEO experience should include receipt printing, selected reports, cross-school summaries, exports, or no operational data beyond Fee Record and Calendar.
-
-## Enforcement Locations
-
-| Concern | Current enforcement |
-| --- | --- |
-| Authentication | Laravel `web` session guard and `auth` middleware |
-| Permission slugs | `permission:<slug>` route middleware using `EnsureUserHasPermission` |
-| Role-to-permission mapping | `roles`, `permissions`, `user_roles`, `role_permissions`; seeded in `DatabaseSeeder` |
-| Tenant scope | Host-resolved `TenantContext`, active tenant membership, membership roles and permitted membership schools |
-| School scope | Tenant-aware legacy resolver plus `SchoolContext`/`ResolveSchoolContext` for newer modules |
-| Resource policies | Phase A policies/access services enforce academic, teacher-assignment, and portal-link scope |
-| Mutation validation | Laravel Form Requests plus service invariants |
-| Frontend actions | `permissions.includes(...)` checks for many pages/buttons; not authoritative |
-| Frontend navigation | Each visible entry declares a required permission; absent groups are removed. This is a usability layer only. |
-
-Phase A policies are present for new foundation resources. Legacy modules retain their existing route/controller/request/service enforcement until migrated deliberately.
-
-Portal navigation must not treat `parent.self_service`, `student.self_service`, or `teaching_scope.view` as sufficient resource authorization by itself. Each API also validates the active guardian-child, student-self, or teaching-assignment relationship and same-school ownership. Notification reads and read-state updates are restricted to the authenticated recipient and school. Daily Attendance currently reuses `teaching_scope.view` plus an active same-school assignment for Teacher writes; Parent reads additionally require `can_view_academics = true`, and Student reads resolve only the linked self record. Manual payment reminder sending is separately protected by `payment_reminders.send`; it does not grant recipient notification access.
-
-Community uses `community.view`, `community.publish`, `community.interact`, and `community.moderate`; Staff publishing does not imply school-wide academic access, and Teacher scope remains bounded by active Teaching Assignments. Assessment uses `assessments.manage`, `assessments.manage_school`, and `assessments.view_published`. Schedule uses `schedule.manage` and `schedule.view`, with relationship/enrolment scope enforced in addition to permission middleware. Attendance continues to reuse its established scope permission. Formal Quiz uses `quizzes.manage`, `quizzes.manage_school`, and `quizzes.attempt`; Practice/AI Quiz permissions remain planned until that separately approved feature is implemented.
-
-## Legacy Endpoint Enforcement
-
-- `GET /api/dashboard/school` requires `fee_record.view`.
-- `POST /api/invoices/generate-monthly` requires `fee_record.generate`.
-- School-bound users are forced to their stored school; a global Super Admin must supply an explicit valid school.
-- Invoice `created_by` comes from the authenticated actor, and a submitted class must belong to the resolved school.
-
-Focused permission, forged-actor, missing-school, invalid-school, and cross-school tests cover these rules.
-
-## Frontend/Backend Mismatches
-
-- CEO can see Calendar event summaries through `calendar.view`, but the frontend does not open full event detail unless the user also has update or delete permission.
-- Guardian data is embedded in Student Detail under `students.view`; the separate `parents.view` slug is used for navigation but has no parent API to enforce. Seeded roles currently grant both permissions together where student access exists, but the intended separation is **Needs confirmation**.
-- Payment and receipt actions and Fee Record activation match backend slugs. Implemented payment/receipt workflows remain inside Student Detail rather than separate navigation modules.
-
-Frontend mismatches should be corrected for usability, but backend checks must remain the security boundary.
-
-## Rules for New Permissions
-
-1. Define the business owner and approved roles.
-2. Add a stable permission slug and seed assignment.
-3. Enforce it on the backend route/controller/service and add unauthorized/cross-school tests.
-4. Add frontend visibility only after backend enforcement exists.
-5. Update this matrix and [Business Rules](business-rules.md) in the same pull request.
+- Resolve an active verified hostname before membership, permission, school, and resource checks.
+- Never accept a client-submitted tenant ID as authority.
+- Same-school permission does not authorize another school or tenant.
+- Material student, finance, employee-position, User Ability, and School Settings mutations audit inside the same transaction.
+- Audit routes are read-only and require `audit.view`.

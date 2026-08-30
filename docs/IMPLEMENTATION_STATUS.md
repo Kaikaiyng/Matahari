@@ -1,10 +1,10 @@
 # Implementation Status
 
-Status: `DEVELOPMENT_DEMO_WITH_LIVE_FOUNDATION_SLICES`
+Status: `INTEGRATED_FEATURE_BRANCH_NOT_PRODUCTION_READY`
 
-Current SaaS branch baseline: 2026-08-14 from `master` at `0ad0558`; final validation is recorded in [Current Status](current-status.md).
+Current documentation baseline: 2026-08-26 on `feat/admin-application-logs`; the integrated feature branch is pushed, but default `master` merge and production deployment are separate. Exact commit and final validation evidence are recorded in [Current Status](current-status.md).
 
-The SaaS contains three independently operated runtimes: the Laravel API in `backend/`, the Admin Panel in `frontend/`, and the mobile-first Community App in `app/`. Admin and App have separate tenant domains/builds, resolve tenant context from the hostname, and share authentication identities, tenant membership RBAC, school scope, MariaDB-compatible schema, audit and finance sources of truth. MIS is the first tenant configuration. The repository is not production-ready and has no native/store package.
+The SaaS contains three independently operated runtimes: the Laravel API in `backend/`, the Admin Panel in `frontend/`, and the mobile-first School App in `app/`. Admin and App have separate tenant domains/builds, resolve tenant context from the hostname, and share authentication identities, tenant membership RBAC, school scope, MariaDB-compatible schema, audit and finance sources of truth. MIS is the first tenant configuration. The repository is not production-ready and has no native/store package.
 
 ## 1. Implemented Admin and Finance
 
@@ -13,25 +13,29 @@ The SaaS contains three independently operated runtimes: the Laravel API in `bac
 - Versioned Fee Agreements, billing configuration, preview, activation, manual charges, outstanding balances, summary, and category/month ledger.
 - Payment allocation, verification, void safeguards, history, receipt issue/view/print/void/regeneration, and preserved receipt snapshots/numbers.
 - Shared school Calendar CRUD and responsive Admin shell.
-- Read-only Super Admin Audit Trail and transactional audit for implemented sensitive student, foundation, Attendance, and finance mutations.
+- MAW-style grouped navigation with animated expansion, complete desktop slide-away collapse, and a responsive drawer.
+- Attendance Hub combining campus overview/records, class registers, device mapping, settings, and student movement timelines.
+- Employee Position and User Abilities editing with immediate checkbox dependencies, protected-owner/same-school guards, required reason, and transactional audit.
+- Read-only Super Admin Audit Trail and sanitized Application Logs, plus transactional audit for implemented sensitive student, foundation, Attendance, employee-access, School Updates, and finance mutations.
 
 ## 2. Implemented Academic and Identity Foundation
 
-- Teacher, Parent, and Student roles coexist with existing Super Admin, School Admin, Finance, and CEO roles; multi-role users are supported.
+- Super Admin is the protected platform-owner identity. Active employee positions are School Admin, Finance, and Teacher; historical CEO/Tenant Owner rows are not seeded or assignable. Parent and Student remain relationship/App identities, and multi-persona users are supported.
 - Academic years, subjects, class enrolment history, teaching assignments, minimum foundation account management, explicit Parent/Student portal links, and guardian access/history fields.
 - New modules use authenticated active sessions, permission middleware, `SchoolContext`, access services/policies, school-scoped queries, and transactional domain services.
 - `students.class_id` remains for compatibility. Production dates, historical enrolments, account associations, and guardian access are never guessed or automatically activated.
 
-## 3. Implemented Community App Slice
+## 3. Implemented School App Slice
 
 - Separate `app/` React/Vite workspace and deployment boundary.
-- Parent, Student, Teacher, and authorized Staff role surfaces with a compact header and role-specific floating liquid-glass navigation.
-- Community-style Home presentation, notifications, profile/settings, and sign out from More/Profile.
+- Exactly Parent, Student, and Teacher personas with a compact header, role-specific floating liquid-glass navigation, swipe-back secondary pages, notifications, profile/settings, and sign out from More/Profile.
 - Parent/Student self identity and enrolment access.
 - Read-only Parent finance from authoritative Fee Record/payment/receipt data; no payment interface.
-- Daily Attendance sessions and records, Teacher assignment-scoped roster marking, correction reasons, transactional audit, and scoped Parent/Student reads.
+- Daily class Attendance plus campus entry/exit records; Teacher assignment/school abilities, correction reasons and audit; Parent linked-child reads; explicit Student exclusion.
+- Live published Assessment results, class Schedule, and formal Teacher-assigned Quiz workflows.
+- Live School Updates with employee publishing ability, immediate whole-school or multi-class text/image posts, optional in-app notifications, authorized reads/Likes/Post Reports, and no active comments or new direct-Student targeting.
 
-Community publishing/media, reactions/comments persistence, Assessments/results, Schedule, formal Quiz, Practice Quiz generation, payment reminders, and broader Parent Finance remain previews or planned modules. Preview UI is not evidence of backend completion.
+Practice/AI Quiz, push/native delivery, automatic or external payment reminders, and production hardening remain planned. Historical Community comments, direct-Student audiences, restrictions, blocks, appeals, and pending/rejected rows remain preserved compatibility storage rather than active social workflows.
 
 ## 4. Deployment Foundation
 
@@ -41,27 +45,26 @@ Community publishing/media, reactions/comments persistence, Assessments/results,
 
 ## 5. Current Verification Evidence
 
-Merged-result checks on 2026-08-13:
+Latest integrated feature-branch checks recorded on 2026-08-25/26:
 
 ```text
-Community App: 3 Vitest files, 16 tests passed; Oxlint passed; TypeScript/Vite build passed (76 modules)
-Admin Panel: 15 Vitest files, 169 tests passed; Oxlint exit 0 with 9 known warnings; build passed (83 modules)
-Backend: 255 tests discovered; 247 passed; 8 opt-in MariaDB tests skipped; 1,314 assertions
+School App: 56 Vitest tests passed; Oxlint passed; TypeScript/Vite build passed
+Admin Panel: 187 Vitest tests passed; Oxlint exit 0 with 9 existing Calendar Fast Refresh warnings; build passed
+Backend: 395 tests discovered; 383 passed; 12 MariaDB-gated tests skipped; 2,145 assertions
 Pint: passed
-API routes: 74 loaded
-Deployment contracts: 18 passed
-Responsive App QA: 39 role/page/viewport combinations; no horizontal overflow or undersized visible targets
+API routes: 152 non-vendor routes loaded
+Local reachability: tenant-aware backend, Admin root, and App root returned HTTP 200
 ```
 
-The visual-refinement branch did not change backend schema, so it did not rerun MariaDB lifecycle checks. Phase A previously passed disposable MariaDB fresh migration, rollback/re-migration, existing-data upgrade, and foreign-key/index inspection. That evidence is not a claim about any production database.
+The 2026-08-23 User Ability/Attendance delivery passed a disposable SQLite fresh migration, targeted rollback, and re-migration. School Updates added no migration. MariaDB audience-query/runtime behavior, browser/manual UAT, real Hikvision integration, real-device/native behavior, and production load remain **Not verified** in the final delivery evidence.
 
 ## 6. Known Limitations and Gates
 
 - No production deployment, capacity target, load test, monitoring, backup/restore drill, or production MariaDB upgrade has been verified.
 - Guardian/account activation and academic/enrolment live-data backfill require explicit source review, dry runs, approval, and recovery plans.
 - Discount formulas and eligibility are unapproved; non-zero-discount charge generation fails closed.
-- Refunds, credits, overpayments, write-offs, general correction/recovery, statements, reminders, reports, exports, and server PDF remain incomplete.
+- Refunds, credits, overpayments, write-offs, general correction/recovery, statements, automatic/external reminders, reports, exports, and server PDF remain incomplete. Manual in-app payment reminders are implemented.
 - User lifecycle administration and password reset remain incomplete beyond minimum foundation account creation/role assignment.
 - Native authentication, Sanctum, Firebase, Capacitor, Android/iOS packages, push delivery, and store publication are absent.
 
-Use [Current Status](current-status.md) for detailed dated evidence, [Project Overview](project-overview.md) for scope, [System Architecture](SYSTEM_ARCHITECTURE.md) for runtime boundaries, and [MIS App Product Specification](mobile-app-product-spec.md) for the approved App direction.
+Use [Current Status](current-status.md) for detailed dated evidence, [Project Overview](project-overview.md) for scope, [Architecture](architecture.md) for runtime boundaries, [Permissions](permissions.md) for active identities/abilities, and [Mobile Product Architecture and Roadmap](mobile-product-roadmap.md) for the current App direction. The detailed System Architecture and MIS App Product Specification are historical snapshots.

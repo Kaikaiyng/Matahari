@@ -15,18 +15,18 @@ class PortalNotificationController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        SchoolContext::fromRequest($request);
+        $schoolId = SchoolContext::fromRequest($request)->schoolId;
         $user = $request->user();
 
         $notifications = PortalNotification::where('recipient_user_id', $user->id)
-            ->where('school_id', $user->school_id)
+            ->where('school_id', $schoolId)
             ->latest()
             ->limit(50)
             ->get()
             ->map(fn (PortalNotification $n) => $this->notificationResponse($n));
 
         $unreadCount = PortalNotification::where('recipient_user_id', $user->id)
-            ->where('school_id', $user->school_id)
+            ->where('school_id', $schoolId)
             ->whereNull('read_at')
             ->count();
 
@@ -41,11 +41,11 @@ class PortalNotificationController extends Controller
      */
     public function markRead(Request $request, PortalNotification $portalNotification): JsonResponse
     {
-        SchoolContext::fromRequest($request);
+        $schoolId = SchoolContext::fromRequest($request)->schoolId;
         $user = $request->user();
 
         if ((int) $portalNotification->recipient_user_id !== (int) $user->id
-            || (int) $portalNotification->school_id !== (int) $user->school_id) {
+            || (int) $portalNotification->school_id !== $schoolId) {
             abort(403, 'Notification does not belong to this account.');
         }
 
@@ -61,11 +61,11 @@ class PortalNotificationController extends Controller
      */
     public function markAllRead(Request $request): JsonResponse
     {
-        SchoolContext::fromRequest($request);
+        $schoolId = SchoolContext::fromRequest($request)->schoolId;
         $user = $request->user();
 
         PortalNotification::where('recipient_user_id', $user->id)
-            ->where('school_id', $user->school_id)
+            ->where('school_id', $schoolId)
             ->whereNull('read_at')
             ->update(['read_at' => now()]);
 

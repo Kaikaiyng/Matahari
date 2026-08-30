@@ -7,10 +7,10 @@ import {
   ClipboardList,
   CreditCard,
   Eye,
+  FileText,
   GraduationCap,
   RefreshCw,
   Search,
-  School,
   ShieldCheck,
   UserPlus,
   Users,
@@ -36,7 +36,10 @@ import {
 import { StaffPage } from './components/StaffPage'
 import { ParentsPage } from './components/ParentsPage'
 import { LoginPage } from './components/LoginPage'
+import { SettingsPage as SettingsWorkspace } from './features/settings/SettingsPage'
 import {
+  CustomSelect,
+  DatePicker,
   DataPanel,
   FieldError,
   FilterToolbar,
@@ -60,6 +63,8 @@ import {
 } from './features/fee-agreements/feeAgreementEditorModel'
 import { FeeAgreementEditor } from './features/fee-agreements/FeeAgreementEditor'
 import { AuditTrailPage } from './features/audit/AuditTrailPage'
+import { ApplicationLogsPage } from './features/logs/ApplicationLogsPage'
+import { AttendanceHubPage } from './features/attendance/AttendanceHubPage'
 import { UgcModerationPage } from './features/moderation/UgcModerationPage'
 import { PaymentAllocationEditor } from './features/payments/PaymentAllocationEditor'
 import type {
@@ -82,6 +87,8 @@ import {
   type PaymentAllocationDraft,
 } from './features/payments/paymentAllocationModel'
 import './App.css'
+import './PersonalAdminPattern.css'
+import './AdminTypography.css'
 import { useTenantConfiguration } from './tenant'
 
 type PageKey =
@@ -90,11 +97,13 @@ type PageKey =
   | 'students'
   | 'classes'
   | 'schedule'
+  | 'attendance'
   | 'parents'
   | 'employees'
   | 'fees'
   | 'fee-record'
   | 'audit'
+  | 'application-logs'
   | 'moderation'
   | 'settings'
 
@@ -103,6 +112,7 @@ type CurrentUser = {
   name: string
   username: string
   school_id: number | null
+  is_platform_owner: boolean
   roles: string[]
   permissions: string[]
 }
@@ -372,14 +382,26 @@ type VerifyPaymentForm = {
 
 const navGroups: NavigationGroup<PageKey>[] = [
   {
-    label: 'Overview',
-    items: [
-      { key: 'dashboard', label: 'Dashboard', icon: IconlyDashboard as any, requiredPermission: 'fee_record.view' },
-      { key: 'calendar', label: 'Calendar', icon: IconlyCalendar as any, requiredPermission: 'calendar.view' },
-    ],
+    label: 'Dashboard',
+    icon: IconlyDashboard as any,
+    standalone: true,
+    items: [{ key: 'dashboard', label: 'Dashboard', icon: IconlyDashboard as any, requiredPermission: 'fee_record.view' }],
+  },
+  {
+    label: 'Calendar',
+    icon: IconlyCalendar as any,
+    standalone: true,
+    items: [{ key: 'calendar', label: 'Calendar', icon: IconlyCalendar as any, requiredPermission: 'calendar.view' }],
+  },
+  {
+    label: 'Attendance',
+    icon: ClipboardList,
+    standalone: true,
+    items: [{ key: 'attendance', label: 'Attendance', icon: ClipboardList, requiredPermission: 'attendance.view_school' }],
   },
   {
     label: 'People',
+    icon: IconlyGraduationCap as any,
     items: [
       { key: 'students', label: 'Students', icon: IconlyGraduationCap as any, requiredPermission: 'students.view' },
       { key: 'classes', label: 'Classes', icon: IconlyClasses as any, requiredPermission: 'students.view' },
@@ -390,6 +412,7 @@ const navGroups: NavigationGroup<PageKey>[] = [
   },
   {
     label: 'Finance',
+    icon: IconlyFees as any,
     items: [
       { key: 'fees', label: 'Fees', icon: IconlyFees as any, requiredPermission: 'fee_items.view' },
       { key: 'fee-record', label: 'Fee Record', icon: IconlyFeeRecord as any, requiredPermission: 'fee_record.view' },
@@ -397,9 +420,17 @@ const navGroups: NavigationGroup<PageKey>[] = [
   },
   {
     label: 'Administration',
+    icon: ShieldCheck as any,
+    items: [
+      { key: 'moderation', label: 'Post Reports', icon: ShieldCheck as any, requiredPermission: 'community.moderate' },
+    ],
+  },
+  {
+    label: 'System',
+    icon: IconlySettings as any,
     items: [
       { key: 'audit', label: 'Audit Trail', icon: IconlyAudit as any, requiredPermission: 'audit.view' },
-      { key: 'moderation', label: 'Community Safety', icon: ShieldCheck as any, requiredAnyPermissions: ['community.moderate', 'community.moderate_platform'] },
+      { key: 'application-logs', label: 'Application Logs', icon: FileText, requiredPermission: 'logs.view' },
       { key: 'settings', label: 'Settings', icon: IconlySettings as any, requiredPermission: 'foundation_accounts.manage' },
     ],
   },
@@ -556,7 +587,7 @@ function paymentStatusClass(status: PaymentStatus) {
 }
 
 function hasPermission(user: CurrentUser, permission: string) {
-  return user.permissions.includes(permission)
+  return user.is_platform_owner || user.permissions.includes(permission)
 }
 
 function mapError(error: unknown) {
@@ -771,7 +802,7 @@ function StudentsPage({
   const [feeAgreements, setFeeAgreements] = useState<FeeAgreement[]>([])
   const [feeAgreementMode, setFeeAgreementMode] = useState<'create' | 'supersede'>('create')
   const [showFeeAgreementForm, setShowFeeAgreementForm] = useState(false)
-  const feeAgreementPaymentPlanRef = useRef<HTMLSelectElement>(null)
+  const feeAgreementPaymentPlanRef = useRef<HTMLButtonElement>(null)
   const [feeAgreementForm, setFeeAgreementForm] = useState<FeeAgreementForm>(defaultAgreementForm([]))
   const [initialFeeAgreementForm, setInitialFeeAgreementForm] = useState<FeeAgreementForm>(
     defaultAgreementForm([]),
@@ -782,6 +813,8 @@ function StudentsPage({
   const [payments, setPayments] = useState<StudentPayment[]>([])
   const [isLoadingPayments, setIsLoadingPayments] = useState(false)
   const [isSendingPaymentReminder, setIsSendingPaymentReminder] = useState(false)
+  const [showPaymentReminderConfirm, setShowPaymentReminderConfirm] = useState(false)
+  const paymentReminderCancelRef = useRef<HTMLButtonElement>(null)
   const [showPaymentForm, setShowPaymentForm] = useState(false)
   const paymentAmountRef = useRef<HTMLInputElement>(null)
   const [paymentDetailsOpen, setPaymentDetailsOpen] = useState(false)
@@ -819,7 +852,7 @@ function StudentsPage({
   const [manualChargeErrors, setManualChargeErrors] = useState<ValidationErrors>()
   const [isSavingManualCharge, setIsSavingManualCharge] = useState(false)
   const [verifyingPaymentId, setVerifyingPaymentId] = useState<number | null>(null)
-  const verifyReceivedDateRef = useRef<HTMLInputElement>(null)
+  const verifyReceivedDateRef = useRef<HTMLButtonElement>(null)
   const [verifyForm, setVerifyForm] = useState<VerifyPaymentForm>(defaultVerifyForm())
   const [verifyErrors, setVerifyErrors] = useState<ValidationErrors>()
   const [isVerifyingPayment, setIsVerifyingPayment] = useState(false)
@@ -2111,10 +2144,10 @@ function StudentsPage({
           {paymentForm.payment_method !== 'cash' && (
             <label className="form-field">
               Received Date
-              <input
-                type="date"
+              <DatePicker
                 value={paymentForm.received_date}
-                onChange={(event) => updatePaymentForm('received_date', event.target.value)}
+                onChange={(value) => updatePaymentForm('received_date', value)}
+                ariaLabel="Received Date"
                 {...fieldErrorProps(
                   'record-payment-received-date-error',
                   formatValidationError(paymentErrors, 'received_date'),
@@ -2313,21 +2346,16 @@ function StudentsPage({
 
             <label className="form-field">
               Level Group
-              <select
-                aria-label="Level Group"
+              <CustomSelect
+                ariaLabel="Level Group"
                 value={form.level_group}
-                onChange={(event) => updateStudentLevelGroup(event.target.value as LevelGroup)}
+                onChange={(value) => updateStudentLevelGroup(value as LevelGroup)}
+                options={levelGroupOptions}
                 {...fieldErrorProps(
                   'create-student-level-group-error',
                   formatValidationError(formErrors, 'level_group'),
                 )}
-              >
-                {levelGroupOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+              />
               <FieldError
                 id="create-student-level-group-error"
                 message={formatValidationError(formErrors, 'level_group')}
@@ -2336,25 +2364,21 @@ function StudentsPage({
 
             <label className="form-field">
               Class
-              <select
-                aria-label="Class"
+              <CustomSelect
+                ariaLabel="Class"
                 value={form.class_id}
-                onChange={(event) => updateForm('class_id', event.target.value)}
-                required
+                onChange={(value) => updateForm('class_id', value)}
+                options={[
+                  { value: '', label: 'Select class' },
+                  ...schoolClasses
+                    .filter((schoolClass) => schoolClass.level_group === form.level_group)
+                    .map((schoolClass) => ({ value: String(schoolClass.id), label: schoolClass.name })),
+                ]}
                 {...fieldErrorProps(
                   'create-student-class-id-error',
                   formatValidationError(formErrors, 'class_id'),
                 )}
-              >
-                <option value="">Select class</option>
-                {schoolClasses
-                  .filter((schoolClass) => schoolClass.level_group === form.level_group)
-                  .map((schoolClass) => (
-                    <option key={schoolClass.id} value={schoolClass.id}>
-                      {schoolClass.name}
-                    </option>
-                  ))}
-              </select>
+              />
               <FieldError
                 id="create-student-class-id-error"
                 message={formatValidationError(formErrors, 'class_id')}
@@ -2363,37 +2387,22 @@ function StudentsPage({
 
             <label className="form-field">
               Initial Status
-              <select value={form.status} onChange={(event) => updateForm('status', event.target.value)}>
-                {statusOptions
-                  .filter((option) => option.value !== 'all')
-                  .map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-              </select>
+              <CustomSelect ariaLabel="Initial Status" value={form.status} onChange={(value) => updateForm('status', value)} options={statusOptions.filter((option) => option.value !== 'all')} />
             </label>
 
             <label className="form-field">
               Gender
-              <select value={form.gender} onChange={(event) => updateForm('gender', event.target.value)}>
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-              </select>
+              <CustomSelect ariaLabel="Gender" value={form.gender} onChange={(value) => updateForm('gender', value)} options={[{ value: 'male', label: 'Male' }, { value: 'female', label: 'Female' }]} />
             </label>
 
             <label className="form-field">
               Date of Birth
-              <input type="date" value={form.dob} onChange={(event) => updateForm('dob', event.target.value)} />
+              <DatePicker value={form.dob} onChange={(value) => updateForm('dob', value)} placeholder="Select date of birth" ariaLabel="Date of Birth" />
             </label>
 
             <label className="form-field">
               Registration Date
-              <input
-                type="date"
-                value={form.registration_date}
-                onChange={(event) => updateForm('registration_date', event.target.value)}
-              />
+              <DatePicker value={form.registration_date} onChange={(value) => updateForm('registration_date', value)} placeholder="Select registration date" ariaLabel="Registration Date" />
             </label>
 
             <label className="form-field wide">
@@ -2414,38 +2423,31 @@ function StudentsPage({
                 onChange={(event) => setStudentSearch(event.target.value)}
               />
             </div>
-            <select
-              aria-label="Student status"
+            <CustomSelect
+              ariaLabel="Student status"
               value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value as StudentFilter)}
-            >
-              {statusOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            <select
+              onChange={(value) => setStatusFilter(value as StudentFilter)}
+              options={statusOptions}
+            />
+            <CustomSelect
               className="fee-period-select"
-              aria-label="Fee Period"
+              ariaLabel="Fee Period"
               value={studentFeePeriod}
-              onChange={(event) => {
-                const nextPeriod = event.target.value
-                setStudentFeePeriod(nextPeriod)
-                void loadStudentListFeeRecordSummary(feeRecordAcademicYear, nextPeriod)
+              onChange={(nextPeriod) => {
+                setStudentFeePeriod(String(nextPeriod))
+                void loadStudentListFeeRecordSummary(feeRecordAcademicYear, String(nextPeriod))
               }}
-            >
-              <option value="">All Year ({feeRecordAcademicYear})</option>
-              {monthLongLabels.map((month, index) => {
-                const monthNumber = String(index + 1).padStart(2, '0')
-
-                return (
-                  <option key={month} value={`${feeRecordAcademicYear}-${monthNumber}`}>
-                    {month} {feeRecordAcademicYear}
-                  </option>
-                )
-              })}
-            </select>
+              options={[
+                { value: '', label: `All Year (${feeRecordAcademicYear})` },
+                ...monthLongLabels.map((month, index) => {
+                  const monthNumber = String(index + 1).padStart(2, '0')
+                  return {
+                    value: `${feeRecordAcademicYear}-${monthNumber}`,
+                    label: `${month} ${feeRecordAcademicYear}`,
+                  }
+                }),
+              ]}
+            />
             <button className="secondary-action" onClick={() => void loadStudents()}>
               <RefreshCw size={16} />
               Refresh
@@ -2622,15 +2624,7 @@ function StudentsPage({
               <h3>Status Action</h3>
               {canUpdateStatus ? (
                 <div className="status-editor">
-                  <select value={statusDraft} onChange={(event) => setStatusDraft(event.target.value as StudentStatus)}>
-                    {statusOptions
-                      .filter((option) => option.value !== 'all')
-                      .map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                  </select>
+                  <CustomSelect ariaLabel="Student status" value={statusDraft} onChange={(value) => setStatusDraft(value as StudentStatus)} options={statusOptions.filter((option) => option.value !== 'all')} />
                   <button className="secondary-action" onClick={() => void updateStudentStatus()}>
                     Update Status
                   </button>
@@ -2959,21 +2953,16 @@ function StudentsPage({
 
                       <label className="form-field">
                         Category
-                        <select
-                          aria-label="Category"
+                        <CustomSelect
+                          ariaLabel="Category"
                           value={manualChargeForm.fee_record_category}
-                          onChange={(event) => updateManualChargeForm('fee_record_category', event.target.value as FeeRecordCategory)}
+                          onChange={(value) => updateManualChargeForm('fee_record_category', value as FeeRecordCategory)}
+                          options={feeRecordCategoryOptions}
                           {...fieldErrorProps(
                             'one-time-charge-fee-record-category-error',
                             formatValidationError(manualChargeErrors, 'fee_record_category'),
                           )}
-                        >
-                          {feeRecordCategoryOptions.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
+                        />
                         <FieldError
                           id="one-time-charge-fee-record-category-error"
                           message={formatValidationError(manualChargeErrors, 'fee_record_category')}
@@ -3151,7 +3140,7 @@ function StudentsPage({
               </div>
               <div className="payment-header-actions">
                 {canSendPaymentReminders && (
-                  <button type="button" className="secondary-action" onClick={sendPaymentReminder} disabled={isSendingPaymentReminder}>
+                  <button type="button" className="secondary-action" onClick={() => setShowPaymentReminderConfirm(true)} disabled={isSendingPaymentReminder}>
                     {isSendingPaymentReminder ? 'Sending...' : 'Send payment reminder'}
                   </button>
                 )}
@@ -3166,6 +3155,57 @@ function StudentsPage({
             </div>
 
             {!canViewPayments && <Message tone="info">You do not have permission to view payments.</Message>}
+
+            {showPaymentReminderConfirm && selectedStudent && (
+              <ModalFrame
+                title="Send Payment Reminder"
+                description={`Send an in-app payment reminder to linked parent accounts for ${selectedStudent.full_name}.`}
+                size="compact"
+                tone="default"
+                initialFocusRef={paymentReminderCancelRef}
+                onClose={() => setShowPaymentReminderConfirm(false)}
+                footer={
+                  <>
+                    <button
+                      ref={paymentReminderCancelRef}
+                      type="button"
+                      className="secondary-action"
+                      onClick={() => setShowPaymentReminderConfirm(false)}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      className="primary-action compact"
+                      type="button"
+                      disabled={isSendingPaymentReminder}
+                      onClick={async () => {
+                        setShowPaymentReminderConfirm(false)
+                        await sendPaymentReminder()
+                      }}
+                    >
+                      {isSendingPaymentReminder ? 'Sending...' : 'Confirm & Send'}
+                    </button>
+                  </>
+                }
+              >
+                <ModalContextSummary
+                  ariaLabel="Payment reminder recipient details"
+                  items={[
+                    { label: 'Student', value: `${selectedStudent.full_name} (${selectedStudent.student_no})` },
+                    { label: 'Class', value: selectedStudent.class?.name ?? 'Unassigned' },
+                    {
+                      label: 'Outstanding Charges',
+                      value: `${outstandingCharges.length} charge${outstandingCharges.length === 1 ? '' : 's'} (${formatCurrency(
+                        outstandingCharges.reduce((sum, c) => sum + Number(c.outstanding_amount || 0), 0)
+                      )})`,
+                    },
+                  ]}
+                />
+                <p className="field-help" style={{ marginTop: '12px' }}>
+                  This will send an in-app notification to all verified parents and guardians linked to this student.
+                </p>
+              </ModalFrame>
+            )}
 
             {showPaymentForm && canCreatePayments && (
               <ModalFrame
@@ -3220,16 +3260,12 @@ function StudentsPage({
                     </label>
                     <label className="form-field">
                       Payment Method
-                      <select
+                      <CustomSelect
+                        ariaLabel="Payment Method"
                         value={paymentForm.payment_method}
-                        onChange={(event) => updatePaymentForm('payment_method', event.target.value)}
-                      >
-                        {paymentMethodOptions.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
+                        onChange={(value) => updatePaymentForm('payment_method', value)}
+                        options={paymentMethodOptions}
+                      />
                     </label>
                     <label className="form-field">
                       Amount
@@ -3253,11 +3289,10 @@ function StudentsPage({
                     </label>
                     <label className="form-field">
                       Payment Date
-                      <input
-                        aria-label="Payment Date"
-                        type="date"
+                      <DatePicker
+                        ariaLabel="Payment Date"
                         value={paymentForm.payment_date}
-                        onChange={(event) => updatePaymentForm('payment_date', event.target.value)}
+                        onChange={(value) => updatePaymentForm('payment_date', value)}
                         {...fieldErrorProps(
                           'record-payment-payment-date-error',
                           formatValidationError(paymentErrors, 'payment_date'),
@@ -3271,11 +3306,10 @@ function StudentsPage({
                     {paymentForm.payment_method === 'cash' && (
                       <label className="form-field">
                         Received Date
-                        <input
-                          aria-label="Received Date"
-                          type="date"
+                        <DatePicker
+                          ariaLabel="Received Date"
                           value={paymentForm.received_date}
-                          onChange={(event) => updatePaymentForm('received_date', event.target.value)}
+                          onChange={(value) => updatePaymentForm('received_date', value)}
                           {...fieldErrorProps(
                             'record-payment-received-date-error',
                             formatValidationError(paymentErrors, 'received_date'),
@@ -3520,12 +3554,11 @@ function StudentsPage({
                 >
                   <label className="form-field">
                     Received Date
-                    <input
-                      ref={verifyReceivedDateRef}
-                      aria-label="Received Date"
-                      type="date"
+                    <DatePicker
+                      buttonRef={verifyReceivedDateRef}
+                      ariaLabel="Received Date"
                       value={verifyForm.received_date}
-                      onChange={(event) => setVerifyForm((current) => ({ ...current, received_date: event.target.value }))}
+                      onChange={(value) => setVerifyForm((current) => ({ ...current, received_date: value }))}
                       {...fieldErrorProps(
                         'verify-payment-received-date-error',
                         formatValidationError(verifyErrors, 'received_date'),
@@ -3939,146 +3972,6 @@ function StudentsPage({
 }
 
 
-function SettingsPage({
-  user,
-  dashboard,
-}: {
-  user: CurrentUser
-  dashboard: DashboardResponse | null
-}) {
-  const tenant = useTenantConfiguration()
-  return (
-    <section className="page-stack">
-      <PageHeader
-        eyebrow="Administration"
-        title="Settings"
-        description="Review the active school context and your account access."
-      />
-
-      <div className="settings-grid">
-        <DataPanel eyebrow="School" title="School Context">
-          <dl className="settings-summary">
-            <div>
-              <dt>Current school</dt>
-              <dd>{dashboard?.school.name ?? tenant.branding.organization_name}</dd>
-            </div>
-            <div>
-              <dt>School ID</dt>
-              <dd>{dashboard?.school.id ?? user.school_id ?? '—'}</dd>
-            </div>
-            <div>
-              <dt>School code</dt>
-              <dd>{dashboard?.school.code ?? '—'}</dd>
-            </div>
-            <div>
-              <dt>Mode</dt>
-              <dd><StatusBadge tone="info">Tenant-scoped</StatusBadge></dd>
-            </div>
-          </dl>
-          <p className="settings-note">Tenant {tenant.slug} may contain multiple schools; access remains limited by your membership.</p>
-        </DataPanel>
-
-        <DataPanel eyebrow="Account" title="Account & Access">
-          <dl className="settings-summary">
-            <div>
-              <dt>Name</dt>
-              <dd>{user.name}</dd>
-            </div>
-            <div>
-              <dt>Username</dt>
-              <dd>@{user.username}</dd>
-            </div>
-            <div>
-              <dt>Roles</dt>
-              <dd>{user.roles.map(formatStatus).join(', ') || 'No role assigned'}</dd>
-            </div>
-            <div>
-              <dt>Permissions</dt>
-              <dd>{user.permissions.length} granted</dd>
-            </div>
-          </dl>
-        </DataPanel>
-      </div>
-
-      <section className="settings-configuration" aria-labelledby="settings-configuration-heading">
-        <div className="settings-section-heading">
-          <div>
-            <p className="eyebrow">Configuration</p>
-            <h2 id="settings-configuration-heading">Settings Modules</h2>
-          </div>
-          <span>Display only · controls will be added later</span>
-        </div>
-
-        <div className="settings-module-grid">
-          <SettingsModule
-            icon={<CreditCard size={20} />}
-            title="Finance Settings"
-            description="Defaults used by payment and receipt workflows."
-            items={['Receipt and invoice prefixes', 'Accepted payment methods', 'Payment verification rules']}
-            priority="Next"
-          />
-          <SettingsModule
-            icon={<Users size={20} />}
-            title="Users & Access"
-            description="Manage administrative accounts and their access."
-            items={['Create and disable users', 'Assign roles', 'Review permissions']}
-            priority="Next"
-          />
-          <SettingsModule
-            icon={<School size={20} />}
-            title="School Profile"
-            description="Maintain the school identity shown across the system."
-            items={['Contact details and address', 'Logo and school name', 'Timezone and currency']}
-          />
-          <SettingsModule
-            icon={<CalendarDays size={20} />}
-            title="Academic & Calendar"
-            description="Control shared academic and scheduling defaults."
-            items={['Default academic year', 'Week start and working hours', 'School holidays']}
-          />
-          <SettingsModule
-            icon={<ShieldCheck size={20} />}
-            title="Account & Security"
-            description="Personal settings available to every admin user."
-            items={['Profile details', 'Change password', 'Active sessions']}
-            priority="Next"
-          />
-        </div>
-      </section>
-    </section>
-  )
-}
-
-function SettingsModule({
-  icon,
-  title,
-  description,
-  items,
-  priority = 'Planned',
-}: {
-  icon: ReactNode
-  title: string
-  description: string
-  items: string[]
-  priority?: 'Next' | 'Planned'
-}) {
-  return (
-    <article className="settings-module-card">
-      <header>
-        <span className="settings-module-icon" aria-hidden="true">{icon}</span>
-        <StatusBadge tone={priority === 'Next' ? 'info' : 'neutral'}>{priority}</StatusBadge>
-      </header>
-      <div>
-        <h3>{title}</h3>
-        <p>{description}</p>
-      </div>
-      <ul>
-        {items.map((item) => <li key={item}>{item}</li>)}
-      </ul>
-    </article>
-  )
-}
-
 function FeesPage() {
   return (
     <section className="page-stack">
@@ -4245,37 +4138,34 @@ function FeeRecordSummaryPage({
             {activeView === 'category-monthly' && (
               <label className="form-field">
                 Category
-                <select value={category} onChange={(event) => setCategory(event.target.value as FeeRecordCategory)}>
-                  {feeRecordCategoryOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+                <CustomSelect
+                  ariaLabel="Category"
+                  value={category}
+                  onChange={(val) => setCategory(val as FeeRecordCategory)}
+                  options={feeRecordCategoryOptions}
+                />
               </label>
             )}
             <label className="form-field">
               Level Group
-              <select value={levelGroup} onChange={(event) => setLevelGroup(event.target.value)}>
-                <option value="">All level groups</option>
-                {levelGroupOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+              <CustomSelect
+                ariaLabel="Level Group"
+                value={levelGroup}
+                onChange={(val) => setLevelGroup(String(val))}
+                options={[
+                  { value: '', label: 'All level groups' },
+                  ...levelGroupOptions,
+                ]}
+              />
             </label>
             <label className="form-field">
               Student Status
-              <select value={studentStatus} onChange={(event) => setStudentStatus(event.target.value as StudentStatus)}>
-                {statusOptions
-                  .filter((option) => option.value !== 'all')
-                  .map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-              </select>
+              <CustomSelect
+                ariaLabel="Student Status"
+                value={studentStatus}
+                onChange={(val) => setStudentStatus(val as StudentStatus)}
+                options={statusOptions.filter((option) => option.value !== 'all')}
+              />
             </label>
             <label className="form-field wide">
               Search
@@ -4460,19 +4350,21 @@ function DashboardPage({
   apiState,
   user,
   setActivePage,
+  onRefresh,
 }: {
   dashboard: DashboardResponse | null
   apiState: 'live' | 'demo' | 'loading'
   user: CurrentUser
   setActivePage: (page: PageKey) => void
+  onRefresh: () => void
 }) {
   const canViewFeeRecord = hasPermission(user, 'fee_record.view')
   const canViewStudents = hasPermission(user, 'students.view')
   const canViewCalendar = hasPermission(user, 'calendar.view')
   const unavailableValue = apiState === 'loading' ? 'Loading...' : 'Unavailable'
-  const formattedDate = useMemo(
-    () => new Intl.DateTimeFormat('en-MY', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date()),
-    [],
+  const updatedAt = useMemo(
+    () => new Intl.DateTimeFormat('en-MY', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }).format(new Date()),
+    [apiState, dashboard],
   )
   const todayShare = dashboard && dashboard.metrics.monthly_collection > 0
     ? Math.min(100, Math.round((dashboard.metrics.today_collection / dashboard.metrics.monthly_collection) * 100))
@@ -4527,16 +4419,15 @@ function DashboardPage({
 
   return (
     <section className="page-stack dashboard-page">
-      <header className="dashboard-hero">
-        <div className="dashboard-hero-copy">
-          <p className="eyebrow">Dashboard</p>
-          <h2>School overview</h2>
-          <p>Monitor collections, student accounts, and the work that needs attention today.</p>
-        </div>
-        <div className="dashboard-date" aria-label={`Today is ${formattedDate}`}>
-          <CalendarDays size={20} aria-hidden="true" />
-          <span>Today</span>
-          <strong>{formattedDate}</strong>
+      <header className="dashboard-heading">
+        <h1>Dashboard</h1>
+        <div className={`dashboard-workspace-status ${apiState}`}>
+          <span className="dashboard-live-label"><i aria-hidden="true" />{apiState === 'live' ? 'Live Workspace' : apiState === 'loading' ? 'Refreshing' : 'Workspace unavailable'}</span>
+          <span aria-hidden="true">·</span>
+          <span>Updated {updatedAt}</span>
+          <button type="button" aria-label="Refresh dashboard" disabled={apiState === 'loading'} onClick={onRefresh}>
+            <RefreshCw size={18} aria-hidden="true" />
+          </button>
         </div>
       </header>
 
@@ -4749,6 +4640,7 @@ function App() {
   const [activePage, setActivePage] = useState<PageKey>('dashboard')
   const [focusedStudentId, setFocusedStudentId] = useState<number | null>(null)
   const [classReturnContext, setClassReturnContext] = useState<SchoolClassOption | null>(null)
+  const [attendanceClassId, setAttendanceClassId] = useState<number | null>(null)
 
   const loadDashboard = async (sessionUser: CurrentUser) => {
     setDashboard(null)
@@ -4812,6 +4704,7 @@ function App() {
       setActivePage('dashboard')
       setFocusedStudentId(null)
       setClassReturnContext(null)
+      setAttendanceClassId(null)
     }
   }
 
@@ -4821,6 +4714,7 @@ function App() {
     setActivePage('dashboard')
     setFocusedStudentId(null)
     setClassReturnContext(null)
+    setAttendanceClassId(null)
   }
 
   const openStudentDetail = (studentId: number) => {
@@ -4840,21 +4734,29 @@ function App() {
     setActivePage('classes')
   }
 
+  const openClassAttendance = (classId: number) => {
+    setClassReturnContext(null)
+    setFocusedStudentId(null)
+    setAttendanceClassId(classId)
+    setActivePage('attendance')
+  }
+
   const handleSelectPage = (page: PageKey) => {
-    const featureKey = page === 'schedule' ? 'schedule' : null
+    const featureKey = page === 'schedule' ? 'schedule' : page === 'attendance' ? 'attendance' : null
     if (!user || (featureKey && tenant.features[featureKey] === false) || !navItems.some((item) => item.key === page && (!item.requiredPermission || hasPermission(user, item.requiredPermission)) && (!item.requiredAnyPermissions || item.requiredAnyPermissions.some((permission) => hasPermission(user, permission))))) {
       return
     }
 
     setClassReturnContext(null)
     setFocusedStudentId(null)
+    setAttendanceClassId(null)
     setActivePage(page)
   }
 
   const availableNavGroups = navGroups
     .map((group) => ({
       ...group,
-      items: group.items.filter((item) => (item.key !== 'schedule' || tenant.features.schedule !== false) && (!item.requiredPermission || (user && hasPermission(user, item.requiredPermission))) && (!item.requiredAnyPermissions || (user && item.requiredAnyPermissions.some((permission) => hasPermission(user, permission))))),
+      items: group.items.filter((item) => (item.key !== 'schedule' || tenant.features.schedule !== false) && (item.key !== 'attendance' || tenant.features.attendance !== false) && (!item.requiredPermission || (user && hasPermission(user, item.requiredPermission))) && (!item.requiredAnyPermissions || (user && item.requiredAnyPermissions.some((permission) => hasPermission(user, permission))))),
     }))
     .filter((group) => group.items.length > 0)
   const availableNavItems = availableNavGroups.flatMap((group) => group.items)
@@ -4873,8 +4775,9 @@ function App() {
     )
   }
 
-  const adminRoles = ['super-admin', 'tenant-owner', 'school-admin', 'finance', 'ceo']
-  if (!user.roles.some((role) => adminRoles.includes(role))) {
+  const adminRoles = ['super-admin', 'school-admin', 'finance']
+  const elevatedTeacherAccess = user.permissions.some((permission) => ['employees.view', 'attendance.view_school', 'assessments.manage_school', 'teaching_assignments.view'].includes(permission))
+  if (!user.roles.some((role) => adminRoles.includes(role)) && !elevatedTeacherAccess) {
     return (
       <main className="admin-access-unavailable">
         <h1>Admin access unavailable</h1>
@@ -4926,6 +4829,7 @@ function App() {
           permissions={user.permissions}
           initialClassId={classReturnContext?.id}
           onOpenStudent={openClassStudentDetail}
+          onOpenAttendance={openClassAttendance}
           onUnauthorized={handleUnauthorized}
         />
       )
@@ -4940,7 +4844,7 @@ function App() {
     }
 
     if (activePage === 'employees') {
-      return <StaffPage />
+      return <StaffPage permissions={user.permissions} currentUserId={user.id} />
     }
 
     if (activePage === 'fees') {
@@ -4955,12 +4859,27 @@ function App() {
       return <AuditTrailPage onUnauthorized={handleUnauthorized} />
     }
 
+    if (activePage === 'attendance') {
+      return (
+        <AttendanceHubPage
+          permissions={user.permissions}
+          initialClassId={attendanceClassId}
+          onOpenStudent={openClassStudentDetail}
+          onUnauthorized={handleUnauthorized}
+        />
+      )
+    }
+
+    if (activePage === 'application-logs') {
+      return <ApplicationLogsPage onUnauthorized={handleUnauthorized} />
+    }
+
     if (activePage === 'moderation') {
-      return <UgcModerationPage permissions={user.permissions} currentUserId={user.id} />
+      return <UgcModerationPage />
     }
 
     if (activePage === 'settings') {
-      return <SettingsPage user={user} dashboard={dashboard} />
+      return <SettingsWorkspace user={user} dashboard={dashboard} onNavigate={(page) => setActivePage(page)} />
     }
 
     return (
@@ -4968,7 +4887,7 @@ function App() {
         {user.school_id === null && (
           <Message tone="info">A school must be selected before school-scoped dashboard data can be loaded.</Message>
         )}
-        <DashboardPage dashboard={dashboard} apiState={apiState} user={user} setActivePage={setActivePage} />
+        <DashboardPage dashboard={dashboard} apiState={apiState} user={user} setActivePage={setActivePage} onRefresh={() => void loadDashboard(user)} />
       </>
     )
   }
