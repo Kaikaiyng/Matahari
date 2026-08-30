@@ -177,7 +177,11 @@ class TenantIsolationApiTest extends TestCase
         $migration = require database_path('migrations/2026_08_14_000001_create_tenant_foundation.php');
         $hardening = require database_path('migrations/2026_08_15_000001_harden_tenant_foundation.php');
         $moderation = require database_path('migrations/2026_08_16_000002_create_community_moderation_foundation.php');
+        $notificationDestinations = require database_path('migrations/2026_08_27_000001_create_notification_destinations_table.php');
+        $schoolSettings = require database_path('migrations/2026_08_30_000001_add_school_information_and_support_settings.php');
 
+        $schoolSettings->down();
+        $notificationDestinations->down();
         $moderation->down();
         $hardening->down();
         $migration->down();
