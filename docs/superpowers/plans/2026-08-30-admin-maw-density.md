@@ -27,8 +27,8 @@
 - Consumes: `AdminTypography.css`, `AdminShell.css`, and `AdminUi.css` source text.
 - Produces: assertions for the exact MAW typography tokens and shell spacing values.
 
-- [ ] Change token expectations to 24/18/15/14/13/12/11/24px and add source assertions for a 56px utility header, 80px brand area, 1600px main-content cap, 32px desktop horizontal padding, and 24px desktop vertical padding.
-- [ ] Run `npm.cmd test -- src/adminTypographyContract.test.ts` and confirm it fails against the old 28/20/16/30px and shell values.
+- [x] Change token expectations to 24/18/15/14/13/12/11/24px and add source assertions for a 56px utility header, 80px brand area, 1600px main-content cap, 32px desktop horizontal padding, and 24px desktop vertical padding.
+- [x] Run `npm.cmd test -- src/adminTypographyContract.test.ts` and confirm it fails against the old 28/20/16/30px and shell values.
 
 ### Task 2: Apply MAW Typography and Shell Density
 
@@ -42,11 +42,11 @@
 - Consumes: existing semantic selectors and responsive breakpoints.
 - Produces: MAW-sized Admin headings, controls, tables, metrics, utility bar, brand area, centred content container, page rhythm, and statistic-card padding.
 
-- [ ] Update typography tokens and semantic rules to the exact MAW scale, including 13px form values/table cells and 24px metrics.
-- [ ] Set the shell utility row to 56px, the sidebar brand row to 80px, and the main content to `width: 100%`, `max-width: 1600px`, centred with 32px/24px desktop padding.
-- [ ] Preserve responsive padding at 24px/20px for tablets and 16px/20px for phones.
-- [ ] Set page stacks and Dashboard major sections to a 20px vertical rhythm while preserving 16px sibling-card grid gaps and 20px statistic-card internal padding.
-- [ ] Run the focused contract test and confirm it passes.
+- [x] Update typography tokens and semantic rules to the exact MAW scale, including 13px form values/table cells and 24px metrics.
+- [x] Set the shell utility row to 56px, the sidebar brand row to 80px, and the main content to `width: 100%`, `max-width: 1600px`, centred with 32px/24px desktop padding.
+- [x] Preserve responsive padding at 24px/20px for tablets and 16px/20px for phones.
+- [x] Set page stacks and Dashboard major sections to a 20px vertical rhythm while preserving 16px sibling-card grid gaps and 20px statistic-card internal padding.
+- [x] Run the focused contract test and confirm it passes.
 
 ### Task 3: Verify, Document, and Commit
 
@@ -58,7 +58,7 @@
 - Consumes: completed MAW density refinement.
 - Produces: canonical documentation and build evidence.
 
-- [ ] Run `npm.cmd test -- src/adminTypographyContract.test.ts src/brandingContract.test.ts src/components/AdminUi.test.tsx src/components/AdminShell.test.tsx` and confirm all selected files pass.
-- [ ] Run `npm.cmd run build` and confirm TypeScript/Vite succeeds.
-- [ ] Update canonical documentation with the verified MAW typography and shell density values.
-- [ ] Run `git diff --check`, verify no `app/` changes, and commit only intended files with `style: match admin density to MAW`.
+- [x] Run `npm.cmd test -- src/adminTypographyContract.test.ts src/brandingContract.test.ts src/components/AdminUi.test.tsx src/components/AdminShell.test.tsx` and confirm all selected files pass.
+- [x] Run `npm.cmd run build` and confirm TypeScript/Vite succeeds.
+- [x] Update canonical documentation with the verified MAW typography and shell density values.
+- [x] Run `git diff --check`, verify no `app/` changes, and commit only intended files with `style: match admin density to MAW`.

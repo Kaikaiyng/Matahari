@@ -1,69 +1,61 @@
 /* Final Admin typography layer. Keep this import after App.css. */
 .admin-shell,
 .session-screen,
-.session-loader,
-.login-page-container {
-  --admin-type-page-title: 28px;
-  --admin-type-section-title: 20px;
-  --admin-type-card-title: 16px;
+.session-loader {
+  --admin-type-page-title: 24px;
+  --admin-type-section-title: 18px;
+  --admin-type-card-title: 15px;
   --admin-type-body: 14px;
   --admin-type-label: 13px;
   --admin-type-supporting: 12px;
   --admin-type-eyebrow: 11px;
   --admin-type-metric-min: 24px;
-  --admin-type-metric-max: 30px;
+  --admin-type-metric-max: 24px;
 }
 
 .admin-shell,
 .session-screen,
-.session-loader,
-.login-page-container {
+.session-loader {
   font-size: var(--admin-type-body);
   font-weight: 400;
   line-height: 1.5;
 }
 
-.admin-shell :is(p, li, td, input, select, textarea),
-.login-page-container :is(p, li, input, select, textarea) {
+.admin-shell :is(p, li) {
   font-size: var(--admin-type-body);
   font-weight: 400;
   line-height: 1.5;
 }
 
-.admin-shell :is(button, label),
-.login-page-container :is(button, label) {
+.admin-shell :is(td, input, select, textarea) {
+  font-size: var(--admin-type-label);
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.admin-shell :is(button, label) {
   font-size: var(--admin-type-label);
   font-weight: 600;
   line-height: 1.4;
 }
 
-.admin-shell small,
-.login-page-container small {
+.admin-shell small {
   font-size: var(--admin-type-supporting);
   font-weight: 400;
   line-height: 1.45;
 }
 
-.admin-shell :is(strong, b),
-.login-page-container :is(strong, b) {
+.admin-shell :is(strong, b) {
   font-weight: 600;
 }
 
-.admin-shell h1:not(.receipt-paper *),
+.admin-shell h1:not(.utility-page-title, .receipt-paper *),
 .admin-shell .page-header h2,
 .session-screen h1,
-.session-loader h1,
-.login-form-header h2 {
+.session-loader h1 {
   font-size: var(--admin-type-page-title);
   font-weight: 700;
-  line-height: 1.2;
-  letter-spacing: -0.025em;
-}
-
-.login-hero-headline {
-  font-size: var(--admin-type-metric-max);
-  font-weight: 700;
-  line-height: 1.15;
+  line-height: 1.3;
   letter-spacing: -0.025em;
 }
 
@@ -72,28 +64,39 @@
 .admin-shell .modal-header h2 {
   font-size: var(--admin-type-section-title);
   font-weight: 700;
-  line-height: 1.25;
+  line-height: 1.35;
   letter-spacing: -0.02em;
 }
 
-.admin-shell :is(h3, h4):not(.receipt-paper *),
+.admin-shell h3:not(.receipt-paper *),
 .admin-shell .data-panel-header h2,
-.admin-shell .dashboard-section-heading h2,
-.admin-shell .admin-notif-card-title {
+.admin-shell .dashboard-section-heading h2 {
   font-size: var(--admin-type-card-title);
   font-weight: 600;
-  line-height: 1.3;
+  line-height: 1.4;
   letter-spacing: -0.01em;
+}
+
+.admin-shell h4:not(.receipt-paper *) {
+  font-size: var(--admin-type-body);
+  font-weight: 600;
+  line-height: 1.4;
 }
 
 .admin-shell .page-description,
 .admin-shell .settings-content-header p,
-.admin-shell .modal-header p,
-.admin-shell .dashboard-workspace-status,
 .admin-shell .ugc-header span {
-  font-size: var(--admin-type-supporting);
+  font-size: var(--admin-type-body);
   font-weight: 400;
   line-height: 1.5;
+}
+
+.admin-shell .modal-header p {
+  font-size: var(--admin-type-label);
+}
+
+.admin-shell .dashboard-workspace-status {
+  font-size: var(--admin-type-supporting);
 }
 
 .admin-shell .eyebrow,
@@ -108,7 +111,7 @@
 }
 
 .admin-shell table td {
-  font-size: var(--admin-type-body);
+  font-size: var(--admin-type-label);
   font-weight: 400;
   line-height: 1.45;
 }
@@ -135,7 +138,7 @@
 }
 
 .admin-shell :is(.utility-context-name, .utility-breadcrumb-separator, .utility-page-title) {
-  font-size: var(--admin-type-label);
+  font-size: var(--admin-type-body);
   line-height: 1.35;
   letter-spacing: 0;
 }
@@ -158,14 +161,14 @@
 
 .admin-shell :is(.stat-card-copy > strong, .metric-card > strong) {
   font-size: clamp(var(--admin-type-metric-min), 2vw, var(--admin-type-metric-max));
-  font-weight: 700;
+  font-weight: 800;
   line-height: 1.1;
   letter-spacing: -0.025em;
 }
 
 .admin-shell .dashboard-financial-total {
   font-size: var(--admin-type-metric-max);
-  font-weight: 700;
+  font-weight: 800;
   line-height: 1.05;
   letter-spacing: -0.035em;
 }
@@ -203,7 +206,7 @@
 }
 
 .admin-shell :is(.modal-context-summary dd, .modal-context-consequence, .system-check-card strong) {
-  font-size: var(--admin-type-body);
+  font-size: var(--admin-type-label);
   font-weight: 600;
 }
 
@@ -211,12 +214,7 @@
   font-weight: 700;
 }
 
-@media (max-width: 640px) {
-  .admin-shell,
-  .session-screen,
-  .session-loader,
-  .login-page-container {
-    --admin-type-page-title: 24px;
-    --admin-type-section-title: 18px;
-  }
+.admin-shell .admin-notif-card-title {
+  font-size: var(--admin-type-label);
+  font-weight: 600;
 }

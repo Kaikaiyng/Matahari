@@ -124,7 +124,7 @@ h2 {
 
 .page-stack {
   display: grid;
-  gap: 16px;
+  gap: 20px;
   min-width: 0;
   max-width: 100%;
 }
@@ -169,14 +169,14 @@ h2 {
 
 .dashboard-page {
   display: grid;
-  gap: 16px;
+  gap: 20px;
 }
 
 .dashboard-heading {
   min-width: 0;
   display: grid;
-  gap: 10px;
-  padding: 4px 2px 2px;
+  gap: 6px;
+  padding: 0;
 }
 
 .dashboard-heading h1 {
@@ -259,7 +259,7 @@ h2 {
 
 .dashboard-page .dashboard-metrics .stat-card {
   position: relative;
-  min-height: 112px;
+  min-height: 120px;
   overflow: hidden;
   padding: 20px;
   border-color: #e2e8f2;
@@ -316,13 +316,13 @@ h2 {
   min-width: 0;
   display: grid;
   grid-template-columns: minmax(0, 1.55fr) minmax(300px, 0.75fr);
-  gap: 18px;
+  gap: 20px;
 }
 
 .dashboard-financial-card,
 .dashboard-quick-card {
   min-width: 0;
-  padding: 22px;
+  padding: 20px;
   border: 1px solid #e1e7f0;
   border-radius: var(--admin-card-radius, 14px);
   background: #ffffff;
