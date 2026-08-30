@@ -100,4 +100,6 @@ enum AuditAction: string
     case TenantFeatureUpdated = 'tenant.feature_updated';
     case TenantSchoolCreated = 'tenant.school_created';
     case TenantMembershipUpdated = 'tenant.membership_updated';
+    case SchoolInformationUpdated = 'school.information_updated';
+    case SchoolAppSupportUpdated = 'school.app_support_updated';
 }

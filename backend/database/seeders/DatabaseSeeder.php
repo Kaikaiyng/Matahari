@@ -212,6 +212,7 @@ class DatabaseSeeder extends Seeder
             'quizzes.manage_school' => 'Manage all formal quizzes in the school',
             'quizzes.attempt' => 'Attempt assigned formal quizzes',
             'tenant.settings.manage' => 'Manage current tenant settings',
+            'school.settings.manage' => 'Manage school information and App Support settings',
         ])->mapWithKeys(fn (string $name, string $slug) => [
             $slug => Permission::query()->updateOrCreate(['slug' => $slug], ['name' => $name]),
         ]);
@@ -270,6 +271,7 @@ class DatabaseSeeder extends Seeder
             'attendance.manage_school',
             'attendance.devices.manage',
             'attendance.abilities.manage',
+            'school.settings.manage',
         ])->pluck('id')->all());
         $financeOnly = $permissions->only([
             'fee_items.manage',

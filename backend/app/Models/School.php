@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class School extends Model
 {
@@ -12,11 +13,14 @@ class School extends Model
         'tenant_id',
         'code',
         'name',
+        'registration_number',
+        'group_member_line',
         'receipt_prefix',
         'invoice_prefix',
         'email',
         'phone',
         'address',
+        'operating_hours',
         'status',
     ];
 
@@ -73,6 +77,11 @@ class School extends Model
     public function notificationDestinations(): HasMany
     {
         return $this->hasMany(NotificationDestination::class);
+    }
+
+    public function supportSettings(): HasOne
+    {
+        return $this->hasOne(SchoolSupportSetting::class);
     }
 
     public function subjects(): HasMany
