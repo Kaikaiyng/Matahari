@@ -1,6 +1,6 @@
 .operational-page-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
 .operational-page-heading, .operational-page-actions { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.operational-page-icon { width: 40px; height: 40px; flex: 0 0 auto; display: grid; place-items: center; border: 1px solid #cfe0ff; border-radius: 12px; background: #eff6ff; color: #3156a3; }
+.operational-page-icon { width: 40px; height: 40px; flex: 0 0 auto; display: grid; place-items: center; border: 1px solid color-mix(in srgb, var(--admin-primary) 22%, white); border-radius: var(--admin-radius); background: var(--brand-primary-soft); color: var(--admin-primary-hover); }
 .operational-page-heading h2 { margin: 0; color: #111827; font-size: 24px; line-height: 1.2; }
 .operational-page-heading p { margin: 3px 0 0; color: #71809b; font-size: 13px; }
 .super-admin-badge { display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto; border: 1px solid #ddd6fe; border-radius: 999px; background: #f5f3ff; color: #6d28d9; padding: 7px 11px; font-size: 11px; font-weight: 800; }
