@@ -6,6 +6,8 @@
 
 Backend authorization is authoritative. Navigation visibility, disabled controls, and App persona selection are usability controls only.
 
+`/api/me` exposes `is_platform_owner` separately from the effective permission list. Admin permission helpers must treat it as the platform-wide bypass, so a newly introduced permission cannot temporarily make an already signed-in Super Admin appear read-only while the client permission snapshot is stale.
+
 ## Identities and Positions
 
 - **Super Admin** is the protected global `users.is_platform_owner` identity. It has full platform, tenant, and school access and cannot be assigned or edited by a school employee.

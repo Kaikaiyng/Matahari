@@ -14,6 +14,7 @@ export interface CurrentUser {
   roles: string[]
   permissions: string[]
   school_id: number | null
+  is_platform_owner: boolean
 }
 
 const REMEMBERED_USERNAME_KEY = 'rylay.rememberedUsername'

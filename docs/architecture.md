@@ -118,7 +118,7 @@ The App exposes Updates without turning `app/` into an administrative back door.
 3. `LoginRequest` trims and lowercases the username and validates its format.
 4. Login attempts are limited to five per 60 seconds by normalized username plus client IP. Successful login clears the limiter key.
 5. Laravel's `web` session guard checks the password. A successful login regenerates the session ID; a non-`active` user receives the same generic failure as bad credentials.
-6. `/api/me` restores the user and returns role slugs plus the union of role permissions.
+6. `/api/me` restores the user and returns role slugs, effective permissions, and the explicit `is_platform_owner` identity flag. Admin usability checks honor that flag as the same full-access bypass enforced by the backend; a stale client permission snapshot must not render a platform owner as read-only.
 7. `EnsureUserIsActive` reloads status on authenticated requests; deactivation invalidates an existing session and returns 401.
 8. Logout invalidates the session and regenerates its token.
 

@@ -112,6 +112,7 @@ type CurrentUser = {
   name: string
   username: string
   school_id: number | null
+  is_platform_owner: boolean
   roles: string[]
   permissions: string[]
 }
@@ -586,7 +587,7 @@ function paymentStatusClass(status: PaymentStatus) {
 }
 
 function hasPermission(user: CurrentUser, permission: string) {
-  return user.permissions.includes(permission)
+  return user.is_platform_owner || user.permissions.includes(permission)
 }
 
 function mapError(error: unknown) {

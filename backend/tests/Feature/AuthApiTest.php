@@ -49,6 +49,21 @@ class AuthApiTest extends TestCase
                 ->etc());
     }
 
+    public function test_platform_owner_identity_and_effective_permissions_are_returned_to_the_admin_client(): void
+    {
+        $this->seed();
+
+        $this->postJson('/api/login', [
+            'username' => 'superadmin',
+            'password' => 'password',
+        ])
+            ->assertOk()
+            ->assertJsonPath('user.is_platform_owner', true)
+            ->assertJson(fn ($json) => $json
+                ->whereContains('user.permissions', 'school.settings.manage')
+                ->etc());
+    }
+
     public function test_logout_clears_authenticated_session(): void
     {
         $this->seed();

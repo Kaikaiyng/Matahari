@@ -27,6 +27,7 @@ type SettingsUser = {
   name: string
   username: string
   school_id: number | null
+  is_platform_owner?: boolean
   roles: string[]
   permissions: string[]
 }
@@ -120,10 +121,10 @@ export function SettingsPage({ user, dashboard, onNavigate }: SettingsPageProps)
   const [attendanceError, setAttendanceError] = useState('')
   const [attendanceSuccess, setAttendanceSuccess] = useState('')
 
-  const canManageBranding = user.permissions.includes('tenant.settings.manage')
-  const canManageSchoolSettings = user.permissions.includes('school.settings.manage')
-  const canManageAttendance = user.permissions.includes('attendance.devices.manage')
-  const canManageEmployees = user.permissions.includes('foundation_accounts.manage')
+  const canManageBranding = Boolean(user.is_platform_owner) || user.permissions.includes('tenant.settings.manage')
+  const canManageSchoolSettings = Boolean(user.is_platform_owner) || user.permissions.includes('school.settings.manage')
+  const canManageAttendance = Boolean(user.is_platform_owner) || user.permissions.includes('attendance.devices.manage')
+  const canManageEmployees = Boolean(user.is_platform_owner) || user.permissions.includes('foundation_accounts.manage')
 
   useEffect(() => setBranding(tenant.branding), [tenant.branding])
 

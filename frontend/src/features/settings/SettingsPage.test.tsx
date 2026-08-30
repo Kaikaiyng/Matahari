@@ -162,4 +162,11 @@ describe('SettingsPage', () => {
     expect(screen.queryByRole('button', { name: 'Save Notifications' })).not.toBeInTheDocument()
     expect(mockedApiRequest).not.toHaveBeenCalledWith('/v1/admin/attendance/settings')
   })
+
+  it('keeps platform owner settings editable when a cached permission list is stale', async () => {
+    render(<SettingsPage user={{ ...admin, is_platform_owner: true, permissions: [] }} dashboard={dashboard} onNavigate={navigate} />)
+
+    expect(await screen.findByLabelText('School name')).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Save School Information' })).toBeInTheDocument()
+  })
 })
