@@ -207,15 +207,21 @@
 }
 
 .settings-support-preview {
-  display: grid;
-  gap: 10px;
   padding: 16px;
   border: 1px solid var(--admin-card-border, #dfe5ee);
-  border-radius: 14px;
-  background: #f8fafc;
+  border-radius: 16px;
+  background: rgba(248, 250, 252, .8);
 }
 
-.settings-support-preview > small {
+.settings-support-preview-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.settings-support-preview-heading > small {
   color: #7b869a;
   font-size: 11px;
   font-weight: 800;
@@ -223,27 +229,108 @@
   letter-spacing: .05em;
 }
 
-.settings-support-preview header,
-.settings-support-preview > div {
-  display: grid;
-  grid-template-columns: 34px minmax(0, 1fr);
-  align-items: center;
-  gap: 10px;
-  padding: 12px;
-  border: 1px solid #e2e7ee;
-  border-radius: 12px;
+.settings-support-preview-heading > span {
+  flex: none;
+  padding: 3px 9px;
+  border: 1px solid color-mix(in srgb, var(--brand-primary) 22%, white);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--brand-primary) 9%, white);
+  color: var(--brand-primary);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.settings-support-preview-card {
+  overflow: hidden;
+  border: 1px solid var(--admin-card-border, #dfe5ee);
+  border-radius: 16px;
   background: #fff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, .08);
+}
+
+.settings-support-preview-card > header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border-bottom: 1px solid #edf0f5;
+}
+
+.settings-support-preview-hero-icon {
+  display: inline-flex;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--brand-primary) 7%, white);
   color: var(--brand-primary);
 }
 
-.settings-support-preview header { border: 0; background: transparent; padding-inline: 4px; }
-.settings-support-preview strong,
-.settings-support-preview span,
-.settings-support-preview small { display: block; min-width: 0; }
-.settings-support-preview strong { color: #20283a; font-size: 13px; }
-.settings-support-preview p,
-.settings-support-preview div small { margin: 2px 0 0; color: #758096; font-size: 11px; overflow-wrap: anywhere; }
-.settings-support-preview footer { padding: 4px 2px 0; color: #657086; font-size: 11px; line-height: 1.45; }
+.settings-support-preview-card strong,
+.settings-support-preview-card small { display: block; min-width: 0; }
+.settings-support-preview-card strong { color: #20283a; font-size: 13px; }
+.settings-support-preview-card p,
+.settings-support-preview-card small { margin: 2px 0 0; color: #758096; font-size: 11px; overflow-wrap: anywhere; }
+
+.settings-support-preview-channels {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  background: #fafbfc;
+}
+
+.settings-support-preview-channels article {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #dfe5ee;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .05);
+}
+
+.settings-support-preview-channels article > div { min-width: 0; }
+.settings-support-preview-channels article small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.settings-support-preview-channel-icon {
+  display: inline-flex;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+}
+
+.settings-support-preview-channel-icon.support-phone,
+.settings-support-preview-channel-icon.support-whatsapp {
+  background: #dcfce7;
+  color: #4caf63;
+}
+
+.settings-support-preview-channel-icon.support-email {
+  background: color-mix(in srgb, var(--brand-primary) 10%, white);
+  color: var(--brand-primary);
+}
+
+.settings-support-preview-card > footer {
+  padding: 10px 16px;
+  border-top: 1px solid #edf0f5;
+  background: color-mix(in srgb, var(--brand-primary) 4%, white);
+  color: #657086;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.settings-support-preview-card > footer strong {
+  display: inline;
+  color: #465166;
+  font-size: inherit;
+}
 
 .settings-span-2 {
   grid-column: 1 / -1;

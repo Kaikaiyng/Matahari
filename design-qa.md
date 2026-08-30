@@ -1,4 +1,49 @@
-# Design QA: Sidebar Brand Mark Contrast
+# App Support Preview Design QA
+
+- Source visual truth: `C:\Users\chong\AppData\Local\Temp\rylay-design-qa\maw-app-support-reference.png` (live MAW Settings > App Support)
+- Implementation: `C:\Users\chong\AppData\Local\Temp\rylay-design-qa\rylay-app-support-implementation.png` (local RYLAY Settings > App Support)
+- Viewport: 1920 CSS px wide; MAW 945 px high, RYLAY 889 px high
+- Captures: 1920×945 and 1920×889 PNG at the browser's normalized screenshot size; browser-reported device pixel ratio was 2
+- State: authenticated Super Admin, App Support section open, empty RYLAY school contacts showing preview fallbacks
+
+## Full-view comparison evidence
+
+The two live pages were captured in the same Chrome session and compared together. RYLAY preserves its existing MIS navigation, school terminology, and brand colour while matching the MAW right-side preview hierarchy: bordered preview frame, uppercase heading and badge, inner modal card, support header, three channel rows, and a separate operating-hours footer.
+
+## Focused region comparison evidence
+
+The right-side preview was readable at full-view scale, so a separate crop was not required. Typography weight, 10–13 px support text hierarchy, 10–16 px spacing rhythm, 12–16 px radii, subtle borders/shadows, semantic green phone/WhatsApp icons, MIS email/hero colour, and MAW copy structure were checked directly.
+
+## Findings
+
+- No actionable P0, P1, or P2 mismatch remains in the requested right-side preview.
+- The MIS colour substitution and School App terminology are intentional product adaptations.
+- Empty form values use visual-only example fallbacks; configured values replace them immediately and are not persisted until Save is used.
+- No raster image assets are present in this component; existing Lucide interface icons remain consistent with RYLAY.
+
+## Interaction and runtime evidence
+
+- Settings and App Support navigation were exercised in the browser.
+- The preview rendered all three channel cards and Hours while configuration was empty.
+- Admin focused tests passed 7/7 and the production build passed.
+- App focused public-support tests passed 3/3, covering call, WhatsApp, email, and operating-hours consumption from the school support payload.
+- Console was checked. Four Chrome-extension asynchronous message-channel entries were present without an application stack or source; no RYLAY render/runtime failure was observed.
+
+## Comparison history
+
+1. Before: the RYLAY preview omitted channel cards when values were empty and lacked the MAW modal frame/header/badge structure.
+2. Fix: copied the MAW preview composition and spacing, retained MIS tokens, and added non-persisted empty-state examples.
+3. After: live browser capture shows the requested MAW structure with RYLAY branding; no P0/P1/P2 finding remains.
+
+## Follow-up polish
+
+- P3: school-specific example copy could later derive from tenant branding instead of the neutral `support@rylay.my` fallback.
+
+final result: passed
+
+---
+
+# Historical Design QA: Sidebar Brand Mark Contrast
 
 > **Historical QA evidence (2026-08-07).** This validates the Admin sidebar contrast fix only. It predates the independent Community App and its 2026-08-13 liquid-glass navigation QA; use [Design System](DESIGN.md) and [Current Status](docs/current-status.md) for the current visual baseline. Local temporary screenshot paths below are provenance notes and are not required project assets.
 

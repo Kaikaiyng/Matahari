@@ -169,4 +169,21 @@ describe('SettingsPage', () => {
     expect(await screen.findByLabelText('School name')).toBeEnabled()
     expect(screen.getByRole('button', { name: 'Save School Information' })).toBeInTheDocument()
   })
+
+  it('matches the MAW support preview structure even before contacts are configured', async () => {
+    const user = userEvent.setup()
+    mockedApiRequest.mockImplementation(async (path) => {
+      if (path === '/v1/admin/settings/school-information') return { data: schoolInformation } as never
+      if (path === '/v1/admin/settings/app-support') return { data: { call_phone: null, whatsapp_phone: null, support_email: null, operating_hours: null } } as never
+      throw new Error(`Unexpected API request: ${path}`)
+    })
+    render(<SettingsPage user={admin} dashboard={dashboard} onNavigate={navigate} />)
+
+    await user.click(screen.getByRole('button', { name: /App Support/i }))
+    expect(await screen.findByText('Modal View')).toBeInTheDocument()
+    expect(screen.getByText('Call Support')).toBeInTheDocument()
+    expect(screen.getByText('WhatsApp Support')).toBeInTheDocument()
+    expect(screen.getByText('Email Support')).toBeInTheDocument()
+    expect(screen.getByText(/Hours:/)).toBeInTheDocument()
+  })
 })

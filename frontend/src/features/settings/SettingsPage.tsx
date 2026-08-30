@@ -446,12 +446,31 @@ function AppSupportSection({ value, loading, canManage, saving, error, success, 
         <label className="settings-field settings-span-2">Support operating hours<input disabled={!canManage || saving} value={value.operating_hours ?? ''} onChange={(event) => field('operating_hours', event.target.value)} /></label>
       </div>
       <aside className="settings-support-preview" aria-label="School App support preview">
-        <small>School App live preview</small>
-        <header><MessageCircle size={20} /><div><strong>Contact Support</strong><p>Choose the easiest way to reach us</p></div></header>
-        {value.call_phone && <div><Phone size={17} /><span><strong>Call Support</strong><small>{value.call_phone}</small></span></div>}
-        {value.whatsapp_phone && <div><MessageCircle size={17} /><span><strong>WhatsApp Support</strong><small>Chat with us ({value.whatsapp_phone})</small></span></div>}
-        {value.support_email && <div><Mail size={17} /><span><strong>Email Support</strong><small>{value.support_email}</small></span></div>}
-        {value.operating_hours && <footer>Hours: {value.operating_hours}</footer>}
+        <div className="settings-support-preview-heading">
+          <small>School App live preview</small>
+          <span>Modal View</span>
+        </div>
+        <section className="settings-support-preview-card">
+          <header>
+            <span className="settings-support-preview-hero-icon"><MessageCircle size={20} /></span>
+            <div><strong>Contact Support</strong><p>Choose the easiest way to reach us</p></div>
+          </header>
+          <div className="settings-support-preview-channels">
+            <article>
+              <span className="settings-support-preview-channel-icon support-phone"><Phone size={16} /></span>
+              <div><strong>Call Support</strong><small>{value.call_phone || '+60 12-345 6789'}</small></div>
+            </article>
+            <article>
+              <span className="settings-support-preview-channel-icon support-whatsapp"><MessageCircle size={16} /></span>
+              <div><strong>WhatsApp Support</strong><small>Chat with us ({value.whatsapp_phone || '+60 12-345 6789'})</small></div>
+            </article>
+            <article>
+              <span className="settings-support-preview-channel-icon support-email"><Mail size={16} /></span>
+              <div><strong>Email Support</strong><small>{value.support_email || 'support@rylay.my'}</small></div>
+            </article>
+          </div>
+          <footer><strong>Hours:</strong> {value.operating_hours || 'Monday - Saturday, 8:00 AM - 6:00 PM'}</footer>
+        </section>
       </aside>
     </div>}
     {!canManage && value && <InfoNote>You have read-only access. School Settings permission is required to make changes.</InfoNote>}
