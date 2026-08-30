@@ -37,6 +37,7 @@ use App\Http\Controllers\Api\V1\PortalLinkController;
 use App\Http\Controllers\Api\V1\PortalNotificationController;
 use App\Http\Controllers\Api\V1\PublicCommunityPolicyController;
 use App\Http\Controllers\Api\V1\QuizController;
+use App\Http\Controllers\Api\V1\SchoolSettingsController;
 use App\Http\Controllers\Api\V1\StaffController;
 use App\Http\Controllers\Api\V1\StudentPortalController;
 use App\Http\Controllers\Api\V1\SubjectController;
@@ -199,6 +200,11 @@ Route::prefix('v1')->middleware([...$sessionMiddleware, 'auth', 'active', 'tenan
     });
 
     Route::prefix('admin')->middleware('tenant.surface:admin')->group(function (): void {
+        Route::get('/settings/school-information', [SchoolSettingsController::class, 'schoolInformation']);
+        Route::put('/settings/school-information', [SchoolSettingsController::class, 'updateSchoolInformation'])->middleware('permission:school.settings.manage');
+        Route::get('/settings/app-support', [SchoolSettingsController::class, 'appSupport']);
+        Route::put('/settings/app-support', [SchoolSettingsController::class, 'updateAppSupport'])->middleware('permission:school.settings.manage');
+
         Route::prefix('community-moderation')->middleware('permission:community.moderate')->group(function (): void {
             Route::get('/reports', [CommunityModerationController::class, 'index']);
             Route::get('/reports/{communityReport}', [CommunityModerationController::class, 'show']);
