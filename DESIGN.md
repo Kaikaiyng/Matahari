@@ -51,6 +51,33 @@ This is the owner's reusable desktop administration pattern, adapted from MAW st
 - MAW is a layout, typography, surface and motion reference—not a source of RYLAY data, permissions, terminology or unsupported features.
 - This Admin pattern is a checkpoint. Exact sizes may evolve after broader page and device review, but new work should remain internally consistent with it until superseded here.
 
+### Admin implementation recipe
+
+Use these repository sources instead of copying a screenshot or recreating similar CSS:
+
+| Need | Reuse first | Canonical source |
+| --- | --- | --- |
+| Application shell, grouped sidebar and collapse | `AdminShell` | `frontend/src/components/AdminShell.tsx` and `AdminShell.css` |
+| Page heading, metrics, filters, data panels and dialogs | `PageHeader`, `StatCard`, `FilterToolbar`, `DataPanel`, `ModalFrame` | `frontend/src/components/AdminUi.tsx` and `AdminUi.css` |
+| Date and time controls | `DatePicker`, `TimePicker` | `frontend/src/components/SystemDateTimePicker.tsx` |
+| Custom selection controls | Existing Admin custom-select components | `frontend/src/components/AdminUi.tsx` |
+| Global MAW-derived page/card treatment | Existing scoped selectors and tokens | `frontend/src/PersonalAdminPattern.css` |
+| Brand, surface, spacing and motion tokens | Existing `--admin-*` variables | `frontend/src/index.css` |
+
+Admin motion tokens are implementation contracts for new shared interactions:
+
+| Token or interaction | Value | Intended use |
+| --- | --- | --- |
+| `--admin-motion-fast` | `140ms` | Hover, focus, colour and small control feedback |
+| `--admin-motion-standard` | `200ms` | Cards, buttons, dialogs and sidebar travel |
+| `--admin-motion-popover` | `240ms` | Popovers and floating menus |
+| `--admin-motion-expand` | `260ms` | Opening expandable content |
+| `--admin-motion-collapse` | `190ms` | Closing expandable content |
+| `--admin-motion-navigation` | `300ms` | Sidebar group/chevron navigation motion |
+| `--admin-ease-enter` | `cubic-bezier(0.22, 1, 0.36, 1)` | Decelerating entrance for dialogs and prominent surfaces |
+
+Do not duplicate these values inside a new component when a token applies. Animate `transform` and `opacity` for moving surfaces; use colour/border transitions for state feedback. Avoid `transition: all`, layout-heavy animation, bounce effects and simultaneous animation of unrelated controls. Every new animation needs a `prefers-reduced-motion` fallback through the existing Admin rules.
+
 ## School App — Warm School Editorial Pattern
 
 ### Product Context
@@ -142,6 +169,27 @@ This is the owner's reusable desktop administration pattern, adapted from MAW st
 - Keep API authorization and tenant/school scoping unchanged. Layering is a navigation and presentation pattern, not a new data-access path.
 - Safety Centre and its policy/support details are the current reference implementation. Apply the pattern to other suitable record-detail flows only when their navigation hierarchy matches this model.
 
+#### Layered-page implementation recipe
+
+1. Keep the level-one page mounted and let it own whether the level-two component exists.
+2. The level-two component owns its selected detail identifier and keeps itself mounted while rendering level three.
+3. Each moving surface calls `useSwipeBack(onBack)` and applies both `gestureHandlers` and `surfaceStyle` to its outermost full-height overlay.
+4. Use `subpage-slide-overlay`, `subpage-container`, `subpage-header`, `subpage-back-btn`, `subpage-nav-title` and the matching 38px spacer rather than rebuilding the shell.
+5. Render the deeper surface above its parent, but do not remove, translate or refetch the parent merely because the child opened.
+6. Close through the hook's `requestBack`; do not clear parent state until its 220ms exit callback fires.
+7. Mark horizontal scrollers with `data-horizontal-scroll="true"` and exceptional interactive regions with `data-prevent-swipe="true"`.
+8. Test that the top surface opens, the immediate parent remains mounted, a left swipe does nothing and one right swipe closes exactly one level.
+
+Reference implementation:
+
+| Need | Canonical source |
+| --- | --- |
+| Gesture thresholds, direction lock, follow-finger transform and exit timing | `app/src/components/useSwipeBack.ts` |
+| Gesture regression tests | `app/src/components/useSwipeBack.test.tsx` |
+| Level-two owner and level-three selection state | `app/src/features/community-safety/CommunitySafetyCentre.tsx` |
+| Level-three policy/support surface | `app/src/features/community-safety/SafetyPolicySubpage.tsx` |
+| Layered shell, cards, entrance/exit and reduced-motion styling | `app/src/features/community-safety/CommunitySafety.css` |
+
 ### Motion
 
 - **Approach:** Minimal and functional.
@@ -149,6 +197,21 @@ This is the owner's reusable desktop administration pattern, adapted from MAW st
 - Secondary pages support left-edge swipe-back: the current page follows the gesture while the previous page remains fixed beneath it. Horizontal category/content scrolling must not trigger navigation.
 - Respect `prefers-reduced-motion`.
 - Do not use splash screens, forced tours, or scroll choreography.
+
+App motion checkpoint:
+
+| Interaction | Timing and easing | Required behavior |
+| --- | --- | --- |
+| Full subpage entrance | `260ms cubic-bezier(0.25, 1, 0.5, 1)` | Slide from `translateX(100%)` to rest above a fixed parent |
+| Full subpage exit/rebound | `220ms cubic-bezier(0.25, 1, 0.5, 1)` | Follow the gesture or button action; unmount only after completion |
+| Swipe completion | More than 30% width, or a rightward flick over 45px within 250ms | Close exactly one active level |
+| Swipe direction lock | Right delta over 8px and greater than vertical movement × 1.1 | Prevent vertical scroll and left swipe from becoming Back |
+| Bottom capsule selection | Grow `200ms cubic-bezier(0.2, 0.8, 0.2, 1)`; colour/background `180ms ease` | Preserve the RYLAY liquid-capsule identity |
+| Select/popover entrance | `180ms cubic-bezier(0.16, 1, 0.3, 1)` | Short fade and upward offset only |
+| Press feedback | `150–160ms ease` | Small scale or one-pixel lift; never a large bounce |
+| Skeleton shimmer | `1.2–1.5s ease-in-out/linear` | Loading indication only; disable for reduced motion |
+
+The exact swipe mathematics live only in `useSwipeBack`; new screens consume the hook rather than cloning it. If motion values change after device testing, update the shared implementation and this checkpoint together.
 
 ### Content and Trust
 
