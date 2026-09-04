@@ -10,5 +10,5 @@ if exist "%LOCALAPPDATA%\Matahari\PostgreSQL\data\PG_VERSION" (
   call "%ROOT%\tools\postgresql\start-local.cmd"
   if errorlevel 1 exit /b 1
 )
-cd /d "%ROOT%\backend"
-call "%~dp0php-local.cmd" artisan serve --host=127.0.0.1 --port=8000
+cd /d "%ROOT%\backend\public"
+call "%~dp0php-local.cmd" -S 127.0.0.1:8000 -t "%ROOT%\backend\public" "%ROOT%\backend\vendor\laravel\framework\src\Illuminate\Foundation\resources\server.php"
