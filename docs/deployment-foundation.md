@@ -4,7 +4,9 @@
 
 **Status:** Repository foundation implemented; real staging, production, backup, and monitoring are not configured
 
-**Updated:** 2026-08-14
+**Updated:** 2026-09-04
+
+PostgreSQL supersedes the database engine in historical deployment plans. See [PostgreSQL](postgresql.md) for setup and recovery.
 
 This document describes the deployment material currently stored in the repository. The approved target architecture remains in [Staging and Production Deployment Design](superpowers/specs/2026-08-06-staging-production-deployment-design.md).
 
@@ -24,12 +26,12 @@ RYLAY owns `rylay.my`; DNS authority has been delegated to Cloudflare, while the
 | `deploy/scripts/create-release.mjs` | Creates an allowlisted release tree and per-file SHA-256 manifest |
 | `deploy/scripts/package-release.sh` | Creates and verifies the single ZIP and its SHA-256 file on Linux CI |
 | `deploy/docker/` | Pinned PHP-FPM runtime and internal application Nginx configuration |
-| `deploy/compose/database.yml` | Private MariaDB service with binary logging and secret-file inputs |
+| `deploy/compose/database.yml` | Private PostgreSQL 18.6 service with a separate data volume and secret-file inputs |
 | `deploy/compose/application.yml` | Generic isolated PHP, scheduler, and web stack for either environment |
 | `deploy/database/` | First-start database/account creation and post-migration least-privilege grants |
 | `deploy/env/*.example` | Non-secret database, staging, and production Compose contracts |
 | `.github/workflows/release-candidate.yml` | Quick checks and one-time immutable artifact build on `master` |
-| `.github/workflows/full-qualification.yml` | Complete application, advisory, deployment-contract, and disposable MariaDB checks |
+| `.github/workflows/full-qualification.yml` | Complete application, advisory, deployment-contract, and disposable PostgreSQL checks |
 
 ## Environment Boundary
 
@@ -37,10 +39,10 @@ The database service has no host port. It creates these fixed boundaries from pr
 
 | Environment | Database | Runtime identity | Migration identity |
 | --- | --- | --- | --- |
-| Staging | `rylay_staging` | `rylay_staging_app` | `rylay_staging_migrator` |
-| Production | `rylay_production` | `rylay_production_app` | `rylay_production_migrator` |
+| Staging | `matahari_staging` | `matahari_staging_app` | `matahari_staging_migrator` |
+| Production | `matahari_production` | `matahari_production_app` | `matahari_production_migrator` |
 
-Migration identities receive schema privileges only for their own database. Runtime identities receive no privileges during first initialization. After migrations, `apply-runtime-grants.sh` enumerates the actual tables and grants normal CRUD per table, except `audit_logs`, which receives only `SELECT` and `INSERT`.
+Migration identities receive schema privileges only for their own database. Runtime identities receive only database CONNECT and schema USAGE during initialization, with no table access. After migrations, `apply-runtime-grants.sh` enumerates the actual tables and grants normal CRUD per table, sequence USAGE/SELECT, read-only migration history, and only SELECT/INSERT on `audit_logs`. The grant change is transactional and rejects privileged runtime identities.
 
 Staging and production run with different Compose project names, release roots, Laravel `.env` files, storage/cache volumes, ports, database credentials, `APP_KEY`, session settings, and `DEPLOYMENT_MODE`. Each environment exposes separate loopback-only Admin and Community App ports. The edge proxy must route two HTTPS hostnames to those ports; both internal Nginx services proxy `/api` to the same Laravel service and database.
 
@@ -128,9 +130,9 @@ docker compose --env-file /srv/rylay/private/staging.env -f deploy/compose/appli
 docker compose --env-file /srv/rylay/private/production.env -f deploy/compose/application.yml config
 ```
 
-The Laravel `APP_ENV_FILE` referenced by each application Compose environment must contain the private environment-specific Laravel variables. At minimum, configure a unique `APP_KEY`, correct URL, MariaDB runtime identity, secure session cookies, database-backed session/cache/queue settings, `APP_DEBUG=false`, `MAIL_MAILER=log`, and the matching `DEPLOYMENT_MODE`.
+The Laravel `APP_ENV_FILE` referenced by each application Compose environment must contain the private environment-specific Laravel variables. At minimum, configure a unique `APP_KEY`, correct URL, `DB_CONNECTION=pgsql`, `DB_HOST=postgres`, `DB_PORT=5432`, PostgreSQL runtime identity, secure session cookies, database-backed session/cache/queue settings, `APP_DEBUG=false`, `MAIL_MAILER=log`, and the matching `DEPLOYMENT_MODE`.
 
-Database initialization and grants must first be rehearsed with disposable synthetic data. Do not run the database Compose project against an existing valuable MariaDB data directory.
+Database initialization and grants must first be rehearsed with disposable synthetic data. Do not run the database Compose project against an existing valuable PostgreSQL data directory.
 
 ## GitHub Workflow Order
 
@@ -139,7 +141,7 @@ On a push to `master`:
 1. quick backend, frontend, deployment-contract, formatting, and secret-filename checks run;
 2. production dependencies and frontend assets are built once;
 3. the allowlisted release tree, manifest, ZIP, and checksum are created and retained for 30 days;
-4. full PHPUnit, Pint, routes, dependency advisories, frontend validation, deployment contracts, and disposable MariaDB migration/rollback checks run.
+4. full PHPUnit, Pint, routes, dependency advisories, frontend validation, deployment contracts, and disposable PostgreSQL migration/rollback checks run.
 
 The final job is intentionally named `Full qualification (staging deployment pending)`. Automatic SSH staging deployment is not present yet, so the workflow must not claim staging was deployed or browser-reviewed.
 
@@ -151,7 +153,7 @@ The final job is intentionally named `Full qualification (staging deployment pen
 - GitHub-hosted workflow execution: verify against the current `master` Actions run
 - TLS edge proxy and Nginx Basic Auth: **Not configured**
 - Versioned remote release directories, atomic switch, and rollback drill: **Not implemented**
-- Daily full backup and MariaDB point-in-time recovery: **Not configured**
+- Daily full backup and PostgreSQL point-in-time recovery: **Not configured**
 - Off-site backup: **Not configured**
 - Restore and financial/audit reconciliation drill: **Not verified**
 - Telegram alerting and scheduler/disk/TLS monitoring: **Not configured**

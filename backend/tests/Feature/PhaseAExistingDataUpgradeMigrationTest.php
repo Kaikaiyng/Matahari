@@ -2,14 +2,24 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Foundation\Testing\RefreshDatabaseState;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class PhaseAExistingDataUpgradeMigrationTest extends TestCase
 {
+    protected function tearDown(): void
+    {
+        RefreshDatabaseState::$migrated = false;
+        parent::tearDown();
+    }
+
     public function test_existing_data_upgrades_without_guessing_portal_access_or_rewriting_roles(): void
     {
-        $this->artisan('migrate:fresh', ['--force' => true])->assertExitCode(0);
+        $paths = collect(glob(database_path('migrations/*.php')))
+            ->filter(fn (string $path): bool => basename($path) <= '2026_08_12_000003_add_phase_a_roles_and_permissions.php')
+            ->values()->all();
+        $this->artisan('migrate:fresh', ['--force' => true, '--path' => $paths, '--realpath' => true])->assertExitCode(0);
 
         $roleMigration = require database_path('migrations/2026_08_12_000003_add_phase_a_roles_and_permissions.php');
         $portalMigration = require database_path('migrations/2026_08_12_000002_add_portal_foundation_links.php');
@@ -19,17 +29,7 @@ class PhaseAExistingDataUpgradeMigrationTest extends TestCase
         $academicMigration->down();
 
         $now = now();
-        $tenantId = DB::table('tenants')->insertGetId([
-            'slug' => 'legacy',
-            'name' => 'Legacy Tenant',
-            'status' => 'active',
-            'timezone' => 'Asia/Kuala_Lumpur',
-            'locale' => 'en',
-            'created_at' => $now,
-            'updated_at' => $now,
-        ]);
         $schoolId = DB::table('schools')->insertGetId([
-            'tenant_id' => $tenantId,
             'code' => 'LEGACY',
             'name' => 'Legacy School',
             'receipt_prefix' => 'LEG',

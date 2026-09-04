@@ -936,7 +936,7 @@ class CommunityApiTest extends TestCase
         $viewer = User::query()->where('username', 'rachel.wong')->firstOrFail();
         $otherSchool = School::query()->create([
             'tenant_id' => $school->tenant_id,
-            'code' => 'MIS-NOTIFICATION-OTHER',
+            'code' => 'MIS-NOTIFY-OTHER',
             'name' => 'Notification Other Campus',
             'receipt_prefix' => 'MNO',
             'invoice_prefix' => 'MNO-INV',

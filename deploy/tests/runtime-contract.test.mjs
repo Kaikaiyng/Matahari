@@ -6,7 +6,8 @@ test('PHP image is pinned and contains only runtime dependencies', async () => {
   const dockerfile = await readFile('deploy/docker/php/Dockerfile', 'utf8')
 
   assert.match(dockerfile, /^FROM php:8\.4\.21-fpm-bookworm$/m)
-  assert.match(dockerfile, /docker-php-ext-install[\s\S]*bcmath[\s\S]*pdo_mysql/)
+  assert.match(dockerfile, /docker-php-ext-install[\s\S]*bcmath[\s\S]*pdo_pgsql/)
+  assert.match(dockerfile, /apt-mark manual libpq5/)
   assert.match(dockerfile, /USER rylay/)
   assert.doesNotMatch(dockerfile, /COPY\s+(backend|frontend)/i)
   assert.doesNotMatch(dockerfile, /composer|nodejs|npm/i)

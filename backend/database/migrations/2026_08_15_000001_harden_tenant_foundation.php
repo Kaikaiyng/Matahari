@@ -237,6 +237,8 @@ return new class extends Migration
         if (! Schema::hasColumn('tenant_domains', 'primary_surface')) {
             if ($driver === 'sqlite') {
                 DB::statement('ALTER TABLE tenant_domains ADD COLUMN primary_surface TEXT GENERATED ALWAYS AS (CASE WHEN is_primary = 1 THEN surface ELSE NULL END) VIRTUAL');
+            } elseif ($driver === 'pgsql') {
+                DB::statement('ALTER TABLE tenant_domains ADD COLUMN primary_surface VARCHAR(20) GENERATED ALWAYS AS (CASE WHEN is_primary THEN surface ELSE NULL END) STORED');
             } elseif (in_array($driver, ['mariadb', 'mysql'], true)) {
                 DB::statement('ALTER TABLE tenant_domains ADD COLUMN primary_surface VARCHAR(20) GENERATED ALWAYS AS (CASE WHEN is_primary = 1 THEN surface ELSE NULL END) STORED');
             } else {

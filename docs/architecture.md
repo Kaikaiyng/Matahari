@@ -28,7 +28,7 @@ flowchart LR
     Mobile["Independent app/ multi-role Community client"]
     Vite["Vite dev server or Preview"]
     API["Laravel 13 JSON API + host TenantContext"]
-    DB["Shared SQLite demo/tests or authoritative MariaDB"]
+    DB["Authoritative PostgreSQL / optional SQLite demo and tests"]
     Files["File session store: local demo"]
     Memory["Array session store: tests"]
     Tunnel["Optional temporary demo tunnel"]
@@ -231,7 +231,7 @@ Firebase/FCM, APNs, Telegram, and device registration are later delivery concept
 
 ## Deployment Assumptions
 
-The repository now contains GitHub Actions qualification source, a pinned PHP-FPM image, an internal Nginx application configuration, generic Docker Compose definitions for a private MariaDB service and isolated staging/production application stacks, non-secret environment contracts, and immutable release tooling. The implemented topology is described in [Deployment Foundation](deployment-foundation.md).
+The repository now contains GitHub Actions qualification source, a pinned PHP-FPM image, an internal Nginx application configuration, generic Docker Compose definitions for a private PostgreSQL service and isolated staging/production application stacks, non-secret environment contracts, and immutable release tooling. The implemented topology is described in [Deployment Foundation](deployment-foundation.md).
 
 No real VPS, Docker runtime, edge TLS/Basic Auth, remote release directories, production database, backup destination, restore drill, or monitoring service is verified. A real deployment must still provide HTTPS and exact proxy trust, private secret files, migrations with separate identities, automatic staging delivery, manual exact-artifact production promotion, backup/recovery, logging, and alerts.
 

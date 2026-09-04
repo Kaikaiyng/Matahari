@@ -36,7 +36,7 @@ class AuthApiTest extends TestCase
             ->assertJsonPath('user.roles.0', 'school-admin')
             ->assertJson(fn ($json) => $json
                 ->has('user.permissions')
-                ->where('user.school_id', 1)
+                ->where('user.school_id', School::query()->where('code', 'MIS')->value('id'))
                 ->etc());
 
         $this->getJson('/api/me')

@@ -57,6 +57,13 @@ class StudentManagementApiTest extends TestCase
             ->assertJsonPath('data.0.student_no', 'MIS-STD-0001')
             ->assertJsonPath('data.0.full_name', 'Alyssa Tan')
             ->assertJsonCount(1, 'data');
+
+        foreach (['search=ALYSSA', 'student_no=mis-std-0001'] as $filter) {
+            $this->actingAs($user)->getJson('/api/students?'.$filter)
+                ->assertOk()
+                ->assertJsonCount(1, 'data')
+                ->assertJsonPath('data.0.student_no', 'MIS-STD-0001');
+        }
     }
 
     public function test_student_status_is_changed_only_through_status_endpoint(): void

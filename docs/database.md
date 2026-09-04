@@ -6,12 +6,12 @@
 
 ## Engines and Configuration
 
-- Intended production direction: MariaDB/MySQL-compatible relational database.
-- Repository default: SQLite in `backend/.env.example` and `config/database.php`.
-- Automated PHPUnit default: SQLite `:memory:` enforced by `backend/phpunit.xml`.
-- MariaDB connection: `utf8mb4`, `utf8mb4_unicode_ci`, strict mode.
+- Production and development direction: PostgreSQL 18.6 with Laravel's `pgsql` driver.
+- Repository default: PostgreSQL in `backend/.env.example` and `config/database.php`.
+- PHPUnit defaults to SQLite `:memory:`; full qualification explicitly overrides it and runs the whole suite on PostgreSQL as well.
+- Legacy SQLite/MySQL connection definitions remain for compatibility, not the deployment target.
 
-SQLite success does not prove MariaDB JSON, indexes, DDL, foreign keys, row locks, or concurrency behavior. Use the guarded disposable MariaDB workflow in [Testing and Release](testing-and-release.md).
+See [PostgreSQL](postgresql.md) for setup, the preserved local-data copy, test-database guards, grants and recovery. SQLite success does not prove PostgreSQL constraints, row locks or concurrency behavior.
 
 The schema has no currency column and amount-to-words currently assumes Ringgit. **Needs confirmation:** Whether the system will remain MYR-only.
 
@@ -141,7 +141,7 @@ School Updates deduplicate each post audience with `(community_post_id, audience
 
 ## Community App Data Boundary
 
-The approved mobile product does not introduce a second database or duplicate parent, student, identity, finance, payment, or receipt tables. Future mobile APIs reuse the existing MariaDB records and domain services.
+The approved mobile product does not introduce a second database or duplicate parent, student, identity, finance, payment, or receipt tables. Future mobile APIs reuse the existing PostgreSQL records and domain services.
 
 Parent Finance must continue to derive outstanding amounts from `fee_record_charges` and verified payment allocations. A separate mobile balance table or `fee_installments` ledger is not approved for V1.
 
@@ -236,7 +236,9 @@ The payment-allocation agreement-item foreign key is now created by the later co
 
 Do not describe repository-wide rollback as safe. Releases that include schema changes require backups, a tested restore path, and a migration-specific recovery plan.
 
-## MariaDB Considerations
+## Legacy MariaDB Reference
+
+The following describes the previous engine and retained legacy tests. PostgreSQL is now the required deployment and release target; these commands are not PostgreSQL instructions.
 
 - Use the Laravel `mariadb` driver and a disposable test database.
 - Validate native JSON, exact BTREE indexes, foreign-key definitions, migration fresh/rollback/re-migrate, and row-lock/concurrency-sensitive workflows.

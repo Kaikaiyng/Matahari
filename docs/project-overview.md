@@ -90,8 +90,8 @@ Unless a future approved specification adds them, do not infer these from naviga
 
 - `frontend/` presents permission-scoped Admin workflows and rejects portal-only accounts. `app/` presents exactly Parent, Student, and Teacher personas; elevated employees remain in the Teacher persona through explicit User Abilities. The App is not native, and visible cards are not backend business-rule evidence.
 - Laravel is authoritative for authentication, authorization, validation, school scoping, state transitions, numbering, and persisted finance effects.
-- Admin Web and the School App share one Laravel backend, one MariaDB database, one RBAC/identity system, and the existing finance source of truth.
-- MariaDB/MySQL-compatible behavior is the production direction. SQLite supports the local demo and default automated tests only.
+- Admin Web and the School App share one Laravel backend, one PostgreSQL database, one RBAC/identity system, and the existing finance source of truth.
+- PostgreSQL-compatible behavior is the production direction. SQLite supports the local demo and default automated tests only.
 - The application models school ownership with `school_id`. New Phase A modules use `SchoolContext`, middleware, policies/access services, and school-scoped queries; legacy checks remain distributed and can migrate incrementally.
 - No third-party business system integration is present. The public demo tunnel is temporary transport, not a domain service.
 
@@ -99,7 +99,7 @@ Unless a future approved specification adds them, do not infer these from naviga
 
 - Local development is Windows-oriented because project PHP and demo launchers are PowerShell/Command Prompt scripts.
 - The local demo database is disposable SQLite seeded with fictional scenarios.
-- A deployed environment must provide private configuration, MariaDB, secure session/cookie settings, least-privilege database identities, backups, restore testing, monitoring, and HTTPS.
+- A deployed environment must provide private configuration, PostgreSQL, secure session/cookie settings, least-privilege database identities, backups, restore testing, monitoring, and HTTPS.
 - **Not verified:** A production environment, release process, runtime database grants, proxy trust configuration, or backup/restore drill.
 
 ## Related Documentation

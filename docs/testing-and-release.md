@@ -6,7 +6,7 @@
 
 Tenant-sensitive changes must additionally cover known/unknown/pending/inactive hosts, wrong-tenant login, membership roles, membership school restrictions, surface mismatch, tenant suspension, feature enforcement, platform-versus-tenant administration and transactional audit rollback. Production smoke tests must use the real Admin/App hostnames; sending a tenant ID in a request is not a substitute.
 
-The full qualification workflow runs `TenantFoundationMariaDbSchemaTest` after a disposable MariaDB migrate/rollback/re-migrate lifecycle. It inspects tenant-column nullability, same-tenant composite foreign keys/delete rules, the generated primary-surface guard, and exact domain, feature, membership, pivot and tenant-local school-code unique indexes through `information_schema`.
+The full qualification workflow runs the full backend suite on PostgreSQL 18.6, `PostgresSchemaTest`, complete migration/rollback/re-migration, real runtime-grant and cross-environment connection probes, and a separate SQLite regression suite. See [PostgreSQL](postgresql.md) for exact connection settings and the guarded disposable `matahari_test` database.
 
 Run commands from a clean feature branch/worktree. Record the exact command, exit code, counts, skipped cases, and limitations. Never convert a skipped or unavailable check into a pass.
 
@@ -93,7 +93,7 @@ Mobile work requires evidence beyond narrow viewport checks of the current Admin
 - Attendance/Assessment slice: Teacher assignment scope, enrolment membership, correction reason/audit, draft-result denial, and Parent/Student relationship/self scope. Daily Attendance and Assessment publication are implemented; retain these checks for regressions and future changes.
 - Quiz slice: class and direct-student targeting, recipient deduplication, server-side scoring, attempt concurrency, and historical enrolment behavior.
 - Reminder/push slice: authoritative balance recheck, recipient resolution, transactional audit/history, duplicate suppression, and durable notification behavior independent of push delivery.
-- Notification-channel slice: in-app payload/read compatibility, calling-transaction rollback, exact global/tenant/school destination resolution, inactive filtering, school-without-tenant and cross-tenant rejection, unknown-channel skipped results, and sanitized diagnostics. Any destination-schema release requires disposable MariaDB composite-foreign-key validation or an explicit **Not verified** limitation.
+- Notification-channel slice: in-app payload/read compatibility, calling-transaction rollback, exact global/tenant/school destination resolution, inactive filtering, school-without-tenant and cross-tenant rejection, unknown-channel skipped results, and sanitized diagnostics. Any destination-schema release requires disposable PostgreSQL composite-foreign-key validation or an explicit **Not verified** limitation.
 - Phase F: native credential/token storage and revocation, device-token privacy, deep links, signed Android build, real-device push behavior, and platform-specific release checks.
 
 Do not claim Firebase, Capacitor, APK/iOS delivery, or native authentication passed until those dependencies exist and the relevant real-device checks have run.
@@ -120,7 +120,7 @@ No PHPStan, Psalm, Larastan, or equivalent PHP static-analysis command is config
 
 Run `..\tools\php\php-local.cmd artisan app:store-readiness` from `backend/`. It fails unless all five public policy/support URLs are HTTPS, monitored support and child-safety emails are configured, the developer name is present, and effective Terms, Privacy, Community Standards and Child Safety versions exist.
 
-This does not validate mailbox staffing, legal reporting arrangements, reviewer credentials, native binaries, declarations or store approval. Complete [UGC Store Submission Checklist](store-submission-ugc-checklist.md). Community-sensitive releases require all Community tests plus disposable SQLite and MariaDB migrate/rollback/re-migrate. Record MariaDB as **Not verified** if unavailable.
+This does not validate mailbox staffing, legal reporting arrangements, reviewer credentials, native binaries, declarations or store approval. Complete [UGC Store Submission Checklist](store-submission-ugc-checklist.md). Community-sensitive releases require all Community tests plus disposable SQLite and PostgreSQL migrate/rollback/re-migrate. Record PostgreSQL as **Not verified** if unavailable.
 
 ## SQLite Migration Lifecycle
 
@@ -148,9 +148,9 @@ cd backend
 
 After checking every exit code, remove only the exact disposable path and clear the process environment or close the terminal. A one-step rollback proves only the latest batch/step. Migration-specific changes may require a targeted rollback or full disposable reset.
 
-## MariaDB Validation
+## Legacy MariaDB Validation
 
-MariaDB is required for database-sensitive release evidence. Provision a disposable local/test server and a database named exactly:
+This retained section is historical support for the previous engine. PostgreSQL is now required for database-sensitive release evidence; use [PostgreSQL](postgresql.md). For an explicitly requested legacy MariaDB check only, provision a disposable database named exactly:
 
 ```text
 rylay_audit_test
@@ -234,7 +234,7 @@ Run all deployment source contracts from the repository root:
 node --test deploy/tests/*.test.mjs
 ```
 
-These tests verify the release allowlist and manifest, unsafe-path exclusions, pinned runtime contracts, Nginx routing boundaries, private MariaDB topology, staging/production naming, runtime/migration identity separation, environment examples, GitHub workflow ordering, and absence of tracked-style secret artifacts under `deploy/`.
+These tests verify the release allowlist and manifest, unsafe-path exclusions, pinned runtime contracts, Nginx routing boundaries, private PostgreSQL topology, staging/production naming, runtime/migration identity separation, environment examples, GitHub workflow ordering, and absence of tracked-style secret artifacts under `deploy/`.
 
 Rehearse the release tree only after production backend dependencies and the frontend build exist:
 
@@ -260,7 +260,7 @@ Then start only disposable infrastructure, confirm container health, run migrati
 The workflows are:
 
 - `.github/workflows/release-candidate.yml` — `master` quick checks, one ZIP/checksum/manifest build, then full qualification;
-- `.github/workflows/full-qualification.yml` — full backend/frontend/advisory checks plus disposable MariaDB migrate/rollback/re-migrate.
+- `.github/workflows/full-qualification.yml` — full backend/frontend/advisory checks plus disposable PostgreSQL migrate/rollback/re-migrate.
 
 Until an Actions run on the exact current `master` commit passes, mark GitHub-hosted execution **Not verified**. Until Docker starts successfully, mark image, Nginx, Compose, and container health **Not verified**. Workflow source is not runtime evidence.
 
@@ -319,7 +319,7 @@ Real iPad Safari and native print preview are manual evidence; automated compone
 - [ ] Route and configuration loading pass.
 - [ ] Temporary public-demo tests pass when launcher files changed.
 - [ ] SQLite migration lifecycle passes where relevant.
-- [ ] MariaDB validation passes for database-sensitive work, or the release is blocked.
+- [ ] PostgreSQL validation passes for database-sensitive work, or the release is blocked.
 - [ ] Migration rollback/data-recovery behavior is reviewed and tested.
 - [ ] Backend formatting and available analysis checks pass.
 - [ ] Security, permissions, school scope, financial integrity, and audit impact are reviewed.

@@ -10,6 +10,7 @@ use App\Models\School;
 use App\Models\Student;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
@@ -26,7 +27,7 @@ class FinancialIntegrityMigrationTest extends TestCase
         FeeAgreement::query()->create($this->agreementAttributes($school, $student, 1));
 
         try {
-            FeeAgreement::query()->create($this->agreementAttributes($school, $student, 2));
+            DB::transaction(fn () => FeeAgreement::query()->create($this->agreementAttributes($school, $student, 2)));
             $this->fail('A duplicate current Fee Agreement was accepted.');
         } catch (QueryException) {
             $this->assertDatabaseCount('fee_agreements', 1);
@@ -80,7 +81,7 @@ class FinancialIntegrityMigrationTest extends TestCase
         FeeRecordCharge::query()->create($attributes);
 
         try {
-            FeeRecordCharge::query()->create($attributes);
+            DB::transaction(fn () => FeeRecordCharge::query()->create($attributes));
             $this->fail('A duplicate scheduled charge was accepted.');
         } catch (QueryException) {
             $this->assertDatabaseCount('fee_record_charges', 1);

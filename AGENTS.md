@@ -43,7 +43,7 @@ Matahari is the independent school administration, finance, attendance, and Scho
 
 ## Database and Migration Rules
 
-- Production direction is MariaDB/MySQL-compatible. SQLite-only success is not proof of MariaDB compatibility.
+- Production direction is PostgreSQL 18. SQLite-only success is not proof of PostgreSQL compatibility.
 - Use decimal-safe storage and application handling for money; do not introduce binary floating-point calculations into financial decisions.
 - Preserve the database uniqueness guards for one current agreement per student/year and one scheduled charge per agreement item/month. Do not bypass migration duplicate-data preflights.
 - Do not casually edit migrations that may have run elsewhere. Add a corrective migration unless the repository is demonstrably unreleased and the change is explicitly approved.
@@ -70,7 +70,7 @@ Matahari is the independent school administration, finance, attendance, and Scho
 - Add or update focused tests before changing behavior, then run the full relevant suite.
 - Backend minimum: PHPUnit, route loading, Pint check, and database migration/rollback checks appropriate to the change.
 - Admin and App frontend minimum, run separately in `frontend/` and `app/`: Vitest, Oxlint, and `npm.cmd run build` (which includes TypeScript checking).
-- Database-sensitive work requires a disposable MariaDB run in addition to SQLite. Record any unavailable external dependency as a limitation; never claim an unexecuted check passed.
+- Database-sensitive work requires a disposable PostgreSQL run in addition to SQLite. Record any unavailable external dependency as a limitation; never claim an unexecuted check passed.
 - Follow [Testing and Release](docs/testing-and-release.md) for exact commands and release evidence.
 
 ## Git, Worktrees, and Parallel Agents
@@ -85,7 +85,7 @@ Matahari is the independent school administration, finance, attendance, and Scho
 
 - [ ] Behavior matches verified business rules and backend permissions.
 - [ ] Relevant focused and full tests completed with recorded results.
-- [ ] MariaDB-sensitive behavior was tested on MariaDB or marked **Not verified**.
+- [ ] PostgreSQL-sensitive behavior was tested on PostgreSQL or marked **Not verified**.
 - [ ] Migrations and rollback were tested where applicable.
 - [ ] Formatting, lint, type checking, build, routes, links, and secret checks completed.
 - [ ] No unrelated files, generated artifacts, credentials, or real data are included.

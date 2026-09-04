@@ -1,9 +1,10 @@
 FROM php:8.4.21-fpm-bookworm
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends libicu-dev libzip-dev \
-    && docker-php-ext-install -j"$(nproc)" bcmath intl opcache pcntl pdo_mysql zip \
-    && apt-get purge -y --auto-remove libicu-dev libzip-dev \
+    && apt-get install -y --no-install-recommends libicu-dev libzip-dev libpq-dev \
+    && docker-php-ext-install -j"$(nproc)" bcmath intl opcache pcntl pdo_pgsql zip \
+    && apt-mark manual libpq5 libicu72 libzip4 \
+    && apt-get purge -y --auto-remove libicu-dev libzip-dev libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
 RUN groupadd --gid 10001 rylay \

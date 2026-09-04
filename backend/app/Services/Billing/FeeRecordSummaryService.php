@@ -36,8 +36,8 @@ class FeeRecordSummaryService
             ->when($filters['class_id'] ?? null, fn (Builder $query, int $classId) => $query->where('class_id', $classId))
             ->when($filters['search'] ?? null, function (Builder $query, string $search): void {
                 $query->where(function (Builder $searchQuery) use ($search): void {
-                    $searchQuery->where('student_no', 'like', "%{$search}%")
-                        ->orWhere('full_name', 'like', "%{$search}%");
+                    $searchQuery->whereLike('student_no', "%{$search}%")
+                        ->orWhereLike('full_name', "%{$search}%");
                 });
             })
             ->whereHas('feeRecordCharges', function (Builder $query) use ($academicYear, $billingMonth): void {

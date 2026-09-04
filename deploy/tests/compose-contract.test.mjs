@@ -14,13 +14,15 @@ async function listFiles(root, current = root) {
   return files
 }
 
-test('database Compose keeps MariaDB private and pinned', async () => {
+test('database Compose keeps PostgreSQL private with a separate data volume', async () => {
   const compose = await readFile('deploy/compose/database.yml', 'utf8')
 
-  assert.match(compose, /image: mariadb:11\.4\.8/)
+  assert.match(compose, /image: postgres:18\.6-bookworm/)
   assert.doesNotMatch(compose, /^\s+ports:/m)
-  assert.match(compose, /--log-bin=rylay-bin/)
-  assert.match(compose, /--binlog-expire-logs-seconds=2678400/)
+  assert.match(compose, /postgres_data:\/var\/lib\/postgresql/)
+  assert.match(compose, /name: matahari_postgres_data/)
+  assert.match(compose, /scram-sha-256/)
+  assert.doesNotMatch(compose, /mariadb_data|\/var\/lib\/mysql/)
   assert.match(compose, /name: rylay_database/)
 })
 
@@ -44,16 +46,16 @@ test('environment examples preserve staging and production boundaries without va
   const staging = await readFile('deploy/env/staging.env.example', 'utf8')
   const production = await readFile('deploy/env/production.env.example', 'utf8')
 
-  assert.match(database, /STAGING_DB_DATABASE=rylay_staging/)
-  assert.match(database, /PRODUCTION_DB_DATABASE=rylay_production/)
+  assert.match(database, /STAGING_DB_DATABASE=matahari_staging/)
+  assert.match(database, /PRODUCTION_DB_DATABASE=matahari_production/)
   assert.match(staging, /COMPOSE_PROJECT_NAME=rylay_staging/)
   assert.match(staging, /DEPLOYMENT_MODE=staging/)
   assert.match(staging, /MOBILE_APP_HTTP_PORT=18082/)
-  assert.match(staging, /DB_USERNAME=rylay_staging_app/)
+  assert.match(staging, /DB_USERNAME=matahari_staging_app/)
   assert.match(production, /COMPOSE_PROJECT_NAME=rylay_production/)
   assert.match(production, /DEPLOYMENT_MODE=prelaunch-production/)
   assert.match(production, /MOBILE_APP_HTTP_PORT=18083/)
-  assert.match(production, /DB_USERNAME=rylay_production_app/)
+  assert.match(production, /DB_USERNAME=matahari_production_app/)
 
   for (const contents of [database, staging, production]) {
     assert.doesNotMatch(contents, /(?:PASSWORD|SECRET|TOKEN|APP_KEY)=\S+/)
@@ -73,10 +75,10 @@ test('database scripts restrict environment pairs and audit grants', async () =>
   const init = await readFile('deploy/database/init-databases.sh', 'utf8')
   const grants = await readFile('deploy/database/apply-runtime-grants.sh', 'utf8')
 
-  assert.match(init, /rylay_staging_app/)
-  assert.match(init, /rylay_production_app/)
-  assert.match(init, /rylay_staging_migrator/)
-  assert.match(init, /rylay_production_migrator/)
+  assert.match(init, /matahari_staging_app/)
+  assert.match(init, /matahari_production_app/)
+  assert.match(init, /matahari_staging_migrator/)
+  assert.match(init, /matahari_production_migrator/)
   assert.match(grants, /audit_logs/)
   assert.match(grants, /SELECT, INSERT/)
   assert.doesNotMatch(grants, /migrate:fresh|DROP DATABASE/)

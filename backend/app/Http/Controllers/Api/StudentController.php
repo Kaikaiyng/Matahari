@@ -27,11 +27,11 @@ class StudentController extends Controller
             )
             ->when($request->query('level_group'), fn ($query, $levelGroup) => $query->where('level_group', $levelGroup))
             ->when($request->query('class_id'), fn ($query, $classId) => $query->where('class_id', $classId))
-            ->when($request->query('student_no'), fn ($query, $studentNo) => $query->where('student_no', 'like', '%'.$studentNo.'%'))
+            ->when($request->query('student_no'), fn ($query, $studentNo) => $query->whereLike('student_no', '%'.$studentNo.'%'))
             ->when($request->query('search'), function ($query, $search): void {
                 $query->where(function ($inner) use ($search): void {
-                    $inner->where('student_no', 'like', '%'.$search.'%')
-                        ->orWhere('full_name', 'like', '%'.$search.'%');
+                    $inner->whereLike('student_no', '%'.$search.'%')
+                        ->orWhereLike('full_name', '%'.$search.'%');
                 });
             })
             ->orderBy('student_no')

@@ -13,20 +13,33 @@ class TenantFoundationHardeningMigrationTest extends TestCase
 {
     use DatabaseMigrations;
 
+    protected function afterRefreshingDatabase(): void
+    {
+        // Exercise this historical upgrade before later migrations add dependent FKs.
+        $later = DB::table('migrations')
+            ->where('migration', '>', '2026_08_15_000001_harden_tenant_foundation')
+            ->orderByDesc('migration')->pluck('migration');
+
+        foreach ($later as $name) {
+            (require database_path('migrations/'.$name.'.php'))->down();
+            DB::table('migrations')->where('migration', $name)->delete();
+        }
+    }
+
     public function test_tenant_ownership_columns_are_required(): void
     {
-        $schoolTenant = collect(DB::select("PRAGMA table_info('schools')"))
-            ->first(fn (object $column): bool => $column->name === 'tenant_id');
+        $schoolTenant = collect(Schema::getColumns('schools'))
+            ->first(fn (array $column): bool => $column['name'] === 'tenant_id');
 
         $this->assertNotNull($schoolTenant);
-        $this->assertSame(1, (int) $schoolTenant->notnull);
+        $this->assertFalse($schoolTenant['nullable']);
         $this->assertTrue(Schema::hasColumn('tenant_membership_schools', 'tenant_id'));
 
-        $membershipSchoolTenant = collect(DB::select("PRAGMA table_info('tenant_membership_schools')"))
-            ->first(fn (object $column): bool => $column->name === 'tenant_id');
+        $membershipSchoolTenant = collect(Schema::getColumns('tenant_membership_schools'))
+            ->first(fn (array $column): bool => $column['name'] === 'tenant_id');
 
         $this->assertNotNull($membershipSchoolTenant);
-        $this->assertSame(1, (int) $membershipSchoolTenant->notnull);
+        $this->assertFalse($membershipSchoolTenant['nullable']);
     }
 
     public function test_database_rejects_cross_tenant_default_school(): void

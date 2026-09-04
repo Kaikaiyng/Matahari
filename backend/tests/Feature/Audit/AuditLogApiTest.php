@@ -63,7 +63,7 @@ class AuditLogApiTest extends TestCase
             ->assertJsonPath('meta.summary.total', 2);
 
         $this->actingAs($superAdmin)
-            ->getJson('/api/audit-logs?search='.urlencode('payment.recorded'))
+            ->getJson('/api/audit-logs?search='.urlencode('PAYMENT.RECORDED'))
             ->assertOk()
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.id', $matching->id);

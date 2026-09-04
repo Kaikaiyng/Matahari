@@ -78,7 +78,11 @@ Future coding agents must also read [AGENTS.md](AGENTS.md).
 - Node.js and npm. The repository does not currently pin a Node version.
 - SQLite for the quickest local demo, or a separately provisioned MariaDB database for compatibility work.
 
-## Local Demo Setup
+## Local Development
+
+The main environment uses PostgreSQL. See [PostgreSQL setup and data preservation](docs/postgresql.md), then start it with `tools\php\serve-backend.cmd`. The SQLite instructions below are an optional legacy demo, not the active database.
+
+## Optional SQLite Demo Setup
 
 Install dependencies once:
 
@@ -143,15 +147,13 @@ For non-demo development:
 
 ```powershell
 cd backend
-Copy-Item .env.example .env
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
+# Configure the private PostgreSQL connection before running migrations.
 ..\tools\php\php-local.cmd artisan key:generate
-if (-not (Test-Path -LiteralPath database\database.sqlite)) {
-    New-Item -ItemType File -Path database\database.sqlite | Out-Null
-}
 ..\tools\php\php-local.cmd artisan migrate --force
 ```
 
-The file-creation step is required because the example environment defaults to SQLite and the database file is intentionally not committed. For MariaDB, omit that step, set private local values for `DB_CONNECTION=mariadb`, host, port, database, username, and password, then clear cached configuration. Do not commit `.env` or include credentials in documentation.
+The example environment selects PostgreSQL. Create the development database and configure private connection values before running the commands; see [PostgreSQL](docs/postgresql.md). Do not overwrite an existing `.env`, commit credentials, or treat a new connection as a data migration.
 
 Use `migrate --force` for an existing database. Never use `migrate:fresh` when data must be preserved.
 

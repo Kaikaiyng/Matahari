@@ -37,6 +37,9 @@ class FeeAgreementVersioningService
         ?AuditContext $auditContext = null,
     ): FeeAgreement {
         return DB::transaction(function () use ($student, $data, $userId, $auditContext): FeeAgreement {
+            // Serialize even the first agreement, when there are no agreement rows to lock.
+            Student::query()->whereKey($student->id)->lockForUpdate()->firstOrFail();
+
             $existingCurrent = FeeAgreement::query()
                 ->where('school_id', $student->school_id)
                 ->where('student_id', $student->id)
@@ -55,7 +58,6 @@ class FeeAgreementVersioningService
                 ->where('school_id', $student->school_id)
                 ->where('student_id', $student->id)
                 ->where('academic_year', $data['academic_year'])
-                ->lockForUpdate()
                 ->max('version_no')) + 1;
 
             $agreement = FeeAgreement::query()->create([

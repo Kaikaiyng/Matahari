@@ -33,12 +33,12 @@ class AuditLogController extends Controller
                 $query->where(function ($searchQuery) use ($value) {
                     $pattern = '%'.$value.'%';
                     $searchQuery
-                        ->where('action', 'like', $pattern)
-                        ->orWhere('module', 'like', $pattern)
-                        ->orWhere('entity_type', 'like', $pattern)
-                        ->orWhere('actor_username', 'like', $pattern)
-                        ->orWhere('ip_address', 'like', $pattern)
-                        ->orWhere('request_id', 'like', $pattern);
+                        ->whereLike('action', $pattern)
+                        ->orWhereLike('module', $pattern)
+                        ->orWhereLike('entity_type', $pattern)
+                        ->orWhereLike('actor_username', $pattern)
+                        ->orWhereLike('ip_address', $pattern)
+                        ->orWhereLike('request_id', $pattern);
 
                     if (ctype_digit((string) $value)) {
                         $searchQuery->orWhere('entity_id', (int) $value);

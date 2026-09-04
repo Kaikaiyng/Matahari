@@ -184,21 +184,21 @@ class CommunityAppDataFoundationMigrationTest extends TestCase
         ]);
 
         try {
-            DB::table('assessment_results')->insert([
+            DB::transaction(fn () => DB::table('assessment_results')->insert([
                 'school_id' => $school->id,
                 'assessment_id' => $assessmentId,
                 'student_id' => $student->id,
                 'status' => 'draft',
                 'created_at' => $now,
                 'updated_at' => $now,
-            ]);
+            ]));
             $this->fail('A duplicate assessment result was accepted.');
         } catch (QueryException) {
             $this->assertDatabaseCount('assessment_results', 1);
         }
 
         try {
-            DB::table('quiz_assignment_recipients')->insert([
+            DB::transaction(fn () => DB::table('quiz_assignment_recipients')->insert([
                 'school_id' => $school->id,
                 'quiz_assignment_id' => $assignmentId,
                 'student_id' => $student->id,
@@ -206,7 +206,7 @@ class CommunityAppDataFoundationMigrationTest extends TestCase
                 'resolved_at' => $now,
                 'created_at' => $now,
                 'updated_at' => $now,
-            ]);
+            ]));
             $this->fail('A duplicate materialized Quiz recipient was accepted.');
         } catch (QueryException) {
             $this->assertDatabaseCount('quiz_assignment_recipients', 1);

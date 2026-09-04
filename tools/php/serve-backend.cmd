@@ -1,5 +1,14 @@
 @echo off
+setlocal
 set "ROOT=%~dp0..\.."
-set "PHPRC=%~dp0"
-cd /d "%ROOT%\backend\public"
-php -c "%~dp0php.ini" -S 127.0.0.1:8000 -t "%ROOT%\backend\public" "%ROOT%\backend\vendor\laravel\framework\src\Illuminate\Foundation\resources\server.php"
+
+if not exist "%ROOT%\backend\.env" (
+  echo Configure backend\.env first. See docs\postgresql.md.
+  exit /b 1
+)
+if exist "%LOCALAPPDATA%\Matahari\PostgreSQL\data\PG_VERSION" (
+  call "%ROOT%\tools\postgresql\start-local.cmd"
+  if errorlevel 1 exit /b 1
+)
+cd /d "%ROOT%\backend"
+call "%~dp0php-local.cmd" artisan serve --host=127.0.0.1 --port=8000

@@ -9,6 +9,24 @@ use Illuminate\Support\Str;
 
 abstract class TestCase extends BaseTestCase
 {
+    public function createApplication()
+    {
+        $app = parent::createApplication();
+        $connection = $app['db']->connection();
+
+        // Check before RefreshDatabase / DatabaseMigrations can erase any tables.
+        if ($connection->getDriverName() === 'pgsql') {
+            if (env('MATAHARI_PGSQL_TEST_ALLOW_RESET') !== '1'
+                || $connection->getConfig('url')
+                || $connection->getDatabaseName() !== 'matahari_test'
+                || $connection->selectOne('SELECT current_database() AS name')->name !== 'matahari_test') {
+                throw new \RuntimeException('PostgreSQL tests require explicit MATAHARI_PGSQL_TEST_ALLOW_RESET=1, empty DB_URL, and the disposable matahari_test database.');
+            }
+        }
+
+        return $app;
+    }
+
     /** @param array<string, mixed> $attributes */
     protected function createTenantSchool(array $attributes): School
     {

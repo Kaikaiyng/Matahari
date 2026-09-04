@@ -80,14 +80,14 @@ class PhaseAAcademicFoundationMigrationTest extends TestCase
         ]);
 
         try {
-            ClassEnrolment::query()->create([
+            DB::transaction(fn () => ClassEnrolment::query()->create([
                 'school_id' => $school->id,
                 'academic_year_id' => $year->id,
                 'class_id' => $class->id,
                 'student_id' => $student->id,
                 'status' => 'active',
                 'current_slot' => 1,
-            ]);
+            ]));
             $this->fail('A duplicate current class enrolment was accepted.');
         } catch (QueryException) {
             $this->assertDatabaseCount('class_enrolments', 1);

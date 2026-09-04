@@ -266,7 +266,7 @@ Known limitations:
 - Discounted charge generation is unavailable until formulas and approval behavior are confirmed; it fails closed rather than billing the wrong amount.
 - Agreements with existing charges on or after a proposed replacement month require a future approved correction/reconciliation workflow before superseding.
 - Current central audit coverage includes agreement create/supersede, Fee Record activation/manual charges, payment record/verify/void, and receipt issue/void. Generic corrections, refunds, credits, write-offs, and exports are not implemented.
-- Production MariaDB runtime grants, backups, binary logging, and restore reconciliation are **Not verified**.
+- Production PostgreSQL runtime grants, backups, WAL archival, and restore reconciliation are **Not verified**.
 
 These limitations must be resolved and tested before describing the finance workflow as production-ready.
 

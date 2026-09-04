@@ -1,5 +1,15 @@
 # Current Status
 
+## 2026-09-04 PostgreSQL transition
+
+- PostgreSQL 18.6 replaces MariaDB as the development/deployment target. Laravel defaults, the PHP driver, private database Compose stack, separated migrator/runtime grants and GitHub qualification are updated. Tenant and school authorization structures remain in place.
+- Fixed PostgreSQL agreement-version locking and retained case-insensitive student, fee-record and audit search. The existing tenant-hardening migration now supports PostgreSQL generated columns; old driver branches remain. Historical migration tests now roll back in dependency order and constraint-rejection tests use savepoints.
+- PostgreSQL full backend suite: **413 discovered, 392 passed, 21 legacy engine-specific skips, 2,225 assertions**, zero failures/errors. SQLite compatibility: **413 discovered, 400 passed, 13 skips, 2,239 assertions**, zero failures/errors. The new PostgreSQL-only schema inspection accounts for the extra SQLite skip.
+- PostgreSQL full migration/rollback/re-migration passed. Real deployment initialization, migrations as separate owners, runtime logins, audit SELECT/INSERT, denied audit UPDATE/DELETE/TRUNCATE, denied schema creation and denied cross-environment connections passed. Deployment contracts: **19/19**. Pint and API route loading passed (**159 routes**).
+- The existing local SQLite data was copied into a separate PostgreSQL instance: **84 tables / 502 rows**, normalized row hashes matched, foreign keys validated and sequences reseeded. Original SQLite and a consistent snapshot were retained. A PostgreSQL custom-format backup restored into a separate database with matching table contents and sequences. Private data, credentials and backups remain outside Git.
+- Local launcher: `tools/php/serve-backend.cmd` uses the configured database and starts the installed portable PostgreSQL cluster without resetting data. Explicit legacy SQLite demo launchers remain available. See [PostgreSQL](postgresql.md).
+- **Not verified / not configured:** Docker container startup on this workstation, hosted staging/production, automated off-site backups/WAL archival, native apps/store submission. Admin/App code is unchanged, so their suites/builds were not repeated. This transition is not a production launch or dedicated-mode authorization implementation.
+
 **Snapshot date:** 2026-09-04
 
 **Inspected Phase A implementation commit:** `ecaa0a1f177292ae99c9338e255a1f93312971f5`
