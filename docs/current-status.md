@@ -12,6 +12,11 @@
 
 The root `DESIGN.md` is now the shared UI checkpoint for both product surfaces: the MAW-derived Admin Panel pattern and the Warm School Editorial App pattern remain intentionally distinct while documenting their reusable components, source files, spacing, typography, motion tokens, gesture thresholds, state ownership and hierarchy in one canonical implementation reference.
 
+## 2026-09-04 Admin Picker Test Repairs
+
+- Updated Calendar tests to operate the current time dialog through hour, minute, period and Done controls. Pinned only Date in the Verify Payment test to August 2026 and restored real timers after each test, removing its dependence on the calendar month when the suite runs.
+- The two affected files passed all 90 tests, including the five previously failing cases. Production application behavior is unchanged. Broader suites, builds and MariaDB checks were not repeated for this test-only repair.
+
 ## 2026-09-04 Matahari Project Rename
 
 - Project/product naming, frontend package metadata, HTML titles, default application labels and current documentation now identify Matahari. Git history is preserved.

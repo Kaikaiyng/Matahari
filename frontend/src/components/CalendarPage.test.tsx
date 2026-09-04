@@ -21,8 +21,14 @@ async function chooseDate(user: TestUser, label: string, accessibleDate: string)
 }
 
 async function chooseTime(user: TestUser, label: string, time: string) {
+  const [, hour, minute, period] = /^(\d{1,2}):(\d{2}) (am|pm)$/.exec(time) ?? []
+  if (!hour || !minute || !period) throw new Error(`Invalid test time: ${time}`)
   await user.click(screen.getByLabelText(label))
-  await user.click(within(screen.getByRole('listbox')).getByRole('option', { name: time }))
+  const picker = within(screen.getByRole('dialog', { name: 'Select time' }))
+  await user.click(picker.getByRole('button', { name: `${Number(hour)} o'clock` }))
+  await user.click(picker.getByRole('button', { name: `${minute} minutes` }))
+  await user.click(picker.getByRole('button', { name: period.toUpperCase() }))
+  await user.click(picker.getByRole('button', { name: 'Done' }))
 }
 
 const originalHostTimeZone = vi.hoisted(() => {

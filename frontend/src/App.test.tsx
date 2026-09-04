@@ -451,7 +451,10 @@ describe('demo shell', () => {
     vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined)
     installApiMock()
   })
-  afterEach(() => vi.restoreAllMocks())
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.restoreAllMocks()
+  })
 
   it('explains that the saved session is being checked', () => {
     vi.mocked(globalThis.fetch).mockImplementation(() => new Promise<Response>(() => undefined))
@@ -1274,6 +1277,8 @@ describe('demo shell', () => {
   })
 
   it('preserves Verify Payment submission and success refresh behavior', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 7, 18, 12))
     const user = userEvent.setup()
     installApiUser(financeDialogUser)
     const fetchMock = vi.mocked(globalThis.fetch)
