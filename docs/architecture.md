@@ -1,5 +1,7 @@
 # Architecture
 
+**2026-09-04 product direction:** The active project is Matahari. RYLAY SaaS is deferred. Existing tenant/permission structures and operational identifiers remain unchanged; single-organization deployment enforcement is still planned. Historical domain and deployment examples below are not a live Matahari environment.
+
 **Status:** Current implementation reference
 
 **Repository baseline:** Extensible Notification Channel foundation (2026-08-27)

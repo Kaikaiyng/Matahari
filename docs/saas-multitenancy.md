@@ -1,5 +1,7 @@
 # SaaS Multi-Tenancy
 
+**2026-09-04 product direction:** The active project is Matahari. RYLAY SaaS is deferred. Existing tenant/permission structures and operational identifiers remain unchanged; single-organization deployment enforcement is still planned. Historical domain and deployment examples below are not a live Matahari environment.
+
 **Status:** Implemented and locally hardened; production rollout pending
 
 **Reviewed:** 2026-08-15

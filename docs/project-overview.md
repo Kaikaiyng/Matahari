@@ -8,11 +8,11 @@
 
 ## Business Purpose
 
-The product is the owner's configurable school-software SaaS named **RYLAY**, using the registered primary domain `rylay.my`. It serves multiple customer tenants from one Laravel backend and authoritative MariaDB database; each tenant can contain multiple schools/campuses and has separate Admin/App domains, branding, features, memberships and role scopes. MIS is the first tenant/demo configuration. It is not yet a production-complete academic ERP.
+The current product is **Matahari**, an independent school system for Matahari International School. The priority is first-school delivery across Admin/Finance and the Teacher/Parent/Student School App. RYLAY SaaS development is deferred. Existing tenant, school, membership, branding and feature configuration remains the current technical foundation; dedicated single-organization enforcement is a separate planned change.
 
 All tenants share the same Admin/App code and backend release. Tenant variation is configuration-only through host-resolved `branding` and `features`; per-tenant code forks are not an approved customization mechanism.
 
-The Admin workspace uses the owner's MAW-derived personal UI pattern as its default presentation contract. RYLAY retains its own school workflows, API data, permission enforcement, tenant branding, and burgundy selection/action colour; the reference supplies only layout, typography, surface, control, and motion behavior. The multi-role School App remains a separate visual and runtime surface.
+The Admin workspace uses the owner's MAW-derived personal UI pattern as its default presentation contract. Matahari retains its own school workflows, API data, permission enforcement, tenant branding, and burgundy selection/action colour; the reference supplies only layout, typography, surface, control, and motion behavior. The multi-role School App remains a separate visual and runtime surface.
 
 ## Intended Users
 

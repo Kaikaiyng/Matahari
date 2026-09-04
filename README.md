@@ -1,8 +1,8 @@
-# RYLAY — Multi-Tenant School Administration Platform
+# Matahari — School Administration and School App
 
-This repository is the RYLAY configurable school-administration SaaS under incremental development. Matahari International School (MIS) is the first tenant and demo configuration. The product contains an Admin/Finance browser surface and an independent mobile-first School App with Teacher, Parent, and Student personas. Both clients use the same Laravel API and authoritative database, resolve a tenant from their subdomain, and remain separate builds/deployments. It is not yet production-ready or a native store release.
+Matahari is the school administration, finance, attendance, and School App project for Matahari International School (MIS). The immediate goal is the first school delivery: an Admin/Finance browser surface and a Teacher/Parent/Student School App, with App Store and Google Play delivery still pending. RYLAY SaaS development is deferred. Both clients retain the existing Laravel API, host-resolved organization context, and separate builds. The system is not yet production-ready or a native store release.
 
-All tenants run the same Admin/App code and shared backend. Tenant-specific presentation and availability may differ only through host-resolved `branding` and `features`; tenant-specific frontend copies or code branches are not part of the architecture.
+The existing tenant, membership, school, branding, and feature structures remain in place to preserve authorization and data integrity. A locked single-organization Matahari deployment is planned, not implemented by this naming change.
 
 Tenant branding is runtime configuration. Branding changes never authorize rewriting tenant identity, student numbers, invoice numbers, receipt numbers, or other historical records. See [SaaS Multi-Tenancy](docs/saas-multitenancy.md).
 
@@ -20,7 +20,7 @@ Implemented workflows include:
 - Shared school calendar CRUD.
 - Phase A academic foundation APIs for academic years, class enrolments, subjects, teaching assignments, and reviewed portal identity links.
 - Independent `app/` School App views for Teacher, Parent, and Student, with first-use choice for multi-persona users, role-aware liquid-glass navigation, self-service identity endpoints, personal notifications, and read-only parent finance.
-- Channel-neutral notification dispatch with the existing in-app channel plus scoped external destination configuration for future RYLAY-global, tenant, or school operations integrations.
+- Channel-neutral notification dispatch with the existing in-app channel plus scoped external destination configuration for future application-global, tenant, or school operations integrations.
 - Daily class Attendance: assignment-scoped Teacher roster marking, linked-child Parent history reads, Student exclusion, correction reasons, and transactional audit logging.
 - Campus Attendance: immutable entry/exit timelines, face/card/manual method records, idempotent external event IDs, device/settings preparation, Parent linked-child status, and explicit Student exclusion. Real Hikvision protocol/authentication is not verified.
 - Official **School Updates**: employees with the publishing ability post required text and optional images to the whole school or selected active classes; notifications are optional and recipient resolution is server-side.
@@ -211,7 +211,7 @@ Before Apple App Store or Google Play submission, configure the real HTTPS polic
 - [Phase A Academic Foundation Delivery](docs/phase-a-academic-foundation.md)
 - [Mobile Product Architecture and Roadmap](docs/mobile-product-roadmap.md)
 - [Historical MIS App Product Specification](docs/mobile-app-product-spec.md)
-- [RYLAY Admin and App UI Design System](DESIGN.md)
+- [Matahari Admin and App UI Design System](DESIGN.md)
 - [Deployment Foundation](docs/deployment-foundation.md)
 - [Staging and Production Deployment Design](docs/superpowers/specs/2026-08-06-staging-production-deployment-design.md) — approved direction; repository foundation partially implemented
 - [Documentation Index](docs/README.md)

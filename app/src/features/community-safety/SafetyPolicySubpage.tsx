@@ -91,7 +91,7 @@ export function SafetyPolicySubpage({ slug, onBack }: { slug: string; onBack: ()
               {school?.whatsapp_phone && whatsappDigits && <a href={`https://wa.me/${whatsappDigits}`}><span><MessageCircle size={18} /></span><strong>WhatsApp support</strong><small>{school.whatsapp_phone}</small></a>}
               {school?.support_email && <a href={`mailto:${school.support_email}`}><span><Mail size={18} /></span><strong>Email school support</strong><small>{school.support_email}</small></a>}
               {school?.operating_hours && <div className="safety-policy-contact-hours"><span><Clock size={18} /></span><strong>Support hours</strong><small>{school.operating_hours}</small></div>}
-              {!school && policy.support.email && <a href={`mailto:${policy.support.email}`}><span><Headphones size={18} /></span><strong>RYLAY Support</strong><small>{policy.support.email}</small></a>}
+              {!school && policy.support.email && <a href={`mailto:${policy.support.email}`}><span><Headphones size={18} /></span><strong>Matahari Support</strong><small>{policy.support.email}</small></a>}
               {policy.support.child_safety_email && <a href={`mailto:${policy.support.child_safety_email}`}><span><ShieldCheck size={18} /></span><strong>Child safety</strong><small>{policy.support.child_safety_email}</small></a>}
             </div>
             <p className="safety-policy-emergency">This service is not an emergency channel. Contact local emergency services if someone is in immediate danger.</p>

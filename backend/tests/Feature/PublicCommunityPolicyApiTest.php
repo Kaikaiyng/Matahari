@@ -24,7 +24,7 @@ class PublicCommunityPolicyApiTest extends TestCase
         $response = $this->getJson('http://127.0.0.1/api/v1/public/community-policies/child-safety')
             ->assertOk()
             ->assertJsonPath('data.slug', 'child-safety')
-            ->assertJsonPath('data.developer_name', 'RYLAY')
+            ->assertJsonPath('data.developer_name', 'Matahari')
             ->assertJsonPath('data.organization_name', 'Matahari International School')
             ->assertJsonPath('data.support.child_safety_email', 'safety@example.test');
 

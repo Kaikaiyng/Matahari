@@ -36,11 +36,11 @@ class PublicCommunityPolicyController extends Controller
         $fallbacks = [
             'terms' => [
                 'title' => 'Terms of Use',
-                'sections' => [['heading' => 'Terms of Use', 'body' => 'Use of the RYLAY Community feature is subject to institution membership, verified identity, and adherence to the Community Standards. Unlawful, harassing, or harmful conduct is strictly prohibited.']],
+                'sections' => [['heading' => 'Terms of Use', 'body' => 'Use of the Matahari Community feature is subject to institution membership, verified identity, and adherence to the Community Standards. Unlawful, harassing, or harmful conduct is strictly prohibited.']],
             ],
             'privacy' => [
                 'title' => 'Privacy Notice',
-                'sections' => [['heading' => 'Privacy Policy', 'body' => 'RYLAY preserves user privacy within the closed school context. Personal identity data, moderation records, and security logs are accessed only for authorized administration and safeguarding purposes.']],
+                'sections' => [['heading' => 'Privacy Policy', 'body' => 'Matahari preserves user privacy within the closed school context. Personal identity data, moderation records, and security logs are accessed only for authorized administration and safeguarding purposes.']],
             ],
             'community-standards' => [
                 'title' => 'Community Standards',
@@ -48,15 +48,15 @@ class PublicCommunityPolicyController extends Controller
             ],
             'child-safety' => [
                 'title' => 'Child Safety Standards',
-                'sections' => [['heading' => 'Child Safety Policy', 'body' => 'RYLAY strictly prohibits child sexual abuse material (CSAM), child sexual exploitation (CSAE), grooming, sextortion, and minor endangerment. Suspected material is immediately quarantined and reported according to lawful procedures.']],
+                'sections' => [['heading' => 'Child Safety Policy', 'body' => 'Matahari strictly prohibits child sexual abuse material (CSAM), child sexual exploitation (CSAE), grooming, sextortion, and minor endangerment. Suspected material is immediately quarantined and reported according to lawful procedures.']],
             ],
             'account-deletion' => [
                 'title' => 'Account Deletion Request',
-                'sections' => [['heading' => 'Account Deletion Request', 'body' => 'RYLAY user accounts are provisioned by school administrators. You may submit an account deletion request by contacting RYLAY support or your school administration. Upon confirmation, your personal identity information (PII), authentication credentials, and non-essential community contributions will be permanently purged or anonymized. Required academic and financial history records are retained in anonymized form for legal audit compliance.']],
+                'sections' => [['heading' => 'Account Deletion Request', 'body' => 'Matahari user accounts are provisioned by school administrators. You may submit an account deletion request by contacting Matahari support or your school administration. Upon confirmation, your personal identity information (PII), authentication credentials, and non-essential community contributions will be permanently purged or anonymized. Required academic and financial history records are retained in anonymized form for legal audit compliance.']],
             ],
             'support' => [
                 'title' => 'Support',
-                'sections' => [['heading' => 'Contact Support', 'body' => 'Contact RYLAY support for account, privacy, or Community safety assistance. Do not use ordinary support channels as an emergency service.']],
+                'sections' => [['heading' => 'Contact Support', 'body' => 'Contact Matahari support for account, privacy, or Community safety assistance. Do not use ordinary support channels as an emergency service.']],
             ],
         ];
 
@@ -68,9 +68,9 @@ class PublicCommunityPolicyController extends Controller
             'version' => $policy?->version,
             'effective_at' => $policy?->effective_at?->toIso8601String(),
             'sections' => $policy?->sections ?? $fallback['sections'],
-            'developer_name' => (string) config('community_safety.developer_name', 'RYLAY'),
-            'organization_name' => $tenant?->branding?->organization_name ?? $tenant?->name ?? 'RYLAY Platform',
-            'store_safety_disclosure' => 'RYLAY prohibits child sexual abuse and exploitation (CSAE), child sexual abuse material (CSAM), grooming, sextortion, trafficking, and the sexualization of children.',
+            'developer_name' => (string) config('community_safety.developer_name', 'Matahari'),
+            'organization_name' => $tenant?->branding?->organization_name ?? $tenant?->name ?? 'Matahari Platform',
+            'store_safety_disclosure' => 'Matahari prohibits child sexual abuse and exploitation (CSAE), child sexual abuse material (CSAM), grooming, sextortion, trafficking, and the sexualization of children.',
             'support' => [
                 'email' => config('community_safety.support_email'),
                 'child_safety_email' => config('community_safety.child_safety_contact_email'),

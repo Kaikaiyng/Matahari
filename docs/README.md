@@ -1,8 +1,8 @@
 # Documentation Index
 
-Start with the canonical documents below. The platform is named RYLAY, uses `rylay.my`, and has MIS as its first tenant. The documents explicitly separate current behavior from production rollout gates and unverified policy.
+Start with the canonical documents below. The active project is Matahari, focused on first-school delivery; RYLAY SaaS is deferred. The documents separate implemented behavior from planned deployment and store-release work.
 
-Documents dated before the 2026-08-15 platform rename may retain the former repository/platform identifier when quoting historical commands, screenshots, tests, or decisions. Those occurrences are historical evidence, not current naming or operational guidance. Matahari International School references remain current when they identify the MIS tenant.
+Historical records may retain RYLAY names, domains, commands and release identifiers. They are not instructions to rename existing databases, rewrite financial history, or provision a domain. The 2026-09-04 rename changes project/product naming while retaining tenant and permission structures.
 
 ## Canonical Project Knowledge
 

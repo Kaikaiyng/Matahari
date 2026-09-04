@@ -86,7 +86,7 @@ export function AuditTrailPage({ onUnauthorized }: { onUnauthorized: () => void 
 
   return (
     <section className="page-stack audit-trail-page">
-      <OperationalHeader icon={<ShieldCheck size={20} />} title="Audit Trail" description="Detailed change history and security activity across the RYLAY platform." />
+      <OperationalHeader icon={<ShieldCheck size={20} />} title="Audit Trail" description="Detailed change history and security activity for Matahari." />
 
       <div className="audit-summary" aria-label="Audit Trail summary">
         <StatCard label="Total events" value={summary.total} icon={<Activity size={18} />} meta="Complete recorded history" />

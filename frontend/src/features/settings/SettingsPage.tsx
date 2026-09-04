@@ -275,7 +275,7 @@ export function SettingsPage({ user, dashboard, onNavigate }: SettingsPageProps)
       <PageHeader
         eyebrow="Administration"
         title="System Settings"
-        description="Manage the school configuration already supported by RYLAY."
+        description="Manage Matahari school settings."
       />
 
       <div className="settings-workspace">

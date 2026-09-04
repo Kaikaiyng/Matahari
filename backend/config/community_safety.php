@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'developer_name' => env('COMMUNITY_DEVELOPER_NAME', 'RYLAY'),
+    'developer_name' => env('COMMUNITY_DEVELOPER_NAME', 'Matahari'),
     'required_acceptance_policy_types' => ['terms', 'community_standards'],
     'reason_codes' => [
         'child_safety', 'sexual_content', 'bullying_harassment', 'threats_violence',

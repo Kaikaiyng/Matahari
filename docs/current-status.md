@@ -1,6 +1,6 @@
 # Current Status
 
-**Snapshot date:** 2026-08-30
+**Snapshot date:** 2026-09-04
 
 **Inspected Phase A implementation commit:** `ecaa0a1f177292ae99c9338e255a1f93312971f5`
 
@@ -8,9 +8,15 @@
 
 **Pre-reconciliation pushed baseline:** `49e3e6662679dd32aa743c53917d8e97abbe8206` (`docs: record integrated school updates delivery`) on `feat/admin-application-logs`
 
-**Overall status:** SaaS multi-tenant foundation in final validation, with MIS as the first tenant; separate Admin and multi-role App clients, live School Updates, daily Attendance, Assessment publication, Parent Finance reads/receipt access/manual in-app reminders, class Schedule, and formal Quiz V1 remain shared tenant-aware modules. Practice/AI Quiz, native/store delivery, automated DNS/TLS and production operations remain incomplete.
+**Overall status:** Matahari first-school delivery is the active product goal; RYLAY SaaS is deferred. Existing tenant-aware Admin/App functionality remains. Dedicated single-organization enforcement, production operations, native packaging and store delivery are still incomplete.
 
 The root `DESIGN.md` is now the shared UI checkpoint for both product surfaces: the MAW-derived Admin Panel pattern and the Warm School Editorial App pattern remain intentionally distinct while documenting their reusable components, source files, spacing, typography, motion tokens, gesture thresholds, state ownership and hierarchy in one canonical implementation reference.
+
+## 2026-09-04 Matahari Project Rename
+
+- Project/product naming, frontend package metadata, HTML titles, default application labels and current documentation now identify Matahari. Git history is preserved.
+- Runtime tenant/membership/school authorization, database schema, operational database/container identifiers, existing policy versions and financial history are unchanged. The rename does not implement a single-organization deployment or certify store readiness.
+- Rename validation repeated the baseline: Backend 400 passed/12 skipped, App 58 passed and Admin 201 passed/5 failed. Both clients passed lint and production build. The same five Admin failures involve four obsolete time-picker interactions and one date-dependent payment test; they remain separate follow-up work. MariaDB, real-device and production deployment checks were not rerun for this naming-only change.
 
 ## 2026-08-30 Fee Catalogue Management
 

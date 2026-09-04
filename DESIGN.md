@@ -1,10 +1,10 @@
-# RYLAY UI Design System — Admin Panel and School App
+# Matahari UI Design System — Admin Panel and School App
 
 **Current visual baseline:** approved reusable checkpoint reviewed 2026-08-30. This is not the final design specification.
 
 ## Shared Product Principles
 
-- Admin Panel and School App share RYLAY product identity, MIS tenant colours, clear information hierarchy, honest system states, accessible controls and restrained motion.
+- Admin Panel and School App share Matahari product identity, MIS tenant colours, clear information hierarchy, honest system states, accessible controls and restrained motion.
 - They are separate runtime and visual surfaces. Reuse interaction principles and brand meaning, but do not apply desktop Admin density directly to the phone-first App or App editorial cards directly to operational Admin tables.
 - MIS Crimson indicates active navigation and primary action. Deep Ink carries the visual centre; Muted Ink supports it. Semantic green, amber and red retain their operational meanings.
 - UI visibility never replaces backend authorization, tenant/school scope or audited business rules.
@@ -12,7 +12,7 @@
 
 ## Admin Panel — MAW-Derived Personal Pattern
 
-This is the owner's reusable desktop administration pattern, adapted from MAW structure and motion while retaining RYLAY workflows, MIS branding and permission enforcement. Dashboard and `frontend/src/PersonalAdminPattern.css` are the current visual references.
+This is the owner's reusable desktop administration pattern, adapted from MAW structure and motion while retaining Matahari workflows, MIS branding and permission enforcement. Dashboard and `frontend/src/PersonalAdminPattern.css` are the current visual references.
 
 ### Shell and page layout
 
@@ -48,7 +48,7 @@ This is the owner's reusable desktop administration pattern, adapted from MAW st
 ### Admin reuse boundary
 
 - New Admin pages should compose the existing shell, Dashboard-style cards, toolbars, data panels and system controls before creating new primitives.
-- MAW is a layout, typography, surface and motion reference—not a source of RYLAY data, permissions, terminology or unsupported features.
+- MAW is a layout, typography, surface and motion reference—not a source of Matahari data, permissions, terminology or unsupported features.
 - This Admin pattern is a checkpoint. Exact sizes may evolve after broader page and device review, but new work should remain internally consistent with it until superseded here.
 
 ### Admin implementation recipe
@@ -206,7 +206,7 @@ App motion checkpoint:
 | Full subpage exit/rebound | `220ms cubic-bezier(0.25, 1, 0.5, 1)` | Follow the gesture or button action; unmount only after completion |
 | Swipe completion | More than 30% width, or a rightward flick over 45px within 250ms | Close exactly one active level |
 | Swipe direction lock | Right delta over 8px and greater than vertical movement × 1.1 | Prevent vertical scroll and left swipe from becoming Back |
-| Bottom capsule selection | Grow `200ms cubic-bezier(0.2, 0.8, 0.2, 1)`; colour/background `180ms ease` | Preserve the RYLAY liquid-capsule identity |
+| Bottom capsule selection | Grow `200ms cubic-bezier(0.2, 0.8, 0.2, 1)`; colour/background `180ms ease` | Preserve the Matahari liquid-capsule identity |
 | Select/popover entrance | `180ms cubic-bezier(0.16, 1, 0.3, 1)` | Short fade and upward offset only |
 | Press feedback | `150–160ms ease` | Small scale or one-pixel lift; never a large bounce |
 | Skeleton shimmer | `1.2–1.5s ease-in-out/linear` | Loading indication only; disable for reduced motion |

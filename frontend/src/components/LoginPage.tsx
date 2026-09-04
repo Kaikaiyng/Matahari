@@ -110,7 +110,7 @@ export function LoginPage({ onLogin }: { onLogin: (user: CurrentUser) => void })
             <label className="login-checkbox-label"><input type="checkbox" checked={rememberMe} onChange={(event) => setRememberMe(event.target.checked)} /><span>Remember me</span></label>
             <button type="submit" className="login-submit-btn" disabled={isSubmitting}>{isSubmitting ? 'Signing in…' : 'Login'}</button>
           </form>
-          <div className="login-footer-text">Protected by tenant-scoped role permissions and audit controls.</div>
+          <div className="login-footer-text">Protected by role permissions and audit controls.</div>
         </div>
       </section>
     </main>

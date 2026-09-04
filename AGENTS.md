@@ -1,8 +1,8 @@
-# RYLAY Agent Instructions
+# Matahari Agent Instructions
 
 ## Project Summary
 
-RYLAY is a multi-tenant school administration, finance, and community SaaS using `rylay.my`; Matahari International School is its first tenant/demo configuration. The repository contains one Laravel 13 JSON API, an Admin-only React 19/TypeScript workspace in `frontend/`, and an independent mobile-first multi-role React workspace in `app/`. Both clients share the backend and authoritative database, resolve tenant context from separate Admin/App domains, and are built/deployed separately. It is not a complete academic ERP or verified as production-ready.
+Matahari is the independent school administration, finance, attendance, and School App delivery project for Matahari International School (MIS). RYLAY SaaS expansion is deferred until the first school is operational. The repository contains one Laravel 13 JSON API, an Admin-only React 19/TypeScript workspace in `frontend/`, and an independent mobile-first multi-role React workspace in `app/`. Both clients share the backend and authoritative database and remain separate builds. Existing tenant, membership, school, branding, and feature structures are retained; single-organization enforcement and production/native-store readiness are not implemented by the rename.
 
 ## Read Before Editing
 
@@ -55,7 +55,7 @@ RYLAY is a multi-tenant school administration, finance, and community SaaS using
 
 - Use a consistent 16px gap between sibling cards and panels. The parent layout owns that gap; child cards must not add a second outer margin that doubles the spacing.
 - The owner-approved Admin UI pattern is the latest local MAW AdminPanel design translated through `frontend/src/PersonalAdminPattern.css`, the shared Admin components, and Matahari/MIS brand tokens. Dashboard is the canonical surface reference. New Admin pages must reuse the same typography, density, cards, controls, tables, dialogs, sidebar motion, and reduced-motion behavior; do not copy MAW automotive business logic or add its Tailwind/MUI dependencies.
-- Keep semantic success, warning, danger, and information colours semantic. Burgundy is reserved for RYLAY/MIS branding, primary actions, selection, focus, and active navigation.
+- Keep semantic success, warning, danger, and information colours semantic. Burgundy is reserved for Matahari/MIS branding, primary actions, selection, focus, and active navigation.
 
 ## Development Constraints
 
