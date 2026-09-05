@@ -47,7 +47,7 @@ jobs:
       APP_ENV: testing
       APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.commit }}
       - uses: shivammathur/setup-php@v2
@@ -55,7 +55,7 @@ jobs:
           php-version: '8.4'
           extensions: bcmath, intl, pdo_pgsql, pdo_sqlite, zip
           coverage: none
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '24'
           cache: npm

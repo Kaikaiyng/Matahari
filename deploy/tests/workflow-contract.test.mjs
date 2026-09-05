@@ -11,7 +11,7 @@ test('master workflow checks, builds once, and retains the immutable artifact', 
   assert.match(workflow, /composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader/)
   assert.match(workflow, /create-release\.mjs/)
   assert.match(workflow, /package-release\.sh/)
-  assert.match(workflow, /actions\/upload-artifact@v4/)
+  assert.match(workflow, /actions\/upload-artifact@v7/)
   assert.match(workflow, /retention-days: 30/)
   assert.match(workflow, /uses: \.\/\.github\/workflows\/full-qualification\.yml/)
 })
