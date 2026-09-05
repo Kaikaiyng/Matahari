@@ -2,15 +2,15 @@
 
 **Status:** Current implementation and confirmed product context
 
-**Repository baseline:** Integrated delivery on `feat/admin-application-logs`; default `master` merge remains separate
+**Repository baseline:** Matahari dedicated-mode and store-readiness hardening, 2026-09-05
 
-**Reviewed:** 2026-08-27
+**Reviewed:** 2026-09-05
 
 ## Business Purpose
 
-The current product is **Matahari**, an independent school system for Matahari International School. The priority is first-school delivery across Admin/Finance and the Teacher/Parent/Student School App. RYLAY SaaS development is deferred. Existing tenant, school, membership, branding and feature configuration remains the current technical foundation; dedicated single-organization enforcement is a separate planned change.
+The current product is **Matahari**, an independent school system for Matahari International School. The priority is first-school delivery across Admin/Finance and the Teacher/Parent/Student School App. RYLAY SaaS development is deferred. Existing tenant, school, membership, branding and feature configuration remains the technical foundation. Dedicated mode now restricts hostname resolution to the configured `mis` tenant and closes SaaS platform routes.
 
-All tenants share the same Admin/App code and backend release. Tenant variation is configuration-only through host-resolved `branding` and `features`; per-tenant code forks are not an approved customization mechanism.
+Matahari Admin and App share one backend release and authoritative PostgreSQL database. Branding and features remain host-resolved configuration rather than hard-coded business data. The retained multi-tenant model is a future RYLAY foundation; it is inactive while `TENANCY_MODE=dedicated`.
 
 The Admin workspace uses the owner's MAW-derived personal UI pattern as its default presentation contract. Matahari retains its own school workflows, API data, permission enforcement, tenant branding, and burgundy selection/action colour; the reference supplies only layout, typography, surface, control, and motion behavior. The multi-role School App remains a separate visual and runtime surface.
 

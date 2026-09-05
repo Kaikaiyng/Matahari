@@ -23,6 +23,13 @@ class TenantIsolationApiTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        config(['tenancy.mode' => 'multi_tenant']);
+    }
+
     public function test_domain_resolves_public_branding_surface_and_feature_flags(): void
     {
         [$tenant] = $this->tenantFixture('alpha', 'alpha.admin.example.test', 'admin');

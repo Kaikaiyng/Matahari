@@ -1,12 +1,12 @@
 # Audit Log Operations
 
-**Reviewed:** 2026-08-26
+**Reviewed:** 2026-09-05
 
 The same append-only and least-privilege rules apply to Admin, Phase A foundation, finance, class/campus Attendance, employee Position/User Ability changes, and School Updates/Post Report audit events. Material Attendance, employee-access, School Update, student, and finance mutations write their audit row in the same transaction; a failed audit insert must roll back the mutation. Application Logs are a separate sanitized read-only operational view and never replace Audit Trail records.
 
 ## Security Boundary
 
-RYLAY treats `audit_logs` as append-only for the application runtime. Laravel model guards prevent ordinary instance updates and deletes, but they do not stop bulk queries, raw SQL, migration credentials, or database administrators.
+Matahari treats `audit_logs` as append-only for the application runtime. Laravel model guards prevent ordinary instance updates and deletes, but they do not stop bulk queries, raw SQL, migration credentials, or database administrators.
 
 Before Production launch, use separate migration, recovery and runtime database identities. PostgreSQL is the active database. The runtime account must not own database/schema/table objects, have privileged role attributes or inherit another role. It receives CONNECT, schema USAGE, and direct table/sequence permissions only.
 
@@ -28,7 +28,7 @@ These are integration requirements for later phases, not a claim that every busi
 
 Before the column-addition stage starts, drain in-flight requests and queued jobs, then stop every old application process that can write `audit_logs`. Keep those writers quiesced until all three stages are recorded and the post-migration checks pass. Do not run old and upgraded writers continuously against the schema during this migration.
 
-The secure audit schema upgrade is split into separately recorded column-addition, backfill, and constraint/index stages. If an unrecorded stage fails after MariaDB has committed some DDL, preserve the database and diagnose the original error before rerunning `php artisan migrate --force`. The stages inspect the live schema, keep existing backfilled UUIDs, fill only null Phase 1 values, and skip exact indexes or constraints that already exist.
+The secure audit schema upgrade is split into separately recorded column-addition, backfill, and constraint/index stages. If an unrecorded stage fails, preserve the database and diagnose the original error before rerunning `php artisan migrate --force`; never assume transaction behavior made a partial attempt harmless. The stages inspect the live schema, keep existing backfilled UUIDs, fill only null Phase 1 values, and skip exact indexes or constraints that already exist.
 
 The constraint stage repeats the null-only backfill immediately before enforcing invariants. This is a recovery defense for a row committed between recorded stages; it is not permission to leave mixed-version writers running during the upgrade.
 

@@ -1,6 +1,6 @@
-# RYLAY School App
+# Matahari School App
 
-This is the independent mobile-first web workspace for Parent, Student, and Teacher users of the active SaaS tenant. Higher employee access remains within the Teacher persona through explicit User Abilities. The App has its own login, build, tests, deployment surface, and domain boundary. It fetches `/api/tenant-context`, requires an `app` surface, and applies tenant branding/features. It shares the Laravel API and authoritative database with the Admin Panel but not its frontend runtime.
+This is the independent mobile-first web workspace for Matahari Parent, Student, and Teacher users. Higher employee access remains within the Teacher persona through explicit User Abilities. The App has its own login, build, tests, deployment surface, and domain boundary. It fetches `/api/tenant-context`, requires an `app` surface, and applies MIS branding/features. It shares the Laravel API and authoritative database with the Admin Panel but not its frontend runtime.
 
 ## Current Experience
 

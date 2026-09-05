@@ -1,18 +1,18 @@
 # Deployment Foundation
 
-**2026-09-04 product direction:** The active project is Matahari. RYLAY SaaS is deferred. Existing tenant/permission structures and operational identifiers remain unchanged; single-organization deployment enforcement is still planned. Historical domain and deployment examples below are not a live Matahari environment.
+**2026-09-05 product direction:** The active project is Matahari. RYLAY SaaS is deferred. Existing tenant/permission structures and operational identifiers remain, and the application now enforces a dedicated `mis` deployment. Historical domain examples below are not a live Matahari environment.
 
 **Status:** Repository foundation implemented; real staging, production, backup, and monitoring are not configured
 
-**Updated:** 2026-09-04
+**Updated:** 2026-09-05
 
 PostgreSQL supersedes the database engine in historical deployment plans. See [PostgreSQL](postgresql.md) for setup and recovery.
 
 This document describes the deployment material currently stored in the repository. The approved target architecture remains in [Staging and Production Deployment Design](superpowers/specs/2026-08-06-staging-production-deployment-design.md).
 
-The deployment foundation now also requires hostname-based tenant resolution. Each tenant Admin/App domain must reverse-proxy same-origin `/api`, exist as an active verified tenant domain, and have externally managed DNS/TLS. Automated custom-domain verification/certificate provisioning is not yet implemented; see [SaaS Multi-Tenancy](saas-multitenancy.md).
+The deployment foundation requires hostname-based organization resolution. Each Matahari Admin/App domain must reverse-proxy same-origin `/api`, belong to the active verified `mis` tenant, and have externally managed DNS/TLS. The Laravel `APP_ENV_FILE` must contain `TENANCY_MODE=dedicated` and `TENANCY_DEDICATED_TENANT_SLUG=mis`; values in the Compose interpolation file alone do not configure Laravel. Automated custom-domain verification/certificate provisioning is not implemented; see [Tenancy Foundation and Future RYLAY SaaS](saas-multitenancy.md).
 
-RYLAY owns `rylay.my`; DNS authority has been delegated to Cloudflare, while the domain registration is with Hostinger. The approved initial host pattern is `{tenant}.rylay.my` for Admin and `{tenant}-app.rylay.my` for App, plus `console.rylay.my` for future platform control. Hostinger KVM 2 is the preferred initial VPS option, but no VPS or production origin is provisioned yet, so these remain reserved names rather than live deployment claims.
+`rylay.my` and its earlier tenant-domain pattern remain reserved for future SaaS work. Matahari production domains and hosting have not been selected or provisioned, so no hostname in this document is a live deployment claim.
 
 ## Implemented Repository Components
 

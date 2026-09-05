@@ -74,7 +74,7 @@ Route::middleware($sessionMiddleware)->group(function (): void {
 });
 
 Route::middleware([...$sessionMiddleware, 'auth', 'active', 'tenant.member', 'tenant.surface:admin'])->group(function (): void {
-    Route::prefix('v1/platform')->middleware('platform.owner')->group(function (): void {
+    Route::prefix('v1/platform')->middleware(['tenancy.multi', 'platform.owner'])->group(function (): void {
         Route::get('/tenants', [PlatformTenantController::class, 'index']);
         Route::post('/tenants', [PlatformTenantController::class, 'store']);
         Route::patch('/tenants/{tenant}/status', [PlatformTenantController::class, 'updateStatus']);

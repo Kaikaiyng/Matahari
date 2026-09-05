@@ -1,6 +1,6 @@
 # PostgreSQL
 
-PostgreSQL 18.6 is the Matahari development and deployment database from 2026-09-04. Admin and School App still share one Laravel API and database. Tenant, school, permissions, financial-history and audit boundaries remain enforced; changing the database does not implement a dedicated-mode authorization policy.
+PostgreSQL 18.6 is the Matahari development and deployment database from 2026-09-04. Admin and School App share one Laravel API and database. Tenant, school, permissions, financial-history and audit boundaries remain enforced. Dedicated mode separately locks runtime resolution to the `mis` tenant and disables platform tenant-management routes.
 
 ## Local development
 

@@ -282,7 +282,7 @@ Expected additions are:
 - any indexes proven necessary by the implemented list, recipient, and attempt queries;
 - optional provenance fields linking a confirmed draft to its generation run.
 
-The current string `question_type` column remains protected by backend enum validation. If a database-level check constraint is proposed, verify its exact MariaDB behavior and migration lifecycle first.
+The current string `question_type` column remains protected by backend enum validation. If a database-level check constraint is proposed, verify its exact PostgreSQL behavior and migration lifecycle first.
 
 When later enabling short and fill-blank answers, use an additive design such as answer-key rows plus nullable submitted answer text and manual-marking metadata. Do not overload `quiz_options` with fake free-text options or rewrite historical V1 records.
 
@@ -326,7 +326,7 @@ Required coverage includes:
 - transactional Quiz persistence and audit rollback;
 - class/direct target union and recipient deduplication;
 - attempt concurrency and server-side scoring;
-- migration fresh, rollback/re-migrate, existing-data upgrade, and MariaDB FK/index lifecycle;
+- migration fresh, rollback/re-migrate, existing-data upgrade, and PostgreSQL FK/index lifecycle;
 - App and Admin regression suites, lint, type checking, builds, route loading, Pint, and full PHPUnit.
 
 ## Delivery Sequence and Complexity
@@ -350,7 +350,7 @@ Because SDK releases, provider models, prices, and structured-output behavior ca
 - provider/model structured-output support;
 - provider data-retention settings and school privacy requirements;
 - current pricing and operational limits;
-- MariaDB migration and constraint behavior;
+- PostgreSQL migration and constraint behavior;
 - the then-current RYLAY Quiz schema and roadmap.
 
 No implementation should proceed merely because this document exists; the Quiz stage must be explicitly started.

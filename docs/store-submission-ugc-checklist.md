@@ -5,7 +5,7 @@
 ## Code and environment
 
 - [ ] Exact release commit passed Backend PHPUnit/Pint/routes, Admin test/lint/build, App test/lint/build, deployment contracts, and secret/artifact checks.
-- [ ] Disposable SQLite and MariaDB migration checks appropriate to the release passed; School Updates audience, publication, reporting, and moderation tests passed on MariaDB or are explicitly recorded as **Not verified**.
+- [ ] Disposable SQLite and PostgreSQL migration checks appropriate to the release passed; School Updates audience, publication, reporting, and moderation tests passed on PostgreSQL or are explicitly recorded as **Not verified**.
 - [ ] Production `php artisan app:store-readiness` passes (verifying Terms, Privacy, Community Standards, Child Safety, Support, and Account Deletion URLs).
 - [ ] Terms, Privacy, Community Standards, Child Safety, Support, and Account Deletion Request are public HTTPS URLs matching store metadata.
 - [ ] Support and child-safety addresses are real, monitored, externally tested and not placeholders.
@@ -23,7 +23,7 @@
 
 - [ ] Apple 2026 age rating questionnaire explicitly reflects closed school scope, zero open web browsing, zero 1-on-1 private chat, institution-provisioned accounts, authorized employee publishing, no comments, and Post Report moderation.
 - [ ] Google target audience, Data safety, Families/children, UGC, ads and content rating match the release.
-- [ ] Child Safety Standards names RYLAY, prohibits CSAE/CSAM, explains enforcement/reporting and provides a safety contact.
+- [ ] Child Safety Standards names Matahari and the responsible developer, prohibits CSAE/CSAM, explains enforcement/reporting and provides a safety contact.
 - [ ] Privacy covers identity, school/class audience scope, official Updates, Likes, reports, moderation, account-deletion boundaries, evidence retention and security context.
 - [ ] No claim of automated detection, 24/7 staffing, deletion timing, certification or legal completion is made without evidence.
 

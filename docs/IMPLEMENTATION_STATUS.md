@@ -1,10 +1,10 @@
 # Implementation Status
 
-Status: `INTEGRATED_FEATURE_BRANCH_NOT_PRODUCTION_READY`
+Status: `MATAHARI_DEVELOPMENT_NOT_PRODUCTION_READY`
 
-Current documentation baseline: 2026-08-26 on `feat/admin-application-logs`; the integrated feature branch is pushed, but default `master` merge and production deployment are separate. Exact commit and final validation evidence are recorded in [Current Status](current-status.md).
+Current documentation baseline: 2026-09-05. Exact commits and dated validation evidence are recorded in [Current Status](current-status.md).
 
-The SaaS contains three independently operated runtimes: the Laravel API in `backend/`, the Admin Panel in `frontend/`, and the mobile-first School App in `app/`. Admin and App have separate tenant domains/builds, resolve tenant context from the hostname, and share authentication identities, tenant membership RBAC, school scope, MariaDB-compatible schema, audit and finance sources of truth. MIS is the first tenant configuration. The repository is not production-ready and has no native/store package.
+Matahari contains three independently operated runtimes: the Laravel API in `backend/`, the Admin Panel in `frontend/`, and the mobile-first School App in `app/`. Admin and App have separate MIS domains/builds and share authentication identities, membership RBAC, school scope, a PostgreSQL-compatible schema, audit and finance sources of truth. Dedicated mode rejects every non-MIS tenant and disables SaaS platform routes. The repository is not production-ready and has no native/store package.
 
 ## 1. Implemented Admin and Finance
 
@@ -39,28 +39,28 @@ Practice/AI Quiz, push/native delivery, automatic or external payment reminders,
 
 ## 4. Deployment Foundation
 
-- CI sources, immutable release ZIP generation, pinned PHP/Nginx images, separate Admin/App Nginx services, private MariaDB Compose configuration, environment examples, health/deployment-info endpoints, and deployment contract tests are present.
+- CI sources, immutable release ZIP generation, pinned PHP/Nginx images, separate Admin/App Nginx services, private PostgreSQL Compose configuration, environment examples, health/deployment-info endpoints, and deployment contract tests are present.
 - Real container startup on this workstation, stable hosting, edge TLS, remote promotion, monitoring, backup scheduling, runtime grants, and restore drills are not verified.
 - The Quick Tunnel tooling is temporary demo transport, not production infrastructure.
 
 ## 5. Current Verification Evidence
 
-Latest integrated feature-branch checks recorded on 2026-08-25/26:
+Latest database transition checks recorded on 2026-09-04, followed by the 2026-09-05 focused dedicated/store checks:
 
 ```text
-School App: 56 Vitest tests passed; Oxlint passed; TypeScript/Vite build passed
-Admin Panel: 187 Vitest tests passed; Oxlint exit 0 with 9 existing Calendar Fast Refresh warnings; build passed
-Backend: 395 tests discovered; 383 passed; 12 MariaDB-gated tests skipped; 2,145 assertions
-Pint: passed
-API routes: 152 non-vendor routes loaded
-Local reachability: tenant-aware backend, Admin root, and App root returned HTTP 200
+PostgreSQL backend: 413 discovered; 392 passed; 21 legacy engine-specific skips; 2,225 assertions
+Combined dedicated/store SQLite backend: 420 discovered; 407 passed; 13 skips; 2,274 assertions
+Dedicated mode: 5 focused tests; 23 assertions
+Store safeguards: 9 focused App tests; 8 focused backend tests; 35 backend assertions
+Complete School App: 59 tests; lint and production build passed
+Pint, 159-route loading, deployment contracts, and relative documentation links: passed
 ```
 
-The 2026-08-23 User Ability/Attendance delivery passed a disposable SQLite fresh migration, targeted rollback, and re-migration. School Updates added no migration. MariaDB audience-query/runtime behavior, browser/manual UAT, real Hikvision integration, real-device/native behavior, and production load remain **Not verified** in the final delivery evidence.
+The PostgreSQL transition passed full migration/rollback/re-migration, runtime grant restrictions, local data reconciliation and an isolated backup restore. Browser/manual UAT, real Hikvision integration, real-device/native behavior, hosted deployment and production load remain **Not verified**.
 
 ## 6. Known Limitations and Gates
 
-- No production deployment, capacity target, load test, monitoring, backup/restore drill, or production MariaDB upgrade has been verified.
+- No hosted production deployment, capacity target, load test, monitoring, automated off-site backup, or hosted restore drill has been verified.
 - Guardian/account activation and academic/enrolment live-data backfill require explicit source review, dry runs, approval, and recovery plans.
 - Discount formulas and eligibility are unapproved; non-zero-discount charge generation fails closed.
 - Refunds, credits, overpayments, write-offs, general correction/recovery, statements, automatic/external reminders, reports, exports, and server PDF remain incomplete. Manual in-app payment reminders are implemented.

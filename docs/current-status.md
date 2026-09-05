@@ -1,9 +1,18 @@
 # Current Status
 
+## 2026-09-05 Matahari dedicated mode and store safeguards
+
+- Matahari now requires explicit tenancy configuration. `TENANCY_MODE=dedicated` with `TENANCY_DEDICATED_TENANT_SLUG=mis` limits verified-host resolution and local fallback to MIS. Active domains for another tenant return 404; missing or invalid mode/slug configuration returns 503.
+- The complete `/api/v1/platform/*` SaaS management group now carries `tenancy.multi`; authenticated platform-owner actions return 404 in dedicated mode without changing tenant records. Current-Matahari `/api/v1/tenant/*` branding, feature, school, domain and membership settings remain protected and available.
+- Production App builds no longer render seeded demo account choices or usernames. Store-readiness validation now rejects example domains and placeholder text in legal URLs, contact emails and developer name. The public account-deletion page no longer promises an unimplemented purge/anonymization process.
+- Dedicated enforcement passed 5 focused tests with 23 assertions; the store safeguards passed 9 focused App tests and 8 focused backend tests with 35 assertions. The combined local SQLite backend regression discovered 420 tests: 407 passed, 13 legacy engine skips, and 2,274 assertions. The complete School App passed 59 tests, clean lint and production build. Pint, 159-route loading, deployment contracts and relative documentation links passed. PostgreSQL CI remains required for the combined commit.
+- Native Android/iOS projects, native authentication, store assets/signing, real public policy URLs, monitored contacts and submission remain **Not implemented / not configured**.
+
 ## 2026-09-05 CommonMark security update
 
 - GitHub Release Candidate run `33882487707` completed all PostgreSQL application tests, Pint and route loading, then failed the locked Composer advisory gate because four newly published high-severity advisories affected `league/commonmark` 2.9.0.
 - The lockfile now uses the upstream security release `league/commonmark` 2.10.0. `composer validate --strict`, `composer audit --locked`, Pint, the deployment contract suite and the complete backend regression passed locally. No application behavior or schema changed.
+- GitHub Release Candidate run `33935234418` passed Quick checks, immutable ZIP generation, the complete PostgreSQL and SQLite qualification, both frontend validations, dependency audits and deployment contracts for this security update.
 
 ## 2026-09-04 PostgreSQL transition
 
@@ -16,7 +25,7 @@
 - The HTTP launcher invokes PHP with the repository INI directly so the Windows child server retains `pdo_pgsql`; command-line configuration alone is insufficient when `artisan serve` filters its environment. Local HTTP readiness and tenant-context checks are part of the connection handover.
 - **Not verified / not configured:** Docker container startup on this workstation, hosted staging/production, automated off-site backups/WAL archival, native apps/store submission. Admin/App code is unchanged, so their suites/builds were not repeated. This transition is not a production launch or dedicated-mode authorization implementation.
 
-**Snapshot date:** 2026-09-04
+**Snapshot date:** 2026-09-05
 
 **Inspected Phase A implementation commit:** `ecaa0a1f177292ae99c9338e255a1f93312971f5`
 
@@ -24,7 +33,7 @@
 
 **Pre-reconciliation pushed baseline:** `49e3e6662679dd32aa743c53917d8e97abbe8206` (`docs: record integrated school updates delivery`) on `feat/admin-application-logs`
 
-**Overall status:** Matahari first-school delivery is the active product goal; RYLAY SaaS is deferred. Existing tenant-aware Admin/App functionality remains. Dedicated single-organization enforcement, production operations, native packaging and store delivery are still incomplete.
+**Overall status:** Matahari first-school delivery is the active product goal; RYLAY SaaS is deferred. Dedicated MIS enforcement and the first store-readiness safeguards are implemented. Production operations, real-data onboarding, native packaging and store delivery are still incomplete.
 
 The root `DESIGN.md` is now the shared UI checkpoint for both product surfaces: the MAW-derived Admin Panel pattern and the Warm School Editorial App pattern remain intentionally distinct while documenting their reusable components, source files, spacing, typography, motion tokens, gesture thresholds, state ownership and hierarchy in one canonical implementation reference.
 
@@ -299,7 +308,7 @@ Later school-specific branding requires explicit approval and a controlled updat
 - Backend manifest: PHP `^8.3` and Laravel Framework `^13.8`; the resolved lockfile version is Laravel `13.17.0`.
 - Validation runtime: PHP `8.4.21`.
 - Admin and App manifests: React `19.2.7`, TypeScript `~6.0.2`, and Vite `^8.1.0`.
-- Session-based authentication and a MariaDB/MySQL-compatible production direction; SQLite is used for the local demo and default tests.
+- Session-based authentication and a PostgreSQL 18 production direction; SQLite is retained for the optional demo and default compatibility tests.
 
 The confirmed earlier technology direction named Laravel 10, but this repository is already on Laravel 13. This is a verified implementation difference, not a pending upgrade.
 
@@ -499,12 +508,12 @@ Community App gesture refinement on 2026-08-21:
 ## Deployment Status
 
 - No production environment or production database is evidenced in the repository.
-- GitHub Actions now defines quick checks, a single immutable ZIP build, full application/dependency checks, and a disposable MariaDB migration lifecycle. GitHub-hosted execution must be verified against the current `master` run.
-- Pinned PHP-FPM/Nginx definitions, private MariaDB Compose configuration, generic isolated staging/production application stacks, non-secret environment examples, database identity/grant scripts, and deployment contract tests are present.
+- GitHub Actions defines quick checks, a single immutable ZIP build, full application/dependency checks, and disposable PostgreSQL plus SQLite qualification. GitHub-hosted execution must be verified against the current `master` run.
+- Pinned PHP-FPM/Nginx definitions, private PostgreSQL Compose configuration, generic isolated staging/production application stacks, non-secret environment examples, database identity/grant scripts, and deployment contract tests are present.
 - The repository exposes a database-aware, non-secret `/health` response and a runtime `/api/deployment-info` label so the same ZIP can display `STAGING`, `PRE-LAUNCH DEMO`, or no banner.
 - No stable hosting, real Docker/Compose startup, edge TLS/Basic Auth, remote deployment, monitoring, or infrastructure runtime is verified.
 - A temporary Quick Tunnel launcher exists for demos only.
-- Backup, binary-log, restore, reconciliation, runtime database grants, and recovery objectives are **Not verified**.
+- Automated backups, WAL archival/point-in-time recovery, off-site retention, hosted restore rehearsal and recovery objectives are **Not verified**. Local PostgreSQL grant enforcement and a separate backup restore/reconciliation rehearsal passed on 2026-09-04.
 
 The approved direction is recorded in [Staging and Production Deployment Design](superpowers/specs/2026-08-06-staging-production-deployment-design.md), and the current repository-owned portion is documented in [Deployment Foundation](deployment-foundation.md). Automatic staging SSH deployment, exact-artifact production promotion, atomic remote switching, backup/restore, and Telegram monitoring remain follow-up work.
 
@@ -517,7 +526,7 @@ The repository must not be described as production-ready.
 3. Confirm discount formulas/eligibility and the approved correction/reconciliation policy before enabling discounted or retroactive billing.
 4. Define refund, credit, overpayment, write-off, and audit-driven correction/recovery workflows.
 5. Run and stabilize CI on `master`, then verify remote staging/production operations, least-privilege database grants, monitoring, backups, and restore/reconciliation.
-6. Add the global Super Admin school selector, pagination/load targets, MariaDB concurrency tests, and browser E2E coverage as the relevant product phases require them.
+6. Add the global Super Admin school selector, pagination/load targets, PostgreSQL concurrency tests, and browser E2E coverage as the relevant product phases require them.
 
 ## Needs Confirmation
 
@@ -529,4 +538,4 @@ The repository must not be described as production-ready.
 - Refund/credit/overpayment/write-off/correction policy.
 - Relationship between `students.view` and guardian/`parents.view` data.
 - Data retention, archival, privacy erasure, and backup expiry.
-- Production topology, security controls, MariaDB version, release authority, recovery objectives, and monitoring.
+- Production topology, security controls, PostgreSQL hosting/version, release authority, recovery objectives, and monitoring.

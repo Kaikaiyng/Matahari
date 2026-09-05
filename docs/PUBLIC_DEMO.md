@@ -33,7 +33,7 @@ Starting and stopping does not reset `backend/database/database.sqlite`; calenda
 
 ## Safety model
 
-Only Vite Preview is tunneled. Laravel listens on `127.0.0.1:8002`, Vite Preview listens on `127.0.0.1:4175`, debug output is disabled, and MariaDB, phpMyAdmin, and database files are never exposed. The tunnel uses HTTP/2 for compatibility with networks that restrict outbound QUIC. The application login is the only access gate; anyone with the URL can reach the sign-in page.
+Only Vite Preview is tunneled. Laravel listens on `127.0.0.1:8002`, Vite Preview listens on `127.0.0.1:4175`, debug output is disabled, and PostgreSQL plus database files are never exposed. The tunnel uses HTTP/2 for compatibility with networks that restrict outbound QUIC. The application login is the only access gate; anyone with the URL can reach the sign-in page.
 
 The downloaded `cloudflared.exe` is kept under the ignored `.demo-public/` directory. Its version and SHA-256 are pinned in `tools/public-demo/PublicDemo.psm1`; checksum validation must not be bypassed.
 

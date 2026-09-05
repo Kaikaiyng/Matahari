@@ -1,13 +1,13 @@
-# RYLAY Backend
+# Matahari Backend
 
-The backend is the shared Laravel 13 JSON API for the RYLAY Admin Panel and School App. It owns authentication, authorization, school scope, academic foundations, portal relationship scope, School Updates, daily Attendance, audit integration, financial validation, Fee Record charges, payment allocation, and receipt integrity.
+The backend is the shared Laravel 13 JSON API for the Matahari Admin Panel and School App. It owns authentication, authorization, school scope, academic foundations, portal relationship scope, School Updates, daily Attendance, audit integration, financial validation, Fee Record charges, payment allocation, and receipt integrity.
 
 ## Requirements
 
 - PHP 8.3 or newer; the current local runtime is PHP 8.4
 - Composer dependencies from `composer.lock`
 - PHP extensions enabled by `../tools/php/php.ini`
-- SQLite or MariaDB
+- PostgreSQL 18 for active development; SQLite remains available for disposable compatibility tests
 
 Use the project launcher on Windows:
 
@@ -24,21 +24,19 @@ Copy-Item .env.example .env
 ..\tools\php\php-local.cmd artisan key:generate
 ```
 
-The default example uses SQLite:
+The example uses PostgreSQL and dedicated Matahari tenancy. Use private local credentials:
 
 ```dotenv
-DB_CONNECTION=sqlite
-```
-
-For MariaDB, use local values and a restricted application account:
-
-```dotenv
-DB_CONNECTION=mariadb
+TENANCY_MODE=dedicated
+TENANCY_DEDICATED_TENANT_SLUG=mis
+TENANCY_LOCAL_TENANT_SLUG=mis
+DB_CONNECTION=pgsql
 DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=rylay
+DB_PORT=5432
+DB_DATABASE=matahari
 DB_USERNAME=your_local_app_user
 DB_PASSWORD=your_local_password
+DB_SSLMODE=prefer
 ```
 
 Never commit the populated `.env` file.
@@ -58,7 +56,7 @@ For an existing local database:
 ..\tools\php\php-local.cmd artisan migrate --force
 ```
 
-The schema evolves through additive migrations; regenerate the disposable schema inventory instead of relying on an older table count. The full domain grouping and MariaDB lifecycle requirements are documented in [Database](../docs/database.md).
+The schema evolves through additive migrations; regenerate the disposable schema inventory instead of relying on an older table count. PostgreSQL setup, qualification, and recovery guidance are documented in [PostgreSQL](../docs/postgresql.md) and [Database](../docs/database.md).
 
 ## Start the API
 

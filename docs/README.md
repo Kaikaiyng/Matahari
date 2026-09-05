@@ -11,10 +11,10 @@ Historical records may retain RYLAY names, domains, commands and release identif
 | [Project Overview](project-overview.md) | Business purpose, users, scale, scope, boundaries, and operational assumptions |
 | [Business Rules](business-rules.md) | Student, agreement, discount, payment, receipt, retention, and financial-integrity rules |
 | [Architecture](architecture.md) | Backend/frontend boundaries, authentication, authorization, data flow, audit, and deployment assumptions |
-| [Database](database.md) | Engines, tables, relationships, constraints, money, statuses, migrations, rollback, and MariaDB considerations |
+| [Database](database.md) | Engines, tables, relationships, constraints, money, statuses, migrations, rollback, and PostgreSQL considerations |
 | [Permissions](permissions.md) | Seeded role matrix, enforcement locations, and frontend/backend gaps |
 | [Current Status](current-status.md) | Commit snapshot, implemented/partial work, risks, test status, deployment state, and priorities |
-| [SaaS Multi-Tenancy](saas-multitenancy.md) | Tenant/domain resolution, identity memberships, roles, branding, features, management APIs, migration safety, and rollout gates |
+| [Tenancy Foundation and Future RYLAY SaaS](saas-multitenancy.md) | Matahari dedicated enforcement, domain resolution, memberships, branding, future SaaS mode, migration safety, and rollout gates |
 | [Testing and Release](testing-and-release.md) | Exact validation commands, database checks, security review, smoke tests, release, and rollback |
 | [Phase A Academic Foundation Delivery](phase-a-academic-foundation.md) | Delivered Phase A scope, APIs, authorization, audit, migration safety, validation evidence, and live-data gates |
 | [Mobile Product Architecture and Roadmap](mobile-product-roadmap.md) | Approved one-backend mobile direction, Phase B–F boundaries, security rules, and future validation gates |
@@ -25,7 +25,7 @@ The root [README](../README.md) is the human entry point. Future coding agents m
 
 ## Supporting Current References
 
-- [RYLAY Admin and App UI Design System](../DESIGN.md)
+- [Matahari Admin and App UI Design System](../DESIGN.md)
 - [Maintenance Guide](MAINTENANCE_GUIDE.md)
 - [Deployment Foundation](deployment-foundation.md)
 - [Implementation Status](IMPLEMENTATION_STATUS.md)

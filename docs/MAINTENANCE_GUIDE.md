@@ -106,7 +106,7 @@ npm.cmd install
 npm.cmd run dev
 ```
 
-The reset command intentionally rebuilds `backend/database/database.sqlite`. Do not run it when preserving current demo changes matters. It does not reset a configured MariaDB database.
+The reset command intentionally rebuilds `backend/database/database.sqlite`. Do not run it when preserving current demo changes matters. It does not reset the configured PostgreSQL database.
 
 For temporary HTTPS access, follow [Temporary Public Demo](PUBLIC_DEMO.md). The public-demo launcher preserves SQLite data between runs and exposes only Vite Preview through the tunnel.
 

@@ -2,7 +2,7 @@
 
 Matahari is the school administration, finance, attendance, and School App project for Matahari International School (MIS). The immediate goal is the first school delivery: an Admin/Finance browser surface and a Teacher/Parent/Student School App, with App Store and Google Play delivery still pending. RYLAY SaaS development is deferred. Both clients retain the existing Laravel API, host-resolved organization context, and separate builds. The system is not yet production-ready or a native store release.
 
-The existing tenant, membership, school, branding, and feature structures remain in place to preserve authorization and data integrity. A locked single-organization Matahari deployment is planned, not implemented by this naming change.
+The existing tenant, membership, school, branding, and feature structures remain in place to preserve authorization and data integrity. `TENANCY_MODE=dedicated` locks the running product to the `mis` tenant and disables SaaS platform-management routes. A future RYLAY release can explicitly select multi-tenant mode without forking the schema or application code.
 
 Tenant branding is runtime configuration. Branding changes never authorize rewriting tenant identity, student numbers, invoice numbers, receipt numbers, or other historical records. See [SaaS Multi-Tenancy](docs/saas-multitenancy.md).
 
@@ -11,7 +11,7 @@ Tenant branding is runtime configuration. Branding changes never authorize rewri
 Implemented workflows include:
 
 - Username/password login with Laravel session cookies and seeded role permissions.
-- Host-authoritative tenant resolution, tenant-specific memberships/roles/school scopes, configurable branding/domains/features, and audited platform/tenant management APIs.
+- Host-authoritative organization resolution, membership/role/school scope, configurable branding/domains/features, and audited Matahari tenant settings. SaaS platform APIs return 404 in dedicated mode.
 - Protected global Super Admin ownership; School Admin, Finance, and Teacher employee positions; school-scoped per-user grants/denials; and transactionally audited access changes.
 - Student search, creation, detail, status changes, and read-only class rosters.
 - Versioned Fee Agreements and billing configuration.
@@ -49,7 +49,7 @@ Important boundaries:
 | Backend | PHP `^8.3`, Laravel Framework `13.17.0` from `composer.lock` |
 | Admin and App frontends | Separate React `19.2.7`, TypeScript `6.0.x`, Vite `8.1.0` workspaces |
 | Authentication | Laravel `web` guard with session cookies |
-| Production database direction | MariaDB/MySQL-compatible |
+| Production database direction | PostgreSQL 18 |
 | Local demo and default tests | SQLite; PHPUnit uses SQLite `:memory:` |
 | Backend tests | PHPUnit `12.5.30` |
 | Frontend tests/lint | Vitest, Testing Library, Oxlint |
@@ -76,7 +76,7 @@ Future coding agents must also read [AGENTS.md](AGENTS.md).
 - PHP 8.3 or newer with the extensions enabled by `tools/php/php.ini`.
 - Composer.
 - Node.js and npm. The repository does not currently pin a Node version.
-- SQLite for the quickest local demo, or a separately provisioned MariaDB database for compatibility work.
+- PostgreSQL 18 for active development, or SQLite for the optional disposable demo and default compatibility suite.
 
 ## Local Development
 
@@ -181,7 +181,7 @@ The School App uses the same three commands from `app/`.
 
 Before Apple App Store or Google Play submission, configure the real HTTPS policy/support URLs and monitored contacts, then run `..\tools\php\php-local.cmd artisan app:store-readiness` from `backend/`. Passing is a configuration gate, not a guarantee of approval. See [UGC Store Submission Checklist](docs/store-submission-ugc-checklist.md).
 
-`npm.cmd run build` runs `tsc -b` before the Vite production build. No PHP static-analysis command is currently configured. GitHub Actions now defines quick checks, one immutable ZIP build, full application validation, dependency audits, and a disposable MariaDB migration lifecycle; its current execution result must still be checked in GitHub. See [Testing and Release](docs/testing-and-release.md) and [Deployment Foundation](docs/deployment-foundation.md).
+`npm.cmd run build` runs `tsc -b` before the Vite production build. No PHP static-analysis command is currently configured. GitHub Actions defines quick checks, one immutable ZIP build, full application validation, dependency audits, and a disposable PostgreSQL migration lifecycle. See [Testing and Release](docs/testing-and-release.md) and [Deployment Foundation](docs/deployment-foundation.md).
 
 ## Development Workflow
 
@@ -221,7 +221,7 @@ Before Apple App Store or Google Play submission, configure the real HTTPS polic
 ## Current Limitations
 
 - No formal load or concurrency limit has been validated. Historical planning used approximately 200 students for cost estimation only; this is not a tested capacity claim.
-- The default automated backend suite uses SQLite and cannot prove MariaDB JSON, index, locking, foreign-key, or rollback behavior.
+- The default automated backend suite uses SQLite and cannot prove PostgreSQL locking, generated-column, foreign-key, or rollback behavior; release qualification also runs a disposable PostgreSQL suite.
 - No stable hosting or production environment exists. CI and portable Docker/Compose source are included, but real container startup, remote deployment, monitoring, and backup/restore remain unverified.
 - Full user lifecycle administration and password reset remain incomplete. The Employees editor does implement same-school Position, explicit User Abilities, and Teacher App Access changes with protected-target guards, reasons, and audit history.
 - General reports, exports, statements, automatic/external payment reminders, server-side PDF generation, production-ready Parent Finance operations, Practice/AI Quiz, and complete academic ERP modules are not implemented. School Updates, Attendance, Assessment, Schedule, formal Quiz, notifications, read-only Parent Finance, receipt viewing/browser PDF saving, and manual in-app reminders now use live scoped APIs; native/store delivery remains a separate controlled gate.

@@ -2,7 +2,7 @@
 
 ## Project Summary
 
-Matahari is the independent school administration, finance, attendance, and School App delivery project for Matahari International School (MIS). RYLAY SaaS expansion is deferred until the first school is operational. The repository contains one Laravel 13 JSON API, an Admin-only React 19/TypeScript workspace in `frontend/`, and an independent mobile-first multi-role React workspace in `app/`. Both clients share the backend and authoritative database and remain separate builds. Existing tenant, membership, school, branding, and feature structures are retained; single-organization enforcement and production/native-store readiness are not implemented by the rename.
+Matahari is the independent school administration, finance, attendance, and School App delivery project for Matahari International School (MIS). RYLAY SaaS expansion is deferred until the first school is operational. The repository contains one Laravel 13 JSON API, an Admin-only React 19/TypeScript workspace in `frontend/`, and an independent mobile-first multi-role React workspace in `app/`. Both clients share the backend and authoritative database and remain separate builds. Existing tenant, membership, school, branding, and feature structures are retained. The current deployment mode locks hostname resolution to MIS and disables SaaS platform routes; production and native-store readiness remain incomplete.
 
 ## Read Before Editing
 
@@ -34,6 +34,7 @@ Matahari is the independent school administration, finance, attendance, and Scho
 
 - Backend enforcement is mandatory. Frontend visibility is only a usability control.
 - Resolve tenant from an active verified hostname before membership, permission and school scope. Never trust a client-submitted tenant ID or permit cross-tenant role/school leakage.
+- Keep production `TENANCY_MODE=dedicated` with `TENANCY_DEDICATED_TENANT_SLUG=mis` until a separately reviewed RYLAY SaaS release. Do not expose `/api/v1/platform/*` in a Matahari deployment.
 - Apply `auth`, the correct `permission:<slug>`, and school-scope enforcement to protected operations. Test both unauthorized and cross-school cases.
 - Do not weaken authentication, authorization, validation, school scoping, or audit behavior to make a test pass.
 - Never add secrets, credentials, real student data, private connection strings, database files, or tunnel state to Git or documentation.

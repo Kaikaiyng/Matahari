@@ -2,22 +2,22 @@
 
 Status: Current local-development guide
 
-Last verified for the current Admin and School App web stacks: 2026-08-26
+Last verified for the current Admin and School App web stacks: 2026-09-05
 
-The repository has separate tenant-aware `frontend/` (Admin) and `app/` (Parent/Student/Teacher School App) web workspaces. Local seed domains are `localhost` for Admin and `127.0.0.1` for App; both proxy `/api` to the shared backend. There is no Staff App persona and still no native toolchain. See [SaaS Multi-Tenancy](saas-multitenancy.md) and [Mobile Product Architecture and Roadmap](mobile-product-roadmap.md).
+The repository has separate Matahari `frontend/` (Admin) and `app/` (Parent/Student/Teacher School App) web workspaces. Local seed domains are `localhost` for Admin and `127.0.0.1` for App; both proxy `/api` to the shared backend. Dedicated mode resolves both to `mis`. There is no Staff App persona and still no native toolchain. See [Tenancy Foundation and Future RYLAY SaaS](saas-multitenancy.md) and [Mobile Product Architecture and Roadmap](mobile-product-roadmap.md).
 
 ## 1. Local Stack
 
 - Admin and School App: separate React 19, TypeScript 6, Vite 8, Node.js, and `npm.cmd` workspaces
 - Backend: Laravel 13 on PHP 8.4
-- Local database: SQLite for the repeatable demo; MariaDB remains available for development environments
-- Test database: SQLite `:memory:` through `backend/phpunit.xml`
+- Local database: PostgreSQL 18; SQLite remains an explicit disposable demo option
+- Test databases: SQLite `:memory:` by default plus a guarded disposable PostgreSQL release run
 
 The repository provides PHP helpers under `tools/php/`:
 
 | File | Purpose |
 | --- | --- |
-| `php.ini` | Enables project extensions including `pdo_mysql`, `pdo_sqlite`, `mysqli`, `intl`, and `mbstring` |
+| `php.ini` | Enables project extensions including `pdo_pgsql`, `pdo_sqlite`, `intl`, and `mbstring` |
 | `php-local.cmd` | Runs PHP with the project configuration |
 | `php-local.ps1` | PowerShell equivalent of the project PHP launcher |
 | `serve-backend.cmd` | Starts Laravel locally |
@@ -77,7 +77,7 @@ tools\php\reset-demo-sqlite.cmd
 tools\php\serve-demo-backend.cmd
 ```
 
-`reset-demo-sqlite.cmd` hard-pins Laravel to `backend/database/database.sqlite` before running `migrate:fresh --seed`. It never resets MariaDB or changes `backend/.env`. The seeded demo includes unpaid, fully paid with receipt, partially paid, and not-yet-configured student accounts.
+`reset-demo-sqlite.cmd` hard-pins Laravel to `backend/database/database.sqlite` before running `migrate:fresh --seed`. It never resets PostgreSQL or changes `backend/.env`. The seeded demo includes unpaid, fully paid with receipt, partially paid, and not-yet-configured student accounts.
 
 ## 5. General Backend Development
 
@@ -86,7 +86,7 @@ From `backend/`:
 ```powershell
 Copy-Item .env.example .env
 ..\tools\php\php-local.cmd artisan key:generate
-..\tools\php\php-local.cmd artisan migrate:fresh --seed --force
+..\tools\php\php-local.cmd artisan migrate --force
 ```
 
 Then start the API from the repository root with `tools\php\serve-backend.cmd`. This direct launcher keeps the project PHP configuration active in the long-running server process on Windows.
@@ -101,27 +101,21 @@ Run tests:
 
 ## 6. Database Options
 
-### SQLite
+### PostgreSQL
 
-The repository example configuration uses SQLite:
-
-```dotenv
-DB_CONNECTION=sqlite
-```
-
-SQLite is suitable for a new contributor, automated tests, and rollback. The local database file is ignored and must not be committed.
-
-### MariaDB
-
-Use a restricted local account and private `.env` values:
+The repository example configuration uses PostgreSQL and dedicated Matahari tenancy. Use a private restricted account:
 
 ```dotenv
-DB_CONNECTION=mariadb
+TENANCY_MODE=dedicated
+TENANCY_DEDICATED_TENANT_SLUG=mis
+TENANCY_LOCAL_TENANT_SLUG=mis
+DB_CONNECTION=pgsql
 DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=rylay
+DB_PORT=5432
+DB_DATABASE=matahari
 DB_USERNAME=your_local_app_user
 DB_PASSWORD=your_local_password
+DB_SSLMODE=prefer
 ```
 
 After changing database settings:
@@ -131,9 +125,11 @@ After changing database settings:
 ..\tools\php\php-local.cmd artisan migrate --force
 ```
 
-Do not publish database or phpMyAdmin credentials. phpMyAdmin is an optional local operator tool, not an application dependency.
+Full setup, disposable-test safeguards, backup and restore guidance are in [PostgreSQL](postgresql.md). Never run `migrate:fresh` against the active development, staging or production database.
 
-Fresh MariaDB schema creation has one known migration-order caveat. Read [Database Design](DATABASE_DESIGN.md) before running a clean MariaDB migration.
+### Optional SQLite demo
+
+The explicit demo launchers set `DB_CONNECTION=sqlite` themselves. SQLite is suitable for a disposable seeded demo and the default automated compatibility suite. The local database file is ignored and must not be committed.
 
 ## 7. Seeded Local Accounts
 
@@ -171,7 +167,7 @@ Open on the iPad:
 http://YOUR_LAN_IP:5173
 ```
 
-The backend CORS configuration must allow that exact frontend origin. Keep MariaDB port `3306` and phpMyAdmin bound to `127.0.0.1`; the iPad only needs the frontend and API ports.
+The backend CORS configuration must allow that exact frontend origin. Keep PostgreSQL bound to `127.0.0.1` or a private container network; the iPad only needs the frontend and API ports.
 
 ## 9. Responsive QA Sizes
 
@@ -210,39 +206,30 @@ Use `npm.cmd` rather than `npm`.
 
 ## 11. Verified Baseline
 
-Latest integrated feature-branch evidence as of 2026-08-26:
+The 2026-09-04 PostgreSQL transition passed the complete backend suite on PostgreSQL and SQLite, a full migration/rollback/re-migration lifecycle, deployment grant restrictions, local data reconciliation and an isolated backup restore. The 2026-09-05 dedicated/store changes add focused backend/App tests plus successful App lint/build, Pint, route loading and deployment contracts. Exact counts and the current GitHub result are recorded in [Current Status](current-status.md).
 
-- Admin: 187 Vitest tests passed; build passed; lint exited 0 with 9 existing Fast Refresh warnings
-- School App: 56 Vitest tests passed; lint and build passed
-- Backend: 395 tests discovered, 383 passed, 12 MariaDB-gated tests skipped, and 2,145 assertions; Pint passed
-- API inventory: 152 non-vendor routes
-- The three 2026-08-23 Attendance/User Ability migrations passed a disposable SQLite fresh migration, targeted rollback, and re-migration in their delivery check
-- School Updates added no migration; its MariaDB audience-query behavior remains **Not verified**
+## Disposable PostgreSQL Qualification
 
-## Audit MariaDB Integration Test
-
-The default PHPUnit suite uses in-memory SQLite and cannot prove MariaDB JSON, index, row-lock, or concurrency behavior. Run audit database integration tests against a disposable MariaDB database:
+The default PHPUnit suite uses in-memory SQLite and cannot prove PostgreSQL locking, generated-column, foreign-key, or concurrency behavior. Run the full suite only against a newly created disposable database named exactly `matahari_test`:
 
 ```powershell
-$env:DB_CONNECTION='mariadb'
+$env:DB_CONNECTION='pgsql'
 $env:DB_URL=''
 $env:DB_HOST='127.0.0.1'
-$env:DB_PORT='3306'
-$env:DB_DATABASE='rylay_audit_test'
-$env:DB_USERNAME='rylay_test'
-$env:DB_PASSWORD='rylay_test'
-$env:AUDIT_MARIADB_DESTRUCTIVE_TEST='1'
+$env:DB_PORT='5432'
+$env:DB_DATABASE='matahari_test'
+$env:DB_USERNAME='your_private_test_user'
+$env:DB_PASSWORD='your_private_test_password'
+$env:MATAHARI_PGSQL_TEST_ALLOW_RESET='1'
 Push-Location backend
 try {
-    ..\tools\php\php-local.cmd artisan test --group=mariadb
+    ..\tools\php\php-local.cmd vendor\bin\phpunit
 }
 finally {
     Pop-Location
-    Remove-Item Env:\AUDIT_MARIADB_DESTRUCTIVE_TEST -ErrorAction SilentlyContinue
+    Remove-Item Env:\MATAHARI_PGSQL_TEST_ALLOW_RESET -ErrorAction SilentlyContinue
     Remove-Item Env:\DB_CONNECTION, Env:\DB_URL, Env:\DB_HOST, Env:\DB_PORT, Env:\DB_DATABASE, Env:\DB_USERNAME, Env:\DB_PASSWORD -ErrorAction SilentlyContinue
 }
 ```
 
-The guarded test owns `migrate:fresh`; do not run a separate unguarded refresh. Before dropping any tables, it requires the explicit opt-in, rejects a non-empty `DB_URL`, requires Laravel's `mariadb` driver, and verifies through read-only queries that the connected server identifies itself as MariaDB and the actual database is exactly `rylay_audit_test`.
-
-The database must contain no valuable data because the test drops its tables. The cleanup block clears the opt-in and all temporary database variables even when the test fails. A skipped MariaDB-group test under SQLite is not acceptance evidence.
+The guarded test owns schema reset. Before dropping tables, `Tests\TestCase` requires the explicit opt-in, rejects a non-empty `DB_URL`, requires Laravel's `pgsql` driver, and verifies that both the configured and actual database names are exactly `matahari_test`. The database must contain no valuable data. A SQLite pass is compatibility evidence, not PostgreSQL release evidence.

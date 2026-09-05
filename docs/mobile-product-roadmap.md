@@ -1,12 +1,12 @@
 # Mobile Product Architecture and Roadmap
 
-**2026-09-04 product direction:** The active project is Matahari. RYLAY SaaS is deferred. Existing tenant/permission structures and operational identifiers remain unchanged; single-organization deployment enforcement is still planned. Historical domain and deployment examples below are not a live Matahari environment.
+**2026-09-05 product direction:** The active project is Matahari. RYLAY SaaS is deferred. Existing tenant/permission structures remain, and the backend now enforces a dedicated `mis` deployment. Historical domain examples below are not a live Matahari environment.
 
 **Status:** The split App client, School Updates, daily Attendance, Assessment publication, Parent Finance reads, Schedule, and formal Quiz are implemented; native packaging, push delivery, and Practice/AI Quiz remain planned
 
 **Reviewed:** 2026-08-14
 
-The Admin and App clients are now tenant-aware SaaS surfaces. Each tenant may have distinct Admin/App subdomains and frontend branding while sharing one Laravel backend and authoritative database. The hostname resolves the tenant before membership, role, school and resource scope. This changes deployment/configuration, not the approved native sequencing below. See [SaaS Multi-Tenancy](saas-multitenancy.md).
+The Admin and App clients are Matahari surfaces on distinct Admin/App domains while sharing one Laravel backend and authoritative PostgreSQL database. The hostname resolves MIS before membership, role, school and resource scope. The retained tenant-aware core supports a future explicit RYLAY mode without changing the approved native sequencing below. See [Tenancy Foundation and Future RYLAY SaaS](saas-multitenancy.md).
 
 ## Status Language
 
@@ -26,7 +26,7 @@ flowchart TB
     MobileWeb["Parent / Student / Teacher School Updates Web"]
     Native["Later: Capacitor Android / iOS package"]
     API["One Laravel API"]
-    DB["One MariaDB database"]
+    DB["One PostgreSQL database"]
     Push["Later: Queue and FCM/APNs delivery"]
 
     Admin --> API

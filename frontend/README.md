@@ -1,6 +1,6 @@
-# RYLAY Admin Panel
+# Matahari Admin Panel
 
-The frontend is the Admin-only React and TypeScript administration/finance workspace for the active SaaS tenant. School App functionality lives in the separate root `app/` workspace. At startup it fetches `/api/tenant-context`, requires an `admin` surface, and applies that tenant's labels, logo, colors and feature flags. A fresh disposable backend demo seed supplies the local MIS tenant.
+The frontend is the Admin-only React and TypeScript administration/finance workspace for Matahari International School. School App functionality lives in the separate root `app/` workspace. At startup it fetches `/api/tenant-context`, requires an `admin` surface, and applies MIS labels, logo, colors and feature flags from the retained tenant configuration. Dedicated backend mode rejects every other tenant.
 
 Do not use presentation changes to rename existing tenant data or historical receipt identifiers. Admin remains the desktop location for broad operational management, permission-sensitive finance actions, moderation, and audit review.
 

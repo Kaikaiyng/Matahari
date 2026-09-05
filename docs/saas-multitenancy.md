@@ -1,16 +1,16 @@
-# SaaS Multi-Tenancy
+# Tenancy Foundation and Future RYLAY SaaS
 
-**2026-09-04 product direction:** The active project is Matahari. RYLAY SaaS is deferred. Existing tenant/permission structures and operational identifiers remain unchanged; single-organization deployment enforcement is still planned. Historical domain and deployment examples below are not a live Matahari environment.
+**2026-09-05 product direction:** The active project is Matahari. RYLAY SaaS is deferred. Existing tenant/permission structures remain so Matahari can use the proven authorization model and the same core can support RYLAY later.
 
-**Status:** Implemented and locally hardened; production rollout pending
+**Status:** Matahari dedicated mode implemented and locally tested; production rollout pending
 
-**Reviewed:** 2026-08-15
+**Reviewed:** 2026-09-05
 
 ## Product Model
 
-The platform product name is **RYLAY** and its registered primary domain is **`rylay.my`**. Matahari International School (MIS) is the first configured tenant, not the platform identity hard-coded into business data.
+The current product name is **Matahari** and its configured organization slug is **`mis`**. RYLAY and `rylay.my` are reserved for a future SaaS product after Matahari is operational. Business records keep tenant and school ownership rather than hard-coded presentation names.
 
-DNS authority for `rylay.my` has been delegated to Cloudflare from the Hostinger registration. **Hostinger KVM 2 is the preferred initial VPS option but has not been purchased.** Production origin IPs, DNS records, TLS/origin configuration and deployment state therefore remain unconfigured. Current plan specifications, region, pricing, backup retention and upgrade limits must be checked again immediately before purchase.
+Historical infrastructure planning for `rylay.my` is not a live Matahari deployment. Production origin IPs, Matahari domains, DNS, TLS/origin configuration and hosting remain unconfigured and must be selected before launch.
 
 The hierarchy is:
 
@@ -22,11 +22,11 @@ platform
       academic, community, attendance, finance and audit records
 ```
 
-The Laravel application and authoritative MariaDB database are shared. Existing business tables remain scoped by `school_id`; a school's required `tenant_id` supplies the tenant boundary. This avoids adding a redundant tenant key to every historical finance table while preserving its current school ownership.
+The Matahari Admin and App share one Laravel application and authoritative PostgreSQL database. Existing business tables remain scoped by `school_id`; a school's required `tenant_id` supplies the organization boundary. This avoids adding a redundant tenant key to every historical finance table while preserving its current school ownership.
 
 ## Request Resolution
 
-Every API request passes through tenant resolution before authentication or business authorization:
+Every API request passes through organization resolution before authentication or business authorization:
 
 1. Normalize the request hostname.
 2. Match an active, explicitly verified `tenant_domains` record.
@@ -36,7 +36,9 @@ Every API request passes through tenant resolution before authentication or busi
 6. Resolve permissions and permitted schools from that active membership.
 7. Apply the existing resource, school, teacher, guardian, student, and finance controls.
 
-The host is authoritative. A client-supplied tenant ID cannot switch context. Unknown production hosts, pending domains, unverified domains, and suspended tenants fail closed. The local/test fallback exists only for repository compatibility and must not be enabled as a production tenant-selection mechanism.
+The host is authoritative. A client-supplied tenant ID cannot switch context. Unknown production hosts, pending domains, unverified domains, and suspended tenants fail closed.
+
+Matahari configures `TENANCY_MODE=dedicated` and `TENANCY_DEDICATED_TENANT_SLUG=mis`. In this mode, even an active verified domain returns 404 when it belongs to another tenant. Missing or invalid mode/slug configuration returns 503. Localhost fallback exists only in Laravel's `local` and `testing` environments and resolves the dedicated slug; production never falls back. `TENANCY_MODE=multi_tenant` is retained for future RYLAY work and explicit isolation tests.
 
 ## Browser Surfaces
 
@@ -44,19 +46,19 @@ The host is authoritative. A client-supplied tenant ID cannot switch context. Un
 - `app/` is the mobile-first role app build. It accepts only a domain whose surface is `app`.
 - Both load `GET /api/tenant-context` before rendering, apply tenant branding and feature flags, and use same-origin session/CSRF requests.
 - Both can be deployed under separate subdomains while reverse-proxying `/api` to the same Laravel application.
-- All tenants use the same Admin/App code and backend release. Supported differences are limited to the active tenant's `branding` and `features`; tenant-specific code copies or branches are not supported.
+- Matahari uses the shared Admin/App code and backend release with MIS `branding` and `features`. Future tenants may use the same configuration model; customer-specific code copies or permanent branches are not supported.
 - Laravel enforces the resolved surface: Admin business APIs return 404 on App hosts, and App business APIs return 404 on Admin hosts. Tenant context and session bootstrap/authentication routes remain shared.
 
 The current app remains web technology. Capacitor, Firebase, Sanctum, native authentication and store packaging are not installed.
 
-## Approved RYLAY Domain Convention
+## Deferred RYLAY Domain Convention
 
 - `rylay.my` and `www.rylay.my`: future RYLAY public website.
 - `console.rylay.my`: future RYLAY platform-control interface.
 - `{tenant}.rylay.my`: tenant Admin surface, beginning with `mis.rylay.my`.
 - `{tenant}-app.rylay.my`: tenant App surface, beginning with `mis-app.rylay.my`.
 
-This single-label convention is compatible with one `*.rylay.my` wildcard boundary. Each browser surface should reverse-proxy same-origin `/api` to Laravel; an independent cross-origin `api.rylay.my` is not required for the initial deployment. Exact DNS records must wait for a selected VPS and must be activated in `tenant_domains` only after DNS/TLS verification.
+This convention remains a future RYLAY option and is not the Matahari production-domain decision. Each browser surface should reverse-proxy same-origin `/api` to Laravel. Exact Matahari DNS records must wait for selected hosting and must be activated in `tenant_domains` only after DNS/TLS verification.
 
 ## Identity, Membership and Roles
 
@@ -64,7 +66,7 @@ This single-label convention is compatible with one `*.rylay.my` wildcard bounda
 
 Global `user_roles` are retained for compatibility and migration history. During an authenticated tenant request, authorization uses the active membership roles. `super-admin` cannot be assigned as a tenant membership role through the tenant API.
 
-`users.is_platform_owner` is an explicit platform-control capability. It is not inferred from `super-admin`, email, username or tenant ownership. Platform owners may administer tenants, but ordinary business APIs still require an explicit tenant/school context.
+`users.is_platform_owner` is an explicit protected capability. It is not inferred from `super-admin`, email, username or tenant ownership. In dedicated mode it can maintain current-tenant settings, but ordinary business APIs still require an explicit tenant/school context.
 
 Tenant and platform configuration is controlled by the explicit Super Admin platform owner. Historical `tenant-owner` rows may remain for upgrade history, but the role is no longer seeded or assignable.
 
@@ -89,7 +91,7 @@ Public:
 
 - `GET /api/tenant-context`
 
-Platform owner under `/api/v1/platform`:
+Future multi-tenant mode exposes platform-owner operations under `/api/v1/platform`:
 
 - list/create tenants;
 - activate/suspend a tenant;
@@ -99,7 +101,7 @@ Platform owner under `/api/v1/platform`:
 - add schools;
 - create/update user membership scope and roles.
 
-Compatibility tenant-configuration routes under `/api/v1/tenant` also require the protected platform-owner capability. They can:
+In dedicated Matahari, an authenticated platform owner receives 404 from every `/api/v1/platform/*` route before a platform action can run; unauthenticated requests remain subject to the normal authentication boundary. Current-tenant configuration under `/api/v1/tenant` remains available to the protected platform owner and can:
 
 - update branding;
 - add pending domains;
@@ -107,7 +109,7 @@ Compatibility tenant-configuration routes under `/api/v1/tenant` also require th
 - add schools;
 - create/update memberships.
 
-The platform owner alone uses these platform/tenant configuration APIs; a school employee position never receives tenant-control authority. Domain activation and tenant status changes remain available only under `/api/v1/platform`.
+The platform owner alone uses current-tenant configuration APIs; a school employee position never receives tenant-control authority. Domain activation and tenant status changes require the disabled platform API, so initial production-domain records must be reviewed and activated through a controlled bootstrap or maintenance procedure before public traffic is switched on.
 
 ## Audit and Transaction Rules
 
@@ -127,16 +129,15 @@ The migration does not guess or create production domains, merge campuses, activ
 
 ## Production Gates
 
-Before a production rollout:
+Before a Matahari production rollout:
 
-- design and implement the RYLAY public website and platform-control interface;
-- confirm, purchase and provision the preferred Hostinger KVM 2 VPS;
+- select and provision hosting plus the Matahari Admin/App domains;
 - register and verify each Admin/App/API domain and provision DNS/TLS externally;
-- explicitly review which schools belong to each customer tenant;
-- explicitly review tenant memberships, platform owners and tenant owners;
-- repeat the migration lifecycle and FK/index checks on the exact release artifact and deployment MariaDB version;
+- confirm the release environment contains `TENANCY_MODE=dedicated` and `TENANCY_DEDICATED_TENANT_SLUG=mis` in Laravel's actual `APP_ENV_FILE`;
+- explicitly review MIS schools, memberships and the protected platform owner;
+- repeat the migration lifecycle and FK/index checks on the exact release artifact and deployment PostgreSQL version;
 - configure proxy trusted-host/session/cookie behavior for the chosen domains;
-- run cross-tenant, cross-school, role, feature and suspended-tenant smoke tests;
+- verify MIS domains work, non-MIS verified domains fail, platform routes return 404, and cross-school/role/feature/suspended-tenant protections remain intact;
 - retain the existing controlled gates for guardian links, portal access and historical academic data.
 
 MIS local seed domains are development fixtures only: `localhost` for Admin and `127.0.0.1` for App.

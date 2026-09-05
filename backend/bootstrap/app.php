@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\AssignRequestId;
+use App\Http\Middleware\EnsureMultiTenantDeployment;
 use App\Http\Middleware\EnsurePlatformOwner;
 use App\Http\Middleware\EnsureTenantFeatureEnabled;
 use App\Http\Middleware\EnsureTenantMembership;
@@ -33,6 +34,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'tenant.surface' => EnsureTenantSurface::class,
             'tenant.feature' => EnsureTenantFeatureEnabled::class,
             'platform.owner' => EnsurePlatformOwner::class,
+            'tenancy.multi' => EnsureMultiTenantDeployment::class,
             'permission' => EnsureUserHasPermission::class,
             'school.context' => ResolveSchoolContext::class,
         ]);
