@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 
 function json(data: unknown, status = 200) {
@@ -11,6 +11,10 @@ describe('separate MIS portal app', () => {
     vi.restoreAllMocks()
   })
 
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
   it('shows the dedicated Community App login for a guest', async () => {
     vi.spyOn(globalThis, 'fetch').mockImplementation(() => json({ message: 'Unauthenticated.' }, 401))
     render(<App />)
@@ -18,6 +22,18 @@ describe('separate MIS portal app', () => {
     expect(await screen.findByRole('heading', { name: 'Welcome to MIS' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Parent demo/ })).toBeInTheDocument()
     expect(screen.queryByText('Admin Panel')).not.toBeInTheDocument()
+  })
+
+  it('does not expose demo account shortcuts in production', async () => {
+    vi.stubEnv('VITE_APP_ENVIRONMENT', 'production')
+    vi.spyOn(globalThis, 'fetch').mockImplementation(() => json({ message: 'Unauthenticated.' }, 401))
+    render(<App />)
+
+    expect(await screen.findByRole('heading', { name: 'Welcome to MIS' })).toBeInTheDocument()
+    expect(screen.queryByLabelText('Demo accounts')).not.toBeInTheDocument()
+    expect(screen.queryByText('Rachel Wong')).not.toBeInTheDocument()
+    expect(screen.queryByText('Alyssa Tan')).not.toBeInTheDocument()
+    expect(screen.queryByText('Ms Lim')).not.toBeInTheDocument()
   })
 
   it('renders the parent shell for an authenticated parent', async () => {

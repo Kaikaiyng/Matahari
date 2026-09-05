@@ -7,6 +7,7 @@ import { useTenantConfiguration } from './tenant'
 
 export function PortalLogin({ onLogin }: { onLogin: (user: CurrentUser) => void }) {
   const tenant = useTenantConfiguration()
+  const showDemoAccounts = !import.meta.env.PROD && import.meta.env.VITE_APP_ENVIRONMENT !== 'production'
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -43,7 +44,7 @@ export function PortalLogin({ onLogin }: { onLogin: (user: CurrentUser) => void 
         <h1 id="portal-login-title">Welcome to {tenant.branding.organization_short_name}</h1>
         <p className="portal-login-copy">School life, learning, and family records in one private App.</p>
 
-        <div className="portal-demo-accounts" aria-label="Demo accounts">
+        {showDemoAccounts && <div className="portal-demo-accounts" aria-label="Demo accounts">
           <button type="button" onClick={() => selectDemo('rachel.wong')}>
             <strong>Parent demo</strong><span>Rachel Wong</span>
           </button>
@@ -53,7 +54,7 @@ export function PortalLogin({ onLogin }: { onLogin: (user: CurrentUser) => void 
           <button type="button" onClick={() => selectDemo('teacher.lim')}>
             <strong>Teacher demo</strong><span>Ms Lim</span>
           </button>
-        </div>
+        </div>}
 
         {error && <p className="portal-login-error" role="alert">{error}</p>}
 

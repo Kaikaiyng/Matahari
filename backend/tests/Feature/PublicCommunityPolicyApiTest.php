@@ -40,6 +40,19 @@ class PublicCommunityPolicyApiTest extends TestCase
         $this->getJson('http://127.0.0.1/api/v1/public/community-policies/internal-case')->assertNotFound();
     }
 
+    public function test_account_deletion_page_describes_a_request_without_promising_unimplemented_erasure(): void
+    {
+        $response = $this->getJson('http://127.0.0.1/api/v1/public/community-policies/account-deletion')
+            ->assertOk()
+            ->assertJsonPath('data.slug', 'account-deletion');
+
+        $text = json_encode($response->json('data.sections'), JSON_THROW_ON_ERROR);
+        $this->assertStringContainsString('accounts are provisioned by school administrators', $text);
+        $this->assertStringContainsString('contact Matahari support or your school administration', $text);
+        $this->assertStringNotContainsString('permanently purged', $text);
+        $this->assertStringNotContainsString('anonymized', $text);
+    }
+
     public function test_single_school_tenant_exposes_local_support_without_replacing_platform_safety_contacts(): void
     {
         $school = School::query()->where('code', 'MIS')->firstOrFail();

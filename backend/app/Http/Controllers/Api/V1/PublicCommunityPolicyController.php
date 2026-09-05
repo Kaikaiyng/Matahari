@@ -52,7 +52,7 @@ class PublicCommunityPolicyController extends Controller
             ],
             'account-deletion' => [
                 'title' => 'Account Deletion Request',
-                'sections' => [['heading' => 'Account Deletion Request', 'body' => 'Matahari user accounts are provisioned by school administrators. You may submit an account deletion request by contacting Matahari support or your school administration. Upon confirmation, your personal identity information (PII), authentication credentials, and non-essential community contributions will be permanently purged or anonymized. Required academic and financial history records are retained in anonymized form for legal audit compliance.']],
+                'sections' => [['heading' => 'Account Deletion Request', 'body' => 'Matahari user accounts are provisioned by school administrators. To request account deletion, contact Matahari support or your school administration using the contact details on this page. The school will verify your identity, review which academic, financial, safeguarding, security, or legal records must be retained, and explain the outcome of your request. Submitting a request does not immediately delete records or guarantee a fixed completion time.']],
             ],
             'support' => [
                 'title' => 'Support',

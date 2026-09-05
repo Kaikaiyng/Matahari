@@ -34,4 +34,25 @@ class StoreReadinessCommandTest extends TestCase
 
         $this->artisan('app:store-readiness')->expectsOutputToContain('Store readiness checks passed.')->assertSuccessful();
     }
+
+    public function test_command_rejects_example_and_placeholder_store_values(): void
+    {
+        $this->seed();
+        config()->set('community_safety.public_urls', [
+            'terms' => 'https://app.example.com/legal/terms', 'privacy' => 'https://app.example.com/legal/privacy',
+            'community_standards' => 'https://placeholder.invalid/legal/community-standards', 'child_safety' => 'https://app.example.com/legal/child-safety',
+            'support' => 'https://app.example.com/legal/support', 'account_deletion' => 'https://app.example.com/legal/account-deletion',
+        ]);
+        config()->set('community_safety.support_email', 'support@example.com');
+        config()->set('community_safety.child_safety_contact_email', 'safety@example.com');
+        config()->set('community_safety.developer_name', 'Placeholder Developer');
+
+        $this->artisan('app:store-readiness')
+            ->expectsOutputToContain('TERMS public URL uses an example or placeholder value')
+            ->expectsOutputToContain('COMMUNITY_STANDARDS public URL uses an example or placeholder value')
+            ->expectsOutputToContain('COMMUNITY_SUPPORT_EMAIL uses an example or placeholder value')
+            ->expectsOutputToContain('CHILD_SAFETY_CONTACT_EMAIL uses an example or placeholder value')
+            ->expectsOutputToContain('COMMUNITY_DEVELOPER_NAME uses a placeholder value')
+            ->assertFailed();
+    }
 }
