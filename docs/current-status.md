@@ -1,5 +1,10 @@
 # Current Status
 
+## 2026-09-05 CommonMark security update
+
+- GitHub Release Candidate run `33882487707` completed all PostgreSQL application tests, Pint and route loading, then failed the locked Composer advisory gate because four newly published high-severity advisories affected `league/commonmark` 2.9.0.
+- The lockfile now uses the upstream security release `league/commonmark` 2.10.0. `composer validate --strict`, `composer audit --locked`, Pint, the deployment contract suite and the complete backend regression passed locally. No application behavior or schema changed.
+
 ## 2026-09-04 PostgreSQL transition
 
 - PostgreSQL 18.6 replaces MariaDB as the development/deployment target. Laravel defaults, the PHP driver, private database Compose stack, separated migrator/runtime grants and GitHub qualification are updated. Tenant and school authorization structures remain in place.
