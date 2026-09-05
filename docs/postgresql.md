@@ -53,6 +53,8 @@ The historical tenant-hardening migration gained an additive PostgreSQL generate
 
 ## Deployment and recovery
 
+Repository-owned backup and disposable restore tools are documented in [PostgreSQL Backup and Restore Rehearsal](postgresql-recovery.md). They require explicit database/archive inputs and never overwrite an existing restore target.
+
 Docker uses `postgres:18.6-bookworm` and a new `matahari_postgres_data` volume at `/var/lib/postgresql`, matching the [official PostgreSQL 18 image layout](https://github.com/docker-library/postgres/blob/master/18/bookworm/Dockerfile). It never reuses a MariaDB volume. Existing operational network/release names remain compatible with the application Compose stack.
 
 Initialization creates `matahari_staging` and `matahari_production`, each with a separate migrator owner and runtime account. Run migrations as that database's migrator, then run `apply-runtime-grants.sh` as the administrator inside the database container. Repeat grants after adding tables. Runtime users have ordinary table CRUD, sequence usage, read-only migration history, and only `SELECT, INSERT` on `audit_logs`. They cannot create schema objects or connect to the other environment. Credentials with ownership, elevated flags or role memberships are rejected by the grant script.

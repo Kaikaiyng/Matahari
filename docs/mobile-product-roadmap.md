@@ -10,6 +10,10 @@ The Admin and App clients are Matahari surfaces on distinct Admin/App domains wh
 
 ## Status Language
 
+The 2026-09-06 native investigation confirms the next implementation boundary: package local App assets with Capacitor, retain browser session/CSRF, and provide a separately tested native Bearer authentication path with limited lifetime and revocation. Persistent credentials require Keychain/Keystore storage; the current cookie-only App is not a verified native login implementation. A real verified App hostname, final publisher/bundle identity, Android SDK and macOS/Xcode signing/device work are still required. See [Capacitor security](https://capacitorjs.com/docs/guides/security) and [Laravel mobile authentication](https://laravel.com/framework/docs/13.x/sanctum).
+
+School Updates deliberately removed active blocking in the 2026-08-24 product change. Do not silently restore historical social workflows. Store review notes must accurately describe employee-only official publishing, audience controls, Likes and confidential reports. [Apple guideline 1.2](https://developer.apple.com/app-store/review/guidelines/) and [Google UGC policy](https://support.google.com/googleplay/android-developer/answer/9876937?hl=en) create a classification/reviewer risk to resolve before submission; the current narrow feature is not evidence of guaranteed store acceptance.
+
 This document uses three distinct states:
 
 - **Implemented:** present in this repository and covered by current code/tests.

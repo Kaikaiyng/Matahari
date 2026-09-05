@@ -13,7 +13,7 @@ Implemented workflows include:
 - Username/password login with Laravel session cookies and seeded role permissions.
 - Host-authoritative organization resolution, membership/role/school scope, configurable branding/domains/features, and audited Matahari tenant settings. SaaS platform APIs return 404 in dedicated mode.
 - Protected global Super Admin ownership; School Admin, Finance, and Teacher employee positions; school-scoped per-user grants/denials; and transactionally audited access changes.
-- Student search, creation, detail, status changes, and read-only class rosters.
+- Student search, creation, detail, status changes, read-only class rosters, and a dry-run-first [student CSV import](docs/student-csv-import.md) for trusted operators.
 - Versioned Fee Agreements and billing configuration.
 - Fee Record preview, activation, manual charges, outstanding balances, summary, and category/month views.
 - Payment allocation, verification, void safeguards, receipt generation, browser printing, and receipt void/regeneration.

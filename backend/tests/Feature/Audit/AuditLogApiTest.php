@@ -147,7 +147,8 @@ class AuditLogApiTest extends TestCase
             module: str_starts_with($action->value, 'payment.') ? AuditModule::Payments : AuditModule::Students,
             schoolId: $school->id,
             subjectType: str_starts_with($action->value, 'payment.') ? AuditSubject::Payment : AuditSubject::Student,
-            subjectId: random_int(100, 999),
+            // Unique fixture IDs cannot also match a UUID request-ID segment.
+            subjectId: 9876543210000 + AuditLog::query()->count(),
             newValues: ['status' => 'safe'],
         ), (new AuditContextFactory)->system());
     }

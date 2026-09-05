@@ -228,6 +228,8 @@ git diff --cached
 
 ## Deployment Foundation Validation
 
+Full qualification also seeds only the guarded disposable `matahari_test` database, exercises the PostgreSQL 18 backup/restore tools in the service container, and compares source/restored data-only dumps including sequence values. The database and private rehearsal files disappear with the CI container; this does not configure production backups. Focused CSV behavior lives in `tests/Feature/StudentCsvImportCommandTest.php` and runs in both backend engine suites.
+
 Run all deployment source contracts from the repository root:
 
 ```powershell

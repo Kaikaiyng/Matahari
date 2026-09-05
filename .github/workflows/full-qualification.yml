@@ -93,6 +93,31 @@ jobs:
           DB_CONNECTION: sqlite
           DB_DATABASE: ":memory:"
         run: php artisan test
+      - name: Rehearse PostgreSQL backup and restore on fictional data
+        env:
+          PG_CONTAINER: ${{ job.services.postgres.id }}
+        run: |
+          test "$DB_DATABASE" = matahari_test
+          test "$MATAHARI_PGSQL_TEST_ALLOW_RESET" = 1
+          (cd backend && php artisan migrate --force && php artisan db:seed --force)
+          docker cp deploy/scripts/backup-postgres.sh "$PG_CONTAINER:/tmp/backup-postgres.sh"
+          docker cp deploy/scripts/verify-postgres-restore.sh "$PG_CONTAINER:/tmp/verify-postgres-restore.sh"
+          docker exec -i -e REHEARSAL_PASSWORD="$DB_PASSWORD" "$PG_CONTAINER" sh <<'SH'
+          set -eu
+          umask 077
+          mkdir /tmp/matahari-recovery
+          printf '127.0.0.1:5432:*:postgres:%s\n' "$REHEARSAL_PASSWORD" > /tmp/matahari-recovery/pgpass
+          unset REHEARSAL_PASSWORD
+          export PGPASSFILE=/tmp/matahari-recovery/pgpass
+          sh /tmp/backup-postgres.sh --database matahari_test --output-directory /tmp/matahari-recovery
+          set -- /tmp/matahari-recovery/*.dump
+          MATAHARI_POSTGRES_RESTORE_VERIFY=1 sh /tmp/verify-postgres-restore.sh --archive "$1" --database matahari_restore_verify_ci
+          for database in matahari_test matahari_restore_verify_ci; do
+            pg_dump --no-password --host=127.0.0.1 --username=postgres --dbname="$database" --data-only --no-owner --no-privileges --restrict-key=MatahariRehearsal > "/tmp/matahari-recovery/$database.sql"
+          done
+          cmp /tmp/matahari-recovery/matahari_test.sql /tmp/matahari-recovery/matahari_restore_verify_ci.sql
+          echo 'Source and restored table data and sequences match.'
+          SH
       - name: Run complete frontend validation
         working-directory: frontend
         run: |

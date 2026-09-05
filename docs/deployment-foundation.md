@@ -1,5 +1,7 @@
 # Deployment Foundation
 
+For the implemented operator backup and guarded restore tools, see [PostgreSQL Backup and Restore Rehearsal](postgresql-recovery.md). Off-site storage, scheduling and production promotion remain operational setup work.
+
 **2026-09-05 product direction:** The active project is Matahari. RYLAY SaaS is deferred. Existing tenant/permission structures and operational identifiers remain, and the application now enforces a dedicated `mis` deployment. Historical domain examples below are not a live Matahari environment.
 
 **Status:** Repository foundation implemented; real staging, production, backup, and monitoring are not configured

@@ -16,6 +16,8 @@ Historical records may retain RYLAY names, domains, commands and release identif
 | [Current Status](current-status.md) | Commit snapshot, implemented/partial work, risks, test status, deployment state, and priorities |
 | [Tenancy Foundation and Future RYLAY SaaS](saas-multitenancy.md) | Matahari dedicated enforcement, domain resolution, memberships, branding, future SaaS mode, migration safety, and rollout gates |
 | [Testing and Release](testing-and-release.md) | Exact validation commands, database checks, security review, smoke tests, release, and rollback |
+| [Student CSV Import](student-csv-import.md) | Excel export format, dry-run/commit commands, actor scope, all-or-nothing writes and onboarding limits |
+| [PostgreSQL Backup and Restore Rehearsal](postgresql-recovery.md) | Private backups, guarded disposable restores, sequence checks and recovery limits |
 | [Phase A Academic Foundation Delivery](phase-a-academic-foundation.md) | Delivered Phase A scope, APIs, authorization, audit, migration safety, validation evidence, and live-data gates |
 | [Mobile Product Architecture and Roadmap](mobile-product-roadmap.md) | Approved one-backend mobile direction, Phase B–F boundaries, security rules, and future validation gates |
 | [AI-Assisted Quiz Generator Technical Plan](ai-quiz-generator-technical-plan.md) | Approved but deferred Quiz AI architecture, V1 boundaries, authorization, validation, persistence, audit, testing, and implementation gate |

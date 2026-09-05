@@ -34,6 +34,7 @@ Do not describe the system as unlimited or use the historical cost estimate as p
 
 - Username login/logout/session restoration, CSRF-protected mutations, login throttling, active-session status checks, and seeded role-permission lookup.
 - Student list, search, filters, creation, details, backend profile update, and lifecycle status changes.
+- Operator-only student CSV import with dry-run default, explicit actor/tenant/school, complete validation and transactionally audited create-only insertion. See [Student CSV Import](student-csv-import.md).
 - Read-only class directory and active-student rosters.
 - Versioned Fee Agreement creation, history, detail, and superseding.
 - Fee Agreement item billing configuration and discount snapshots.
@@ -59,7 +60,7 @@ Do not describe the system as unlimited or use the historical cost estimate as p
 - Dashboard: API-backed metrics are available to `fee_record.view`. School-bound users are forced to their own school. The seeded Super Admin is currently bound to the single seeded school; a multi-school selector is planned but not implemented.
 - Students: backend profile update exists, but the frontend does not expose a complete student-profile edit workflow; guardian data is read-only in Student Detail.
 - Parents: schema, relationships, and seed data exist; the top-level frontend is static and there are no parent CRUD APIs.
-- Fee catalogue: read API and schema exist; the top-level page is static and no management API/UI exists.
+- Fee catalogue: school-scoped create/update/deactivate API and Admin UI are implemented; defaults never rewrite existing agreements or financial snapshots.
 - Fee Agreements: versions and snapshots work. Discount formulas are not approved, so agreements with non-zero discounts cannot preview or activate charges. Superseding is rejected if old charge history exists on or after the new effective month; no automated credit/recalculation workflow exists.
 - Payments and receipts: real workflows are implemented within Student Detail; there are no separate top-level modules.
 - Invoices: legacy schema and a permission/school-scoped monthly-generation API remain, but the active Fee Record workflow does not use invoices as its source of truth and no invoice UI exists.
