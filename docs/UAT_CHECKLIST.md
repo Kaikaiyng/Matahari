@@ -56,7 +56,8 @@ Before Admin student-management checks, validate the separate School App:
 
 - [ ] Student List loads, searches, and filters by status.
 - [ ] Student Name, Student ID, Class, Status, and Open remain visible on narrow screens.
-- [ ] Authorized user can create a student; profile editing remains backend-only in the current UI.
+- [ ] Authorized user can create a student and use Student Detail → Edit Profile with `students.update`; users without that ability have no edit action.
+- [ ] Profile save updates the detail and list, retains drafts on validation failure, and asks before discarding unsaved changes. Profile class changes do not modify academic-year enrolment history.
 - [ ] Validation appears beside the relevant field.
 - [ ] Student status can change to supported values without deleting the record.
 - [ ] Student Detail shows overview, Fee Record totals, agreements, charges, payments, and receipts in a readable flow.

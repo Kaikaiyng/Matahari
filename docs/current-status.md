@@ -1,12 +1,19 @@
 # Current Status
 
+## 2026-09-06 Student profile editor
+
+- Student Detail now offers **Edit Profile** to users with `students.update`, using the existing school-scoped, transactionally audited update API. The drawer edits student number/name, level/profile class, gender, birth/registration dates and remarks, sends only changed fields, and refreshes detail and list after saving.
+- Validation keeps the draft and focuses the first field error; cancelling a changed draft asks before discarding it. Session expiry uses the existing login flow. Status remains a separate action; profile class changes explicitly do not change academic-year enrolments or historical financial snapshots.
+- Local Admin regression: **213/213 tests passed**, including seven new editor/integration cases; production build and TypeScript passed. Existing backend student-management/business-audit regression passed **13/13 tests, 78 assertions** on SQLite. No backend or schema changes are included. Oxlint completed with the existing Calendar Fast Refresh and Dashboard hook warnings, and Vite retained its bundle-size advisory. GitHub qualification for this batch is pending at this document's commit.
+- Guardian record editing, full account administration/password recovery, real Excel onboarding, hosted environments and native/store delivery remain incomplete.
+
 ## 2026-09-06 First-school onboarding and recovery tools
 
 - Added `students:import-csv` with a header-only Excel CSV export template. Validation is the default; `--commit` creates only new student profiles after complete file validation, actor permission and dedicated tenant/school checks. Existing students, guardians, enrolment history and financial records are never inferred or overwritten. Every student and its audit event share the complete-file transaction. See [Student CSV Import](student-csv-import.md).
 - Added custom-format PostgreSQL backup and explicitly guarded disposable restore tools. Local rehearsal restored the development backup into a new database; all 84 table contents and sequence values matched the source. Backups and credentials remain outside Git. Scheduling, off-site storage, files and production recovery remain operational work. See [Recovery](postgresql-recovery.md).
 - Fixed a flaky Audit search test: random three-digit fixture IDs could collide with another audit identifier/request UUID. Deterministic unique fixture IDs now test the same production search without accidental matches.
 - Local regression: **428 discovered; SQLite 415 passed / 13 skipped / 2,332 assertions; PostgreSQL 407 passed / 21 skipped / 2,318 assertions**. CSV-focused tests passed **8/8, 58 assertions**. Pint, API route loading and **26/26** deployment tests passed. No schema migration or client runtime change is included.
-- GitHub Actions use the official v7 releases with Node 24. Full qualification now additionally rehearses backup/restore with fictional seeded data in the PostgreSQL service and compares source/restored data and sequences. GitHub execution of this new batch is pending at this document's commit; the earlier dedicated-mode commit passed [run 33965078479](https://github.com/Kaikaiyng/Matahari/actions/runs/33965078479).
+- GitHub Actions use the official v7 releases with Node 24. Full qualification additionally rehearses backup/restore with fictional seeded data in the PostgreSQL service and compares source/restored data and sequences. This batch passed [run 33998872044](https://github.com/Kaikaiyng/Matahari/actions/runs/33998872044).
 - Actual MIS Excel mapping/import, guardian/account onboarding, approved finance opening data, hosted environments, native authentication, Android/iOS packaging and store submission remain incomplete. Native architecture findings are recorded in the [mobile roadmap](mobile-product-roadmap.md); no native authentication or store binary is claimed.
 
 ## 2026-09-05 Matahari dedicated mode and store safeguards
@@ -329,7 +336,7 @@ The confirmed earlier technology direction named Laravel 10, but this repository
 
 - Session username authentication, CSRF-protected mutations, username-plus-IP login throttling, logout, `/me`, active-user request checks, roles, and permissions.
 - Permission-filtered navigation backed by authoritative route permissions.
-- Student list/search/filter/create/detail/backend update/status, with transactional audit events.
+- Student list/search/filter/create/detail/profile edit/status, with transactional audit events.
 - Read-only classes and active-student rosters.
 - Fee Agreement create/history/show/supersede, item/discount snapshots, current-version uniqueness, cross-year validation, and transactional audit events.
 - Fee Record preview/activation/manual charges/outstanding/summary/category-month ledger, scheduled-charge uniqueness, unsupported-discount and preview-confirmation fail-closed gates, and transactional activation/manual-charge audit events.
@@ -346,7 +353,7 @@ The confirmed earlier technology direction named Laravel 10, but this repository
 ## Partially Implemented
 
 - The seeded Super Admin currently defaults to the single seeded school. Multi-school selection remains planned and is not exposed in the frontend yet.
-- Student profile update exists only on the backend; parent records are read-only in the real Student Detail flow.
+- Student Detail includes permission-gated profile editing; parent records remain read-only. Academic-year enrolments are managed separately from the profile class.
 - Fee item catalogue has live school-scoped read/create/update/deactivate APIs and an Admin management page; physical deletion is intentionally absent.
 - Discount definitions are stored as snapshots, but approved formulas and eligibility rules do not exist. Charge preview/activation is blocked for non-zero discounts.
 - Payments and receipts work inside Student Detail; there are no independent top-level modules.

@@ -296,7 +296,7 @@ Use fictional data in a local or approved test environment:
 
 1. Request `/api/csrf-cookie`; confirm login without a valid CSRF header returns 419, then login with the cookie/header pair. Exercise session restore, logout, invalid credentials, throttling, and an already-authenticated user deactivated in the database.
 2. Exercise each seeded role and direct API denial, not only button visibility.
-3. Search/create/view/status-change a student in the UI as authorized; smoke-test profile update through the protected API because a complete profile-edit UI is not implemented. Verify denial for Finance and another employee explicitly denied the required User Ability.
+3. Search/create/view/status-change a student in the UI as authorized. Open **Student Detail → Edit Profile** with `students.update`, change a name or optional field, save, and verify both detail and list refresh. Check duplicate Student ID validation, preserved drafts on failure, and unsaved-change cancellation. Class/level edits must explain that academic-year enrolments remain separate. Verify the edit action is absent without `students.update` and direct API denial still applies for Finance, explicitly denied employees, and cross-school targets. Status remains a separate permission-protected action.
 4. Create and supersede a Fee Agreement; inspect version history. Confirm a replacement across existing charge history returns 409 without changing either version.
 5. Preview/activate charges and add a manual charge; confirm totals and Audit Trail events. Confirm non-zero discounts and `requires_preview_confirmation` prevent activation.
 6. Record cash and non-cash payments; verify pending payment; test partial allocation and over-allocation rejection.

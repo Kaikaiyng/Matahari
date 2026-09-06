@@ -926,6 +926,43 @@ describe('demo shell', () => {
     expect(screen.queryByRole('dialog', { name: 'Create Student Profile' })).not.toBeInTheDocument()
   })
 
+  it('edits a student profile through the permitted detail action and refreshes the list', async () => {
+    const user = userEvent.setup()
+    installApiUser({ ...currentUser, permissions: [...currentUser.permissions, 'students.update'] })
+    const fetchMock = vi.mocked(globalThis.fetch)
+    const installedImplementation = fetchMock.getMockImplementation()!
+    let updated = student
+    fetchMock.mockImplementation((input, init) => {
+      const url = new URL(String(input), window.location.origin)
+      if (url.pathname.endsWith('/students/1') && init?.method === 'PATCH') {
+        updated = { ...student, full_name: 'Updated Student Name' }
+        return json({ student: updated })
+      }
+      if (url.pathname.endsWith('/students') && init?.method !== 'POST') return json({ data: [updated] })
+      return installedImplementation(input, init)
+    })
+    await openSelectedStudentPayments(user)
+    await user.click(screen.getByRole('button', { name: 'Edit Profile' }))
+    const dialog = screen.getByRole('dialog', { name: 'Edit Student Profile' })
+    await user.clear(within(dialog).getByLabelText('Student Name'))
+    await user.type(within(dialog).getByLabelText('Student Name'), 'Updated Student Name')
+    await user.click(within(dialog).getByRole('button', { name: 'Save Changes' }))
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Edit Student Profile' })).not.toBeInTheDocument())
+    expect(screen.getByText('Updated profile for MIS-2026-001.')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Updated Student Name MIS-2026-001' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Back to students' }))
+    expect(await screen.findByText('Updated Student Name')).toBeInTheDocument()
+    const patch = fetchMock.mock.calls.find(([input, init]) => String(input).endsWith('/students/1') && init?.method === 'PATCH')
+    expect(JSON.parse(String(patch?.[1]?.body))).toEqual({ full_name: 'Updated Student Name' })
+  })
+
+  it('keeps student profile editing unavailable without the update ability', async () => {
+    const user = userEvent.setup()
+    await openSelectedStudentPayments(user)
+    expect(screen.getByRole('heading', { name: 'Student Profile' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Edit Profile' })).not.toBeInTheDocument()
+  })
+
   it('opens Create Student at Student ID with the standard modal contract', async () => {
     const user = userEvent.setup()
     installApiUser(schoolAdminDialogUser)

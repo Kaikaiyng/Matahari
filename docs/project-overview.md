@@ -33,7 +33,7 @@ Do not describe the system as unlimited or use the historical cost estimate as p
 ### Implemented
 
 - Username login/logout/session restoration, CSRF-protected mutations, login throttling, active-session status checks, and seeded role-permission lookup.
-- Student list, search, filters, creation, details, backend profile update, and lifecycle status changes.
+- Student list, search, filters, creation, details, permission-gated profile editing, and lifecycle status changes.
 - Operator-only student CSV import with dry-run default, explicit actor/tenant/school, complete validation and transactionally audited create-only insertion. See [Student CSV Import](student-csv-import.md).
 - Read-only class directory and active-student rosters.
 - Versioned Fee Agreement creation, history, detail, and superseding.
@@ -58,7 +58,7 @@ Do not describe the system as unlimited or use the historical cost estimate as p
 ### Partially Implemented
 
 - Dashboard: API-backed metrics are available to `fee_record.view`. School-bound users are forced to their own school. The seeded Super Admin is currently bound to the single seeded school; a multi-school selector is planned but not implemented.
-- Students: backend profile update exists, but the frontend does not expose a complete student-profile edit workflow; guardian data is read-only in Student Detail.
+- Students: profile editing is available in Student Detail; guardian data remains read-only. Profile class changes do not automatically change academic-year enrolments.
 - Parents: schema, relationships, and seed data exist; the top-level frontend is static and there are no parent CRUD APIs.
 - Fee catalogue: school-scoped create/update/deactivate API and Admin UI are implemented; defaults never rewrite existing agreements or financial snapshots.
 - Fee Agreements: versions and snapshots work. Discount formulas are not approved, so agreements with non-zero discounts cannot preview or activate charges. Superseding is rejected if old charge history exists on or after the new effective month; no automated credit/recalculation workflow exists.

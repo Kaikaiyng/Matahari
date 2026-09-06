@@ -68,6 +68,7 @@ import { AttendanceHubPage } from './features/attendance/AttendanceHubPage'
 import { UgcModerationPage } from './features/moderation/UgcModerationPage'
 import { PaymentAllocationEditor } from './features/payments/PaymentAllocationEditor'
 import { FeeCataloguePage } from './features/fees/FeeCataloguePage'
+import { StudentProfileEditor } from './features/students/StudentProfileEditor'
 import type {
   FeeAgreement,
   FeeAgreementForm,
@@ -782,6 +783,7 @@ function StudentsPage({
   const [students, setStudents] = useState<StudentSummary[]>([])
   const [schoolClasses, setSchoolClasses] = useState<SchoolClassOption[]>([])
   const [selectedStudent, setSelectedStudent] = useState<StudentDetail | null>(null)
+  const [showProfileEditor, setShowProfileEditor] = useState(false)
   const initialStudentIdRef = useRef<number | null>(initialStudentId ?? null)
   const startedWithFocusedStudentRef = useRef(Boolean(initialStudentId))
   const [statusFilter, setStatusFilter] = useState<StudentFilter>('active')
@@ -2240,6 +2242,23 @@ function StudentsPage({
       {error && <Message tone="error">{error}</Message>}
       {message && <Message tone="success">{message}</Message>}
 
+      {showProfileEditor && selectedStudent && hasPermission(user, 'students.update') && (
+        <StudentProfileEditor
+          key={selectedStudent.id}
+          student={selectedStudent}
+          schoolClasses={schoolClasses}
+          onClose={() => setShowProfileEditor(false)}
+          onUnauthorized={onUnauthorized}
+          onSaved={(updated) => {
+            setSelectedStudent(updated)
+            setStatusDraft(updated.status)
+            setShowProfileEditor(false)
+            setMessage(`Updated profile for ${updated.student_no}.`)
+            void loadStudents(statusFilter)
+          }}
+        />
+      )}
+
       {!selectedStudent && (
         <>
           <PageHeader
@@ -2544,6 +2563,9 @@ function StudentsPage({
           <section className="detail-grid">
             <div className="detail-block">
               <h3>Student Profile</h3>
+              {hasPermission(user, 'students.update') && (
+                <button type="button" className="secondary-action" onClick={() => setShowProfileEditor(true)}>Edit Profile</button>
+              )}
               <dl>
                 <div>
                   <dt>Student ID</dt>

@@ -2,14 +2,14 @@
 
 Status: `MATAHARI_DEVELOPMENT_NOT_PRODUCTION_READY`
 
-Current documentation baseline: 2026-09-05. Exact commits and dated validation evidence are recorded in [Current Status](current-status.md).
+Current documentation baseline: 2026-09-06. Exact commits and dated validation evidence are recorded in [Current Status](current-status.md).
 
 Matahari contains three independently operated runtimes: the Laravel API in `backend/`, the Admin Panel in `frontend/`, and the mobile-first School App in `app/`. Admin and App have separate MIS domains/builds and share authentication identities, membership RBAC, school scope, a PostgreSQL-compatible schema, audit and finance sources of truth. Dedicated mode rejects every non-MIS tenant and disables SaaS platform routes. The repository is not production-ready and has no native/store package.
 
 ## 1. Implemented Admin and Finance
 
 - Username session login/logout/restoration, CSRF protection, login throttling, active-user rechecks, roles, and permission-gated actions.
-- Student list/search/filter/create/detail, backend profile update, lifecycle status changes, and read-only class rosters.
+- Student list/search/filter/create/detail, permission-gated profile editing through the audited API, lifecycle status changes, and read-only class rosters. Profile class edits do not change academic-year enrolment history.
 - Versioned Fee Agreements, billing configuration, preview, activation, manual charges, outstanding balances, summary, and category/month ledger.
 - Payment allocation, verification, void safeguards, history, receipt issue/view/print/void/regeneration, and preserved receipt snapshots/numbers.
 - Shared school Calendar CRUD and responsive Admin shell.
