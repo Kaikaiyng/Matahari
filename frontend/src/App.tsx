@@ -4819,7 +4819,7 @@ function App() {
     }
 
     if (activePage === 'parents') {
-      return <ParentsPage />
+      return <ParentsPage onUnauthorized={handleUnauthorized} />
     }
 
     if (activePage === 'employees') {

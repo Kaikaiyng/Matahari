@@ -64,7 +64,14 @@ Before Admin student-management checks, validate the separate School App:
 - [ ] Long names and identifiers wrap without widening the page.
 - [ ] Fee-period selection updates both the `Paid / Total Fees` card and every student row for the same month/all-year period.
 
-## 4A. Classes Directory
+## 4A. Parent Directory
+
+- [ ] Parents loads real contacts; searching and paging use the same server-filtered result count. Empty results and API errors never show sample families.
+- [ ] Profile-class grouping is explicitly limited to the current result page and includes contacts without linked children or classes.
+- [ ] Expanded cards show account-link and recorded relationship status without implying current enrolment or effective App access. Ended/unreviewed relationships remain visible as history.
+- [ ] `parents.view` alone exposes contacts, not student details/search/class filters. Missing parent permission or a cross-school request is denied by the backend.
+
+## 4B. Classes Directory
 
 - [ ] Classes are grouped under the correct Kindergarten, Primary, Secondary, or STP level.
 - [ ] Active-student counts match `GET /api/students?status=active`.

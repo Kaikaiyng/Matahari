@@ -38,7 +38,7 @@ Important boundaries:
 - External notification destinations are configuration-only. Telegram delivery, Bot tokens, Telegram user binding/login, destination UI, queue/outbox, retries, and delivery history are not implemented.
 
 - Payments and receipts are implemented inside Student Detail; unimplemented top-level placeholder navigation has been removed.
-- The parent directory remains display-only. Fee Catalogue management now supports school-scoped audited create/update/deactivate without physical deletion; parent mutations, reports, exports, password reset, and production deployment remain incomplete or not implemented.
+- The parent directory reads real same-school contacts with search, pagination, profile-class filtering and recorded relationship/account-link status. Student details require `students.view` in addition to `parents.view`. Parent mutations, account onboarding, reports, exports, password reset, and production deployment remain incomplete. Fee Catalogue management supports school-scoped audited create/update/deactivate without physical deletion.
 - Discounts can be stored as agreement snapshots, but charge preview/activation deliberately fails closed until approved formulas exist.
 - Generic audit correction/recovery and audit export are planned, not implemented.
 

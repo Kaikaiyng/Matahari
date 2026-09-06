@@ -831,14 +831,28 @@ describe('demo shell', () => {
     expect(screen.getByText('RM 800.00')).toBeInTheDocument()
   })
 
-  it('shows the MIS demo parent directory grouped by class', async () => {
+  it('loads the real parent directory and groups the returned contacts by profile class', async () => {
     const user = userEvent.setup()
+    const fetchMock = vi.mocked(globalThis.fetch)
+    const existingImplementation = fetchMock.getMockImplementation()!
+    fetchMock.mockImplementation((input, init) => {
+      if (new URL(String(input), window.location.origin).pathname.endsWith('/v1/admin/parents')) {
+        return json({
+          data: [{ id: 10, name: 'Live Directory Contact', phone: '0000000000', email: null, address: null, account_linked: false,
+            children: [{ id: 1, link_id: 1, name: 'Linked Student', student_no: 'TEST-001', class_name: 'MA1', relationship: 'guardian', relationship_status: 'unreviewed' }] }],
+          meta: { total: 1, current_page: 1, last_page: 1, per_page: 25, can_view_students: true, class_options: [{ id: 1, name: 'MA1' }] },
+        })
+      }
+      return existingImplementation(input, init)
+    })
     await renderAuthenticatedApp()
 
     await user.click(screen.getByRole('button', { name: 'Parents' }))
 
     expect(await screen.findByRole('heading', { name: 'Parent & Guardian Directory' })).toBeInTheDocument()
-    expect(screen.getByRole('region', { name: 'Class: MA1' })).toBeInTheDocument()
+    expect(await screen.findByText('Live Directory Contact')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Group by profile class' }))
+    expect(screen.getByRole('region', { name: 'MA1' })).toBeInTheDocument()
   })
 
   it('replaces the student list with a focused student workspace', async () => {

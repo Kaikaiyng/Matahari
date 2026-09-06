@@ -1,5 +1,12 @@
 # Current Status
 
+## 2026-09-06 Live parent directory
+
+- Replaced `DEMO_PARENTS` with `GET /api/v1/admin/parents`, a paginated, same-school read endpoint requiring `parents.view`. Search covers contact name/email/phone, and student name/number only with `students.view`; class filtering and child details are also gated by that ability. Search treats `%` and `_` literally and is checked on PostgreSQL.
+- Reused the existing Admin cards and controls, added loading/error/retry/session-expiry handling and server pagination. Grouping is by profile class on the current result page, including unlinked contacts. Account-linked and historical relationship status are display metadata, not a promise of current App access or academic enrolment.
+- Local full regression: **432 backend tests discovered; SQLite 419 passed / 13 skipped / 2,367 assertions; PostgreSQL 411 passed / 21 skipped / 2,353 assertions**. Admin **219/219 tests passed** with two workers after an unchanged Calendar test exceeded its existing 5-second limit under the earlier concurrent run. No test timeout or production behavior was weakened. Pint, 160-route loading, Admin lint/TypeScript/build, 26 deployment tests and documentation links passed; existing Calendar/Dashboard lint warnings and the Vite bundle-size advisory remain.
+- No schema, financial, portal-access or account-write behavior changed. No new migration was required; existing migration tests ran in the backend suites. Contact editing, creating family relationships, account onboarding and password recovery remain next work. GitHub full qualification and browser/device UAT for this batch are not claimed by this local record.
+
 ## 2026-09-06 First-school delivery research
 
 - Added [First-school Delivery Research](first-school-delivery.md): verified guardian/account/access and academic-enrolment dependencies, staged delivery recommendations, and the proposed real parent-directory slice. This is research, not implementation of the remaining modules.
@@ -370,7 +377,7 @@ The confirmed earlier technology direction named Laravel 10, but this repository
 - Existing guardian links remain `unreviewed` with nullable access flags, and no live parent/student user association or enrolment history is inferred. Portal activation and production backfill require a separately approved workflow.
 - The independent `app/` School App provides user-scoped notifications, Parent/Student self-service, Teacher class/campus Attendance, Parent linked-child Attendance, explicit Student Attendance exclusion, read-only guardian finance with linked-child switching and receipt viewing/browser PDF saving, School Updates, published Assessment results, recurring Schedule, and formal Quiz delivery/scoring. Admin remains in `frontend/`; both clients share the backend/database but have independent builds and intended domains. Manual in-app payment reminders are implemented; automatic/external reminders, online parent payment, Practice/AI Quiz, Firebase, Capacitor, native authentication, and native packaging remain unimplemented.
 
-- Parent CRUD, full user lifecycle/password reset, and a global school selector. Employee Position/User Ability editing is implemented but is not complete account administration.
+- Parent contact/relationship mutations, full user lifecycle/password reset, and a global school selector. The parent directory is read-only; Employee Position/User Ability editing is not complete account administration.
 - Reports beyond Fee Record views, exports, statements, automatic/external reminders, full parent portal operations, and server-side PDF.
 - Refund, credit, overpayment, write-off, and approved correction/recovery workflows.
 - Full academic ERP modules.
@@ -386,7 +393,7 @@ Remaining concerns are operational or planned-scope limitations:
 2. HTTPS termination, secure-cookie flags, proxy trust, CORS, shared session/rate-limit storage, and multi-instance behavior require environment-specific verification.
 3. Audit append-only protection exists at the Eloquent model layer; raw SQL or privileged database users require least-privilege grants and database operations controls.
 4. Repository CI/deployment foundations exist, but production secret management, deployed monitoring/alerting, backup/restore, and incident-response operations are not verified.
-5. Guardian data is returned with Student Detail under `students.view`; the intended independent role of `parents.view` is **Needs confirmation**.
+5. The standalone parent directory requires `parents.view`, with child data/search additionally gated by `students.view`. Existing Student Detail still returns its linked guardian summary under `students.view`; this change does not alter that established endpoint.
 
 No item above is evidence of production readiness. They must be addressed in a real deployment plan.
 

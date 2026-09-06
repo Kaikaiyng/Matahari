@@ -10,6 +10,7 @@ Matahari contains three independently operated runtimes: the Laravel API in `bac
 
 - Username session login/logout/restoration, CSRF protection, login throttling, active-user rechecks, roles, and permission-gated actions.
 - Student list/search/filter/create/detail, permission-gated profile editing through the audited API, lifecycle status changes, and read-only class rosters. Profile class edits do not change academic-year enrolment history.
+- Live read-only Parent directory with school-scoped contact search/pagination and optional student/profile-class search and relationship history under `students.view`. Parent contact/relationship editing and account onboarding remain incomplete.
 - Versioned Fee Agreements, billing configuration, preview, activation, manual charges, outstanding balances, summary, and category/month ledger.
 - Payment allocation, verification, void safeguards, history, receipt issue/view/print/void/regeneration, and preserved receipt snapshots/numbers.
 - Shared school Calendar CRUD and responsive Admin shell.

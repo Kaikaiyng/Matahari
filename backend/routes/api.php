@@ -30,6 +30,7 @@ use App\Http\Controllers\Api\V1\CommunityModerationController;
 use App\Http\Controllers\Api\V1\CommunitySafetyController;
 use App\Http\Controllers\Api\V1\EmployeeAccessController;
 use App\Http\Controllers\Api\V1\FoundationAccountController;
+use App\Http\Controllers\Api\V1\ParentDirectoryController;
 use App\Http\Controllers\Api\V1\ParentPortalController;
 use App\Http\Controllers\Api\V1\PlatformCommunityModerationController;
 use App\Http\Controllers\Api\V1\PlatformTenantController;
@@ -255,6 +256,7 @@ Route::prefix('v1')->middleware([...$sessionMiddleware, 'auth', 'active', 'tenan
         Route::post('/attendance/abilities', [AttendanceAbilityController::class, 'store'])->middleware(['tenant.feature:attendance', 'permission:attendance.abilities.manage']);
         Route::delete('/attendance/abilities/{userAttendanceAbility}', [AttendanceAbilityController::class, 'destroy'])->middleware(['tenant.feature:attendance', 'permission:attendance.abilities.manage']);
 
+        Route::get('/parents', [ParentDirectoryController::class, 'index'])->middleware('permission:parents.view');
         Route::patch('/parents/{guardian}/portal-user', [PortalLinkController::class, 'guardianUser'])->middleware('permission:portal_links.manage');
         Route::patch('/students/{student}/portal-user', [PortalLinkController::class, 'studentUser'])->middleware('permission:portal_links.manage');
         Route::patch('/student-parent-links/{studentParentLink}/portal-access', [PortalLinkController::class, 'guardianAccess'])->middleware('permission:portal_links.manage');

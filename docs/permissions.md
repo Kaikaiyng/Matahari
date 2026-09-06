@@ -47,6 +47,7 @@ School Admin and Finance may edit another same-school School Admin, Finance, or 
 | Employees | `employees.view` | `employees.manage`, `employees.abilities.manage` |
 | Attendance | `attendance.view_assigned`, `attendance.view_school` | `attendance.manage_assigned`, `attendance.manage_school`, `attendance.devices.manage` |
 | Students | `students.view` | `students.create`, `students.update`, `students.update_status` |
+| Parent directory | `parents.view`; child details/search/class filtering additionally require `students.view` | No new write operation; existing `portal_links.manage` remains separate |
 | Classes | `class_enrolments.view`, `teaching_assignments.view` | matching `.manage` permissions |
 | Calendar | `calendar.view` | `calendar.create`, `calendar.update`, `calendar.delete` |
 | Finance | `fee_items.view` plus fee/payment/receipt `.view` permissions | `fee_items.manage`, record, verify, void, print, reminder, and agreement mutations |

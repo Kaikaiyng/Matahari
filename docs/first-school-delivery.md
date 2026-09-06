@@ -10,6 +10,27 @@
 
 RYLAY SaaS、架构重写、AI Quiz 和复杂自动化继续延后。现有 Matahari dedicated 模式、PostgreSQL、权限和历史数据结构作为基础。
 
+## 参考成熟系统的正常使用流程
+
+2026-09-06 补充：以下是根据官方产品文档选择的 Matahari 产品流程，不宣称存在一套适用于所有学校的统一行业标准。
+
+- 先记录学生与家长，再单独开通账号。一名学生可关联多个监护人，同一监护人可关联多个孩子；家长记录可在以后邀请成为系统用户。[Frappe Education Guardian](https://docs.frappe.io/education/guardian)
+- 开放家长门户前，核对家庭关系、重复资料及展示范围，再安排试用和账号通知。[Arbor 门户启用流程](https://support.arbor-education.com/hc/en-us/articles/360023351254-Switching-on-the-Parent-Portal-and-Parent-App)
+- 学生基本资料与特定学年/课程的 enrolment 分开维护。[Frappe Program Enrollment](https://docs.frappe.io/education/program-enrollment)
+
+Matahari 采用的目标流程：
+
+1. 学校设置学年、班级、科目、员工任教和收费项目。
+2. 从学生详情建立学生资料；选择已存在的家长或新增家长，再确认关系。Parents 目录提供另一处统一查询/维护入口，两处复用同一份数据。
+3. 学校确认正式分班、收费协议和所需家长权限；联系人优先级不自动代表财务或学业访问权。
+4. 经学校核实，为每位需要访问的成人关联个人账号，复用已有身份；同一账号可查看多个获授权孩子，家长不共用孩子的登录。
+5. 开通账号后，老师按任教名单操作，家长查看获授权孩子的通知、学业及只读账目；财务沿用现有收费、核实付款和收据流程。
+6. 转班、离校、关系结束或账号停用通过各自流程处理，保留原有学业和财务记录。
+
+这些是逐批实现的目标，不是本批已完成的开户流程。Matahari 保留用户名登录和按孩子授权，不照搬 Arbor 的邮箱唯一/Primary Guardian 访问规则。已有在校生从核对后的资料导入进入流程，首发不强制增加招生 CRM 或重做账务引擎。折扣公式、退款与期初金额仍以学校确认的规则为准。
+
+本批已完成真实只读家长目录；接下来补资料编辑和从学生详情建立家庭关系，再接账号开通。账号邀请渠道及激活/恢复机制在账号批次明确实现，当前没有发送邀请邮件的功能。
+
 ## 已核实的依赖
 
 | 依赖 | 代码证据 | 对交付的影响 |
@@ -17,7 +38,7 @@ RYLAY SaaS、架构重写、AI Quiz 和复杂自动化继续延后。现有 Mata
 | 家长资料与账号分开 | [Guardian](../backend/app/Models/Guardian.php) 使用 `parents`；可空 `user_id` 指向登录账号 | 新增联系人不能等同于开通 App |
 | 关系与可见权限分开 | [StudentParentLink](../backend/app/Models/StudentParentLink.php) 保存关系、状态、财务/学业权限与日期 | 一位家长的多个孩子需要分别审核权限 |
 | 激活要求明确关联账号 | [PortalLinkService](../backend/app/Services/Foundation/PortalLinkService.php) 和 [现有测试](../backend/tests/Feature/PhaseAFoundationApiTest.php) 拒绝跨校关联及未关联账号的激活 | 不通过姓名、电话或邮箱自动匹配身份；不默认激活历史关系 |
-| 家长目录仍是示例数据 | [ParentsPage](../frontend/src/components/ParentsPage.tsx) 的家长与孩子来自 `DEMO_PARENTS`，仅班级列表调用 API | 页面看起来完整，实际不能作为学校的家长名册 |
+| 家长目录曾是示例数据，现已接通只读接口 | [ParentsPage](../frontend/src/components/ParentsPage.tsx) 读取同校真实家长及获准查看的孩子关系 | 目录可用于查询，新增/修改和开户仍分批补齐 |
 | 普通资料班级与学年分班独立 | [ClassEnrolmentService](../backend/app/Services/Foundation/ClassEnrolmentService.php) 保存学年分班历史；学生资料编辑只修改 `students.class_id` | 改资料班级不能让老师自动获得新学年考勤名单 |
 | 教务写接口已有，后台入口不完整 | [API routes](../backend/routes/api.php) 有学年、科目、分班、任教分配接口；[ClassesPage](../frontend/src/components/ClassesPage.tsx) 主要是目录、名单和考勤 | 必须补齐学校自己建立与维护教务基础资料的流程 |
 | 家长财务依赖确认的当前分班 | [Business Rules](business-rules.md) 规定从当前 enrolment 获取学年，金额来自现有账目 | 不能靠页面硬编码学年解决家长看不到金额的问题 |
@@ -41,9 +62,9 @@ RYLAY SaaS、架构重写、AI Quiz 和复杂自动化继续延后。现有 Mata
 
 部署和原生可行性准备不必等第 6 批全部结束。家庭与教务的最小流程稳定后，可安排小范围测试环境和原生登录验证，提前发现手机、签名和账号归属问题；功能上线仍按验收结果控制。
 
-## 下一批只做：真实家长目录
+## 第 1 批范围：真实家长目录
 
-建议先交付只读目录，作为后续资料维护、孩子关联和账号管理的入口。现有表已能提供目录基础，本批预计不需要新表；实际实施前仍须核对查询与历史关系语义。
+只读目录已实现，作为后续资料维护、孩子关联和账号管理的入口。使用现有表，未新增 schema；查询保留历史关系，不开通访问权限。原定验收情境如下，执行证据见 [Current Status](current-status.md)。
 
 涉及位置：
 
@@ -61,7 +82,7 @@ RYLAY SaaS、架构重写、AI Quiz 和复杂自动化继续延后。现有 Mata
 - [ ] 搜索、分页和统计口径一致；空库显示空状态，API 失败显示错误及重试，不显示示例家庭。
 - [ ] 用虚构数据验证后端学校/权限边界及前端状态；执行受影响完整测试，数据库查询在 PostgreSQL 验证。只读实现不新增虚构写入审计。
 
-本批结束后再细化第 2 批的字段、关系生命周期和事务边界，不一次生成整套账号或财务系统。
+下一批细化家长资料编辑、从学生详情建立关系以及相应事务边界。
 
 ## 到相应阶段才需要的资料
 
