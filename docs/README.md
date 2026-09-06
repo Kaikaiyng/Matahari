@@ -14,6 +14,7 @@ Historical records may retain RYLAY names, domains, commands and release identif
 | [Database](database.md) | Engines, tables, relationships, constraints, money, statuses, migrations, rollback, and PostgreSQL considerations |
 | [Permissions](permissions.md) | Seeded role matrix, enforcement locations, and frontend/backend gaps |
 | [Current Status](current-status.md) | Commit snapshot, implemented/partial work, risks, test status, deployment state, and priorities |
+| [First-school Delivery Research](first-school-delivery.md) | Verified dependencies, gradual delivery order, the next parent-directory slice, and school information needed by stage |
 | [Tenancy Foundation and Future RYLAY SaaS](saas-multitenancy.md) | Matahari dedicated enforcement, domain resolution, memberships, branding, future SaaS mode, migration safety, and rollout gates |
 | [Testing and Release](testing-and-release.md) | Exact validation commands, database checks, security review, smoke tests, release, and rollback |
 | [Student CSV Import](student-csv-import.md) | Excel export format, dry-run/commit commands, actor scope, all-or-nothing writes and onboarding limits |

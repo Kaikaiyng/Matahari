@@ -1,10 +1,15 @@
 # Current Status
 
+## 2026-09-06 First-school delivery research
+
+- Added [First-school Delivery Research](first-school-delivery.md): verified guardian/account/access and academic-enrolment dependencies, staged delivery recommendations, and the proposed real parent-directory slice. This is research, not implementation of the remaining modules.
+- Documentation-only change. Existing code, routes, models and tests were inspected; no application tests, data imports or deployment actions were rerun for this research.
+
 ## 2026-09-06 Student profile editor
 
 - Student Detail now offers **Edit Profile** to users with `students.update`, using the existing school-scoped, transactionally audited update API. The drawer edits student number/name, level/profile class, gender, birth/registration dates and remarks, sends only changed fields, and refreshes detail and list after saving.
 - Validation keeps the draft and focuses the first field error; cancelling a changed draft asks before discarding it. Session expiry uses the existing login flow. Status remains a separate action; profile class changes explicitly do not change academic-year enrolments or historical financial snapshots.
-- Local Admin regression: **213/213 tests passed**, including seven new editor/integration cases; production build and TypeScript passed. Existing backend student-management/business-audit regression passed **13/13 tests, 78 assertions** on SQLite. No backend or schema changes are included. Oxlint completed with the existing Calendar Fast Refresh and Dashboard hook warnings, and Vite retained its bundle-size advisory. GitHub qualification for this batch is pending at this document's commit.
+- Local Admin regression: **213/213 tests passed**, including seven new editor/integration cases; production build and TypeScript passed. Existing backend student-management/business-audit regression passed **13/13 tests, 78 assertions** on SQLite. No backend or schema changes are included. Oxlint completed with the existing Calendar Fast Refresh and Dashboard hook warnings, and Vite retained its bundle-size advisory. The combined release subsequently passed [GitHub run 34016761118](https://github.com/Kaikaiyng/Matahari/actions/runs/34016761118).
 - Guardian record editing, full account administration/password recovery, real Excel onboarding, hosted environments and native/store delivery remain incomplete.
 
 ## 2026-09-06 First-school onboarding and recovery tools
